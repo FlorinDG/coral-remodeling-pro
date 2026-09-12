@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import { useSession } from 'next-auth/react';
 import { useTenant } from '@/context/TenantContext';
 import { useDatabaseStore } from '@/components/admin/database/store';
 import { Page, PropertyValue } from '@/components/admin/database/types';
@@ -17,9 +18,14 @@ import {
     X,
     AlertCircle,
     CheckCircle2,
-    ListTodo
+    ListTodo,
+    FolderKanban,
+    Search,
+    AlertTriangle,
+    Trash2
 } from 'lucide-react';
 import { parseRecurrenceRule, getNextDueDate } from '@/components/admin/tasks/RecurrenceEngine';
+import { getTaskDependencies } from '@/components/admin/tasks/DependencyEngine';
 
 function getLocalDateStr(d = new Date()): string {
     const year = d.getFullYear();
@@ -28,16 +34,30 @@ function getLocalDateStr(d = new Date()): string {
     return `${year}-${month}-${day}`;
 }
 
-function isPersonalTask(p: Page): boolean {
-    const project = p.properties['prop-task-project'];
-    if (!project) return true;
-    if (Array.isArray(project)) return project.length === 0;
-    return false;
+// Scope by OWNERSHIP: everything mine to do (assignee unset or current user)
+// Projects are an attribute of a task, NOT a filter on it (TASK-M1 Planner Correction).
+function isMyTask(p: Page, currentUserId?: string): boolean {
+    const assignee = p.properties['prop-task-assignee'];
+    if (!assignee) return true;
+    if (Array.isArray(assignee)) {
+        if (assignee.length === 0) return true;
+        return Boolean(currentUserId && assignee.includes(currentUserId));
+    }
+    if (typeof assignee === 'string') {
+        if (!assignee.trim()) return true;
+        return Boolean(currentUserId && assignee === currentUserId);
+    }
+    return true;
 }
 
 function isDoneTask(p: Page): boolean {
     const status = p.properties['prop-task-status'];
-    return status === 't-done' || status === 'opt-done';
+    return status === 'opt-done' || status === 't-done';
+}
+
+function isClosedTask(p: Page): boolean {
+    const status = p.properties['prop-task-status'];
+    return status === 'opt-done' || status === 't-done' || status === 'opt-dropped';
 }
 
 interface PendingUndo {
@@ -50,11 +70,16 @@ interface PendingUndo {
 
 export default function MobileTasksPage() {
     const t = useTranslations('Mobile');
+    const { data: session } = useSession();
+    const currentUserId = session?.user?.id;
     const { resolveDbId } = useTenant();
     const tasksDbId = resolveDbId('db-tasks');
+    const projectsDbId = resolveDbId('db-1');
 
     // Store selectors
     const databases = useDatabaseStore(s => s.databases);
+    const pageIndex = useDatabaseStore(s => s.pageIndex || {});
+    const getPageLabel = useDatabaseStore(s => s.getPageLabel);
     const syncQueue = useDatabaseStore(s => s.syncQueue || []);
     const createPage = useDatabaseStore(s => s.createPage);
     const updatePageProperty = useDatabaseStore(s => s.updatePageProperty);
@@ -95,6 +120,41 @@ export default function MobileTasksPage() {
         }
     }, []);
 
+    // Project Picker state (TASK-M10)
+    const [projectPickerTaskId, setProjectPickerTaskId] = useState<string | null>(null);
+    const [projectSearch, setProjectSearch] = useState('');
+    const projectSearchInputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        if (projectPickerTaskId) {
+            setTimeout(() => projectSearchInputRef.current?.focus(), 60);
+        }
+    }, [projectPickerTaskId]);
+
+    // Available projects derived strictly from in-memory pageIndex (zero full hydration)
+    const availableProjects = useMemo(() => {
+        return Object.values(pageIndex)
+            .filter(entry => entry.databaseId === projectsDbId)
+            .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+    }, [pageIndex, projectsDbId]);
+
+    const filteredProjects = useMemo(() => {
+        const query = projectSearch.trim().toLowerCase();
+        if (!query) return availableProjects;
+        return availableProjects.filter(p => (p.title || '').toLowerCase().includes(query));
+    }, [availableProjects, projectSearch]);
+
+    const taskForProjectPicker = useMemo(() => {
+        if (!projectPickerTaskId) return null;
+        return allPages.find(p => p.id === projectPickerTaskId) || null;
+    }, [projectPickerTaskId, allPages]);
+
+    const activeTaskProjectId = useMemo(() => {
+        if (!taskForProjectPicker) return undefined;
+        const raw = taskForProjectPicker.properties['prop-task-project'];
+        return Array.isArray(raw) ? raw[0] : (typeof raw === 'string' ? raw : undefined);
+    }, [taskForProjectPicker]);
+
     // Pending 4-second Undo state for 1-tap completions
     const [pendingUndos, setPendingUndos] = useState<Record<string, PendingUndo>>({});
 
@@ -103,8 +163,8 @@ export default function MobileTasksPage() {
 
     const todayStr = useMemo(() => getLocalDateStr(), []);
 
-    // Filter personal tasks
-    const personalPages = useMemo(() => allPages.filter(isPersonalTask), [allPages]);
+    // Filter personal tasks by OWNERSHIP
+    const personalPages = useMemo(() => allPages.filter(p => isMyTask(p, currentUserId)), [allPages, currentUserId]);
 
     // Cleanup timers on unmount
     useEffect(() => {
@@ -113,22 +173,22 @@ export default function MobileTasksPage() {
         };
     }, [pendingUndos]);
 
-    // One-thumb Complete handler
+    // One-thumb Complete handler (writes canonical opt-done / opt-todo)
     const handleToggleComplete = useCallback((page: Page) => {
         const isCurrentlyDone = isDoneTask(page);
 
-        // If already completing/done, do nothing or re-open
+        // If already completing/done, re-open to opt-todo
         if (isCurrentlyDone && !pendingUndos[page.id]) {
-            updatePageProperty(tasksDbId, page.id, 'prop-task-status', 't-todo');
+            updatePageProperty(tasksDbId, page.id, 'prop-task-status', 'opt-todo');
             updatePageProperty(tasksDbId, page.id, 'prop-task-completed-at', '');
             return;
         }
 
-        const prevStatus = (page.properties['prop-task-status'] as PropertyValue) || 't-todo';
+        const prevStatus = (page.properties['prop-task-status'] as PropertyValue) || 'opt-todo';
         const prevCompletedAt = (page.properties['prop-task-completed-at'] as PropertyValue) || '';
 
         // Immediate store mutation
-        updatePageProperty(tasksDbId, page.id, 'prop-task-status', 't-done');
+        updatePageProperty(tasksDbId, page.id, 'prop-task-status', 'opt-done');
         updatePageProperty(tasksDbId, page.id, 'prop-task-completed-at', new Date().toISOString());
 
         // Handle recurring tasks: create next occurrence
@@ -144,7 +204,7 @@ export default function MobileTasksPage() {
 
                 const newPage = createPage(tasksDbId, {
                     ...page.properties,
-                    'prop-task-status': 't-todo',
+                    'prop-task-status': 'opt-todo',
                     'prop-task-completed-at': '',
                     'prop-task-my-day': false,
                     'prop-task-due': nextDueStr,
@@ -197,25 +257,33 @@ export default function MobileTasksPage() {
         });
     }, [pendingUndos, tasksDbId, updatePageProperty, deletePage]);
 
-    // Fast capture submit handler
+    // Fast capture submit handler (writes canonical opt-todo)
     const handleCaptureSubmit = useCallback((e?: React.FormEvent) => {
         if (e) e.preventDefault();
         const trimmed = captureTitle.trim();
         if (!trimmed) return;
 
-        // Create page with specified defaults: title, t-todo, my-day: true
         createPage(tasksDbId, {
             title: trimmed,
-            'prop-task-status': 't-todo',
+            'prop-task-status': 'opt-todo',
             'prop-task-my-day': true,
         });
 
-        // Clear input and keep focus for rapid consecutive captures
+        // Clear input and stay focused for consecutive rapid captures
         setCaptureTitle('');
         if (captureInputRef.current) {
             captureInputRef.current.focus();
         }
     }, [captureTitle, createPage, tasksDbId]);
+
+    // Project picker selection handler (TASK-M10)
+    const handleSelectProject = useCallback((projectId?: string) => {
+        if (!projectPickerTaskId) return;
+        const relationVal = projectId ? [projectId] : [];
+        updatePageProperty(tasksDbId, projectPickerTaskId, 'prop-task-project', relationVal);
+        setProjectPickerTaskId(null);
+        setProjectSearch('');
+    }, [projectPickerTaskId, tasksDbId, updatePageProperty]);
 
     // Visible tasks calculation
     const visibleTasks = useMemo(() => {
@@ -223,8 +291,9 @@ export default function MobileTasksPage() {
             const isCompleted = isDoneTask(page);
             const isPendingUndo = Boolean(pendingUndos[page.id]);
 
-            // Exclude completed unless in the 4-second undo grace period
+            // Exclude completed or dropped unless in the 4-second undo grace period
             if (isCompleted && !isPendingUndo) return false;
+            if (page.properties['prop-task-status'] === 'opt-dropped') return false;
 
             if (activeTab === 'today') {
                 const due = page.properties['prop-task-due'] as string | undefined;
@@ -265,7 +334,7 @@ export default function MobileTasksPage() {
     // Count today's tasks
     const todayCount = useMemo(() => {
         return personalPages.filter(p => {
-            if (isDoneTask(p) && !pendingUndos[p.id]) return false;
+            if (isClosedTask(p) && !pendingUndos[p.id]) return false;
             const due = p.properties['prop-task-due'] as string | undefined;
             const myDay = Boolean(p.properties['prop-task-my-day']);
             const flagged = Boolean(p.properties['prop-task-flagged']);
@@ -274,7 +343,7 @@ export default function MobileTasksPage() {
     }, [personalPages, pendingUndos, todayStr]);
 
     const allCount = useMemo(() => {
-        return personalPages.filter(p => !isDoneTask(p) || Boolean(pendingUndos[p.id])).length;
+        return personalPages.filter(p => !isClosedTask(p) || Boolean(pendingUndos[p.id])).length;
     }, [personalPages, pendingUndos]);
 
     return (
@@ -349,10 +418,26 @@ export default function MobileTasksPage() {
                             const isPendingSync = pendingSyncIds.has(task.id);
                             const isCompleting = Boolean(pendingUndos[task.id]);
 
+                            // Project link resolution
+                            const rawProject = task.properties['prop-task-project'];
+                            const projectId = Array.isArray(rawProject)
+                                ? rawProject[0]
+                                : (typeof rawProject === 'string' ? rawProject : undefined);
+                            const projectTitle = projectId
+                                ? (pageIndex[projectId]?.title || getPageLabel(projectId) || t('tasks_assign_project'))
+                                : undefined;
+
+                            // Dependency status computation (Option a: Informational & honest surfacing)
+                            const depInfo = getTaskDependencies(task, allPages);
+                            const blockerNames = [
+                                ...depInfo.openPrerequisites.map(p => (p.properties['title'] as string) || 'Untitled Task'),
+                                ...depInfo.danglingPrerequisiteIds.map(id => `[Task ${id.slice(-4)}]`),
+                            ];
+
                             return (
                                 <div
                                     key={task.id}
-                                    className={`flex items-center justify-between p-3.5 transition-all ${
+                                    className={`flex items-start justify-between p-3.5 transition-all ${
                                         isCompleting
                                             ? 'bg-neutral-50 dark:bg-neutral-800/60 opacity-80'
                                             : 'hover:bg-neutral-50/80 dark:hover:bg-neutral-800/30'
@@ -362,7 +447,7 @@ export default function MobileTasksPage() {
                                     <button
                                         type="button"
                                         onClick={() => handleToggleComplete(task)}
-                                        className="min-w-[44px] min-h-[44px] flex items-center justify-center -ml-1.5 mr-1"
+                                        className="min-w-[44px] min-h-[44px] flex items-center justify-center -ml-1.5 mr-1 pt-0.5"
                                         aria-label={isCompleting ? 'Completed' : 'Complete task'}
                                     >
                                         <div
@@ -377,7 +462,7 @@ export default function MobileTasksPage() {
                                     </button>
 
                                     {/* Task Content */}
-                                    <div className="flex-1 min-w-0 pr-2">
+                                    <div className="flex-1 min-w-0 pr-2 pt-1">
                                         <p
                                             className={`text-sm font-semibold tracking-tight transition-all leading-snug ${
                                                 isCompleting
@@ -388,8 +473,45 @@ export default function MobileTasksPage() {
                                             {title}
                                         </p>
 
-                                        {/* Badges / Metadata */}
-                                        <div className="flex flex-wrap items-center gap-1.5 mt-1 text-[10px]">
+                                        {/* Badges / Metadata / Dependencies / Projects */}
+                                        <div className="flex flex-wrap items-center gap-1.5 mt-1.5 text-[10px]">
+                                            {/* Project Chip / Button (TASK-M10) */}
+                                            {projectTitle ? (
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setProjectPickerTaskId(task.id);
+                                                        setProjectSearch('');
+                                                    }}
+                                                    className="flex items-center gap-1 px-2 py-1 rounded-md bg-neutral-100 hover:bg-neutral-200 dark:bg-white/10 dark:hover:bg-white/15 text-neutral-700 dark:text-neutral-300 font-medium transition-colors min-h-[28px]"
+                                                >
+                                                    <FolderKanban className="w-3 h-3 text-neutral-500 dark:text-neutral-400 shrink-0" />
+                                                    <span className="truncate max-w-[130px]">{projectTitle}</span>
+                                                </button>
+                                            ) : (
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setProjectPickerTaskId(task.id);
+                                                        setProjectSearch('');
+                                                    }}
+                                                    className="flex items-center gap-1 px-1.5 py-0.5 rounded border border-dashed border-neutral-300 dark:border-neutral-700 hover:border-neutral-400 dark:hover:border-neutral-500 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 font-medium transition-colors"
+                                                >
+                                                    <Plus className="w-2.5 h-2.5" />
+                                                    <span>{t('tasks_assign_project')}</span>
+                                                </button>
+                                            )}
+
+                                            {/* Dependency Blocked Status (Option a: Loud surface visibility) */}
+                                            {depInfo.isBlocked && (
+                                                <span className="flex items-center gap-1 font-semibold px-2 py-0.5 rounded-md bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20">
+                                                    <AlertTriangle className="w-3 h-3 text-amber-600 dark:text-amber-400 shrink-0" />
+                                                    <span>{t('tasks_blocked_by')}: {blockerNames.join(', ')}</span>
+                                                </span>
+                                            )}
+
                                             {/* Overdue badge */}
                                             {isOverdue && (
                                                 <span className="flex items-center gap-0.5 font-bold px-1.5 py-0.5 rounded bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400">
@@ -437,7 +559,7 @@ export default function MobileTasksPage() {
                                         <button
                                             type="button"
                                             onClick={() => handleUndo(task.id)}
-                                            className="min-h-[44px] px-3.5 py-1.5 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 text-xs font-bold flex items-center gap-1.5 shadow-sm active:scale-95 transition-all"
+                                            className="min-h-[44px] px-3.5 py-1.5 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 text-xs font-bold flex items-center gap-1.5 shadow-sm active:scale-95 transition-all self-center"
                                         >
                                             <RotateCcw className="w-3.5 h-3.5" />
                                             <span>{t('tasks_undo')}</span>
@@ -497,6 +619,98 @@ export default function MobileTasksPage() {
                     >
                         <Plus className="w-6 h-6 stroke-[2.5]" />
                     </button>
+                </div>
+            )}
+
+            {/* ── 2-Tap Project Picker Sheet (TASK-M10) ── */}
+            {projectPickerTaskId && (
+                <div
+                    className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex flex-col justify-end"
+                    onClick={() => {
+                        setProjectPickerTaskId(null);
+                        setProjectSearch('');
+                    }}
+                >
+                    <div
+                        className="bg-white dark:bg-neutral-900 border-t border-neutral-200 dark:border-white/10 rounded-t-3xl max-w-lg mx-auto w-full p-4 max-h-[80vh] flex flex-col shadow-2xl animate-in slide-in-from-bottom duration-200"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Sheet Header */}
+                        <div className="flex items-center justify-between pb-3 border-b border-neutral-100 dark:border-white/5">
+                            <div className="flex items-center gap-2">
+                                <FolderKanban className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
+                                <h3 className="font-bold text-sm text-neutral-900 dark:text-white">
+                                    {t('tasks_select_project')}
+                                </h3>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setProjectPickerTaskId(null);
+                                    setProjectSearch('');
+                                }}
+                                className="min-w-[44px] min-h-[44px] flex items-center justify-center text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 -mr-2"
+                                aria-label="Close project picker"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* Search Input */}
+                        <div className="relative my-3">
+                            <Search className="w-4 h-4 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                            <input
+                                ref={projectSearchInputRef}
+                                type="text"
+                                value={projectSearch}
+                                onChange={(e) => setProjectSearch(e.target.value)}
+                                placeholder={t('tasks_search_projects')}
+                                className="w-full bg-neutral-100 dark:bg-neutral-800 rounded-xl pl-9 pr-3 py-2.5 text-xs font-semibold outline-none text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:ring-2 focus:ring-black/10 dark:focus:ring-white/10"
+                            />
+                        </div>
+
+                        {/* Projects List */}
+                        <div className="overflow-y-auto space-y-1 flex-1 pr-1">
+                            {/* Remove Project Option if currently assigned */}
+                            {activeTaskProjectId && (
+                                <button
+                                    type="button"
+                                    onClick={() => handleSelectProject(undefined)}
+                                    className="w-full min-h-[44px] px-3 py-2 rounded-xl flex items-center justify-between text-left text-xs font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                                >
+                                    <span className="flex items-center gap-2">
+                                        <Trash2 className="w-4 h-4 text-red-500" />
+                                        <span>{t('tasks_remove_project')}</span>
+                                    </span>
+                                </button>
+                            )}
+
+                            {filteredProjects.length === 0 ? (
+                                <div className="py-8 text-center text-xs text-neutral-400">
+                                    {t('tasks_no_project')}
+                                </div>
+                            ) : (
+                                filteredProjects.map(proj => {
+                                    const isSelected = proj.id === activeTaskProjectId;
+                                    return (
+                                        <button
+                                            key={proj.id}
+                                            type="button"
+                                            onClick={() => handleSelectProject(proj.id)}
+                                            className={`w-full min-h-[44px] px-3 py-2.5 rounded-xl flex items-center justify-between text-left text-xs font-semibold transition-colors ${
+                                                isSelected
+                                                    ? 'bg-neutral-900 text-white dark:bg-white dark:text-black shadow-sm'
+                                                    : 'hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-800 dark:text-neutral-200'
+                                            }`}
+                                        >
+                                            <span className="truncate pr-2">{proj.title || 'Untitled Project'}</span>
+                                            {isSelected && <Check className="w-4 h-4 shrink-0 stroke-[2.5]" />}
+                                        </button>
+                                    );
+                                })
+                            )}
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

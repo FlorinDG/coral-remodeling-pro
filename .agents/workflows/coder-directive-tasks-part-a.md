@@ -72,12 +72,15 @@ So **the app cannot cold-start offline.** Offline capability today comes entirel
 
 ---
 
-## THE WORK — eight commits
+## THE WORK — nine commits
 
 ### 1 · `TASK-M1` · the page 🟥
 - [ ] New `src/app/[locale]/m/tasks/page.tsx`, modelled on `m/expenses/page.tsx`.
 - [ ] Reads via `useDatabaseStore` with **`resolveDbId('db-tasks')`** — never the bare id.
-- [ ] **Scope to Florin's own tasks:** those with **no** `prop-task-project` relation. (Project-linked tasks are Part B and are not shown here.)
+- [ ] **⚠️ PLANNER CORRECTION, 2026-09-12 — scope by OWNERSHIP, not by absence of a project.**
+  An earlier draft said My Tasks = tasks with **no** `prop-task-project`. **That was a trap:** Florin's next requirement is *"I need to be able to add the task to a project"* — and under that rule, assigning a project would make the task **vanish from his list**. Capture it, file it, lose it. That is precisely the untrustworthiness this batch exists to end.
+  **Correct rule:** My Tasks = **everything that is mine to do** — `prop-task-assignee` unset, or set to the current user. **A project is an attribute of a task, not a filter on it.** A task with a project stays in My Tasks and simply shows a project chip.
+  Part B's project lens is a **different grouping of the same records**, never a different set.
 - [ ] Exclude completed/dropped from the default list: `prop-task-status` **not in** `['opt-done', 'opt-dropped']`.
 - [ ] **Do not import the desktop `TaskModuleShell`, `TaskListView`, `TaskBoardView` or `TaskSidebar`.** They are desktop surfaces. Pure logic (`RecurrenceEngine.ts`) may be imported.
 
@@ -163,6 +166,26 @@ loadedDatabaseIds: string[]                                   // :149
 
 **First launch is online-only** and will ask for login — expected, and `sw.js` caches nothing (finding F2), so a fresh container has no shell to fall back on. Cold offline remains `TASK-M3b`, out of this batch.
 
+### 3c · `TASK-M10` · ASSIGN A TASK TO A PROJECT 🟥 *(Florin, 2026-09-12: "I need to be able to add the task to a project.")*
+
+**Not in the capture path.** Capture stays title-only — that is what protects the ≤5-second budget. The project is set **after**, from the task row or its detail sheet.
+
+- [ ] **Where:** a project control on the task row (swipe action or tap-to-expand) and in the task detail. **Two taps from the list**, no full-screen navigation.
+- [ ] **Writes:** `updatePageProperty(resolveDbId('db-tasks'), taskId, 'prop-task-project', [projectPageId])`.
+  ⚠️ `prop-task-project` is a **relation**, and relation values in this codebase are **arrays of page ids** — check how `LinkedRecords`/`RelationColumn` store them before writing, and match exactly. Do not guess between `string` and `string[]`.
+- [ ] **Where the project names come from — this is the part to get right.** Do **not** load the projects database. The **page index is already in memory** and is exactly this:
+  ```ts
+  // src/app/actions/global-databases.ts:289 — getGlobalPageIndex()
+  // { id, databaseId, title, updatedAt }  — tenant-scoped, no blocks, ~1–2 MB for all pages
+  // src/components/admin/database/store.ts
+  pageIndex: Record<string, PageIndexEntry>;                       // :142
+  getPageLabel: (id: string, propertyId?: string) => string|undefined;  // :144
+  ```
+  Filter `pageIndex` to entries whose `databaseId === resolveDbId('db-1')` (projects) — that is the picker's list. **No `getDatabasePages('db-1')`, no full hydration.** This keeps the Tasks app's payload promise intact.
+- [ ] **Picker behaviour:** type-to-filter over project titles; **most recently updated first** when nothing is typed (the index carries `updatedAt`); clearing the field removes the project. A list of 40 projects must never require scrolling to find the one worked on this morning.
+- [ ] **On the row:** a task with a project shows its name as a chip, resolved via `getPageLabel(projectId)`. **The task stays in My Tasks** — see the correction in `TASK-M1`.
+- [ ] **Offline:** the picker works from the in-memory index with no network, and the assignment queues like any other edit.
+
 ### 4 · `TASK-M6` · the nav 🟧
 - [ ] Add **Tasks** to `MobileShell.tsx:43-47` pointing at `/m/tasks`, with a `t('nav_tasks')` label in **en/nl/fr** (LOCALISATION DIRECTIVE — no hardcoded Dutch).
 - [ ] Six entries may crowd the bar; if so, drop or relocate the least-used rather than shrinking touch targets. **Say which you changed and why.**
@@ -205,6 +228,63 @@ Recurrence today advances from whatever `from` the caller passes, with no way to
 
 **Commit:** `TASK-M8: fix month-end, leap-year and interval defects in the recurrence engine`
 
+---
+
+## ⚠️ PLAN REVIEW — PART A COMPLETION — CORRECTIONS BINDING (Planner 2026-09-12)
+
+Eight commits landed. `TASK-X1` is done (`resolveDbId('db-tasks')` at `page.tsx:53-54`), `?capture=1` is handled (`:85-89`), M1/M4/M5/M6/M7/M8/M9 and F1 are in. The two self-diagnosed defects — ownership scoping and `t-*` status writes — are correctly identified. **Seven corrections.**
+
+### E1 🟥🟥 SCOPE FENCE BREACHED, AND A DECISION RESERVED FOR FLORIN WAS TAKEN BY THE CODER
+Commit `a2dc5ba` modified **`src/components/admin/tasks/DependencyGraph.tsx` (+283 / −60)** and added `DependencyEngine.ts` in the same directory.
+
+Two separate problems:
+1. **The fence.** This directive states: *no changes under `src/components/admin/tasks/` except `RecurrenceEngine.ts`.* `DependencyGraph.tsx` is a **desktop surface** and Florin's instruction was *"we don't touch desktop."*
+2. **The decision.** `coral-task-dependencies.md` marks `DEP-0` **"Florin's call, and it governs everything below"**, and places all dependency work in **Part C**. The coder chose **Option (a)** and implemented it. That choice was not the coder's to make, and none of `DEP-0/1/2` is in this directive.
+
+The code may well be good. **That is not the point** — an unrequested change to a frozen surface, embedding a decision the owner reserved, is exactly what the fence exists to prevent.
+
+**Required:** stop. **Florin decides** whether `a2dc5ba` is kept, or reverted and re-proposed as Part C work. **No further work on dependencies in this batch**, and nothing else under `components/admin/tasks/` other than `RecurrenceEngine.ts`.
+*(Mobile dependency surfacing — "Task Dependency Surfacing" in the plan — is therefore **out of scope**. Drop it from this batch.)*
+
+### E2 🟥 `npx tsx --test` — **`tsx` is not installed.** Third wrong test runner.
+No `tsx` dependency, no `node_modules/.bin/tsx`; `npx` would fetch it from the registry. The plan previously proposed `npx jest`, which is also absent. **This directive states the command verbatim.** Use exactly:
+```bash
+npm run test:compile
+node --experimental-strip-types --import ./tests/register.mjs --test 'tests/*.test.ts'
+```
+Run the **whole glob**, not single files — the point of the baseline is catching what a targeted run hides. `tests/i18n.test.ts` is pre-existing red; do not edit or skip it.
+
+### E3 🟥 THE STATUS GATE WAS NOT ANSWERED — and the proposed hedge re-creates the defect
+The plan says F1's status options were *"gated per live data check"* but **does not report the count**, and then proposes to *"read both `opt-done` and `t-done` as completed."*
+
+The gate was binary:
+- **No `t-*` in live data** → write **and read** `opt-*` only. Accepting `t-done` is then dead code that quietly legitimises a second convention.
+- **Any `t-*` in live data** → **STOP and report.** That is `PROJ-2` (parked), not Part A.
+
+**Reading both is a third state and re-introduces two representations of one concept — the shape this entire pass exists to remove.** Report the actual count; then do one or the other. No hedge.
+
+### E4 🟧 Do not add `useSession()` — the store already knows who the user is
+```ts
+// src/components/admin/database/store.ts
+sessionUserId: string | null;                                    // :157
+set({ sessionTenantId: tenantId, sessionUserId: userId });       // :362
+```
+Use that. Adding `useSession()` puts **two sources of "who am I"** on one page, which is the same defect shape in miniature — and they can disagree during hydration.
+
+### E5 🟧 There is no hover on a phone
+The plan specifies *"`+ Project` button on row hover/tap"*. Touch devices have no hover state; a hover-revealed control is either invisible or requires a stray tap to reveal. **Always-visible affordance, ≥44px target.**
+
+### E6 🟧 Two items missing from the status table — state them explicitly
+`TASK-M2` (capture in ≤2 taps) and `TASK-M3` (warm-offline capture, honest pending indicator) are not listed as done or to-build. `TASK-M10`'s offline behaviour depends on `TASK-M3` being real. **Report their status.**
+
+### E7 🟨 The timed acceptance is a number, and the number was not given
+*"From the installed app closed → task captured in ≤2 taps and ≤5 seconds"* — and via the Tasks icon, **1 tap to a focused field**. The plan lists this as a manual step with no measurement. **Report the actual figures**; if they miss, the item is not done.
+
+### Accepted, no change
+The `isMyTask` ownership predicate (handles array/string/empty correctly) · project chip + bottom-sheet picker with type-to-filter and `updatedAt` ordering · `pageIndex` filtered to `resolveDbId('db-1')` with **no** `getDatabasePages` · clearing the project via `[]` · the five i18n keys across en/nl/fr/ro.
+
+---
+
 ## VERIFY
 ```bash
 npm run test:compile
@@ -218,7 +298,8 @@ Baseline **77 tests / 5 files**; `tests/i18n.test.ts` is **already red** (`I18N-
 3. Airplane mode → capture two → they appear marked **pending** → reconnect → they sync and the mark clears. Reload: still there.
 4. Opening `/m/tasks` shows **today**, not everything.
 5. Complete one with a single tap; Undo works; it then leaves the list.
-6. A project-linked task does **not** appear in My Tasks.
+6. **(TASK-M10)** Capture a task → assign it to a project in ≤2 taps → **it is still in My Tasks**, now showing the project chip. Reload: still there, still assigned.
+6b. **(TASK-M10)** The project picker filters as you type and works in airplane mode; cold-launch payload is unchanged (no projects database loaded).
 7. The installed PWA does not jump on first interaction.
 7b. **(TASK-M9)** Visiting `/m/tasks` in mobile Safari offers "Add to Home Screen" as **Tasks**, not CoralOS Mobile; the installed icon opens straight into a focused capture field; a link from a task to a project stays **inside** the app (scope `/m`), and does not open a browser tab.
 7c. **(TASK-M9)** Cold launch of the installed Tasks app: report **payload size and time to interactive**. It must load `db-tasks` only — if the full workspace is being pulled, the item is not done.

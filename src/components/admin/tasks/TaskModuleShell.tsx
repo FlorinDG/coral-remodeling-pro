@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
-import { useDatabaseStore } from '@/components/admin/database/store';
+import { useDatabaseStore, usePagesOf } from '@/components/admin/database/store';
 import { useTenant } from '@/context/TenantContext';
 import { Page, PropertyValue } from '@/components/admin/database/types';
 import { getDatabaseRoute } from '@/lib/databaseRoute';
@@ -28,10 +28,12 @@ export default function TaskModuleShell() {
     const router = useRouter();
     const { data: session } = useSession();
     const userId = session?.user?.id || 'admin';
-    const { isEnterprise, activeModules } = useTenant();
+    const { isEnterprise, activeModules, resolveDbId } = useTenant();
+    const tasksDbId = resolveDbId('db-tasks');
 
     // ── Database Store ────────────────────────────────────────────────────────
-        const db = useDatabaseStore(state => state.getDatabase('db-tasks'));
+    const db = useDatabaseStore(state => state.getDatabase(tasksDbId));
+    const { pages } = usePagesOf(tasksDbId);
     const createPage = useDatabaseStore(state => state.createPage);
     const updatePageProperty = useDatabaseStore(state => state.updatePageProperty);
     const deletePage = useDatabaseStore(state => state.deletePage);
@@ -52,11 +54,10 @@ export default function TaskModuleShell() {
     const [activeView, setActiveView] = useState<'list' | 'board' | 'review' | 'dependencies'>('list');
     const [showPerspBuilder, setShowPerspBuilder] = useState(false);
 
-    const pages = db?.pages || [];
     const selectedPage = pages.find(p => p.id === selectedPageId);
 
     const handleSavePerspective = (name: string, filters: FilterRule[]) => {
-        addView('db-tasks', {
+        addView(tasksDbId, {
             name,
             type: 'table',
             filters,
@@ -64,7 +65,7 @@ export default function TaskModuleShell() {
         setShowPerspBuilder(false);
 
         // Synchronously fetch store state to find the newly added view's ID
-        const updatedDb = useDatabaseStore.getState().getDatabase('db-tasks');
+        const updatedDb = useDatabaseStore.getState().getDatabase(tasksDbId);
         const newView = updatedDb?.views?.find(v => v.name === name);
         if (newView) {
             setPerspective({
@@ -99,14 +100,14 @@ export default function TaskModuleShell() {
             const status = p.properties['prop-task-status'] as string;
             const myDay = p.properties['prop-task-my-day'] as boolean;
             if (myDay && (status === 'opt-done' || status === 'opt-dropped')) {
-                updatePageProperty('db-tasks', p.id, 'prop-task-my-day', false);
+                updatePageProperty(tasksDbId, p.id, 'prop-task-my-day', false);
             }
         });
     });
 
     const { handleTaskComplete } = useRecurrence({
         createPage: async (props) => {
-            createPage('db-tasks', props as Record<string, PropertyValue>);
+            createPage(tasksDbId, props as Record<string, PropertyValue>);
         },
     });
 
@@ -135,7 +136,7 @@ export default function TaskModuleShell() {
             initialProps['prop-task-tags'] = Array.from(new Set([...(parsed.tags || []), perspective.tagId]));
         }
 
-        const newPage = createPage('db-tasks', initialProps);
+        const newPage = createPage(tasksDbId, initialProps);
         setSelectedPageId(newPage.id);
     };
 
@@ -143,34 +144,34 @@ export default function TaskModuleShell() {
         const current = page.properties['prop-task-status'] as string;
         const next = current === 'opt-done' ? 'opt-todo' : 'opt-done';
 
-        updatePageProperty('db-tasks', page.id, 'prop-task-status', next);
+        updatePageProperty(tasksDbId, page.id, 'prop-task-status', next);
 
         if (next === 'opt-done') {
-            updatePageProperty('db-tasks', page.id, 'prop-task-completed-at', new Date().toISOString());
+            updatePageProperty(tasksDbId, page.id, 'prop-task-completed-at', new Date().toISOString());
             handleTaskComplete(page);
         } else {
-            updatePageProperty('db-tasks', page.id, 'prop-task-completed-at', '');
+            updatePageProperty(tasksDbId, page.id, 'prop-task-completed-at', '');
         }
     };
 
     const handleToggleMyDay = (page: Page) => {
         const current = page.properties['prop-task-my-day'] as boolean;
-        updatePageProperty('db-tasks', page.id, 'prop-task-my-day', !current);
+        updatePageProperty(tasksDbId, page.id, 'prop-task-my-day', !current);
     };
 
     const handleToggleFlag = (page: Page) => {
         const current = page.properties['prop-task-flagged'] as boolean;
-        updatePageProperty('db-tasks', page.id, 'prop-task-flagged', !current);
+        updatePageProperty(tasksDbId, page.id, 'prop-task-flagged', !current);
     };
 
     const handleUpdate = (pageId: string, props: Partial<Record<string, unknown>>) => {
         Object.entries(props).forEach(([key, val]) => {
-            updatePageProperty('db-tasks', pageId, key, val as PropertyValue);
+            updatePageProperty(tasksDbId, pageId, key, val as PropertyValue);
         });
     };
 
     const handleDelete = (pageId: string) => {
-        deletePage('db-tasks', pageId);
+        deletePage(tasksDbId, pageId);
         if (selectedPageId === pageId) setSelectedPageId(undefined);
     };
 
@@ -182,12 +183,12 @@ export default function TaskModuleShell() {
             'prop-task-completed-at': '',
             'prop-task-my-day':       false,
         };
-        const newPage = createPage('db-tasks', freshProps, undefined, page.blocks);
+        const newPage = createPage(tasksDbId, freshProps, undefined, page.blocks);
         setSelectedPageId(newPage.id);
     };
 
     const handleSetPriority = (page: Page, p: string) => {
-        updatePageProperty('db-tasks', page.id, 'prop-task-priority', p);
+        updatePageProperty(tasksDbId, page.id, 'prop-task-priority', p);
     };
 
     if (!db) {
@@ -276,7 +277,7 @@ export default function TaskModuleShell() {
                     {/* Explicit New Task Button */}
                     <button
                         onClick={() => {
-                            const newPage = createPage('db-tasks', {
+                            const newPage = createPage(tasksDbId, {
                                 title: 'New Task',
                                 'prop-task-status': 'opt-todo',
                                 'prop-task-priority': 'opt-p4',
@@ -304,17 +305,17 @@ export default function TaskModuleShell() {
                             setContextMenu({ page, x: e.clientX, y: e.clientY });
                         }}
                         onDelete={p => handleDelete(p.id)}
-                        onUpdateTitle={(pageId, title) => updatePageProperty('db-tasks', pageId, 'title', title)}
+                        onUpdateTitle={(pageId, title) => updatePageProperty(tasksDbId, pageId, 'title', title)}
                     />
                 )}
                 {activeView === 'board' && (
                     <TaskBoardView
                         pages={filteredPages}
-                        onUpdateStatus={(pageId, status) => updatePageProperty('db-tasks', pageId, 'prop-task-status', status)}
+                        onUpdateStatus={(pageId, status) => updatePageProperty(tasksDbId, pageId, 'prop-task-status', status)}
                         onPageClick={p => setSelectedPageId(p.id)}
-                        onUpdateTitle={(pageId, title) => updatePageProperty('db-tasks', pageId, 'title', title)}
-                        onUpdatePriority={(pageId, priority) => updatePageProperty('db-tasks', pageId, 'prop-task-priority', priority)}
-                        onUpdateDue={(pageId, due) => updatePageProperty('db-tasks', pageId, 'prop-task-due', due)}
+                        onUpdateTitle={(pageId, title) => updatePageProperty(tasksDbId, pageId, 'title', title)}
+                        onUpdatePriority={(pageId, priority) => updatePageProperty(tasksDbId, pageId, 'prop-task-priority', priority)}
+                        onUpdateDue={(pageId, due) => updatePageProperty(tasksDbId, pageId, 'prop-task-due', due)}
                     />
                 )}
 
@@ -368,7 +369,7 @@ export default function TaskModuleShell() {
                     <div className="md:hidden">
                         <button
                             onClick={() => {
-                                const newPage = createPage('db-tasks', {
+                                const newPage = createPage(tasksDbId, {
                                     title: 'New Task',
                                     'prop-task-status': 'opt-todo',
                                     'prop-task-priority': 'opt-p4',

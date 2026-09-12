@@ -79,9 +79,10 @@ export type FeatureFlag = keyof typeof FEATURE_FLAGS;
 
 /**
  * Architectural toggle for MEM-3 lazy database page loading.
- * Can be reverted instantly in production by setting NEXT_PUBLIC_LAZY_DATA=false.
+ * Defaults to off until LAZY-1 sweep migration across all Class A surfaces is complete.
+ * Enable by setting NEXT_PUBLIC_LAZY_DATA=true.
  */
-export const IS_LAZY_DATA_ENABLED = process.env.NEXT_PUBLIC_LAZY_DATA !== 'false';
+export const IS_LAZY_DATA_ENABLED = process.env.NEXT_PUBLIC_LAZY_DATA === 'true';
 
 /**
  * Check whether a given plan tier has access to a feature.

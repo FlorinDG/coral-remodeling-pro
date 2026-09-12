@@ -1,3 +1,10 @@
+/**
+ * ARCHITECTURAL RULE (BLOB-3):
+ * lib/storage/** is the ONLY module permitted to import `@vercel/blob`,
+ * with one documented exception: app/api/files/[...key]/route.ts which streams
+ * directly to the client without buffering.
+ * All other server modules, actions, and API routes MUST use the StorageProvider abstraction (`storage`).
+ */
 import { put, del, list as vercelList, get } from '@vercel/blob';
 
 export async function streamToBuffer(stream: ReadableStream | NodeJS.ReadableStream | any): Promise<Buffer> {

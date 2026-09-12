@@ -17,9 +17,10 @@ import {
     CalendarDays, MapPin, TrendingUp, ListTodo, Plus,
     FolderKanban, Layers, PenLine, FileText, ArrowUpRight, Target, ClipboardCheck,
     Hammer, Calculator, Paperclip, Calendar, ChevronDown, Flag,
-    BarChart3, Receipt, ExternalLink
+    BarChart3, Receipt, ExternalLink, CornerDownRight
 } from 'lucide-react';
 import { Block, PropertyValue } from '../types';
+import { subtasksOf, subtaskProgress, topLevel, isTaskCompleted, PROP_TASK_PARENT } from '@/lib/tasks/subtasks';
 
 const JournalCard = dynamic(() => import('./JournalCard'), { ssr: false });
 import { RecordAttachments } from '@/components/shared/RecordAttachments';
@@ -133,6 +134,7 @@ export default function ProjectDetailView({ databaseId, pageId, locale, onClose 
     const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
     const [editingTitle, setEditingTitle] = useState('');
     const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
+    const [subtaskInputs, setSubtaskInputs] = useState<Record<string, string>>({});
 
     const database = useDatabaseStore(state => state.databases.find(db => db.id === databaseId));
     const page = useDatabaseStore(state => state.databases.find(db => db.id === databaseId)?.pages.find(p => p.id === pageId));
@@ -148,11 +150,12 @@ export default function ProjectDetailView({ databaseId, pageId, locale, onClose 
     // Get tasks linked to this project
     const projectTasks = useMemo(() => {
         if (!tasksDb) return [];
-        return tasksDb.pages.filter(t => {
+        const forProject = tasksDb.pages.filter(t => {
             const projectRelation = t.properties['prop-task-project'];
             if (Array.isArray(projectRelation)) return projectRelation.includes(pageId);
             return projectRelation === pageId;
         });
+        return topLevel(forProject);
     }, [tasksDb, pageId]);
 
     // Task statistics
@@ -429,6 +432,19 @@ export default function ProjectDetailView({ databaseId, pageId, locale, onClose 
             setEditingTaskId(newPage.id);
             setEditingTitle(`New task — ${title}`);
         }
+    };
+
+    // Add a subtask under a parent task
+    const handleAddSubtask = (parentId: string, title: string) => {
+        if (!tasksDb || !title.trim()) return;
+        createPage(tasksDbId, {
+            title: title.trim(),
+            'prop-task-status': 't-todo',
+            'prop-task-type': 'ty-task',
+            'prop-task-priority': 'opt-p4',
+            [PROP_TASK_PARENT]: [parentId],
+        });
+        setSubtaskInputs(prev => ({ ...prev, [parentId]: '' }));
     };
 
     // Toggle task status
@@ -779,6 +795,9 @@ export default function ProjectDetailView({ databaseId, pageId, locale, onClose 
                                 const taskDue = String(task.properties['prop-task-due'] || '');
                                 const isExpanded = expandedTaskId === task.id;
                                 const isEditing = editingTaskId === task.id;
+                                const subProg = subtaskProgress(task.id, tasksDb?.pages || []);
+                                const children = subtasksOf(task.id, tasksDb?.pages || []);
+                                const isAllSubtasksDone = subProg.total > 0 && subProg.done === subProg.total;
 
                                 return (
                                     <div key={task.id} className="group">
@@ -820,6 +839,18 @@ export default function ProjectDetailView({ databaseId, pageId, locale, onClose 
                                                 </span>
                                             )}
 
+                                            {subProg.total > 0 && (
+                                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-white/10 text-neutral-600 dark:text-neutral-400">
+                                                    {subProg.done}/{subProg.total}
+                                                </span>
+                                            )}
+
+                                            {isAllSubtasksDone && !isDone && (
+                                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
+                                                    Ready to close
+                                                </span>
+                                            )}
+
                                             {taskDue && (
                                                 <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-white/5 text-neutral-500 flex items-center gap-1">
                                                     <Calendar className="w-3 h-3" />
@@ -843,45 +874,106 @@ export default function ProjectDetailView({ databaseId, pageId, locale, onClose 
                                         </div>
 
                                         {isExpanded && (
-                                            <div className="px-5 pb-3 pt-0 ml-8 flex flex-wrap items-center gap-2 animate-in fade-in slide-in-from-top-1 duration-150">
-                                                <CustomDropdown
-                                                    value={status}
-                                                    options={Object.entries(TASK_STATUS_MAP).map(([id, v]) => ({ id, label: v.label }))}
-                                                    onChange={(v) => handleUpdateTaskProp(task.id, 'prop-task-status', v)}
-                                                    className="w-28"
-                                                />
-                                                <CustomDropdown
-                                                    value={taskPriority}
-                                                    options={Object.entries(TASK_PRIORITY_MAP).map(([id, v]) => ({ id, label: v.label }))}
-                                                    onChange={(v) => handleUpdateTaskProp(task.id, 'prop-task-priority', v)}
-                                                    className="w-32"
-                                                />
-                                                <div className="relative">
-                                                    <input
-                                                        type="date"
-                                                        value={taskDue}
-                                                        onChange={(e) => handleUpdateTaskProp(task.id, 'prop-task-due', e.target.value)}
-                                                        className="text-[11px] font-semibold bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-white/10 rounded-xl px-2.5 py-1.5 text-neutral-700 dark:text-neutral-300 outline-none focus:border-blue-500 transition-colors w-32"
+                                            <div className="px-5 pb-3 pt-0 ml-8 flex flex-col gap-3 animate-in fade-in slide-in-from-top-1 duration-150">
+                                                <div className="flex flex-wrap items-center gap-2">
+                                                    <CustomDropdown
+                                                        value={status}
+                                                        options={Object.entries(TASK_STATUS_MAP).map(([id, v]) => ({ id, label: v.label }))}
+                                                        onChange={(v) => handleUpdateTaskProp(task.id, 'prop-task-status', v)}
+                                                        className="w-28"
                                                     />
+                                                    <CustomDropdown
+                                                        value={taskPriority}
+                                                        options={Object.entries(TASK_PRIORITY_MAP).map(([id, v]) => ({ id, label: v.label }))}
+                                                        onChange={(v) => handleUpdateTaskProp(task.id, 'prop-task-priority', v)}
+                                                        className="w-32"
+                                                    />
+                                                    <div className="relative">
+                                                        <input
+                                                            type="date"
+                                                            value={taskDue}
+                                                            onChange={(e) => handleUpdateTaskProp(task.id, 'prop-task-due', e.target.value)}
+                                                            className="text-[11px] font-semibold bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-white/10 rounded-xl px-2.5 py-1.5 text-neutral-700 dark:text-neutral-300 outline-none focus:border-blue-500 transition-colors w-32"
+                                                        />
+                                                    </div>
+                                                    <a
+                                                        href={`/${locale}/admin/database/${tasksDbId}/${task.id}`}
+                                                        className="p-1.5 rounded-lg border border-neutral-200 dark:border-white/10 hover:bg-neutral-100 dark:hover:bg-white/5 transition-colors"
+                                                        title={t('openTaskToAddAttachments')}
+                                                    >
+                                                        <Paperclip className="w-3.5 h-3.5 text-neutral-400" />
+                                                    </a>
+                                                    <button
+                                                        onClick={() => handleUpdateTaskProp(task.id, 'prop-task-flagged', !task.properties['prop-task-flagged'])}
+                                                        className={`p-1.5 rounded-lg border transition-colors ${
+                                                            task.properties['prop-task-flagged']
+                                                                ? 'border-red-300 dark:border-red-500/30 bg-red-50 dark:bg-red-900/20 text-red-500'
+                                                                : 'border-neutral-200 dark:border-white/10 hover:bg-neutral-100 dark:hover:bg-white/5 text-neutral-400'
+                                                        }`}
+                                                        title={task.properties['prop-task-flagged'] ? 'Remove flag' : 'Flag task'}
+                                                    >
+                                                        <Flag className="w-3.5 h-3.5" />
+                                                    </button>
                                                 </div>
-                                                <a
-                                                    href={`/${locale}/admin/database/${tasksDbId}/${task.id}`}
-                                                    className="p-1.5 rounded-lg border border-neutral-200 dark:border-white/10 hover:bg-neutral-100 dark:hover:bg-white/5 transition-colors"
-                                                    title={t('openTaskToAddAttachments')}
-                                                >
-                                                    <Paperclip className="w-3.5 h-3.5 text-neutral-400" />
-                                                </a>
-                                                <button
-                                                    onClick={() => handleUpdateTaskProp(task.id, 'prop-task-flagged', !task.properties['prop-task-flagged'])}
-                                                    className={`p-1.5 rounded-lg border transition-colors ${
-                                                        task.properties['prop-task-flagged']
-                                                            ? 'border-red-300 dark:border-red-500/30 bg-red-50 dark:bg-red-900/20 text-red-500'
-                                                            : 'border-neutral-200 dark:border-white/10 hover:bg-neutral-100 dark:hover:bg-white/5 text-neutral-400'
-                                                    }`}
-                                                    title={task.properties['prop-task-flagged'] ? 'Remove flag' : 'Flag task'}
-                                                >
-                                                    <Flag className="w-3.5 h-3.5" />
-                                                </button>
+
+                                                {/* Subtasks nested section */}
+                                                <div className="w-full pt-2 border-t border-neutral-100 dark:border-white/5 space-y-2" onClick={(e) => e.stopPropagation()}>
+                                                    {children.length > 0 && (
+                                                        <div className="space-y-1.5 pl-2 border-l-2 border-neutral-200 dark:border-white/10">
+                                                            {children.map(subtask => {
+                                                                const subDone = isTaskCompleted(subtask);
+                                                                const subTitle = String(subtask.properties['title'] || 'Untitled');
+                                                                const subDue = String(subtask.properties['prop-task-due'] || '');
+                                                                return (
+                                                                    <div key={subtask.id} className="flex items-center gap-2 py-1 group/sub">
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => handleToggleTask(subtask.id)}
+                                                                            className={`w-4 h-4 rounded-full border flex items-center justify-center flex-shrink-0 transition-all ${
+                                                                                subDone
+                                                                                    ? 'bg-emerald-500 border-emerald-500 text-white'
+                                                                                    : 'border-neutral-300 dark:border-neutral-600 hover:border-neutral-400 text-transparent'
+                                                                            }`}
+                                                                        >
+                                                                            {subDone && <CheckCircle2 className="w-2.5 h-2.5" />}
+                                                                        </button>
+                                                                        <span className={`text-xs flex-1 truncate ${subDone ? 'line-through text-neutral-400' : 'text-neutral-700 dark:text-neutral-300'}`}>
+                                                                            {subTitle}
+                                                                        </span>
+                                                                        {subDue && (
+                                                                            <span className="text-[9px] font-bold px-1 py-0.5 rounded bg-neutral-100 dark:bg-white/5 text-neutral-400 flex items-center gap-1">
+                                                                                <Calendar className="w-2.5 h-2.5" />
+                                                                                {formatShortDate(subDue)}
+                                                                            </span>
+                                                                        )}
+                                                                        <a
+                                                                            href={`/${locale}/admin/database/${tasksDbId}/${subtask.id}`}
+                                                                            className="opacity-0 group-hover/sub:opacity-100 transition-opacity p-0.5 rounded hover:bg-neutral-100 dark:hover:bg-white/5"
+                                                                            title={t('openTaskDetail')}
+                                                                        >
+                                                                            <ArrowUpRight className="w-3 h-3 text-neutral-400" />
+                                                                        </a>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    )}
+                                                    <div className="flex items-center gap-2 pt-1">
+                                                        <CornerDownRight className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
+                                                        <input
+                                                            type="text"
+                                                            placeholder="Add subtask... (Enter to save)"
+                                                            value={subtaskInputs[task.id] || ''}
+                                                            onChange={(e) => setSubtaskInputs(prev => ({ ...prev, [task.id]: e.target.value }))}
+                                                            onKeyDown={(e) => {
+                                                                if (e.key === 'Enter' && (subtaskInputs[task.id] || '').trim()) {
+                                                                    handleAddSubtask(task.id, (subtaskInputs[task.id] || '').trim());
+                                                                }
+                                                            }}
+                                                            className="flex-1 text-xs bg-neutral-50 dark:bg-black/40 border border-neutral-200 dark:border-white/10 rounded-lg px-2.5 py-1 text-neutral-700 dark:text-neutral-300 placeholder-neutral-400 outline-none focus:border-blue-500"
+                                                        />
+                                                    </div>
+                                                </div>
                                             </div>
                                         )}
                                     </div>

@@ -654,6 +654,8 @@
     "tasks_promote_to_task": "Promoveren naar hoofdtaak",
     "tasks_demote_to_subtask": "Maak subtaak van...",
     "tasks_subtasks_promoted": "{count} subtaak/taken gepromoveerd naar hoofdtaak",
+    "tasks_inherited_from_parent": "Overgenomen van hoofdtaak",
+    "tasks_no_project": "Geen project",
     "tasks_ready_to_close": "Klaar om af te sluiten",
     "tasks_parent_task": "Hoofdtaak",
     "tasks_delete": "Taak verwijderen",

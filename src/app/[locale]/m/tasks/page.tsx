@@ -39,21 +39,16 @@ export interface TaskAttachment {
     pending?: boolean;
 }
 
-export function isSubtask(p: Page): boolean {
-    const parent = p.properties['prop-task-parent'];
-    if (!parent) return false;
-    if (Array.isArray(parent)) return parent.length > 0;
-    if (typeof parent === 'string') return parent.trim().length > 0;
-    return false;
-}
-
-export function getTaskParentId(p: Page): string | undefined {
-    const parent = p.properties['prop-task-parent'];
-    if (!parent) return undefined;
-    if (Array.isArray(parent)) return parent[0] || undefined;
-    if (typeof parent === 'string') return parent.trim() || undefined;
-    return undefined;
-}
+import {
+    isSubtask,
+    subtasksOf,
+    topLevel,
+    subtaskProgress,
+    getParentTaskId,
+    parentOf,
+    getEffectiveProjectId,
+    PROP_TASK_PARENT,
+} from '@/lib/tasks/subtasks';
 
 function getLocalDateStr(d = new Date()): string {
     const year = d.getFullYear();
@@ -188,7 +183,7 @@ export default function MobileTasksPage() {
     const subtasksByParentId = useMemo(() => {
         const map: Record<string, Page[]> = {};
         for (const p of allPages) {
-            const parentId = getTaskParentId(p);
+            const parentId = getParentTaskId(p);
             if (parentId) {
                 if (!map[parentId]) map[parentId] = [];
                 map[parentId].push(p);
@@ -241,25 +236,23 @@ export default function MobileTasksPage() {
         if (!projectPickerTaskId) return;
         const val = projectId ? [projectId] : [];
         updatePageProperty(tasksDbId, projectPickerTaskId, 'prop-task-project', val);
-
-        // Subtask inherits parent's project (coral-task-subtasks.md rule)
-        const children = allPages.filter(p => getTaskParentId(p) === projectPickerTaskId);
-        for (const child of children) {
-            updatePageProperty(tasksDbId, child.id, 'prop-task-project', val);
-        }
-
+        // Note: Subtasks derive project dynamically and do NOT store one (coral-task-subtasks.md)
         setProjectPickerTaskId(null);
         setProjectSearch('');
-    }, [projectPickerTaskId, tasksDbId, updatePageProperty, allPages]);
+    }, [projectPickerTaskId, tasksDbId, updatePageProperty]);
 
     const handleDeleteTask = useCallback((page: Page) => {
         setDetailTaskId(null);
 
         // Deleting parent: subtasks are PROMOTED to top-level tasks, never cascade-deleted (coral-task-subtasks.md)
-        const children = allPages.filter(p => getTaskParentId(p) === page.id);
+        const children = subtasksOf(page.id, allPages);
         if (children.length > 0) {
             for (const child of children) {
-                updatePageProperty(tasksDbId, child.id, 'prop-task-parent', []);
+                updatePageProperty(tasksDbId, child.id, PROP_TASK_PARENT, []);
+                // Promoted child adopts parent's project so it remains in context
+                if (page.properties['prop-task-project']) {
+                    updatePageProperty(tasksDbId, child.id, 'prop-task-project', page.properties['prop-task-project']);
+                }
             }
             setPromoteToastMessage(t('tasks_subtasks_promoted', { count: children.length }));
             setTimeout(() => setPromoteToastMessage(null), 4000);
@@ -287,13 +280,14 @@ export default function MobileTasksPage() {
         return subtasksByParentId[detailTask.id] || [];
     }, [detailTask, subtasksByParentId]);
 
+    // Derived parent info if detailTask is a subtask
     const parentTaskId = useMemo(() => {
-        return detailTask ? getTaskParentId(detailTask) : undefined;
+        return detailTask ? getParentTaskId(detailTask) : null;
     }, [detailTask]);
 
     const parentTask = useMemo(() => {
-        return parentTaskId ? allPages.find(p => p.id === parentTaskId) : null;
-    }, [parentTaskId, allPages]);
+        return detailTask ? parentOf(detailTask, allPages) : null;
+    }, [detailTask, allPages]);
 
     const parentTaskTitle = useMemo(() => {
         if (!parentTask) return null;
@@ -311,8 +305,8 @@ export default function MobileTasksPage() {
         createPage(tasksDbId, {
             title: newSubtaskTitle.trim(),
             'prop-task-status': 'opt-todo',
-            'prop-task-parent': [detailTask.id],
-            'prop-task-project': detailTask.properties['prop-task-project'] || [],
+            [PROP_TASK_PARENT]: [detailTask.id],
+            // Invariant: subtask does NOT store prop-task-project — it derives it from parent
             'prop-task-assignee': detailTask.properties['prop-task-assignee'] || [],
         });
         setNewSubtaskTitle('');
@@ -321,16 +315,17 @@ export default function MobileTasksPage() {
 
     const handlePromoteCurrentTask = () => {
         if (!detailTask) return;
-        updatePageProperty(tasksDbId, detailTask.id, 'prop-task-parent', []);
+        updatePageProperty(tasksDbId, detailTask.id, PROP_TASK_PARENT, []);
+        if (parentTask && parentTask.properties['prop-task-project']) {
+            updatePageProperty(tasksDbId, detailTask.id, 'prop-task-project', parentTask.properties['prop-task-project']);
+        }
     };
 
     const handleDemoteTask = (targetParentId: string) => {
         if (!detailTask) return;
-        updatePageProperty(tasksDbId, detailTask.id, 'prop-task-parent', [targetParentId]);
-        const targetParent = allPages.find(p => p.id === targetParentId);
-        if (targetParent && targetParent.properties['prop-task-project']) {
-            updatePageProperty(tasksDbId, detailTask.id, 'prop-task-project', targetParent.properties['prop-task-project']);
-        }
+        updatePageProperty(tasksDbId, detailTask.id, PROP_TASK_PARENT, [targetParentId]);
+        // Subtask must not store a project; clear it so it derives from the new parent
+        updatePageProperty(tasksDbId, detailTask.id, 'prop-task-project', []);
     };
 
     // Attachments for detailTask (TASK-M13)
@@ -1187,9 +1182,27 @@ export default function MobileTasksPage() {
                                 {t('tasks_assign_project')}
                             </label>
                             {(() => {
-                                const rawProj = detailTask.properties['prop-task-project'];
-                                const pId = Array.isArray(rawProj) ? rawProj[0] : (typeof rawProj === 'string' ? rawProj : undefined);
+                                const isSub = isSubtask(detailTask);
+                                const pId = isSub ? getEffectiveProjectId(detailTask, allPages) : (() => {
+                                    const rawProj = detailTask.properties['prop-task-project'];
+                                    return Array.isArray(rawProj) ? rawProj[0] : (typeof rawProj === 'string' ? rawProj : undefined);
+                                })();
                                 const pTitle = pId ? (pageIndex[pId]?.title || getPageLabel(pId) || pId) : null;
+
+                                if (isSub) {
+                                    return (
+                                        <div className="w-full min-h-[44px] px-3 py-2 rounded-xl bg-neutral-100/70 dark:bg-neutral-800/60 flex items-center justify-between font-semibold text-neutral-600 dark:text-neutral-400 border border-dashed border-neutral-300 dark:border-neutral-700">
+                                            <span className="flex items-center gap-2 truncate">
+                                                <FolderKanban className="w-4 h-4 text-neutral-500 shrink-0" />
+                                                <span className="truncate">{pTitle || t('tasks_no_project')}</span>
+                                            </span>
+                                            <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider px-2 py-0.5 rounded bg-neutral-200/60 dark:bg-neutral-700/60">
+                                                {t('tasks_inherited_from_parent')}
+                                            </span>
+                                        </div>
+                                    );
+                                }
+
                                 return (
                                     <button
                                         type="button"
@@ -1323,7 +1336,12 @@ export default function MobileTasksPage() {
                                                         <div className="flex items-center gap-1">
                                                             <button
                                                                 type="button"
-                                                                onClick={() => updatePageProperty(tasksDbId, sub.id, 'prop-task-parent', [])}
+                                                                onClick={() => {
+                                                                    updatePageProperty(tasksDbId, sub.id, PROP_TASK_PARENT, []);
+                                                                    if (detailTask.properties['prop-task-project']) {
+                                                                        updatePageProperty(tasksDbId, sub.id, 'prop-task-project', detailTask.properties['prop-task-project']);
+                                                                    }
+                                                                }}
                                                                 className="min-w-[36px] min-h-[36px] flex items-center justify-center text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200"
                                                                 title={t('tasks_promote_to_task')}
                                                             >

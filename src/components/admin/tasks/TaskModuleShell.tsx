@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
 import { useDatabaseStore, usePagesOf } from '@/components/admin/database/store';
 import { useTenant } from '@/context/TenantContext';
@@ -22,6 +22,7 @@ import { useRecurrence } from './hooks/useRecurrence';
 import { FilterRule } from '@/components/admin/database/types';
 import { Layers, Kanban, Eye, Plus, ArrowLeft } from 'lucide-react';
 import { useRouter } from '@/i18n/routing';
+import { isSubtask, parentOf, subtasksOf, topLevel, PROP_TASK_PARENT } from '@/lib/tasks/subtasks';
 
 export default function TaskModuleShell() {
     const router = useRouter();
@@ -93,6 +94,46 @@ export default function TaskModuleShell() {
         groupBySection: true,
     });
 
+    // Perspectives operate on top-level tasks; if a perspective matches a child, surface its parent (coral-task-subtasks.md)
+    const topLevelGroups = useMemo(() => {
+        return groups.map(group => {
+            const rootMap = new Map<string, Page>();
+            for (const t of group.tasks) {
+                if (isSubtask(t)) {
+                    const parent = parentOf(t, pages);
+                    if (parent && !rootMap.has(parent.id)) {
+                        rootMap.set(parent.id, parent);
+                    }
+                } else {
+                    if (!rootMap.has(t.id)) {
+                        rootMap.set(t.id, t);
+                    }
+                }
+            }
+            return {
+                ...group,
+                tasks: Array.from(rootMap.values()),
+            };
+        });
+    }, [groups, pages]);
+
+    const topLevelFilteredPages = useMemo(() => {
+        const rootMap = new Map<string, Page>();
+        for (const t of filteredPages) {
+            if (isSubtask(t)) {
+                const parent = parentOf(t, pages);
+                if (parent && !rootMap.has(parent.id)) {
+                    rootMap.set(parent.id, parent);
+                }
+            } else {
+                if (!rootMap.has(t.id)) {
+                    rootMap.set(t.id, t);
+                }
+            }
+        }
+        return Array.from(rootMap.values());
+    }, [filteredPages, pages]);
+
     // ── Midnight My Day Reset ─────────────────────────────────────────────────
     useMyDayReset(() => {
         pages.forEach(p => {
@@ -162,13 +203,72 @@ export default function TaskModuleShell() {
         updatePageProperty(tasksDbId, page.id, 'prop-task-flagged', !current);
     };
 
+    const handleAddSubtask = (parentId: string, title: string) => {
+        const parent = pages.find(p => p.id === parentId);
+        if (!parent) return;
+        if (isSubtask(parent)) {
+            toast.error('Cannot add subtask: nesting beyond one level is prohibited');
+            return;
+        }
+        createPage(tasksDbId, {
+            title,
+            'prop-task-status': 'opt-todo',
+            'prop-task-priority': 'opt-p4',
+            [PROP_TASK_PARENT]: [parentId],
+            'prop-task-assignee': parent.properties['prop-task-assignee'] || [],
+            // Invariant: subtask does NOT store prop-task-project (derived dynamically)
+        } as Record<string, PropertyValue>);
+    };
+
+    const handlePromoteSubtask = (child: Page) => {
+        const parent = parentOf(child, pages);
+        updatePageProperty(tasksDbId, child.id, PROP_TASK_PARENT, []);
+        if (parent?.properties['prop-task-project']) {
+            updatePageProperty(tasksDbId, child.id, 'prop-task-project', parent.properties['prop-task-project']);
+        }
+        toast.success('Subtask promoted to top-level task');
+    };
+
     const handleUpdate = (pageId: string, props: Partial<Record<string, unknown>>) => {
+        // Enforce 1-level limit when setting parent relation
+        if (props[PROP_TASK_PARENT]) {
+            const raw = props[PROP_TASK_PARENT];
+            const targetParentId = Array.isArray(raw) ? raw[0] : (typeof raw === 'string' ? raw : null);
+            if (targetParentId) {
+                const targetParent = pages.find(p => p.id === targetParentId);
+                if (targetParent && isSubtask(targetParent)) {
+                    toast.error('Cannot set parent: nesting beyond one level is prohibited');
+                    return;
+                }
+                const existingChildren = subtasksOf(pageId, pages);
+                if (existingChildren.length > 0) {
+                    toast.error('Cannot convert to subtask: task already has subtasks of its own');
+                    return;
+                }
+                // Clear stored project since subtask derives project dynamically
+                props['prop-task-project'] = [];
+            }
+        }
+
         Object.entries(props).forEach(([key, val]) => {
             updatePageProperty(tasksDbId, pageId, key, val as PropertyValue);
         });
     };
 
     const handleDelete = (pageId: string) => {
+        // Deleting parent: promote children to top-level tasks (no cascade delete per coral-task-subtasks.md)
+        const children = subtasksOf(pageId, pages);
+        if (children.length > 0) {
+            const parent = pages.find(p => p.id === pageId);
+            children.forEach(c => {
+                updatePageProperty(tasksDbId, c.id, PROP_TASK_PARENT, []);
+                if (parent?.properties['prop-task-project']) {
+                    updatePageProperty(tasksDbId, c.id, 'prop-task-project', parent.properties['prop-task-project']);
+                }
+            });
+            toast.info(`${children.length} subtask${children.length > 1 ? 's' : ''} promoted to top-level`);
+        }
+
         deletePage(tasksDbId, pageId);
         if (selectedPageId === pageId) setSelectedPageId(undefined);
     };
@@ -281,7 +381,8 @@ export default function TaskModuleShell() {
                 {activeView === 'list' && (
                     <TaskListView
                         perspectiveName={perspective.name}
-                        groups={groups}
+                        groups={topLevelGroups}
+                        allPages={pages}
                         selectedPageId={selectedPageId}
                         onPageClick={p => setSelectedPageId(p.id)}
                         onComplete={handleComplete}
@@ -293,11 +394,14 @@ export default function TaskModuleShell() {
                         }}
                         onDelete={p => handleDelete(p.id)}
                         onUpdateTitle={(pageId, title) => updatePageProperty(tasksDbId, pageId, 'title', title)}
+                        onAddSubtask={handleAddSubtask}
+                        onPromoteSubtask={handlePromoteSubtask}
                     />
                 )}
                 {activeView === 'board' && (
                     <TaskBoardView
-                        pages={filteredPages}
+                        pages={topLevelFilteredPages}
+                        allPages={pages}
                         onUpdateStatus={(pageId, status) => updatePageProperty(tasksDbId, pageId, 'prop-task-status', status)}
                         onPageClick={p => setSelectedPageId(p.id)}
                         onUpdateTitle={(pageId, title) => updatePageProperty(tasksDbId, pageId, 'title', title)}

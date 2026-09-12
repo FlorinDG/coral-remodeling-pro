@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Database, FilterRule } from '@/components/admin/database/types';
 import { X, Plus, Trash2, Layers } from 'lucide-react';
 import SearchableSelect from '@/components/ui/SearchableSelect';
+import { PROP_TASK_PARENT } from '@/lib/tasks/subtasks';
 
 interface PerspectiveBuilderProps {
     database: Database;
@@ -17,7 +18,7 @@ export function PerspectiveBuilder({ database, onClose, onSave }: PerspectiveBui
 
     // Allow filtering on standard select/checkbox/date properties for task manager simplicity
     const filterableProperties = database.properties.filter(p =>
-        ['select', 'checkbox', 'date', 'multi_select', 'text'].includes(p.type)
+        p.id !== PROP_TASK_PARENT && ['select', 'checkbox', 'date', 'multi_select', 'text'].includes(p.type)
     );
 
     const handleAddRule = () => {

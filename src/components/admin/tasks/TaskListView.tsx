@@ -5,11 +5,13 @@ import { Page } from '@/components/admin/database/types';
 import { TaskRow } from './TaskRow';
 import { useTranslations } from 'next-intl';
 import { TaskGroup } from './hooks/useTaskFilter';
-import { ChevronDown, ChevronRight, Inbox } from 'lucide-react';
+import { ChevronDown, ChevronRight, Inbox, Plus } from 'lucide-react';
+import { subtasksOf, subtaskProgress, topLevel } from '@/lib/tasks/subtasks';
 
 interface TaskListViewProps {
     perspectiveName: string;
     groups: TaskGroup[];
+    allPages?: Page[];
     selectedPageId?: string;
     onPageClick: (page: Page) => void;
     onComplete: (page: Page) => void;
@@ -18,11 +20,14 @@ interface TaskListViewProps {
     onContextMenu: (e: React.MouseEvent, page: Page) => void;
     onDelete?: (page: Page) => void;
     onUpdateTitle?: (pageId: string, title: string) => void;
+    onAddSubtask?: (parentId: string, title: string) => void;
+    onPromoteSubtask?: (child: Page) => void;
 }
 
 export function TaskListView({
     perspectiveName,
     groups,
+    allPages = [],
     selectedPageId,
     onPageClick,
     onComplete,
@@ -31,10 +36,16 @@ export function TaskListView({
     onContextMenu,
     onDelete,
     onUpdateTitle,
+    onAddSubtask,
+    onPromoteSubtask,
 }: TaskListViewProps) {
     const t = useTranslations('Tasks');
     // Keep track of collapsed section IDs
     const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
+    // Keep track of expanded parent tasks (collapsed by default per coral-task-subtasks.md)
+    const [expandedParents, setExpandedParents] = useState<Record<string, boolean>>({});
+    // Inline quick subtask draft per parent
+    const [subtaskDrafts, setSubtaskDrafts] = useState<Record<string, string>>({});
 
     const toggleSection = (id: string) => {
         setCollapsedSections(prev => ({
@@ -43,7 +54,31 @@ export function TaskListView({
         }));
     };
 
-    const hasTasks = groups.some(g => g.tasks.length > 0);
+    const toggleExpandParent = (id: string) => {
+        setExpandedParents(prev => ({
+            ...prev,
+            [id]: !prev[id],
+        }));
+    };
+
+    const handleSubtaskKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, parentId: string) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const draft = subtaskDrafts[parentId]?.trim();
+            if (draft) {
+                onAddSubtask?.(parentId, draft);
+                setSubtaskDrafts(prev => ({ ...prev, [parentId]: '' }));
+            }
+        }
+    };
+
+    // Filter groups to only root tasks (coral-task-subtasks.md invariant: subtasks never appear as loose root rows)
+    const normalizedGroups = groups.map(g => ({
+        ...g,
+        tasks: topLevel(g.tasks),
+    }));
+
+    const hasTasks = normalizedGroups.some(g => g.tasks.length > 0);
 
     return (
         <div className="flex-1 flex flex-col min-h-0 bg-neutral-100/30 dark:bg-neutral-950/20 p-4 lg:p-6 overflow-y-auto">
@@ -53,7 +88,7 @@ export function TaskListView({
                     {perspectiveName}
                 </h2>
                 <span className="text-xs text-neutral-800 dark:text-neutral-200 font-bold bg-neutral-200 dark:bg-white/15 px-2.5 py-1 rounded-full border border-neutral-300 dark:border-white/10 shadow-sm">
-                    {groups.reduce((acc, g) => acc + g.tasks.length, 0)} {t('taskCount')}
+                    {normalizedGroups.reduce((acc, g) => acc + g.tasks.length, 0)} {t('taskCount')}
                 </span>
             </div>
 
@@ -70,7 +105,7 @@ export function TaskListView({
                 </div>
             ) : (
                 <div className="space-y-4">
-                    {groups.map(group => {
+                    {normalizedGroups.map(group => {
                         const collapsed = collapsedSections[group.sectionId];
                         const count = group.tasks.length;
 
@@ -111,21 +146,73 @@ export function TaskListView({
                                 {/* Section Tasks */}
                                 {!collapsed && (
                                     <div className="p-3 space-y-1.5 bg-white dark:bg-neutral-950">
-                                        {group.tasks.map(page => (
-                                            <TaskRow
-                                                key={page.id}
-                                                page={page}
-                                                selected={page.id === selectedPageId}
-                                                compact={!!selectedPageId}
-                                                onClick={() => onPageClick(page)}
-                                                onComplete={onComplete}
-                                                onToggleMyDay={onToggleMyDay}
-                                                onToggleFlag={onToggleFlag}
-                                                onContextMenu={onContextMenu}
-                                                onDelete={onDelete}
-                                                onUpdateTitle={onUpdateTitle}
-                                            />
-                                        ))}
+                                        {group.tasks.map(page => {
+                                            const children = subtasksOf(page.id, allPages);
+                                            const progress = subtaskProgress(page.id, allPages);
+                                            const isExpanded = Boolean(expandedParents[page.id]);
+
+                                            return (
+                                                <div key={page.id} className="space-y-1">
+                                                    {/* Parent Row */}
+                                                    <TaskRow
+                                                        page={page}
+                                                        selected={page.id === selectedPageId}
+                                                        compact={!!selectedPageId}
+                                                        onClick={() => onPageClick(page)}
+                                                        onComplete={onComplete}
+                                                        onToggleMyDay={onToggleMyDay}
+                                                        onToggleFlag={onToggleFlag}
+                                                        onContextMenu={onContextMenu}
+                                                        onDelete={onDelete}
+                                                        onUpdateTitle={onUpdateTitle}
+                                                        subtaskProgress={progress}
+                                                        isExpanded={isExpanded}
+                                                        onToggleExpand={() => toggleExpandParent(page.id)}
+                                                    />
+
+                                                    {/* Nested Children (Collapsible) */}
+                                                    {isExpanded && (
+                                                        <div className="space-y-1 mt-1 animate-in fade-in slide-in-from-top-1 duration-150">
+                                                            {children.map(child => (
+                                                                <TaskRow
+                                                                    key={child.id}
+                                                                    page={child}
+                                                                    selected={child.id === selectedPageId}
+                                                                    compact={!!selectedPageId}
+                                                                    isSubtaskRow={true}
+                                                                    onClick={() => onPageClick(child)}
+                                                                    onComplete={onComplete}
+                                                                    onToggleMyDay={onToggleMyDay}
+                                                                    onToggleFlag={onToggleFlag}
+                                                                    onContextMenu={onContextMenu}
+                                                                    onDelete={onDelete}
+                                                                    onUpdateTitle={onUpdateTitle}
+                                                                    onPromote={onPromoteSubtask}
+                                                                />
+                                                            ))}
+
+                                                            {/* Inline Add Subtask under Parent */}
+                                                            {onAddSubtask && (
+                                                                <div className="ml-6 pl-3 py-1 flex items-center gap-2 border-l-2 border-orange-400/40 dark:border-orange-500/40">
+                                                                    <Plus className="w-3.5 h-3.5 text-neutral-400" />
+                                                                    <input
+                                                                        type="text"
+                                                                        value={subtaskDrafts[page.id] || ''}
+                                                                        onChange={e => {
+                                                                            const val = e.target.value;
+                                                                            setSubtaskDrafts(prev => ({ ...prev, [page.id]: val }));
+                                                                        }}
+                                                                        onKeyDown={e => handleSubtaskKeyDown(e, page.id)}
+                                                                        placeholder="Add subtask... (press Enter)"
+                                                                        className="flex-1 bg-transparent text-xs font-semibold text-neutral-800 dark:text-neutral-200 outline-none placeholder:text-neutral-400"
+                                                                    />
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 )}
                             </div>

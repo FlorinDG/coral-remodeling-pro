@@ -3,13 +3,14 @@
 import { useState, useRef, useEffect } from 'react';
 import { Page } from '@/components/admin/database/types';
 import { STATUS_CONFIG, PRIORITY_CONFIG, getDueDateDisplay, StatusIcon } from './TaskRow';
-import { CalendarDays, Paperclip } from 'lucide-react';
+import { CalendarDays, Paperclip, ListTree } from 'lucide-react';
 import SearchableSelect from '@/components/ui/SearchableSelect';
 import { CustomDatePicker } from '@/components/ui/CustomDatePicker';
-
+import { topLevel, subtaskProgress } from '@/lib/tasks/subtasks';
 
 interface TaskBoardViewProps {
     pages: Page[];
+    allPages?: Page[];
     onUpdateStatus: (pageId: string, status: string) => void;
     onPageClick: (page: Page) => void;
     onUpdateTitle?: (pageId: string, title: string) => void;
@@ -76,8 +77,10 @@ function EditableTitle({ value, onSave }: { value: string; onSave: (v: string) =
 // ── Priority Cycle Order ──────────────────────────────────────────────────────
 const PRIORITY_CYCLE = ['opt-p4', 'opt-p3', 'opt-p2', 'opt-p1'];
 
-export function TaskBoardView({ pages, onUpdateStatus, onPageClick, onUpdateTitle, onUpdatePriority, onUpdateDue }: TaskBoardViewProps) {
-    const activeTasks = pages.filter(p => {
+export function TaskBoardView({ pages, allPages, onUpdateStatus, onPageClick, onUpdateTitle, onUpdatePriority, onUpdateDue }: TaskBoardViewProps) {
+    // Only top-level tasks are cards (coral-task-subtasks.md invariant)
+    const rootTasks = topLevel(pages);
+    const activeTasks = rootTasks.filter(p => {
         const s = p.properties['prop-task-status'] as string;
         return s !== 'opt-dropped';
     });
@@ -139,6 +142,7 @@ export function TaskBoardView({ pages, onUpdateStatus, onPageClick, onUpdateTitl
                                 const statusCfg = STATUS_CONFIG[status] || STATUS_CONFIG['opt-todo'];
                                 const priorityCfg = priority ? PRIORITY_CONFIG[priority] : null;
                                 const dueCfg = getDueDateDisplay(due);
+                                const subProgress = subtaskProgress(page.id, allPages || pages);
 
                                 return (
                                     <div
@@ -228,13 +232,33 @@ export function TaskBoardView({ pages, onUpdateStatus, onPageClick, onUpdateTitl
 
                                         {/* Card Footer */}
                                         <div className="flex items-center justify-between text-[11px] text-neutral-500 pt-2 border-t border-neutral-250 dark:border-white/10">
-                                            {/* Due Date (keep in footer as secondary indicator) */}
-                                            {dueCfg.label && (
-                                                <span className="font-bold bg-neutral-100/50 dark:bg-white/5 px-1.5 py-0.5 rounded border border-neutral-200 dark:border-white/5 shadow-sm" style={{ color: dueCfg.color }}>
-                                                    {dueCfg.label}
-                                                </span>
-                                            )}
-                                            {!dueCfg.label && <span />}
+                                            <div className="flex items-center gap-1.5 flex-wrap">
+                                                {/* Subtask progress chip (coral-task-subtasks.md: card shows 3/5) */}
+                                                {subProgress.total > 0 && (
+                                                    <span
+                                                        className={`flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded border shadow-sm ${
+                                                            subProgress.done === subProgress.total
+                                                                ? 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800'
+                                                                : 'bg-neutral-100 text-neutral-600 border-neutral-250 dark:bg-white/10 dark:text-neutral-300 dark:border-white/10'
+                                                        }`}
+                                                        title={`${subProgress.done} of ${subProgress.total} subtasks completed`}
+                                                    >
+                                                        <ListTree className="w-3 h-3" />
+                                                        <span>{subProgress.done}/{subProgress.total}</span>
+                                                        {subProgress.done === subProgress.total && (
+                                                            <span className="text-[8px] font-extrabold uppercase text-emerald-600 dark:text-emerald-400">
+                                                                Ready
+                                                            </span>
+                                                        )}
+                                                    </span>
+                                                )}
+                                                {/* Due Date (keep in footer as secondary indicator) */}
+                                                {dueCfg.label && (
+                                                    <span className="font-bold bg-neutral-100/50 dark:bg-white/5 px-1.5 py-0.5 rounded border border-neutral-200 dark:border-white/5 shadow-sm" style={{ color: dueCfg.color }}>
+                                                        {dueCfg.label}
+                                                    </span>
+                                                )}
+                                            </div>
                                             {/* Tags in footer */}
                                             {tags.length > 0 && (
                                                 <div className="flex items-center gap-0.5">

@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Page } from '@/components/admin/database/types';
 import { todayStr, isDone } from './hooks/useTaskFilter';
 import { parseRecurrenceRule } from './RecurrenceEngine';
-import { Circle, CircleDot, Eye, CheckCircle2, XCircle, Sun, Trash2, Pencil } from 'lucide-react';
+import { Circle, CircleDot, Eye, CheckCircle2, XCircle, Sun, Trash2, Pencil, ChevronDown, ChevronRight, ListTree, ArrowUpRight, CornerDownRight } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 // ── StatusIcon component ──────────────────────────────────────────────────────
@@ -68,10 +68,16 @@ interface TaskRowProps {
     onContextMenu?: (e: React.MouseEvent, page: Page) => void;
     onDelete?: (page: Page) => void;
     onUpdateTitle?: (pageId: string, title: string) => void;
+    subtaskProgress?: { done: number; total: number };
+    isExpanded?: boolean;
+    onToggleExpand?: () => void;
+    isSubtaskRow?: boolean;
+    onPromote?: (page: Page) => void;
 }
 
 export function TaskRow({
-    page, selected, compact, onClick, onComplete, onToggleMyDay, onToggleFlag, onContextMenu, onDelete, onUpdateTitle
+    page, selected, compact, onClick, onComplete, onToggleMyDay, onToggleFlag, onContextMenu, onDelete, onUpdateTitle,
+    subtaskProgress, isExpanded, onToggleExpand, isSubtaskRow, onPromote
 }: TaskRowProps) {
     const t = useTranslations('Tasks');
     const props = page.properties;
@@ -151,6 +157,7 @@ export function TaskRow({
     return (
         <div
             className={`group flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all duration-100 border
+                ${isSubtaskRow ? 'ml-6 pl-3 border-l-2 border-orange-400/40 dark:border-orange-500/40 bg-neutral-50/40 dark:bg-white/[0.01]' : ''}
                 ${selected
                     ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-300 dark:border-orange-700'
                     : 'hover:bg-neutral-100 dark:hover:bg-white/5 border-transparent'
@@ -160,6 +167,22 @@ export function TaskRow({
             onClick={onClick}
             onContextMenu={e => onContextMenu?.(e, page)}
         >
+            {/* Expand / Tree Affordance */}
+            {isSubtaskRow ? (
+                <CornerDownRight className="w-3.5 h-3.5 text-neutral-400 dark:text-neutral-500 shrink-0 -mr-0.5" />
+            ) : subtaskProgress && subtaskProgress.total > 0 ? (
+                <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); onToggleExpand?.(); }}
+                    className="flex-shrink-0 w-4 h-4 flex items-center justify-center text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition-transform"
+                    title={isExpanded ? 'Collapse subtasks' : 'Expand subtasks'}
+                >
+                    {isExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                </button>
+            ) : (
+                <div className="w-4 h-4 shrink-0" />
+            )}
+
             {/* Status button */}
             <button
                 className="flex-shrink-0 w-5 h-5 flex items-center justify-center hover:scale-110 transition-all duration-100"
@@ -222,6 +245,27 @@ export function TaskRow({
                         <button className="opacity-0 group-hover/title:opacity-100 text-neutral-400 hover:text-orange-500 transition-opacity p-1">
                             <Pencil className="w-3 h-3" />
                         </button>
+                    )}
+                </div>
+            )}
+
+            {/* Subtask Progress Chip (coral-task-subtasks.md) */}
+            {subtaskProgress && subtaskProgress.total > 0 && (
+                <div
+                    onClick={(e) => { e.stopPropagation(); onToggleExpand?.(); }}
+                    className={`flex-shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full border flex items-center gap-1.5 cursor-pointer select-none transition-all shadow-sm ${
+                        subtaskProgress.done === subtaskProgress.total
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800'
+                            : 'bg-neutral-100 text-neutral-600 border-neutral-250 dark:bg-white/10 dark:text-neutral-300 dark:border-white/10 hover:border-orange-400'
+                    }`}
+                    title={`${subtaskProgress.done} of ${subtaskProgress.total} subtasks completed`}
+                >
+                    <ListTree className="w-3 h-3" />
+                    <span>{subtaskProgress.done}/{subtaskProgress.total}</span>
+                    {subtaskProgress.done === subtaskProgress.total && (
+                        <span className="text-[9px] font-extrabold uppercase text-emerald-600 dark:text-emerald-400 ml-0.5 tracking-wider">
+                            Ready to close
+                        </span>
                     )}
                 </div>
             )}
@@ -291,6 +335,17 @@ export function TaskRow({
             >
                 🚩
             </button>
+
+            {/* Promote Subtask to Task (coral-task-subtasks.md) */}
+            {isSubtaskRow && onPromote && (
+                <button
+                    className="flex-shrink-0 w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 text-neutral-450 hover:text-orange-500 dark:text-neutral-500 dark:hover:text-orange-400"
+                    onClick={e => { e.stopPropagation(); onPromote(page); }}
+                    title="Promote to top-level task"
+                >
+                    <ArrowUpRight className="w-3.5 h-3.5" />
+                </button>
+            )}
 
             {/* Delete Task */}
             <button

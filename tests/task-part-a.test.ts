@@ -1,6 +1,7 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import type { Page } from '../src/components/admin/database/types.ts';
+import { isSubtask, getParentTaskId } from '../src/lib/tasks/subtasks.ts';
 
 // Replicate the ownership logic tested on mobile
 function isMyTask(p: Page, currentUserId?: string): boolean {
@@ -117,21 +118,6 @@ describe('Tasks Part A — Ownership & Scope Invariants', () => {
 });
 
 describe('Subtasks & Recurrence Invariants (coral-task-subtasks.md & TASK-M14)', () => {
-    function isSubtask(p: Page): boolean {
-        const parent = p.properties['prop-task-parent'];
-        if (!parent) return false;
-        if (Array.isArray(parent)) return parent.length > 0;
-        if (typeof parent === 'string') return parent.trim().length > 0;
-        return false;
-    }
-
-    function getTaskParentId(p: Page): string | undefined {
-        const parent = p.properties['prop-task-parent'];
-        if (!parent) return undefined;
-        if (Array.isArray(parent)) return parent[0] || undefined;
-        if (typeof parent === 'string') return parent.trim() || undefined;
-        return undefined;
-    }
 
     test('TASK-SUBTASKS: Subtasks do NOT appear as separate rows in root My Tasks list', () => {
         const parentTask = createMockTask({ id: 'parent-1', title: 'Parent Remodel' });
@@ -156,7 +142,7 @@ describe('Subtasks & Recurrence Invariants (coral-task-subtasks.md & TASK-M14)',
         sub2.properties['prop-task-parent'] = ['parent-1'];
         sub3.properties['prop-task-parent'] = ['parent-1'];
 
-        const children = [sub1, sub2, sub3].filter(p => getTaskParentId(p) === parent.id);
+        const children = [sub1, sub2, sub3].filter(p => getParentTaskId(p) === parent.id);
         const doneChildren = children.filter(isDoneTask).length;
 
         assert.equal(children.length, 3);
@@ -187,7 +173,7 @@ describe('Subtasks & Recurrence Invariants (coral-task-subtasks.md & TASK-M14)',
         sub1.properties['prop-task-parent'] = ['p1'];
         sub2.properties['prop-task-parent'] = ['p1'];
 
-        const children = [sub1, sub2].filter(p => getTaskParentId(p) === parent.id);
+        const children = [sub1, sub2].filter(p => getParentTaskId(p) === parent.id);
         // Simulate promotion logic:
         for (const child of children) {
             child.properties['prop-task-parent'] = [];

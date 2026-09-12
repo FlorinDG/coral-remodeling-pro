@@ -654,6 +654,8 @@
     "tasks_promote_to_task": "Promote to task",
     "tasks_demote_to_subtask": "Make subtask of...",
     "tasks_subtasks_promoted": "{count} subtask(s) promoted to top level",
+    "tasks_inherited_from_parent": "Inherited from parent",
+    "tasks_no_project": "No project",
     "tasks_ready_to_close": "Ready to close",
     "tasks_parent_task": "Parent task",
     "tasks_delete": "Delete Task",

@@ -35,7 +35,35 @@
 
 ---
 
-## ▶️ AUTHORISED RUN — `1.2` THROUGH `2.4`, NO CHECK-IN REQUIRED (Florin, 2026-09-12)
+## ▶️ AUTHORISED RUN #2 — `2.6` THROUGH `2.10`, NO CHECK-IN REQUIRED (Florin, 2026-09-12 evening)
+**Directives:** `coder-directive-tasks-sheet.md` (`2.6`–`2.9`) then `coral-task-subtasks.md` (`2.10`).
+
+**Order is not optional here:** `2.10` **builds inside the detail sheet that `2.6` repairs.** Subtasks added to a sheet whose footer is unreachable and whose scroll rubber-bands cannot be tested, let alone used. **Sheet first, subtasks last.**
+
+⚠️ **`2.10` REWRITTEN 2026-09-12 evening (Florin): subtasks are first-class on EVERY surface, not mobile-only.** The desktop fence is **lifted, narrowly and by name**, for six presentation files — `TaskListView`, `TaskBoardView`, `TaskRow`, `ReviewMode`, `PerspectiveBuilder`, `TaskModuleShell` — **plus the task tab of `ProjectDetailView`**. Mobile-only subtasks would have meant a subtask on the phone and a loose task on the laptop: two representations of one concept, the exact defect this pass exists to remove.
+
+Stop-and-report conditions unchanged (§🔒). Still prohibited: **`ProjectCockpit`, the `store.ts` progress automation, `bordereau`, `po`** — they need nothing, because **a child stores no `prop-task-project`**. **No `prop-task-project` written on a child.** **No file outside the named list.**
+
+**SMS (`SMS-0…4`) is NOT in this run** — Florin: *"the sms for tomorrow."*
+
+### 🔴 VERIFIED 2026-09-12 late — `2.10` IS HALF DONE. The coder built the **pre-rewrite, mobile-only** version.
+Commit `2ffcb1a` *"feat(tasks): implement sheet directives and subtasks"* was written **against the superseded draft**, before the rewrite landed. Checked against the repo, not against the report:
+
+| Claimed | Actual |
+|---|---|
+| Subtasks first-class on every surface | **Mobile only.** `git show --stat 2ffcb1a` touches **zero** desktop files. |
+| `lib/tasks/subtasks.ts` used by every surface | Module **exists and is correct** (`tests/subtasks.test.ts` passes), but `grep -rn "tasks/subtasks" src` returns **one importer**: `m/tasks/page.tsx:50`. |
+| Seven surfaces filter through `topLevel()` | `TaskListView`, `TaskBoardView`, `TaskRow`, `ReviewMode`, `PerspectiveBuilder`, `TaskModuleShell`, `ProjectDetailView` — **untouched**. A subtask therefore **still shows as a loose top-level row on desktop**, which is precisely what the rewrite exists to prevent. |
+
+**Good news:** the half that landed is the **right half, and the expensive half.** The data model, the write path and the shared module are built to the rewritten spec. What remains is **presentation only** — seven files calling `topLevel()` and `subtaskProgress()` on a module that already exists and is already tested. No new modelling, no new decisions.
+
+- [ ] **`2.10-b`** — the desktop half of `coral-task-subtasks.md`, sections **SURFACES › Desktop task module** and **Project detail**, plus VERIFY items **3** (*check all seven*) and **11** (*no surface implements its own check*). **Nothing else in the spec is reopened.**
+- **Prohibitions carry unchanged.** Same seven files, same fence, no `prop-task-project` on a child.
+- **`2.10` does not count as closed, and Phase 2 does not close, until `2.10-b` is verified.**
+
+---
+
+## ▶️ AUTHORISED RUN #1 — `1.2` THROUGH `2.4`, NO CHECK-IN REQUIRED (Florin, 2026-09-12)
 The coder proceeds through items **1.0 → 1.2 → 1.3 → 1.4 → 2.1 → 2.2 → 2.3 → 2.4** in order, **without pausing for approval between them.** Report after each item as specified; do not wait for a reply. The rules in §🔒 still bind — in particular, **stop and report** on: a blocked item · a `FLORIN` decision · a file not named in the directive · a dirty `t-*` count at `2.1` · a surface fitting neither class A nor B at `1.2`.
 **Do not proceed past `2.4` into Phase 3.** Parts B/C and `DEP-*` remain unauthorised.
 

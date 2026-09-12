@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import { Page } from '@/components/admin/database/types';
 import { STATUS_CONFIG, PRIORITY_CONFIG } from './TaskRow';
-import { CheckCircle2, ChevronRight, Inbox, Eye, ArrowRight } from 'lucide-react';
+import { CheckCircle2, ChevronRight, Inbox, Eye, ArrowRight, ListTree } from 'lucide-react';
+import { topLevel, subtasksOf, subtaskProgress, isTaskCompleted } from '@/lib/tasks/subtasks';
 
 interface ReviewModeProps {
     pages: Page[];
@@ -12,7 +13,8 @@ interface ReviewModeProps {
 }
 
 export function ReviewMode({ pages, onUpdatePage, onComplete }: ReviewModeProps) {
-    const unreviewedTasks = pages.filter(p => {
+    // Review only parent tasks; children are reviewed within their parent (coral-task-subtasks.md)
+    const unreviewedTasks = topLevel(pages).filter(p => {
         const s = p.properties['prop-task-status'] as string;
         const reviewed = p.properties['prop-task-reviewed-at'] as string;
         return s !== 'opt-done' && s !== 'opt-dropped' && !reviewed;
@@ -119,6 +121,53 @@ export function ReviewMode({ pages, onUpdatePage, onComplete }: ReviewModeProps)
                             {notes || 'No description or operational notes attached.'}
                         </p>
                     </div>
+
+                    {/* Subtasks (coral-task-subtasks.md: review the parent with children visible) */}
+                    {(() => {
+                        const subtasks = subtasksOf(activeTask.id, pages);
+                        const progress = subtaskProgress(activeTask.id, pages);
+                        if (subtasks.length === 0) return null;
+
+                        return (
+                            <div>
+                                <div className="flex items-center justify-between mb-2">
+                                    <span className="text-[10px] uppercase font-black text-neutral-500 dark:text-neutral-400 tracking-wider flex items-center gap-1.5">
+                                        <ListTree className="w-3.5 h-3.5 text-orange-500" />
+                                        Subtasks
+                                    </span>
+                                    <span className="text-xs font-bold text-neutral-600 dark:text-neutral-300">
+                                        {progress.done}/{progress.total} completed
+                                    </span>
+                                </div>
+                                <div className="space-y-1.5 bg-neutral-50 dark:bg-white/[0.02] border border-neutral-250 dark:border-white/10 rounded-xl p-3">
+                                    {subtasks.map(sub => {
+                                        const sDone = isTaskCompleted(sub);
+                                        return (
+                                            <div key={sub.id} className="flex items-center justify-between gap-2 text-xs">
+                                                <div className="flex items-center gap-2 truncate">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => onComplete(sub)}
+                                                        className={`w-4 h-4 rounded flex items-center justify-center border transition-colors ${
+                                                            sDone ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-neutral-300 dark:border-neutral-600 hover:border-orange-400'
+                                                        }`}
+                                                    >
+                                                        {sDone && <CheckCircle2 className="w-3 h-3" />}
+                                                    </button>
+                                                    <span className={`truncate font-semibold ${sDone ? 'line-through text-neutral-400' : 'text-neutral-800 dark:text-neutral-200'}`}>
+                                                        {(sub.properties['title'] as string) || 'Untitled'}
+                                                    </span>
+                                                </div>
+                                                <span className="text-[10px] text-neutral-400 shrink-0 font-medium">
+                                                    {sub.properties['prop-task-due'] ? String(sub.properties['prop-task-due']).slice(0, 10) : ''}
+                                                </span>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        );
+                    })()}
 
                     {/* Tags */}
                     {tags.length > 0 && (

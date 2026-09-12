@@ -22,7 +22,42 @@
 
 ---
 
-## PROVIDER — what I can and cannot tell you
+## ✅ DECIDED — SWEEGO FOR SMS · RESEND STAYS FOR EMAIL (Florin, 2026-09-12)
+
+> *"I think I like Sweego for the unified API… 20€ is sms credit for 500 sms… or just use resend for now and keep sweego in the pocket of options."*
+
+**Decision: register Sweego and use it for SMS. Email stays on Resend.** Florin's second instinct, made explicit rather than left "in the pocket".
+
+### Verified from [sweego.io/pricing](https://www.sweego.io/pricing) (checked 2026-09-12)
+| | |
+|---|---|
+| **Base** | **Made in France** — EU company, published **DPA** and **subprocessor list**. A Mindbaz product, so an established email operator behind it. **The GDPR criterion is properly satisfied, not merely implied.** |
+| **Free email tier** | 100 emails/day, unlimited domains, SPF/DKIM/DMARC, webhooks, test mode, **7-day log retention** |
+| **SMS** | **€20 ≈ 500 SMS (€0.040)** — and **SMS is independent of the email plan**, so free email + SMS credits works exactly as Florin described |
+| **Custom sender IDs** | ✅ supported — this was evaluation criterion #2, the *CORAL-not-a-shortcode* requirement |
+
+### ⚠️ TWO CORRECTIONS TO THE READING
+1. **Credits are valid 12 months, not indefinitely.** The pricing page states *"Valid for 12 months"*. At ~30 SMS/month, €20 buys ~16 months of use — so some would expire. **Buy in small increments; do not stock up.**
+2. **€0.040 is the FRANCE price**, and the SMS count is explicitly *approximate*. **Belgium must be checked** against their [worldwide SMS pricing](https://www.sweego.io/worldwide-sms-pricing) before assuming €0.04.
+
+### 🔴 THE PUSHBACK — do NOT move email off Resend
+The unified API is the attraction, and it is **also the argument against using it for everything**:
+
+- **One provider for email + SMS is one outage that takes down invoice delivery AND 2FA simultaneously.** Two providers is two independent failure domains. On the path that carries money, that is worth more than tidiness.
+- **Invoice email is the last thing to experiment with.** `DOC-ARCH-1` was just built on the Resend path — archive-before-send, abort-on-failure. Moving it now means re-proving that on a new provider for no gain.
+- **7-day log retention on the free tier is thin for transactional email.** When a client says "I never received it" three weeks later, the log is the answer — and on the free tier it is gone.
+
+**So: Sweego earns the SMS work on merit — EU base, real DPA, sender IDs, credits that suit low volume. It does not earn the invoice path, and does not need to.**
+
+### What this changes in the work below
+- `SMS-1`'s `MessagingProvider` is implemented **against Sweego**, and the rule stands: **nothing outside `lib/messaging` imports the Sweego SDK.** If BE deliverability disappoints, swapping is one file.
+- `TASK-M15` reminders ship on **Resend**, unchanged.
+- **If** Sweego's email later proves itself, migrating is a config change **because** the abstraction will already exist. That is the whole point of building it first.
+- `SMS-0` narrows from "evaluate providers" to **one test: send to your own phone and one crew phone from a Sweego trial, and confirm BE delivery + the CORAL sender ID.**
+
+---
+
+## PROVIDER — the evaluation that led here
 
 **Surge** ([surge.app](https://surge.app/), YC F24, founded 2024) is real and developer-focused. **Its headline advantage is 24–48h US carrier registration (10DLC) instead of weeks** — and **that is a US problem, not a Belgian one.** SDKs: Python, TypeScript, Ruby, Elixir. Supports 2FA and appointment reminders as named use cases.
 

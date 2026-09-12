@@ -65,3 +65,39 @@ test('checkExportLock: locked + field present but unchanged → allowed', () => 
     const result = checkExportLock(existing, incoming, relations);
     assert.equal(result, null);
 });
+
+test('checkExportLock: locked + receiptUrl changed → allowed', () => {
+    const existing = { title: 'Fixed Title', receiptUrl: 'old-key.pdf', accountantExportedAt: true };
+    const incoming = { receiptUrl: 't_tenant1/documents/db-invoices/p1/doc-v1.pdf' };
+    const relations = new Set<string>();
+
+    const result = checkExportLock(existing, incoming, relations);
+    assert.equal(result, null);
+});
+
+test('checkExportLock: locked + documentReconstructed fields changed → allowed', () => {
+    const existing = { title: 'Fixed Title', accountantExportedAt: true };
+    const incoming = {
+        documentReconstructed: true,
+        documentReconstructedAt: '2026-09-12T15:00:00.000Z'
+    };
+    const relations = new Set<string>();
+
+    const result = checkExportLock(existing, incoming, relations);
+    assert.equal(result, null);
+});
+
+test('checkExportLock: locked + archive fields AND ordinary field changed → blocks only ordinary field', () => {
+    const existing = { title: 'Old Title', receiptUrl: 'old.pdf', accountantExportedAt: true };
+    const incoming = {
+        title: 'New Title',
+        receiptUrl: 'new.pdf',
+        documentReconstructed: true,
+        documentReconstructedAt: '2026-09-12T15:00:00.000Z'
+    };
+    const relations = new Set<string>();
+
+    const result = checkExportLock(existing, incoming, relations);
+    assert.notEqual(result, null);
+    assert.deepEqual(result?.blockedFields, ['title']);
+});

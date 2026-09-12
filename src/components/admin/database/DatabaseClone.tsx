@@ -736,49 +736,48 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
       useDatabaseStore.getState().updateDatabase(resolvedId, { properties: updatedProperties });
     }
 
-    if (databaseId === 'db-expenses') {
-      const HIDDEN_BY_DEFAULT = ['betreft', 'source', 'peppolDocId'];
-      const store = useDatabaseStore.getState();
-      database.views.forEach(view => {
-        HIDDEN_BY_DEFAULT.forEach(propId => {
-          const hasState = view.propertiesState?.some(ps => ps.propertyId === propId);
-          if (!hasState) {
-            store.updateViewPropertyState(resolvedId, view.id, propId, { hidden: true }); // use resolvedId
-          }
-        });
-      });
-    }
+    // Seed default hidden columns ONCE per view, flagging defaultPropsSeeded: true
+    // on both paths (seeded vs already configured) so absence of state is never re-inferred.
+    // Skips entirely if all views already have defaultPropsSeeded: true (no gratuitous syncDb/updatedAt bump).
+    if (database.views && database.views.length > 0) {
+      const unseededViews = database.views.filter(v => !v.defaultPropsSeeded);
+      if (unseededViews.length > 0) {
+        let hiddenPropsForDb: string[] = [];
+        if (databaseId === 'db-expenses') {
+          hiddenPropsForDb = ['betreft', 'source', 'peppolDocId'];
+        } else if (databaseId === 'db-articles') {
+          hiddenPropsForDb = ['prop-art-brand', 'prop-art-packaging', 'prop-art-coverage', 'prop-art-pcs-pack', 'prop-art-min-order', 'prop-art-variants'];
+        } else if (databaseId === 'db-1') {
+          hiddenPropsForDb = [
+            'prop-admin-department', 'prop-admin-recurring', 'prop-admin-compliance-date',
+            'prop-bizdev-opportunity-value', 'prop-bizdev-win-probability', 'prop-bizdev-stage',
+            'prop-bizdev-source', 'prop-bizdev-crm-link', 'prop-linked-projects',
+            'prop-rate-person-hour', 'prop-rate-equipment-hour', 'prop-actual-equipment-hours',
+          ];
+        }
 
-    if (databaseId === 'db-articles') {
-      const HIDDEN_BY_DEFAULT = ['prop-art-brand', 'prop-art-packaging', 'prop-art-coverage', 'prop-art-pcs-pack', 'prop-art-min-order', 'prop-art-variants'];
-      const store = useDatabaseStore.getState();
-      database.views.forEach(view => {
-        HIDDEN_BY_DEFAULT.forEach(propId => {
-          const hasState = view.propertiesState?.some(ps => ps.propertyId === propId);
-          if (!hasState) {
-            store.updateViewPropertyState(resolvedId, view.id, propId, { hidden: true });
-          }
-        });
-      });
-    }
+        const updatedViews = database.views.map(view => {
+          if (view.defaultPropsSeeded) return view;
 
-    // Auto-hide type-specific project properties by default (users reveal via Properties dropdown or type-filtered view)
-    if (databaseId === 'db-1') {
-      const TYPE_SPECIFIC_HIDDEN = [
-        'prop-admin-department', 'prop-admin-recurring', 'prop-admin-compliance-date',
-        'prop-bizdev-opportunity-value', 'prop-bizdev-win-probability', 'prop-bizdev-stage',
-        'prop-bizdev-source', 'prop-bizdev-crm-link', 'prop-linked-projects',
-        'prop-rate-person-hour', 'prop-rate-equipment-hour', 'prop-actual-equipment-hours',
-      ];
-      const store = useDatabaseStore.getState();
-      database.views.forEach(view => {
-        TYPE_SPECIFIC_HIDDEN.forEach(propId => {
-          const hasState = view.propertiesState?.some(ps => ps.propertyId === propId);
-          if (!hasState) {
-            store.updateViewPropertyState(resolvedId, view.id, propId, { hidden: true });
+          const isUnconfigured = !view.propertiesState || view.propertiesState.length === 0;
+          if (isUnconfigured && hiddenPropsForDb.length > 0) {
+            const initialStates = hiddenPropsForDb.map(propId => ({ propertyId: propId, hidden: true }));
+            return {
+              ...view,
+              defaultPropsSeeded: true,
+              propertiesState: initialStates,
+            };
           }
+
+          // View is already configured or DB requires no default hiding: flag as seeded
+          return {
+            ...view,
+            defaultPropsSeeded: true,
+          };
         });
-      });
+
+        useDatabaseStore.getState().updateDatabase(resolvedId, { views: updatedViews });
+      }
     }
 
     // Migrate: existing projects without a type default to Operations

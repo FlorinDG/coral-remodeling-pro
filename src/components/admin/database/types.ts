@@ -209,6 +209,7 @@ export interface DatabaseView {
     filterGroups?: FilterGroup[]; // Advanced OR/AND nested filters
     sorts?: SortRule[];     // View-specific sorts
     propertiesState?: ViewPropertyState[]; // Track column widths, visibility, order per view
+    defaultPropsSeeded?: boolean;
 }
 
 export interface Database {

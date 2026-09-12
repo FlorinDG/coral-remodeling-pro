@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from 'react';
 import { create } from 'zustand';
 import { persist, createJSONStorage, StateStorage } from 'zustand/middleware';
 import { get, set, del } from 'idb-keyval';
@@ -933,11 +934,14 @@ export const useDatabaseStore = create<DatabaseState>()(
 
             getDatabase: (id) => {
                 const exact = get().databases.find(db => db.id === id);
-                if (exact) return exact;
                 // Fallback: if lockedDbIds is empty (tenant read failed), resolveDbId
                 // returns the bare base ID (e.g. 'db-invoices'). The store has the
                 // tenant-scoped ID (e.g. 'db-invoices-cmneyas2'). Match by prefix.
-                return get().databases.find(db => db.id.startsWith(id + '-'));
+                const db = exact || get().databases.find(db => db.id.startsWith(id + '-'));
+                if (db && !get().loadedDatabaseIds.includes(db.id) && process.env.NODE_ENV === 'development') {
+                    console.warn(`[useDatabaseStore] getDatabase('${id}') accessed for unloaded database '${db.id}'. Use usePagesOf('${id}') instead to ensure pages are requested and not-loaded is not mistaken for empty.`);
+                }
+                return db;
             },
 
             // --- VIEW OPERATIONS ---
@@ -2218,3 +2222,118 @@ export const useDatabaseStore = create<DatabaseState>()(
         }
     )
 );
+
+export type PagesLoadingStatus = 'loading' | 'ready' | 'error';
+
+export interface UsePagesOfResult {
+    pages: Page[];
+    status: PagesLoadingStatus;
+    pagesByDatabase: Record<string, Page[]>;
+    error?: Error;
+}
+
+/**
+ * Accessor for Class A surfaces (needs rows).
+ * Requests the specified database(s) if not already loaded, avoiding waterfalls
+ * by dispatching requests concurrently.
+ * Returns explicit status ('loading' | 'ready' | 'error') so not-loaded
+ * can never be mistaken for empty.
+ */
+export function usePagesOf(databaseIdOrIds: string | string[] | undefined | null): UsePagesOfResult {
+    const rawIds = useMemo(() => {
+        if (!databaseIdOrIds) return [];
+        return Array.isArray(databaseIdOrIds) ? databaseIdOrIds.filter(Boolean) : [databaseIdOrIds];
+    }, [databaseIdOrIds]);
+
+    const databases = useDatabaseStore(s => s.databases);
+    const loadedDatabaseIds = useDatabaseStore(s => s.loadedDatabaseIds);
+    const loadingDatabaseIds = useDatabaseStore(s => s.loadingDatabaseIds);
+    const loadDatabasePages = useDatabaseStore(s => s.loadDatabasePages);
+
+    const [error, setError] = useState<Error | undefined>(undefined);
+
+    // Resolve exact database IDs (handling bare IDs if needed)
+    const resolvedIds = useMemo(() => {
+        return rawIds.map(id => {
+            const exact = databases.find(d => d.id === id);
+            if (exact) return exact.id;
+            const prefixMatch = databases.find(d => d.id.startsWith(id + '-'));
+            return prefixMatch ? prefixMatch.id : id;
+        });
+    }, [rawIds, databases]);
+
+    // Request any databases that are not loaded and not currently loading
+    useEffect(() => {
+        if (resolvedIds.length === 0) return;
+
+        const unloaded = resolvedIds.filter(
+            id => !loadedDatabaseIds.includes(id) && !loadingDatabaseIds.includes(id)
+        );
+
+        if (unloaded.length > 0) {
+            Promise.all(unloaded.map(id => loadDatabasePages(id)))
+                .catch(err => {
+                    console.error('[usePagesOf] Error loading pages for databases:', unloaded, err);
+                    setError(err instanceof Error ? err : new Error(String(err)));
+                });
+        }
+    }, [resolvedIds, loadedDatabaseIds, loadingDatabaseIds, loadDatabasePages]);
+
+    // Compute status and pages
+    return useMemo(() => {
+        if (resolvedIds.length === 0) {
+            return { pages: [], status: 'ready', pagesByDatabase: {} };
+        }
+
+        const isAnyLoading = resolvedIds.some(id => !loadedDatabaseIds.includes(id));
+        const status: PagesLoadingStatus = error ? 'error' : (isAnyLoading ? 'loading' : 'ready');
+
+        const pagesByDatabase: Record<string, Page[]> = {};
+        const allPages: Page[] = [];
+
+        for (const id of resolvedIds) {
+            const db = databases.find(d => d.id === id);
+            const dbPages = db?.pages || [];
+            pagesByDatabase[id] = dbPages;
+            allPages.push(...dbPages);
+        }
+
+        return {
+            pages: allPages,
+            status,
+            pagesByDatabase,
+            error,
+        };
+    }, [resolvedIds, loadedDatabaseIds, databases, error]);
+}
+
+export interface UseLabelsOfResult {
+    entries: PageIndexEntry[];
+    getLabel: (pageId: string) => string | undefined;
+}
+
+/**
+ * Accessor for Class B surfaces (needs labels only: pickers, chips, dropdowns).
+ * Reads strictly from the in-memory pageIndex.
+ * Zero network, zero hydration, instant offline.
+ */
+export function useLabelsOf(databaseIdOrIds?: string | string[] | null): UseLabelsOfResult {
+    const pageIndex = useDatabaseStore(s => s.pageIndex);
+    const getPageLabel = useDatabaseStore(s => s.getPageLabel);
+
+    const ids = useMemo(() => {
+        if (!databaseIdOrIds) return null;
+        return Array.isArray(databaseIdOrIds) ? databaseIdOrIds : [databaseIdOrIds];
+    }, [databaseIdOrIds]);
+
+    const entries = useMemo(() => {
+        const all = Object.values(pageIndex);
+        if (!ids || ids.length === 0) return all;
+        return all.filter(entry => ids.some(targetId => entry.databaseId === targetId || entry.databaseId.startsWith(targetId + '-')));
+    }, [pageIndex, ids]);
+
+    return {
+        entries,
+        getLabel: getPageLabel,
+    };
+}

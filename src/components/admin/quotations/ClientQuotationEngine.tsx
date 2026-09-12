@@ -67,6 +67,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
     const getDatabase = useDatabaseStore(state => state.getDatabase);
     const updatePageBlocks = useDatabaseStore(state => state.updatePageBlocks);
     const updatePageProperty = useDatabaseStore(state => state.updatePageProperty);
+    const updatePageProperties = useDatabaseStore(state => state.updatePageProperties);
     const createPage = useDatabaseStore(state => state.createPage);
 
     // Resolve tenant-scoped DB IDs once — stable across re-renders via useTenant context
@@ -574,13 +575,19 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
             );
 
             if (response.success) {
+                // Auto-transition to "sent" status and persist receiptUrl atomically (D1)
+                updatePageProperties(quotationsDbId, id, {
+                    status: 'opt-sent',
+                    ...(response.archiveKey ? { receiptUrl: response.archiveKey } : {})
+                });
                 let successMsg = 'Offerte is succesvol verzonden!';
-                if (response.attachments && response.attachments.length > 0) {
+                if (response.archiveFilename) {
+                    successMsg += ` (Gearchiveerd als ${response.archiveFilename})`;
+                } else if (response.attachments && response.attachments.length > 0) {
                     successMsg += ` (${response.attachments.join(', ')})`;
                 }
                 toast.success(successMsg);
                 setShowSendModal(false);
-                handleUpdateProperty('status', 'opt-sent');
             } else {
                 toast.error(t('Error sending: ') + response.error);
             }

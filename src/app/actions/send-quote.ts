@@ -31,13 +31,46 @@ export async function sendQuotationToClient(
 
     try {
         const pdfBuffer = Buffer.from(pdfBufferBase64, 'base64');
+
+        // ── DOC-ARCH-1: Persist BEFORE transmitting ─────────────────────────
+        const { archiveDocument } = await import('@/lib/records/document-archive');
+        const { updatePageServerFirst } = await import('@/app/actions/pages');
+        const prisma = (await import('@/lib/prisma')).default;
+
+        const page = await prisma.globalPage.findUnique({
+            where: { id: quoteId },
+            include: { database: { select: { tenantId: true } } }
+        });
+        if (!page) {
+            throw new Error(`[sendQuotationToClient] Offerte record niet gevonden: ${quoteId}`);
+        }
+
+        const documentNumber = String((page.properties as any)?.title || projectName || 'Offerte');
+        const archiveResult = await archiveDocument({
+            tenantId: page.database.tenantId,
+            databaseId: page.databaseId,
+            pageId: quoteId,
+            documentNumber,
+            pdf: pdfBuffer,
+        });
+
+        // Write receiptUrl to record through server door (DOC-ARCH-1c)
+        const currentProps = (page.properties ?? {}) as Record<string, any>;
+        const updateRes = await updatePageServerFirst(quoteId, {
+            ...currentProps,
+            receiptUrl: archiveResult.key,
+        });
+        if (!updateRes.success) {
+            throw new Error(`[sendQuotationToClient] Opslaan van receiptUrl mislukt: ${updateRes.error}`);
+        }
+
         const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.coral-group.be';
         const magicLinkUrl = `${appUrl}/${lang}/quote/${quoteId}`;
         const finalSubject = subjectOverride || `${t('subject_quote', lang)}: ${projectName} — ${company}`;
 
         const emailAttachments: any[] = [
             {
-                filename: `${t('quotation', lang)}_${projectName.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
+                filename: archiveResult.filename,
                 content: pdfBuffer,
             }
         ];
@@ -95,7 +128,9 @@ export async function sendQuotationToClient(
         return { 
             success: true, 
             messageId: data?.id,
-            attachments: emailAttachments.map(a => a.filename)
+            attachments: emailAttachments.map(a => a.filename),
+            archiveKey: archiveResult.key,
+            archiveFilename: archiveResult.filename,
         };
 
     } catch (err: any) {

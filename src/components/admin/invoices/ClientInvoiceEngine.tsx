@@ -52,6 +52,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
     const getDatabase = useDatabaseStore(state => state.getDatabase);
     const updatePageBlocks = useDatabaseStore(state => state.updatePageBlocks);
     const updatePageProperty = useDatabaseStore(state => state.updatePageProperty);
+    const updatePageProperties = useDatabaseStore(state => state.updatePageProperties);
     const createPage = useDatabaseStore(state => state.createPage);
 
     // Resolve tenant-scoped DB IDs — handles both bare ('db-invoices') and scoped ('db-invoices-xxx')
@@ -849,10 +850,15 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
             );
 
             if (response.success) {
-                // Auto-transition to "sent" status
-                handleUpdateProperty('status', 'opt-sent');
+                // Auto-transition to "sent" status and persist receiptUrl atomically (D1)
+                updatePageProperties(invoicesDbId, invoice.id, {
+                    status: 'opt-sent',
+                    ...(response.archiveKey ? { receiptUrl: response.archiveKey } : {})
+                });
                 let successMsg = 'Factuur is succesvol verzonden!';
-                if (response.attachments && response.attachments.length > 0) {
+                if (response.archiveFilename) {
+                    successMsg += ` (Gearchiveerd als ${response.archiveFilename})`;
+                } else if (response.attachments && response.attachments.length > 0) {
                     successMsg += ` (${response.attachments.join(', ')})`;
                 }
                 toast.success(successMsg);
@@ -1040,9 +1046,13 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
             }
 
             if (data.success) {
-                // Auto-transition to "sent" status
-                handleUpdateProperty('status', 'opt-sent');
-                toast.success(isCreditNote ? 'Creditnota succesvol verzonden via Peppol! ✅' : 'Factuur succesvol verzonden via Peppol! ✅');
+                // Auto-transition to "sent" status and persist receiptUrl atomically (D1)
+                updatePageProperties(invoicesDbId, invoice.id, {
+                    status: 'opt-sent',
+                    ...(data.archiveKey ? { receiptUrl: data.archiveKey } : {})
+                });
+                const baseSuccessMsg = isCreditNote ? 'Creditnota succesvol verzonden via Peppol! ✅' : 'Factuur succesvol verzonden via Peppol! ✅';
+                toast.success(data.archiveFilename ? `${baseSuccessMsg} (Gearchiveerd als ${data.archiveFilename})` : baseSuccessMsg);
             } else if (data.code === 'PEPPOL_SEND_LIMIT') {
                 setPeppolLimitDialog(true);
             } else {

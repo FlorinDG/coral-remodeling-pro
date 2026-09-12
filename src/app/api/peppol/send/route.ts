@@ -94,6 +94,54 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'NO_LINE_ITEMS', code: 'NO_LINE_ITEMS', success: false }, { status: 400 });
         }
 
+        // ── DOC-ARCH-1: Persist BEFORE transmitting ─────────────────────────
+        let archiveKey: string | undefined;
+        let archiveFilename: string | undefined;
+        if (pdfBase64) {
+            const { archiveDocument } = await import('@/lib/records/document-archive');
+            const { updatePageServerFirst } = await import('@/app/actions/pages');
+
+            const page = await prisma.globalPage.findUnique({
+                where: { id: invoiceId },
+                include: { database: { select: { tenantId: true } } }
+            });
+            if (!page) {
+                return NextResponse.json({
+                    error: 'INVOICE_RECORD_NOT_FOUND',
+                    code: 'INVOICE_RECORD_NOT_FOUND',
+                    success: false,
+                    issues: `Factuur record niet gevonden: ${invoiceId}`,
+                }, { status: 404 });
+            }
+
+            const pdfBuffer = Buffer.from(pdfBase64, 'base64');
+            const documentNumber = String((page.properties as any)?.title || invoiceTitle || 'Factuur');
+            const archiveResult = await archiveDocument({
+                tenantId: page.database.tenantId,
+                databaseId: page.databaseId,
+                pageId: invoiceId,
+                documentNumber,
+                pdf: pdfBuffer,
+            });
+            archiveKey = archiveResult.key;
+            archiveFilename = archiveResult.filename;
+
+            // Write receiptUrl to record through server door (DOC-ARCH-1c)
+            const currentProps = (page.properties ?? {}) as Record<string, any>;
+            const updateRes = await updatePageServerFirst(invoiceId, {
+                ...currentProps,
+                receiptUrl: archiveResult.key,
+            });
+            if (!updateRes.success) {
+                return NextResponse.json({
+                    error: 'ARCHIVE_SAVE_FAILED',
+                    code: 'ARCHIVE_SAVE_FAILED',
+                    success: false,
+                    issues: `Opslaan van receiptUrl mislukt: ${updateRes.error}`,
+                }, { status: 500 });
+            }
+        }
+
         // 5. Check for tenant-specific e-invoice.be API key (provisioned via onboarding)
         const E_INVOICE_API_KEY = tenant.eInvoiceApiKey;
         const E_INVOICE_BASE_URL = process.env.E_INVOICE_BASE_URL || 'https://api.e-invoice.be';
@@ -198,6 +246,8 @@ export async function POST(req: Request) {
             return NextResponse.json({
                 success: true,
                 message: 'PEPPOL_SENT_OK',
+                archiveKey,
+                archiveFilename,
             });
         }
 
@@ -417,6 +467,8 @@ export async function POST(req: Request) {
             documentId: createData.id,
             state: sendData.state,
             message: 'PEPPOL_SENT_OK',
+            archiveKey,
+            archiveFilename,
         });
 
     } catch (error: any) {

@@ -198,6 +198,7 @@ interface DatabaseState {
     addConfirmedPage: (page: Page) => void;
     addPages: (databaseId: string, pagesProperties: Record<string, PropertyValue>[]) => void;
     updatePages: (databaseId: string, updates: { id: string, properties: Record<string, PropertyValue> }[]) => void;
+    updatePageProperties: (databaseId: string, pageId: string, properties: Record<string, PropertyValue>) => void;
     updatePageProperty: (databaseId: string, pageId: string, propertyId: string, value: PropertyValue) => void;
     updatePageBlocks: (databaseId: string, pageId: string, blocks: Block[]) => void;
     deletePage: (databaseId: string, pageId: string) => void;
@@ -1440,6 +1441,10 @@ export const useDatabaseStore = create<DatabaseState>()(
                 if (updatedPages.length > 0) {
                     syncPagesBatch(updatedPages, parentDb);
                 }
+            },
+
+            updatePageProperties: (databaseId, pageId, properties) => {
+                get().updatePages(databaseId, [{ id: pageId, properties }]);
             },
 
             updatePageProperty: (databaseId, pageId, propertyId, value) => {

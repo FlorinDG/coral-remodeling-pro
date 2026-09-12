@@ -186,6 +186,19 @@ loadedDatabaseIds: string[]                                   // :149
 - [ ] **On the row:** a task with a project shows its name as a chip, resolved via `getPageLabel(projectId)`. **The task stays in My Tasks** — see the correction in `TASK-M1`.
 - [ ] **Offline:** the picker works from the in-memory index with no network, and the assignment queues like any other edit.
 
+### 3d · `TASK-M11` · TASK DETAIL — **PLANNER OMISSION, 2026-09-12** 🟥
+**Florin, live: *"On mobile the task will not open to details."*** He is right, and it is not a bug — **the directive never asked for it.** `m/tasks/page.tsx` is 718 lines of tabs, capture, complete, undo and the project picker, with **no way to open a task**. My omission: I specified capturing, completing and filing, and never specified *looking at one*.
+
+**A task manager where you cannot set a due date is not usable.** This is required for Part A, not Part B.
+
+- [ ] **Tap a task row → a detail sheet** (bottom sheet, same pattern as the project picker already built at `:625`).
+- [ ] Editable in the sheet, each writing via `updatePageProperty` on change:
+  `title` · `prop-task-due` · `prop-task-defer` · `prop-task-flagged` · `prop-task-priority` · `prop-task-notes` · `prop-task-project` (reuse the `TASK-M10` picker, do not build a second one) · `prop-task-recurrence` · status.
+- [ ] **Delete**, with undo — same pattern as complete.
+- [ ] **Tapping the row opens the sheet; tapping the tick completes.** Two distinct targets, both ≥44px, neither triggering the other by accident.
+- [ ] Date entry must be usable one-handed: **Today / Tomorrow / This weekend / Pick a date**, not a bare date picker as the first choice.
+- [ ] All strings en/nl/fr/ro.
+
 ### 4 · `TASK-M6` · the nav 🟧
 - [ ] Add **Tasks** to `MobileShell.tsx:43-47` pointing at `/m/tasks`, with a `t('nav_tasks')` label in **en/nl/fr** (LOCALISATION DIRECTIVE — no hardcoded Dutch).
 - [ ] Six entries may crowd the bar; if so, drop or relocate the least-used rather than shrinking touch targets. **Say which you changed and why.**
@@ -233,6 +246,10 @@ Recurrence today advances from whatever `from` the caller passes, with no way to
 ## ⚠️ PLAN REVIEW — PART A COMPLETION — CORRECTIONS BINDING (Planner 2026-09-12)
 
 Eight commits landed. `TASK-X1` is done (`resolveDbId('db-tasks')` at `page.tsx:53-54`), `?capture=1` is handled (`:85-89`), M1/M4/M5/M6/M7/M8/M9 and F1 are in. The two self-diagnosed defects — ownership scoping and `t-*` status writes — are correctly identified. **Seven corrections.**
+
+### E0 🟥🟥 TWO LIVE BUGS FOUND BY FLORIN — both take priority over the rest of this batch
+1. **Desktop `/admin/tasks` is empty while `/m/tasks` shows tasks.** Traced: `MEM-3c` lazy loading is **on by default** and `TaskModuleShell` never calls `loadDatabasePages` — plus it uses the bare `'db-tasks'` id. **This is wider than tasks**: only 4 files in the repo request pages, and several independently-mounted surfaces (including `bordereau/[id]` and `po/[id]`) may be rendering incomplete data **silently**. Full spec and the required sweep: **`coral-lazy-load-regression.md` — do `LAZY-1` first.**
+2. **A task cannot be opened on mobile** — see `TASK-M11` above. Planner omission, now specified.
 
 ### E1 🟥🟥 SCOPE FENCE BREACHED, AND A DECISION RESERVED FOR FLORIN WAS TAKEN BY THE CODER
 Commit `a2dc5ba` modified **`src/components/admin/tasks/DependencyGraph.tsx` (+283 / −60)** and added `DependencyEngine.ts` in the same directory.

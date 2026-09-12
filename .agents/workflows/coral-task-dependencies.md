@@ -1,3 +1,15 @@
+# ⛔ WITHDRAWN — 2026-09-12
+
+**Florin: *"Remove it entirely… I'd rather have subtasks than dependencies. Some blocked by / blocks logic can be built at any given moment, when we have time to develop a decisional matrix… but now, it can simply go and not consume resources."***
+
+The feature is **deleted** — see `coder-directive-dep-removal.md` (execution-order item `1.0`). `DEP-0…5` are cancelled, not parked. The replacement want is **`TASK-SUBTASKS`** (containment, not scheduling constraints), unscoped and unauthorised.
+
+**Stored `prop-task-depends-on` values are deliberately left in the data**, so this costs nothing if blocked-by/blocks is ever designed fresh.
+
+The audit below is kept **only** as the record of why it went.
+
+---
+
 # CORAL — TASK DEPENDENCIES — audit and spec — Planner 2026-09-12
 
 **Status: SPEC ONLY. Not in Part A.** Part A is mobile capture; `DependencyGraph.tsx` is a desktop surface and the desktop fence holds. This is sequenced with **Part C (full module)**, alongside the parked `PROJ-2`.

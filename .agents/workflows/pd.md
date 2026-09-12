@@ -112,6 +112,16 @@ The silent failure mode: feature lands in View A, View B stays stale, and the di
 
 ---
 
+## 🔒 EXECUTION-ORDER DIRECTIVE (binding — Florin 2026-09-12)
+
+**`coral-execution-order.md` is the single source of sequence.** It overrides the internal "ORDER" section of every other spec. Specs say *what* and *how*; that file says *when*.
+
+**Work the first unblocked item. One item. Nothing else.** Do not start the next until the current is committed, verified and reported. **No unrequested work** — if you notice something, write it in the report, do not fix it. **If an item is blocked, stop and report** — never skip ahead, never substitute. **Items marked `FLORIN` are decisions the coder does not make**, by any route including implementing one option and noting the other. **Stay inside the files the directive names**; a change to an unnamed file is a stop-and-ask even if it is one line and obviously right.
+
+*Why: one recent plan breached a scope fence, took a decision reserved for Florin, and proposed a test runner that is not installed. None of it was a coding failure; all of it was ordering and scope.*
+
+---
+
 ## CODER-PROFILE DIRECTIVE (binding — Florin 2026-09-12)
 
 The coder is **Gemini 3.8 Flash at medium effort**, via Antigravity. Its measured profile is **excellent executor, weak decider**: near-frontier on long-horizon software engineering (DeepSWE 73.7%) and agentic terminal work (Terminal-bench 2.1 **89.4%**, above Opus 5), but roughly a third of frontier on open-ended agentic judgement (Terminal-bench 4.0 **19.1%** vs 51.8%). Knowledge cutoff **March 2026** — older than our installed stack. Output cap **64K tokens**.

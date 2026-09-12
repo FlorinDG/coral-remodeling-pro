@@ -507,7 +507,7 @@ export default function ProjectDetailView({ databaseId, pageId, locale, onClose 
             });
 
             if (!newInvoice) {
-                toast.error('Factuur aanmaken mislukt.');
+                toast.error('Factuur aanmaken mislukt: database record kon niet worden geïnitialiseerd.');
                 return;
             }
 
@@ -548,7 +548,8 @@ export default function ProjectDetailView({ databaseId, pageId, locale, onClose 
             router.push(`/${locale}/admin/financials/income/invoices/${newInvoice.id}`);
         } catch (e: any) {
             console.error('Failed to create invoice from progress statement:', e);
-            toast.error('Factuur aanmaken mislukt door een systeemfout.');
+            const detail = e?.message || e?.cause?.message || e?.name || String(e);
+            toast.error(`Factuur aanmaken mislukt: ${detail}`);
         }
     };
 

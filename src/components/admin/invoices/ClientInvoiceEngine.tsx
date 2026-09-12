@@ -860,9 +860,10 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
             } else {
                 toast.error(`Fout bij verzenden: ${response.error}`);
             }
-        } catch (e) {
+        } catch (e: any) {
             console.error(e);
-            toast.error('Verzenden mislukt.');
+            const detail = e?.message || e?.cause?.message || e?.name || String(e);
+            toast.error(`Verzenden mislukt: ${detail}`);
         } finally {
             setIsSending(false);
         }
@@ -1776,9 +1777,10 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                                         const blob = await generatePdfBlob(doc, tenant);
                                         const url = URL.createObjectURL(blob);
                                         window.open(url, '_blank');
-                                    } catch (e) {
+                                    } catch (e: any) {
                                         console.error('[PDF] preview failed:', e);
-                                        toast.error('PDF preview mislukt.');
+                                        const detail = e?.message || e?.cause?.message || e?.name || String(e);
+                                        toast.error(`PDF preview mislukt: ${detail}`);
                                     } finally {
                                         setIsPreviewing(false);
                                     }
@@ -1827,9 +1829,10 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                                         a.download = `Factuur_${invoiceTitle || 'Draft'}.pdf`;
                                         a.click();
                                         setTimeout(() => URL.revokeObjectURL(url), 10000);
-                                    } catch (e) {
+                                    } catch (e: any) {
                                         console.error('[PDF] export failed:', e);
-                                        toast.error('PDF genereren mislukt.');
+                                        const detail = e?.message || e?.cause?.message || e?.name || String(e);
+                                        toast.error(`PDF genereren mislukt: ${detail}`);
                                     } finally {
                                         setIsDownloading(false);
                                     }

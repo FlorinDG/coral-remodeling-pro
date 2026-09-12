@@ -8,6 +8,7 @@ import { Page, PropertyValue } from '@/components/admin/database/types';
 import { generateOGM } from '@/lib/ogm';
 import { isSystemDatabase } from '@/lib/systemDatabases';
 import { getLockedDbId } from '@/lib/lockedDbUtils';
+import { checkExportLock } from '@/lib/records/export-lock';
 
 // Infer required module from locked DB ID prefix.
 // Works for both bare IDs ('db-invoices') and scoped IDs ('db-invoices-abc12345').
@@ -173,11 +174,27 @@ export async function updatePageServerFirst(
         // Auth: confirm the page's DB belongs to this tenant
         const existing = await prisma.globalPage.findUnique({
             where: { id: pageId },
-            include: { database: { select: { tenantId: true } } }
+            include: { database: { select: { tenantId: true, properties: true } } }
         });
 
         if (!existing) return { success: false, error: 'Page not found' };
         if (existing.database.tenantId !== tenantId) return { success: false, error: 'Unauthorized' };
+
+        const dbProps = Array.isArray(existing.database.properties) ? (existing.database.properties as Array<{ id: string; type?: string }>) : [];
+        const relationPropertyIds = new Set<string>(
+            dbProps.filter(p => p.type === 'relation').map(p => p.id)
+        );
+        const violation = checkExportLock(
+            existing.properties,
+            properties as Record<string, unknown>,
+            relationPropertyIds
+        );
+        if (violation) {
+            return {
+                success: false,
+                error: `[ExportLocked] Dit document is al naar de boekhouder verzonden. Geblokkeerde velden: ${violation.blockedFields.join(', ')}`
+            };
+        }
 
         const saved = await prisma.globalPage.update({
             where: { id: pageId },

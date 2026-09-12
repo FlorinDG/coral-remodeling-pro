@@ -5,6 +5,7 @@ import { Database, Page, Property, DatabaseView, Block, PageIndexEntry } from '@
 import { revalidatePath } from 'next/cache';
 
 import { auth } from '@/auth';
+import { checkExportLock } from '@/lib/records/export-lock';
 
 /**
  * Validates and sanitizes a string ID, preventing undefined/null values from hitting Prisma
@@ -404,7 +405,7 @@ export async function saveGlobalPage(page: Page) {
         // Security: ensure the page belongs to a database owned by this tenant.
         const parentDb = await prisma.globalDatabase.findUnique({
             where: { id: page.databaseId },
-            select: { tenantId: true }
+            select: { tenantId: true, properties: true }   // properties ADDED
         });
 
         // If the parent DB exists and belongs to a different tenant, block the write.
@@ -423,6 +424,24 @@ export async function saveGlobalPage(page: Page) {
                 blocksVersion: true 
             }
         });
+
+        if (existingPage) {
+            const dbProps = Array.isArray(parentDb?.properties) ? (parentDb.properties as Array<{ id: string; type?: string }>) : [];
+            const relationPropertyIds = new Set<string>(
+                dbProps.filter(p => p.type === 'relation').map(p => p.id)
+            );
+            const violation = checkExportLock(
+                existingPage.properties,
+                page.properties as Record<string, unknown>,
+                relationPropertyIds
+            );
+            if (violation) {
+                return {
+                    success: false,
+                    error: `[ExportLocked] Dit document is al naar de boekhouder verzonden. Geblokkeerde velden: ${violation.blockedFields.join(', ')}`
+                };
+            }
+        }
 
         let finalProperties = page.properties;
         const finalBlocks = page.blocks;
@@ -562,16 +581,19 @@ export async function saveGlobalPagesBatch(pages: Page[]) {
     try {
         // Verify tenant ownership of the target database(s)
         const dbIds = [...new Set(pages.map(p => p.databaseId))];
+        const dbMap = new Map<string, { tenantId: string | null; properties: any }>();
         for (const dbId of dbIds) {
             const parentDb = await prisma.globalDatabase.findUnique({
                 where: { id: dbId },
-                select: { tenantId: true }
+                select: { tenantId: true, properties: true }
             });
             if (parentDb && parentDb.tenantId !== tenantId) {
                 return { success: false, error: `Unauthorized DB access: ${dbId}` };
             }
+            if (parentDb) {
+                dbMap.set(dbId, parentDb);
+            }
         }
-
 
         const results = [];
         
@@ -583,6 +605,27 @@ export async function saveGlobalPagesBatch(pages: Page[]) {
                     where: { id: page.id },
                     select: { updatedAt: true, properties: true, lastEditedBy: true, blocksVersion: true }
                 });
+
+                if (existingPage) {
+                    const parentDb = dbMap.get(page.databaseId);
+                    const dbProps = Array.isArray(parentDb?.properties) ? (parentDb.properties as Array<{ id: string; type?: string }>) : [];
+                    const relationPropertyIds = new Set<string>(
+                        dbProps.filter(p => p.type === 'relation').map(p => p.id)
+                    );
+                    const violation = checkExportLock(
+                        existingPage.properties,
+                        page.properties as Record<string, unknown>,
+                        relationPropertyIds
+                    );
+                    if (violation) {
+                        results.push({
+                            id: page.id,
+                            success: false,
+                            error: `[ExportLocked] Dit document is al naar de boekhouder verzonden. Geblokkeerde velden: ${violation.blockedFields.join(', ')}`
+                        });
+                        continue;
+                    }
+                }
 
                 let finalProperties = page.properties;
                 const finalBlocks = page.blocks;

@@ -1,0 +1,66 @@
+# CORAL — R2 · ONE WRITE PATH — root spec (Planner 2026-09-12)
+
+Governed by `coral-systems-pass.md`. **Second root. Depends on R1-4 (the accessor is where the scope gets enforced).**
+
+> **INVARIANT:** *There is exactly one way a record change reaches the database, and exactly one authority on what "current" means.*
+
+---
+
+## THE FINDING — five doors into one table
+
+| Door | Callers (outside `actions/`) |
+|---|---|
+| `createPageServerFirst` | 14 files |
+| `updatePageServerFirst` | 2 |
+| `saveGlobalPage` | 1 |
+| `saveGlobalPagesBatch` | 1 |
+| **direct `prisma.globalPage.create/update`** | **17 files, 30 calls** |
+
+Five ways to write one row, with **different** OCC behaviour, different tenant checks, and different system-write tagging. This is defect shape #1 (*two representations of one concept*) at the centre of the application — and it is why the OCC saga took five rounds: each theory was correct about *a* door.
+
+**The client half compounds it.** `components/admin/database/store.ts` is **2,215 lines** and holds: the page cache, the page index, `syncQueue`, the undo stack, IndexedDB persistence, and the derived row data every view reads. "Current" is asserted in three places — server row, store page, and whatever a component is holding locally — and OCC-14 was precisely the server and store disagreeing about a timestamp.
+
+---
+
+## THE WORK
+
+### R2-0 · LAYER RULE FIRST (Florin 2026-09-12) 🟥
+The five doors are **one core plus four sideways copies** — see THE SHAPE in `coral-systems-pass.md`. The target is not "pick the best of five", it is **one kernel write plus thin adapters where the call shape genuinely differs**. Batch is the only genuine adapter (CSV import: 2,000 rows, one round-trip) and it calls the same core. Everything else is **deleted, not deprecated** — a retained alternate door is a sideways copy with a polite name.
+
+### R2-1 · ONE SERVER WRITE FUNCTION 🟥
+- [ ] A single `saveRecord(intent)` behind the R1 accessor. **Everything** else becomes a thin caller or is deleted. Behaviour it owns, in one place: tenant scope · OCC (`baseUpdatedAt` / `blocksVersion`) · system-write tag · `updatedAt` returned **from the persisted row** (OCC-14's gate — never a self-generated timestamp) · audit entry.
+- [ ] `createPageServerFirst` / `updatePageServerFirst` / `saveGlobalPage` / `saveGlobalPagesBatch` keep their names as adapters during migration, then go. Batch stays a distinct entry point — it exists for a real reason (CSV import, 2,000 rows) — but it calls the same core.
+- [ ] The 30 direct prisma writes are migrated or justified in writing, one by one. R1-5's gate makes this non-optional.
+
+### R2-2 · WRITES ARE FIELD-LEVEL INTENTS, NOT ROW SNAPSHOTS 🟥 — *this is the fix for N1*
+- [ ] The unit of change is `{ pageId, field, value, baseUpdatedAt }` — **not** a page object. A snapshot write makes every concurrent edit a conflict and every stale copy a data loss; a field intent makes them independent.
+- [ ] Two intents for **different** fields of the same row must both land, in any order, with no conflict dialog. This is what OCC-3 (field merge) was reaching for; here it is structural rather than a merge heuristic.
+- [ ] Blocks remain a whole-tree write, versioned by `blocksVersion`. That is correct and stays.
+
+### R2-3 · ONE AUTHORITY ON "CURRENT" 🟥
+- [ ] The server row is the authority. The store caches it; components never hold a third copy across a commit boundary.
+- [ ] After a write, the store takes the **server's** returned row — `updatedAt`, `blocksVersion`, and merged fields — and no local reconstruction of them. *(OCC-14 was exactly this defect: the intended timestamp was returned instead of the persisted one, so `serverTime !== clientTime` was always true.)*
+- [ ] Verify OCC-15's single-flight lock still holds after the refactor — `_enqueueSync` / queue processing must not allow two in-flight saves for one page. **Re-prove it; do not assume it survived.**
+
+### R2-4 · SPLIT THE STORE 🟧
+- [ ] 2,215 lines doing six jobs. Separate along seams that already exist: **cache** (pages + `pageIndex`) · **sync** (`syncQueue`, retry, single-flight) · **undo** · **persistence** (IndexedDB, `partialize`, throttling). Same public surface for components — this is a re-seam, not a rewrite, and it must be behaviourally invisible.
+- [ ] Dirty-page protection is load-bearing and must survive verbatim: **pages in `syncQueue` are never evicted** (this is what `DATA-PERSIST-INTEGRITY` protects, and what MEM-3c depends on).
+
+### R2-5 · CHARACTERIZATION TESTS FIRST 🟥 — *written before R2-1, not after*
+- [ ] Pin current **correct** behaviour before moving anything: OCC accept/reject cases · field-merge of two concurrent different-field edits · the single-flight lock · queue retry/backoff · dirty-page-not-evicted.
+- [ ] These are the safety net for the whole root. The money math is already pinned (`invoice-totals` 22, `block-tree` 18) — this is the same idea for the write path.
+
+## VERIFY
+1. Two different fields of one record edited concurrently → **both persist, no conflict dialog**.
+2. The same field edited concurrently → conflict raised once, with the real server value, and the resolve path works.
+3. Rapid typing in an engine field → one in-flight save at a time; no "Sync Conflict Detected".
+4. Offline edit → reload → the edit is still queued and still applied (dirty-page protection).
+5. `grep -rn "prisma.globalPage" src | grep -v lib/data` → **0**.
+6. Every test green, including the new R2-5 set.
+
+## ORDER
+**R2-5 (tests) → R2-1 → R2-2 → R2-3 → R2-4.**
+R2-4 last: splitting a 2,215-line store before its behaviour is pinned is how a refactor becomes an outage.
+
+## NOTE FOR THE CODER
+Do **not** start R2 until R1-4/R1-5 are merged. R2-1 is where the tenant scope is enforced for every write in the system; building it against the old prisma calls means building it twice.

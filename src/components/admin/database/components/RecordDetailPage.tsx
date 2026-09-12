@@ -199,7 +199,10 @@ export default function RecordDetailPage({ databaseId, pageId, locale }: RecordD
                         {/* Conditional Receipt/Document Preview */}
                         {page.properties?.['receiptUrl'] && (
                             <ErrorBoundary componentName="DocumentViewerCard">
-                                <DocumentViewerCard url={String(page.properties['receiptUrl'])} />
+                                <DocumentViewerCard 
+                                    url={String(page.properties['receiptUrl'])} 
+                                    isReconstructed={Boolean(page.properties['documentReconstructed'])}
+                                />
                             </ErrorBoundary>
                         )}
 

@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react'
 import { useRouter, usePathname } from 'next/navigation';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
 import { useDatabaseStore } from '@/components/admin/database/store';
-import { ArrowLeft, User, Briefcase, FileText, Calendar, PanelRight, ExternalLink, FilePlus2, Receipt, Undo2, ClipboardCheck, Database, ChevronsUpDown, Scissors, Eye, MoreHorizontal } from 'lucide-react';
+import { ArrowLeft, User, Briefcase, FileText, Calendar, PanelRight, ExternalLink, FilePlus2, Receipt, Undo2, ClipboardCheck, Database, ChevronsUpDown, Scissors, Eye, MoreHorizontal, Archive } from 'lucide-react';
 import { useTenant } from '@/context/TenantContext';
 import { DndContext, DragOverlay, closestCenter, DragEndEvent, DragStartEvent, DragMoveEvent, defaultDropAnimationSideEffects } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
@@ -84,6 +84,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
     const [isSending, setIsSending] = useState(false);
     const [isSavingToDrive, setIsSavingToDrive] = useState(false);
     const [isDownloading, setIsDownloading] = useState(false);
+    const [isReconstructing, setIsReconstructing] = useState(false);
     const [isPreviewing, setIsPreviewing] = useState(false);
     const [showProperties, setShowProperties] = useState(false);
     const [isDraggingGlobal, setIsDraggingGlobal] = useState(false);
@@ -647,6 +648,60 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
         }
     };
 
+    const handleReconstructArchive = async () => {
+        if (!quotation) return;
+        setIsReconstructing(true);
+        try {
+            const doc = (
+                <QuotationPDFTemplate
+                    blocks={blocks}
+                    quotationTitle={String(quotationTitle)}
+                    betreft={String(betreft)}
+                    clientInfo={buildClientInfo()}
+                    projectId={String(projectId)}
+                    grandTotalExcl={grandTotalExcl}
+                    grandTotalIncl={totalIncVat}
+                    vatAmount={vatAmount}
+                    databaseStoreState={useDatabaseStore.getState()}
+                    tenantProfile={tenant}
+                    templateId={tenant?.documentTemplate || 't1'}
+                    language={docLanguage}
+                    showSubcomponents={false}
+                    vatCalcMode={(tenant?.vatCalcMode as any) || 'lines'}
+                    vatRegime={vatRegime}
+                    billingRule={billingRule}
+                    paymentTerms={paymentTerms}
+                />
+            );
+
+            const blob = await generatePdfBlob(doc, tenant);
+            const arrayBuffer = await blob.arrayBuffer();
+            const base64 = Buffer.from(arrayBuffer).toString('base64');
+
+            const { reconstructDocumentAction } = await import('@/app/actions/reconstruct-document');
+            const result = await reconstructDocumentAction({
+                pageId: id,
+                pdfBase64: base64,
+            });
+
+            if (result.success && result.archiveKey) {
+                updatePageProperties(quotationsDbId, id, {
+                    receiptUrl: result.archiveKey,
+                    documentReconstructed: true,
+                    documentReconstructedAt: result.reconstructedAt || new Date().toISOString(),
+                });
+                toast.success(`Offerte succesvol gereconstrueerd en gearchiveerd! (${result.archiveFilename})`);
+            } else {
+                toast.error(`Reconstructie mislukt: ${result.error || 'Onbekende fout'}`);
+            }
+        } catch (err: any) {
+            console.error('[Quotation Reconstruction] Error:', err);
+            toast.error(`Reconstructie mislukt: ${err?.message || String(err)}`);
+        } finally {
+            setIsReconstructing(false);
+        }
+    };
+
     const handleHandover = () => {
         if (!clientId) return toast.warning(t('Please select a client first to start the project.'));
 
@@ -823,9 +878,20 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                             placeholder={ti18n('engine_draft_quotation', locale)}
                             className="bg-transparent text-lg font-bold tracking-tight text-neutral-900 dark:text-white outline-none focus:ring-0 placeholder:text-neutral-400 p-0 m-0 w-full max-w-[400px]"
                         />
-                        <p className="text-[10px] text-neutral-400 font-mono tracking-wider uppercase">
-                            {ti18n('quotation', locale)} {quotationTitle}
-                        </p>
+                        <div className="flex items-center gap-2">
+                            <p className="text-[10px] text-neutral-400 font-mono tracking-wider uppercase">
+                                {ti18n('quotation', locale)} {quotationTitle}
+                            </p>
+                            {Boolean(quotation?.properties?.documentReconstructed) && (
+                                <span 
+                                    className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-700/50"
+                                    title={`Gereconstrueerd op ${quotation?.properties?.documentReconstructedAt || ''}`}
+                                >
+                                    <Archive className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                                    Gereconstrueerd
+                                </span>
+                            )}
+                        </div>
                     </div>
 
                     {/* Right side actions */}
@@ -1286,6 +1352,19 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                                 <FileText className="w-3.5 h-3.5" />
                                 {isDownloading ? ti18n('engine_generating', locale) : ti18n('engine_export_pdf', locale)}
                             </button>
+
+                            {/* Archiveer document button (DOC-ARCH-5): visible when no receiptUrl is stamped */}
+                            {!quotation?.properties?.receiptUrl && (
+                                <button
+                                    onClick={handleReconstructArchive}
+                                    disabled={isReconstructing}
+                                    className="text-xs font-semibold px-4 py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 border border-amber-300 dark:border-amber-700/50 bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/60 active:scale-[0.97] disabled:opacity-60 shadow-sm w-full sm:w-auto shrink-0 whitespace-nowrap cursor-pointer"
+                                    title="Maak een gearchiveerde PDF voor deze offerte"
+                                >
+                                    <Archive className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                                    {isReconstructing ? 'Archiveren...' : 'Archiveer document'}
+                                </button>
+                            )}
 
                             <div className="hidden sm:block flex-1" />
 

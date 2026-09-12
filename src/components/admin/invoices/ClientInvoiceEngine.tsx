@@ -4,7 +4,7 @@
 import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useDatabaseStore } from '@/components/admin/database/store';
-import { ArrowLeft, User, Briefcase, FileText, Check, X as XIcon, ReceiptText, PanelRight, Trash2, ExternalLink, Plus, Info, Database, ChevronsUpDown, Scissors, Eye, ClipboardCheck, MoreHorizontal } from 'lucide-react';
+import { ArrowLeft, User, Briefcase, FileText, Check, X as XIcon, ReceiptText, PanelRight, Trash2, ExternalLink, Plus, Info, Database, ChevronsUpDown, Scissors, Eye, ClipboardCheck, MoreHorizontal, Archive } from 'lucide-react';
 import { useTenant } from '@/context/TenantContext';
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import { Page, Block, BlockType } from '@/components/admin/database/types';
@@ -72,6 +72,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
     const [isSendingPeppol, setIsSendingPeppol] = useState(false);
     const [isValidatingPeppol, setIsValidatingPeppol] = useState(false);
     const [isDownloading, setIsDownloading] = useState(false);
+    const [isReconstructing, setIsReconstructing] = useState(false);
     const [isPreviewing, setIsPreviewing] = useState(false);
     const [showProperties, setShowProperties] = useState(false);
     const [offerteImportDialog, setOfferteImportDialog] = useState<{ open: boolean; quotationId: string; quotationTitle: string; lineCount: number }>({ open: false, quotationId: '', quotationTitle: '', lineCount: 0 });
@@ -926,6 +927,62 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
         }
     };
 
+    const handleReconstructArchive = async () => {
+        if (!invoice) return;
+        setIsReconstructing(true);
+        try {
+            const doc = (
+                <InvoicePDFTemplate
+                    blocks={blocks}
+                    invoiceTitle={String(invoiceTitle)}
+                    betreft={String(betreft)}
+                    clientInfo={buildClientInfo()}
+                    projectId={String(projectId)}
+                    grandTotalExcl={grandTotalExcl}
+                    grandTotalIncl={grandTotalIncl}
+                    vatAmount={vatAmount}
+                    databaseStoreState={useDatabaseStore.getState()}
+                    tenantProfile={tenant}
+                    templateId={tenant?.documentTemplate || 't1'}
+                    language={docLanguage}
+                    invoiceDate={invoice?.properties?.['invoiceDate'] as string}
+                    deliveryDate={String(invoice?.properties?.['deliveryDate'] || '')}
+                    dueDate={invoice?.properties?.['dueDate'] as string}
+                    docType={String(invoice.properties?.['docType'] || '')}
+                    vatIncluded={vatIncluded}
+                    vatRegime={String(invoice?.properties?.['vatRegime'] || '')}
+                    structuredComm={String(invoice?.properties?.['structuredComm'] || '')}
+                />
+            );
+
+            const blob = await generatePdfBlob(doc, tenant);
+            const arrayBuffer = await blob.arrayBuffer();
+            const base64 = Buffer.from(arrayBuffer).toString('base64');
+
+            const { reconstructDocumentAction } = await import('@/app/actions/reconstruct-document');
+            const result = await reconstructDocumentAction({
+                pageId: invoice.id,
+                pdfBase64: base64,
+            });
+
+            if (result.success && result.archiveKey) {
+                updatePageProperties(invoicesDbId, invoice.id, {
+                    receiptUrl: result.archiveKey,
+                    documentReconstructed: true,
+                    documentReconstructedAt: result.reconstructedAt || new Date().toISOString(),
+                });
+                toast.success(`Document succesvol gereconstrueerd en gearchiveerd! (${result.archiveFilename})`);
+            } else {
+                toast.error(`Reconstructie mislukt: ${result.error || 'Onbekende fout'}`);
+            }
+        } catch (err: any) {
+            console.error('[Invoice Reconstruction] Error:', err);
+            toast.error(`Reconstructie mislukt: ${err?.message || String(err)}`);
+        } finally {
+            setIsReconstructing(false);
+        }
+    };
+
     const handleSendPeppol = async () => {
         if (!clientId) return toast.warning('Selecteer eerst een klant!');
         const selectedClient = clients.find(c => c.id === clientId);
@@ -1271,6 +1328,17 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                                         </div>
                                     );
                                 })()}
+
+                                {/* Reconstructed Document Badge */}
+                                {Boolean(invoice?.properties?.documentReconstructed) && (
+                                    <span 
+                                        className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-700/50"
+                                        title={`Gereconstrueerd op ${invoice?.properties?.documentReconstructedAt || ''}`}
+                                    >
+                                        <Archive className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                                        Gereconstrueerd
+                                    </span>
+                                )}
                                 {isLocked && (
                                     <span className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20">
                                         <Check className="w-2.5 h-2.5" /> Fiscale Lock
@@ -1854,6 +1922,19 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                                 <FileText className="w-4 h-4" />
                                 {isDownloading ? 'Generating...' : 'Export PDF'}
                             </button>
+
+                            {/* Archiveer document button (DOC-ARCH-5): visible when no receiptUrl is stamped */}
+                            {!invoice?.properties?.receiptUrl && (
+                                <button
+                                    onClick={handleReconstructArchive}
+                                    disabled={isReconstructing}
+                                    className="text-sm font-semibold px-4 py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 border border-amber-300 dark:border-amber-700/50 bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/60 active:scale-[0.97] disabled:opacity-60 shadow-sm w-full sm:w-auto shrink-0 whitespace-nowrap cursor-pointer"
+                                    title="Maak een gearchiveerde PDF voor dit document"
+                                >
+                                    <Archive className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                                    {isReconstructing ? 'Archiveren...' : 'Archiveer document'}
+                                </button>
+                            )}
 
                             <div className="hidden sm:block flex-1" />
 

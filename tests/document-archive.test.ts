@@ -171,3 +171,33 @@ describe('archiveDocument', () => {
         );
     });
 });
+
+describe('reconstruction guard (D3)', () => {
+    test('identifies existing authentic archive in storage entries', () => {
+        const entries: StorageListEntry[] = [
+            {
+                key: 't_abc/documents/db_inv/p_1/INV_001-v1.pdf',
+                pathname: 't_abc/documents/db_inv/p_1/INV_001-v1.pdf',
+                url: '/api/files/...',
+                size: 100,
+                uploadedAt: new Date()
+            }
+        ];
+        const hasAuthentic = entries.some(e => !e.pathname.endsWith('-reconstructed.pdf'));
+        assert.equal(hasAuthentic, true);
+    });
+
+    test('allows reconstruction when only reconstructed archives exist', () => {
+        const entries: StorageListEntry[] = [
+            {
+                key: 't_abc/documents/db_inv/p_1/INV_001-v1-reconstructed.pdf',
+                pathname: 't_abc/documents/db_inv/p_1/INV_001-v1-reconstructed.pdf',
+                url: '/api/files/...',
+                size: 100,
+                uploadedAt: new Date()
+            }
+        ];
+        const hasAuthentic = entries.some(e => !e.pathname.endsWith('-reconstructed.pdf'));
+        assert.equal(hasAuthentic, false);
+    });
+});

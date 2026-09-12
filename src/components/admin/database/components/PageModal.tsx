@@ -852,12 +852,22 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                 ) : (
                 <div className="flex-1 px-4 md:px-8 pt-2 pb-6 max-w-[1200px] mx-auto w-full">
                     {/* Title */}
-                    <input
-                        className="w-full text-4xl font-bold mb-4 text-neutral-900 dark:text-white outline-none bg-transparent placeholder:text-neutral-300 dark:placeholder:text-neutral-700"
-                        value={(page.properties['title'] as string) || ''}
-                        onChange={(e) => updatePageProperty(databaseId, pageId, 'title', e.target.value)}
-                        placeholder="Untitled"
-                    />
+                    <div className="flex flex-wrap items-center gap-3 mb-4">
+                        <input
+                            className="flex-1 text-4xl font-bold text-neutral-900 dark:text-white outline-none bg-transparent placeholder:text-neutral-300 dark:placeholder:text-neutral-700 min-w-[200px]"
+                            value={(page.properties['title'] as string) || ''}
+                            onChange={(e) => updatePageProperty(databaseId, pageId, 'title', e.target.value)}
+                            placeholder="Untitled"
+                        />
+                        {Boolean(page.properties['documentReconstructed']) && (
+                            <span 
+                                className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-700/50 shadow-sm"
+                                title={`Gereconstrueerd op ${page.properties['documentReconstructedAt'] || ''}`}
+                            >
+                                Gereconstrueerd document
+                            </span>
+                        )}
+                    </div>
 
                     {/* Desktop Split Layout */}
                     <div className="flex flex-col lg:flex-row gap-8 lg:gap-10">
@@ -1294,7 +1304,14 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                         {/* Attached Document Preview for Invoices */}
                         {databaseId.startsWith('db-invoices') && page.properties.receiptUrl && typeof page.properties.receiptUrl === 'string' && (
                             <div className="mt-6 mb-8 px-6 md:px-0">
-                                <h4 className="text-xs font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider mb-3">Document Preview</h4>
+                                <div className="flex items-center justify-between mb-3">
+                                    <h4 className="text-xs font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider">Document Preview</h4>
+                                    {Boolean(page.properties['documentReconstructed']) && (
+                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-700/50 uppercase tracking-wider">
+                                            Gereconstrueerd document
+                                        </span>
+                                    )}
+                                </div>
                                 <div className="w-full h-[500px] rounded-xl overflow-hidden border border-neutral-200 dark:border-white/10 bg-white">
                                     <iframe
                                         src={page.properties.receiptUrl.startsWith('http') ? page.properties.receiptUrl : `/api/files/${page.properties.receiptUrl}`}

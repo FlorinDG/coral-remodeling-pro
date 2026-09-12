@@ -133,11 +133,14 @@ export default function MobileShell({
 
     return (
         <div
-            className="min-h-screen w-full bg-neutral-50 dark:bg-black text-neutral-950 dark:text-white flex flex-col overflow-x-hidden"
+            className="min-h-[100dvh] h-[100dvh] w-full bg-neutral-50 dark:bg-black text-neutral-950 dark:text-white flex flex-col overflow-x-hidden"
             style={{ '--brand-color': brandColor } as React.CSSProperties}
         >
             {/* ── Top Bar ── */}
-            <header className="sticky top-0 z-50 bg-white/90 dark:bg-neutral-950/90 backdrop-blur-xl border-b border-neutral-300 dark:border-white/10">
+            <header
+                className="sticky top-0 z-50 bg-white/90 dark:bg-neutral-950/90 backdrop-blur-xl border-b border-neutral-300 dark:border-white/10"
+                style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+            >
                 <div className="flex items-center justify-between h-14 px-4 max-w-lg mx-auto w-full">
                     <div className="flex items-center gap-2 min-w-0">
                         <h1 className="text-sm font-black tracking-tight truncate max-w-[180px]" style={{ color: brandColor }}>
@@ -163,7 +166,7 @@ export default function MobileShell({
             </header>
 
             {/* ── Content ── */}
-            <main className="flex-1 pb-20 overflow-y-auto">
+            <main className="flex-1 pb-20 overflow-y-auto overscroll-y-contain">
                 <TenantProvider activeModules={activeModules} planType={planType} lockedDbIds={lockedDbIds} tenant={tenant}>
                     {children}
                 </TenantProvider>

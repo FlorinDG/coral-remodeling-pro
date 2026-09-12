@@ -31,6 +31,20 @@ function getLocalDateStr(d = new Date()): string {
     return `${year}-${month}-${day}`;
 }
 
+function getTomorrowDateStr(): string {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return getLocalDateStr(d);
+}
+
+function getWeekendDateStr(): string {
+    const d = new Date();
+    const day = d.getDay(); // 0 is Sunday, 6 is Saturday
+    const diff = day === 6 ? 7 : (6 - day);
+    d.setDate(d.getDate() + diff);
+    return getLocalDateStr(d);
+}
+
 // Scope by OWNERSHIP: everything mine to do (assignee unset or current user)
 // Projects are an attribute of a task, NOT a filter on it (TASK-M1 Planner Correction).
 function isMyTask(p: Page, currentUserId?: string): boolean {
@@ -98,6 +112,13 @@ export default function MobileTasksPage() {
     // Active tab: 'today' (landing view) or 'all'
     const [activeTab, setActiveTab] = useState<'today' | 'all'>('today');
 
+    // Task Detail Sheet state (TASK-M11)
+    const [detailTaskId, setDetailTaskId] = useState<string | null>(null);
+    const [deletedUndo, setDeletedUndo] = useState<{
+        page: Page;
+        timerId: NodeJS.Timeout;
+    } | null>(null);
+
     // Fast Capture state
     const [captureOpen, setCaptureOpen] = useState(false);
     const [captureTitle, setCaptureTitle] = useState('');
@@ -150,6 +171,28 @@ export default function MobileTasksPage() {
         const raw = taskForProjectPicker.properties['prop-task-project'];
         return Array.isArray(raw) ? raw[0] : (typeof raw === 'string' ? raw : undefined);
     }, [taskForProjectPicker]);
+
+    const detailTask = useMemo(() => {
+        return detailTaskId ? allPages.find(p => p.id === detailTaskId) : null;
+    }, [detailTaskId, allPages]);
+
+    const handleDeleteTask = useCallback((page: Page) => {
+        setDetailTaskId(null);
+        deletePage(tasksDbId, page.id);
+
+        const timerId = setTimeout(() => {
+            setDeletedUndo(null);
+        }, 5000);
+
+        setDeletedUndo({ page, timerId });
+    }, [deletePage, tasksDbId]);
+
+    const handleUndoDelete = useCallback(() => {
+        if (!deletedUndo) return;
+        clearTimeout(deletedUndo.timerId);
+        createPage(tasksDbId, deletedUndo.page.properties, deletedUndo.page.id, deletedUndo.page.blocks);
+        setDeletedUndo(null);
+    }, [deletedUndo, createPage, tasksDbId]);
 
     // Pending 4-second Undo state for 1-tap completions
     const [pendingUndos, setPendingUndos] = useState<Record<string, PendingUndo>>({});
@@ -426,16 +469,20 @@ export default function MobileTasksPage() {
                             return (
                                 <div
                                     key={task.id}
-                                    className={`flex items-start justify-between p-3.5 transition-all ${
+                                    onClick={() => setDetailTaskId(task.id)}
+                                    className={`flex items-start justify-between p-3.5 transition-all cursor-pointer ${
                                         isCompleting
                                             ? 'bg-neutral-50 dark:bg-neutral-800/60 opacity-80'
-                                            : 'hover:bg-neutral-50/80 dark:hover:bg-neutral-800/30'
+                                            : 'hover:bg-neutral-50/80 dark:hover:bg-neutral-800/30 active:bg-neutral-100 dark:active:bg-neutral-800/50'
                                     }`}
                                 >
                                     {/* 1-Tap Completion Checkbox (Min 44px Touch Target) */}
                                     <button
                                         type="button"
-                                        onClick={() => handleToggleComplete(task)}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleToggleComplete(task);
+                                        }}
                                         className="min-w-[44px] min-h-[44px] flex items-center justify-center -ml-1.5 mr-1 pt-0.5"
                                         aria-label={isCompleting ? 'Completed' : 'Complete task'}
                                     >
@@ -692,6 +739,318 @@ export default function MobileTasksPage() {
                             )}
                         </div>
                     </div>
+                </div>
+            )}
+
+            {/* ── Task Detail Bottom Sheet (TASK-M11) ── */}
+            {detailTask && (
+                <div
+                    className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex flex-col justify-end"
+                    onClick={() => setDetailTaskId(null)}
+                >
+                    <div
+                        className="bg-white dark:bg-neutral-900 border-t border-neutral-200 dark:border-white/10 rounded-t-3xl max-w-lg mx-auto w-full p-4 max-h-[85vh] flex flex-col shadow-2xl animate-in slide-in-from-bottom duration-200 overflow-hidden"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Sheet Header */}
+                        <div className="flex items-center justify-between pb-3 border-b border-neutral-100 dark:border-white/5 shrink-0">
+                            <div className="flex items-center gap-2">
+                                <ListTodo className="w-4 h-4 text-orange-500" />
+                                <h3 className="font-bold text-sm text-neutral-900 dark:text-white">
+                                    {t('tasks_detail_title')}
+                                </h3>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setDetailTaskId(null)}
+                                className="min-w-[44px] min-h-[44px] flex items-center justify-center text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 -mr-2"
+                                aria-label="Close task details"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* Scrollable Body */}
+                        <div className="overflow-y-auto space-y-4 flex-1 py-3 pr-1 text-xs">
+                            {/* Title Input */}
+                            <div>
+                                <input
+                                    type="text"
+                                    value={(detailTask.properties['title'] as string) || ''}
+                                    onChange={(e) => updatePageProperty(tasksDbId, detailTask.id, 'title', e.target.value)}
+                                    placeholder="Task title..."
+                                    className="w-full bg-neutral-100 dark:bg-neutral-800 rounded-xl px-3 py-2.5 text-sm font-semibold outline-none text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:ring-2 focus:ring-orange-500/30"
+                                />
+                            </div>
+
+                            {/* Status Chips */}
+                            <div>
+                                <label className="text-[11px] font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1.5 block">
+                                    {t('tasks_status')}
+                                </label>
+                                <div className="flex flex-wrap gap-1.5">
+                                    {[
+                                        { id: 'opt-todo', label: t('tasks_status_todo') },
+                                        { id: 'opt-doing', label: t('tasks_status_doing') },
+                                        { id: 'opt-review', label: t('tasks_status_review') },
+                                        { id: 'opt-done', label: t('tasks_status_done') },
+                                        { id: 'opt-dropped', label: t('tasks_status_dropped') },
+                                    ].map(st => {
+                                        const isCur = ((detailTask.properties['prop-task-status'] as string) || 'opt-todo') === st.id;
+                                        return (
+                                            <button
+                                                key={st.id}
+                                                type="button"
+                                                onClick={() => {
+                                                    updatePageProperty(tasksDbId, detailTask.id, 'prop-task-status', st.id);
+                                                    if (st.id === 'opt-done') {
+                                                        updatePageProperty(tasksDbId, detailTask.id, 'prop-task-completed-at', new Date().toISOString());
+                                                    } else {
+                                                        updatePageProperty(tasksDbId, detailTask.id, 'prop-task-completed-at', '');
+                                                    }
+                                                }}
+                                                className={`min-h-[36px] px-3 py-1.5 rounded-lg font-semibold transition-colors ${
+                                                    isCur
+                                                        ? 'bg-neutral-900 text-white dark:bg-white dark:text-black shadow-xs'
+                                                        : 'bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-neutral-600 dark:text-neutral-300'
+                                                }`}
+                                            >
+                                                {st.label}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* Due Date & Quick Dates */}
+                            <div>
+                                <label className="text-[11px] font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1.5 block">
+                                    {t('tasks_due_date')}
+                                </label>
+                                <div className="flex flex-wrap gap-1.5 mb-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => updatePageProperty(tasksDbId, detailTask.id, 'prop-task-due', getLocalDateStr())}
+                                        className={`min-h-[36px] px-3 py-1.5 rounded-lg font-semibold transition-colors ${
+                                            detailTask.properties['prop-task-due'] === getLocalDateStr()
+                                                ? 'bg-orange-500 text-white'
+                                                : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300'
+                                        }`}
+                                    >
+                                        {t('tasks_due_today')}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => updatePageProperty(tasksDbId, detailTask.id, 'prop-task-due', getTomorrowDateStr())}
+                                        className={`min-h-[36px] px-3 py-1.5 rounded-lg font-semibold transition-colors ${
+                                            detailTask.properties['prop-task-due'] === getTomorrowDateStr()
+                                                ? 'bg-orange-500 text-white'
+                                                : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300'
+                                        }`}
+                                    >
+                                        {t('tasks_due_tomorrow')}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => updatePageProperty(tasksDbId, detailTask.id, 'prop-task-due', getWeekendDateStr())}
+                                        className={`min-h-[36px] px-3 py-1.5 rounded-lg font-semibold transition-colors ${
+                                            detailTask.properties['prop-task-due'] === getWeekendDateStr()
+                                                ? 'bg-orange-500 text-white'
+                                                : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300'
+                                        }`}
+                                    >
+                                        {t('tasks_due_weekend')}
+                                    </button>
+                                    {detailTask.properties['prop-task-due'] && (
+                                        <button
+                                            type="button"
+                                            onClick={() => updatePageProperty(tasksDbId, detailTask.id, 'prop-task-due', '')}
+                                            className="min-h-[36px] px-2.5 py-1.5 rounded-lg font-semibold bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400"
+                                        >
+                                            {t('tasks_clear_date')}
+                                        </button>
+                                    )}
+                                </div>
+                                <input
+                                    type="date"
+                                    value={(detailTask.properties['prop-task-due'] as string) || ''}
+                                    onChange={(e) => updatePageProperty(tasksDbId, detailTask.id, 'prop-task-due', e.target.value)}
+                                    className="w-full min-h-[44px] bg-neutral-100 dark:bg-neutral-800 rounded-xl px-3 py-2 text-xs font-semibold outline-none text-neutral-900 dark:text-white"
+                                />
+                            </div>
+
+                            {/* Priority */}
+                            <div>
+                                <label className="text-[11px] font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1.5 block">
+                                    {t('tasks_priority')}
+                                </label>
+                                <div className="grid grid-cols-4 gap-1.5">
+                                    {[
+                                        { id: 'opt-p1', label: t('tasks_p1'), color: 'text-red-600 border-red-300 bg-red-50 dark:bg-red-500/10' },
+                                        { id: 'opt-p2', label: t('tasks_p2'), color: 'text-amber-600 border-amber-300 bg-amber-50 dark:bg-amber-500/10' },
+                                        { id: 'opt-p3', label: t('tasks_p3'), color: 'text-blue-600 border-blue-300 bg-blue-50 dark:bg-blue-500/10' },
+                                        { id: 'opt-p4', label: t('tasks_p4'), color: 'text-neutral-600 border-neutral-300 bg-neutral-50 dark:bg-neutral-500/10' },
+                                    ].map(p => {
+                                        const isCur = ((detailTask.properties['prop-task-priority'] as string) || 'opt-p4') === p.id;
+                                        return (
+                                            <button
+                                                key={p.id}
+                                                type="button"
+                                                onClick={() => updatePageProperty(tasksDbId, detailTask.id, 'prop-task-priority', p.id)}
+                                                className={`min-h-[40px] px-2 py-1.5 rounded-lg text-xs font-bold border transition-all ${
+                                                    isCur
+                                                        ? `${p.color} ring-2 ring-black/20 dark:ring-white/20`
+                                                        : 'bg-neutral-50 dark:bg-neutral-800 border-transparent text-neutral-500'
+                                                }`}
+                                            >
+                                                {p.label}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* Project Assignment (Reuses TASK-M10 picker) */}
+                            <div>
+                                <label className="text-[11px] font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1.5 block">
+                                    {t('tasks_assign_project')}
+                                </label>
+                                {(() => {
+                                    const rawProj = detailTask.properties['prop-task-project'];
+                                    const pId = Array.isArray(rawProj) ? rawProj[0] : (typeof rawProj === 'string' ? rawProj : undefined);
+                                    const pTitle = pId ? (pageIndex[pId]?.title || getPageLabel(pId) || pId) : null;
+                                    return (
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setProjectPickerTaskId(detailTask.id);
+                                                setProjectSearch('');
+                                            }}
+                                            className="w-full min-h-[44px] px-3 py-2 rounded-xl bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 flex items-center justify-between font-semibold transition-colors text-neutral-800 dark:text-neutral-200"
+                                        >
+                                            <span className="flex items-center gap-2 truncate">
+                                                <FolderKanban className="w-4 h-4 text-neutral-500 shrink-0" />
+                                                <span className="truncate">{pTitle || t('tasks_select_project')}</span>
+                                            </span>
+                                            <Plus className="w-4 h-4 text-neutral-400 shrink-0" />
+                                        </button>
+                                    );
+                                })()}
+                            </div>
+
+                            {/* My Day & Flag Toggles */}
+                            <div className="flex gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => updatePageProperty(tasksDbId, detailTask.id, 'prop-task-my-day', !detailTask.properties['prop-task-my-day'])}
+                                    className={`flex-1 min-h-[44px] px-3 py-2 rounded-xl flex items-center justify-center gap-2 font-semibold transition-colors ${
+                                        detailTask.properties['prop-task-my-day']
+                                            ? 'bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300'
+                                            : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400'
+                                    }`}
+                                >
+                                    <Sun className="w-4 h-4" />
+                                    <span>{t('tasks_my_day')}</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => updatePageProperty(tasksDbId, detailTask.id, 'prop-task-flagged', !detailTask.properties['prop-task-flagged'])}
+                                    className={`flex-1 min-h-[44px] px-3 py-2 rounded-xl flex items-center justify-center gap-2 font-semibold transition-colors ${
+                                        detailTask.properties['prop-task-flagged']
+                                            ? 'bg-orange-100 dark:bg-orange-500/20 text-orange-800 dark:text-orange-300'
+                                            : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400'
+                                    }`}
+                                >
+                                    <Flag className="w-4 h-4" />
+                                    <span>{t('tasks_flagged')}</span>
+                                </button>
+                            </div>
+
+                            {/* Recurrence */}
+                            <div>
+                                <label className="text-[11px] font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1.5 block">
+                                    {t('tasks_recurrence')}
+                                </label>
+                                <select
+                                    value={(detailTask.properties['prop-task-recurrence'] as string) || ''}
+                                    onChange={(e) => updatePageProperty(tasksDbId, detailTask.id, 'prop-task-recurrence', e.target.value)}
+                                    className="w-full min-h-[44px] bg-neutral-100 dark:bg-neutral-800 rounded-xl px-3 py-2 text-xs font-semibold outline-none text-neutral-900 dark:text-white"
+                                >
+                                    <option value="">{t('tasks_recurrence_none')}</option>
+                                    <option value="daily">Daily</option>
+                                    <option value="weekly">Weekly</option>
+                                    <option value="monthly">Monthly</option>
+                                </select>
+                            </div>
+
+                            {/* Defer Date */}
+                            <div>
+                                <label className="text-[11px] font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1.5 block">
+                                    {t('tasks_defer_date')}
+                                </label>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="date"
+                                        value={(detailTask.properties['prop-task-defer'] as string) || ''}
+                                        onChange={(e) => updatePageProperty(tasksDbId, detailTask.id, 'prop-task-defer', e.target.value)}
+                                        className="flex-1 min-h-[44px] bg-neutral-100 dark:bg-neutral-800 rounded-xl px-3 py-2 text-xs font-semibold outline-none text-neutral-900 dark:text-white"
+                                    />
+                                    {detailTask.properties['prop-task-defer'] && (
+                                        <button
+                                            type="button"
+                                            onClick={() => updatePageProperty(tasksDbId, detailTask.id, 'prop-task-defer', '')}
+                                            className="min-h-[44px] px-3 py-2 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-neutral-500 hover:text-red-500 font-semibold"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Notes */}
+                            <div>
+                                <label className="text-[11px] font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1.5 block">
+                                    {t('tasks_notes')}
+                                </label>
+                                <textarea
+                                    rows={3}
+                                    value={(detailTask.properties['prop-task-notes'] as string) || ''}
+                                    onChange={(e) => updatePageProperty(tasksDbId, detailTask.id, 'prop-task-notes', e.target.value)}
+                                    placeholder={t('tasks_notes_placeholder')}
+                                    className="w-full bg-neutral-100 dark:bg-neutral-800 rounded-xl p-3 text-xs outline-none text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:ring-2 focus:ring-orange-500/30 resize-none font-normal"
+                                />
+                            </div>
+
+                            {/* Delete Task Button */}
+                            <div className="pt-2">
+                                <button
+                                    type="button"
+                                    onClick={() => handleDeleteTask(detailTask)}
+                                    className="w-full min-h-[44px] px-4 py-2.5 rounded-xl border border-red-200 dark:border-red-500/20 bg-red-50 hover:bg-red-100 dark:bg-red-500/10 dark:hover:bg-red-500/20 text-red-600 dark:text-red-400 text-xs font-bold flex items-center justify-center gap-2 transition-colors"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                    <span>{t('tasks_delete')}</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Undo Banner */}
+            {deletedUndo && (
+                <div className="fixed bottom-20 left-4 right-4 z-40 max-w-md mx-auto bg-neutral-900 text-white dark:bg-white dark:text-black rounded-2xl px-4 py-3 shadow-2xl flex items-center justify-between animate-in slide-in-from-bottom duration-200">
+                    <span className="text-xs font-semibold truncate pr-2">
+                        {t('tasks_delete_confirm')}
+                    </span>
+                    <button
+                        type="button"
+                        onClick={handleUndoDelete}
+                        className="min-h-[36px] px-3 py-1 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs flex items-center gap-1.5 transition-colors shadow-sm"
+                    >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        <span>{t('tasks_undo')}</span>
+                    </button>
                 </div>
             )}
         </div>

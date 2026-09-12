@@ -50,6 +50,59 @@ export async function GET(req: Request) {
             }
         }
 
+        // Process Task Email Digest Reminders (TASK-M15)
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const tomorrowIso = format(tomorrow, 'yyyy-MM-dd');
+
+        const { sendTaskDigestEmail } = await import('@/lib/email');
+
+        // Group tasks by tenant for email digest
+        const tenantTaskMap = new Map<string, { to: string; tasks: any[] }>();
+
+        for (const page of pages) {
+            const props = (page.properties as Record<string, any>) || {};
+            const status = props['prop-task-status'];
+            if (status === 'opt-done' || status === 'opt-dropped' || status === 't-done') continue;
+
+            const rem = props['prop-task-reminder'];
+            const due = props['prop-task-due'];
+            if (!rem || rem === 'opt-rem-none' || !due) continue;
+
+            const firesToday = (rem === 'opt-rem-morning' && due === isoStr) ||
+                               (rem === 'opt-rem-day-before' && due === tomorrowIso);
+
+            if (firesToday) {
+                const tenantId = page.database.tenantId;
+                if (!tenantTaskMap.has(tenantId)) {
+                    // Fetch tenant owner email
+                    const tenantOwner = await prisma.user.findFirst({
+                        where: { tenantId, role: { in: ['admin', 'owner'] } },
+                        select: { email: true, name: true }
+                    });
+                    if (tenantOwner?.email) {
+                        tenantTaskMap.set(tenantId, { to: tenantOwner.email, tasks: [] });
+                    }
+                }
+                const entry = tenantTaskMap.get(tenantId);
+                if (entry) {
+                    entry.tasks.push({
+                        id: page.id,
+                        title: props.title || 'Untitled Task',
+                        due,
+                        priority: props['prop-task-priority'],
+                    });
+                }
+            }
+        }
+
+        for (const [, { to, tasks }] of tenantTaskMap) {
+            if (tasks.length > 0) {
+                await sendTaskDigestEmail({ to, tasks });
+                remindersSent += tasks.length;
+            }
+        }
+
         return NextResponse.json({ success: true, remindersSent });
     } catch (e: any) {
         console.error('[Cron] Failed to process date reminders', e);

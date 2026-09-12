@@ -182,3 +182,75 @@ export async function sendPasswordResetEmail(params: {
         throw error;
     }
 }
+
+export interface TaskDigestItem {
+    id: string;
+    title: string;
+    due?: string;
+    priority?: string;
+    projectName?: string;
+    isOverdue?: boolean;
+}
+
+export async function sendTaskDigestEmail(params: {
+    to: string;
+    userName?: string;
+    tasks: TaskDigestItem[];
+    dateStr?: string;
+}) {
+    const resend = getResend();
+    if (!resend) {
+        console.warn('[TaskDigest] RESEND_API_KEY is not set. Skipping task digest email.');
+        return { success: false, reason: 'RESEND_API_KEY not configured' };
+    }
+
+    try {
+        const fromEmail = process.env.RESEND_FROM_EMAIL || 'noreply@coral-group.be';
+        const taskRows = params.tasks.map(t => `
+            <tr style="border-bottom: 1px solid #f0f0f0;">
+                <td style="padding: 10px 8px; font-size: 13px; font-weight: 600; color: #111;">
+                    ${t.title}
+                    ${t.projectName ? `<div style="font-size: 11px; color: #666; font-weight: 400;">📁 ${t.projectName}</div>` : ''}
+                </td>
+                <td style="padding: 10px 8px; font-size: 12px; color: ${t.isOverdue ? '#dc2626' : '#555'}; white-space: nowrap; text-align: right;">
+                    ${t.due ? (t.isOverdue ? `⚠️ ${t.due}` : t.due) : 'No date'}
+                </td>
+            </tr>
+        `).join('');
+
+        const result = await resend.emails.send({
+            from: `Coral Tasks <${fromEmail}>`,
+            to: params.to,
+            subject: `Daily Task Digest — ${params.tasks.length} task${params.tasks.length === 1 ? '' : 's'} scheduled`,
+            html: `
+                <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 520px; margin: 0 auto; padding: 24px;">
+                    <div style="margin-bottom: 24px;">
+                        <h2 style="font-size: 20px; font-weight: 800; color: #111; margin: 0;">Task Digest</h2>
+                        <p style="color: #666; font-size: 13px; margin-top: 4px;">Good morning ${params.userName || ''}! Here are your tasks.</p>
+                    </div>
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px;">
+                        <thead>
+                            <tr style="border-bottom: 2px solid #e5e5e5; text-align: left;">
+                                <th style="padding: 8px; font-size: 11px; text-transform: uppercase; color: #888; letter-spacing: 0.5px;">Task</th>
+                                <th style="padding: 8px; font-size: 11px; text-transform: uppercase; color: #888; letter-spacing: 0.5px; text-align: right;">Due</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${taskRows}
+                        </tbody>
+                    </table>
+                    <div style="text-align: center; margin: 24px 0;">
+                        <a href="${process.env.NEXTAUTH_URL || 'https://coral-group.be'}/m/tasks" style="background-color: #ea580c; color: white; padding: 10px 24px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 13px; display: inline-block;">
+                            Open My Tasks
+                        </a>
+                    </div>
+                </div>
+            `,
+        });
+        return { success: true, id: (result as any)?.data?.id };
+    } catch (error) {
+        console.error('[TaskDigest] Failed to send email:', error);
+        return { success: false, error };
+    }
+}
+

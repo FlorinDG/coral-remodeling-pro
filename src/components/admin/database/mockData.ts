@@ -582,7 +582,21 @@ export const mockDatabases: Database[] = [
                 ] }
             },
             { id: 'prop-task-recurrence',   name: 'Recurrence',     type: 'text' },
-            { id: 'prop-task-depends-on',   name: 'Blocked By',     type: 'relation', config: { relationDatabaseId: 'db-tasks' } },
+            { id: 'prop-task-parent',       name: 'Parent Task',    type: 'relation', config: { relationDatabaseId: 'db-tasks', relationDisplayPropertyId: 'title' } },
+            { id: 'prop-task-attachments',  name: 'Attachments',    type: 'text' },
+            { id: 'prop-task-reminder',     name: 'Reminder',       type: 'select',
+                config: { options: [
+                    { id: 'opt-rem-none',        name: 'None',                  color: 'gray'   },
+                    { id: 'opt-rem-morning',     name: 'Morning of due date',   color: 'blue'   },
+                    { id: 'opt-rem-day-before',  name: '1 day before due',      color: 'orange' },
+                ] }
+            },
+            { id: 'prop-task-recurrence-anchor', name: 'Recurrence Anchor', type: 'select',
+                config: { options: [
+                    { id: 'opt-anchor-due',        name: 'From due date',        color: 'blue' },
+                    { id: 'opt-anchor-completion', name: 'From completion date', color: 'green' },
+                ] }
+            },
             { id: 'prop-task-estimated',    name: 'Estimate (min)', type: 'number' },
             { id: 'prop-task-completed-at', name: 'Completed At',   type: 'date' },
             { id: 'prop-task-notes',        name: 'Notes',          type: 'text' },

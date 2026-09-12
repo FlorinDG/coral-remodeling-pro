@@ -120,3 +120,46 @@ Patching call sites one by one guarantees the next new surface repeats it. **The
 
 ## ROOT CAUSE, FOR THE RECORD
 `MEM-3c` changed a global invariant — *"the store holds every page"* — and updated the three surfaces its author was looking at. Every other consumer still assumes the old invariant, and the new one fails **silently** rather than loudly. This is the same lesson as `R1`/`R2`: *an invariant that is not enforced mechanically will be violated by the code nobody reviewed.* `LAZY-2` is the enforcement that was missing.
+
+
+---
+
+# 🔁 COURSE CORRECTION — `LAZY-5` IS CANCELLED, ABSORBED INTO `R2-4` (Florin, 2026-09-12)
+
+> *"We wasted time then… or am I reading this vice versa, and lazy load should be off by default, since our hybrid read/load takes over?"*
+
+**Florin is reading it correctly, and the Planner had it backwards.**
+
+## THE FLAG IS AN ARTEFACT OF THE OLD MODEL
+`IS_LAZY_DATA_ENABLED` switches between **two configurations of the same model** — *"the store holds every database"* versus *"the store holds some databases"*. Both are the store-holds-databases model. **The hybrid decided in `R2-6(c)` replaces that model outright:**
+
+```
+INDEX          always loaded   (already unconditional at m/layout.tsx:107 — correct today)
+WORKING SET    persisted, offline-complete
+EVERYTHING ELSE per-view query
+```
+
+**There is no "lazy on/off" question in that world**, because there is no "holds everything" mode to fall back to. **So the flag does not get switched back on — it gets deleted when the hybrid lands.**
+
+## WHY `LAZY-5` WAS THE WRONG ITEM
+`LAZY-5` said: *migrate the remaining ~15 surfaces onto `usePagesOf`, then turn the flag back on.* That is **finishing the old model.** `R2-4` says: *move those same surfaces onto the hybrid.* **Same 15 surfaces, two different destinations — and doing `LAZY-5` first would touch every one of them twice.** Precisely the fix-it-twice failure this pass exists to stop, and it was one item away from happening.
+
+- [x] **`LAZY-5` — CANCELLED.** Folded into `R2-4`.
+- [ ] The ~15 surfaces migrate **once**, to the hybrid, as part of `R2-4`.
+- [ ] **`IS_LAZY_DATA_ENABLED` is deleted in that same commit**, not re-enabled.
+
+## WHAT WAS AND WASN'T WASTED — the honest accounting
+| Work | Verdict |
+|---|---|
+| `LAZY-1` sweep | **Kept.** It is the discovery — 16 broken surfaces, and the client-facing ones named. |
+| `LAZY-2` `usePagesOf` / `useLabelsOf` | **Kept, and load-bearing.** This is exactly the hybrid's accessor. It was the seam whichever way `R2-6` went, which is why it was built before the decision. |
+| `LAZY-3` `TaskModuleShell` | **Kept.** Fixed the symptom Florin reported. |
+| `LAZY-4` flag off | **Kept, and now effectively permanent** until the flag is deleted. |
+| `MEM-3a` page index | **Kept.** Loaded unconditionally, used by the mobile project picker today, and it is the hybrid's INDEX layer. |
+| `MEM-3b` `getDatabasePages` / schema split | **Kept.** The hybrid's per-view query needs exactly these server actions. |
+| **`MEM-3c` lazy per-database loading** | **Superseded.** This is the one piece the hybrid replaces. |
+
+**So: one piece of `MEM-3` is superseded, not the work around it.** The index, the split server actions and the accessor are all foundations the hybrid consumes.
+
+## ⚠️ ONE INEFFICIENCY TO FIX MEANWHILE
+With the flag off, `m/layout.tsx` calls **`getGlobalDatabases()` (full hydration) AND `getGlobalPageIndex()`** — both. That is heavier than either model alone: every page plus a full index. It is not breaking anything, but it is the worst of both until `R2-4` lands. **Noted, not urgent** — do not patch it separately; it disappears with the hybrid.

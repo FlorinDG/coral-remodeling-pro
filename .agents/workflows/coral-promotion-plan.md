@@ -53,8 +53,12 @@ That is correct and it is what you asked for — but **nothing today prevents it
 
 ## 3 · GATES — all must be green before promoting
 
-- [ ] **G-1 · `LAZY-1…4` complete.** Non-negotiable. `MEM-3c` is in these 99 commits and **16 of 19 surfaces are currently broken on `develop`**. `main` has no lazy loading, so today production is fine — **promoting before Phase 1 is done would break 16 screens that work right now.** This is the single biggest reason not to promote yet.
-- [ ] **G-2 · Phase 2 complete and Florin has used `/m/tasks` for a few days.** Not "it matches the spec" — "I would trust it with my week."
+- [x] **G-1 · `LAZY-1…4` complete — ✅ MET, and in a way that makes promotion SAFER than planned.**
+  `LAZY-4` set the flag to **opt-in**: `IS_LAZY_DATA_ENABLED = process.env.NEXT_PUBLIC_LAZY_DATA === 'true'` (`feature-flags.ts:85`). **Lazy loading is OFF unless explicitly switched on.** So the 16 exposed surfaces hydrate fully and behave exactly as they do on `main` today — the regression is **neutralised**, and promoting no longer risks them.
+  ⚠️ **Be clear about what this means: the regression is MASKED, not resolved.** `LAZY-2` built the accessor (`usePagesOf` / `useLabelsOf`), but **only `TaskModuleShell` consumes it.** The other ~15 surfaces still read the old way. **Turning the flag back on would break them again.**
+  ⚠️ **And the cost: `MEM-3`'s entire benefit is switched off.** We are back to full hydration — 52 MB payload, the 307 MB invocation baseline. Production is no worse than today (`main` never had `MEM-3`), but the memory work is banked, not realised. See `LAZY-5`.
+- [x] **Phase 2 complete** — `2.1`–`2.5`/`TS-1` all landed (`66ef43a`, `62865a7`, `896f38f`, `afbf405`).
+- [ ] **G-2 · Florin has actually used `/m/tasks`.** Not "it matches the spec" — "I would trust it with my week."
 - [ ] **G-3 · `npm run test:compile` clean · full suite green** except the known `i18n` red, which is itself worth fixing first (`I18N-MISSING-KEYS`) so the baseline is honestly green.
 - [ ] **G-4 · `P-1` DB verification clean.**
 - [ ] **G-5 · Neon snapshot taken immediately before**, and PITR window confirmed. `pd.md` DATA-SAFETY.

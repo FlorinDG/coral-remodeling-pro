@@ -643,6 +643,18 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
       ]}},
       { id: 'prop-task-notes',        name: 'Notes',         type: 'text' },
       { id: 'prop-task-completed-at', name: 'Completed At',  type: 'date' },
+      { id: 'prop-task-parent',       name: 'Hoofdtaak',     type: 'relation', config: { relationDatabaseId: resolveDbId('db-tasks'), relationDisplayPropertyId: 'title' } },
+      { id: 'prop-task-attachments',  name: 'Bijlagen',      type: 'text' },
+      { id: 'prop-task-recurrence',   name: 'Herhaling',     type: 'text' },
+      { id: 'prop-task-reminder',     name: 'Herinnering',   type: 'select', config: { options: [
+        { id: 'opt-rem-none',        name: 'Geen',               color: 'gray'   },
+        { id: 'opt-rem-morning',     name: 'Ochtend vervaldatum',color: 'blue'   },
+        { id: 'opt-rem-day-before',  name: '1 dag vooraf',       color: 'orange' },
+      ]}},
+      { id: 'prop-task-recurrence-anchor', name: 'Herhaling basis', type: 'select', config: { options: [
+        { id: 'opt-anchor-due',        name: 'Vanaf vervaldatum', color: 'blue' },
+        { id: 'opt-anchor-completion', name: 'Vanaf voltooiing',  color: 'green' },
+      ]}},
     ],
     'db-articles': [
       { id: 'title',              name: 'Naam',              type: 'text' },

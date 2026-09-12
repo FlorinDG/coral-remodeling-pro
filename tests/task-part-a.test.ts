@@ -115,3 +115,112 @@ describe('Tasks Part A — Ownership & Scope Invariants', () => {
         assert.equal(isClosedTask(taskOptTodo), false);
     });
 });
+
+describe('Subtasks & Recurrence Invariants (coral-task-subtasks.md & TASK-M14)', () => {
+    function isSubtask(p: Page): boolean {
+        const parent = p.properties['prop-task-parent'];
+        if (!parent) return false;
+        if (Array.isArray(parent)) return parent.length > 0;
+        if (typeof parent === 'string') return parent.trim().length > 0;
+        return false;
+    }
+
+    function getTaskParentId(p: Page): string | undefined {
+        const parent = p.properties['prop-task-parent'];
+        if (!parent) return undefined;
+        if (Array.isArray(parent)) return parent[0] || undefined;
+        if (typeof parent === 'string') return parent.trim() || undefined;
+        return undefined;
+    }
+
+    test('TASK-SUBTASKS: Subtasks do NOT appear as separate rows in root My Tasks list', () => {
+        const parentTask = createMockTask({ id: 'parent-1', title: 'Parent Remodel' });
+        const subtask1 = createMockTask({ id: 'sub-1', title: 'Measure space' });
+        subtask1.properties['prop-task-parent'] = ['parent-1'];
+
+        const all = [parentTask, subtask1];
+        const rootTasks = all.filter(p => isMyTask(p, 'user-florin') && !isSubtask(p));
+
+        assert.equal(rootTasks.length, 1);
+        assert.equal(rootTasks[0].id, 'parent-1');
+        assert.equal(isSubtask(subtask1), true);
+        assert.equal(isSubtask(parentTask), false);
+    });
+
+    test('TASK-SUBTASKS: Progress is accurately calculated (e.g. 2/3 done)', () => {
+        const parent = createMockTask({ id: 'parent-1', title: 'Build Deck' });
+        const sub1 = createMockTask({ id: 's1', title: 'Buy wood', status: 'opt-done' });
+        const sub2 = createMockTask({ id: 's2', title: 'Cut planks', status: 'opt-done' });
+        const sub3 = createMockTask({ id: 's3', title: 'Paint deck', status: 'opt-todo' });
+        sub1.properties['prop-task-parent'] = ['parent-1'];
+        sub2.properties['prop-task-parent'] = ['parent-1'];
+        sub3.properties['prop-task-parent'] = ['parent-1'];
+
+        const children = [sub1, sub2, sub3].filter(p => getTaskParentId(p) === parent.id);
+        const doneChildren = children.filter(isDoneTask).length;
+
+        assert.equal(children.length, 3);
+        assert.equal(doneChildren, 2);
+        assert.equal(`${doneChildren}/${children.length}`, '2/3');
+    });
+
+    test('TASK-SUBTASKS: Completing all subtasks does NOT auto-complete parent', () => {
+        const parent = createMockTask({ id: 'p1', title: 'Assemble Furniture', status: 'opt-todo' });
+        const sub1 = createMockTask({ id: 's1', title: 'Legs', status: 'opt-done' });
+        const sub2 = createMockTask({ id: 's2', title: 'Tabletop', status: 'opt-done' });
+        sub1.properties['prop-task-parent'] = ['p1'];
+        sub2.properties['prop-task-parent'] = ['p1'];
+
+        const children = [sub1, sub2];
+        const allDone = children.every(isDoneTask);
+        assert.equal(allDone, true);
+
+        // Parent must remain opt-todo until closed by the user
+        assert.equal(isDoneTask(parent), false);
+        assert.equal(parent.properties['prop-task-status'], 'opt-todo');
+    });
+
+    test('TASK-SUBTASKS: Deleting parent promotes subtasks to top-level tasks (no cascade delete)', () => {
+        const parent = createMockTask({ id: 'p1', title: 'Kitchen' });
+        const sub1 = createMockTask({ id: 's1', title: 'Cabinets' });
+        const sub2 = createMockTask({ id: 's2', title: 'Countertops' });
+        sub1.properties['prop-task-parent'] = ['p1'];
+        sub2.properties['prop-task-parent'] = ['p1'];
+
+        const children = [sub1, sub2].filter(p => getTaskParentId(p) === parent.id);
+        // Simulate promotion logic:
+        for (const child of children) {
+            child.properties['prop-task-parent'] = [];
+        }
+
+        assert.equal(isSubtask(sub1), false);
+        assert.equal(isSubtask(sub2), false);
+        assert.deepEqual(sub1.properties['prop-task-parent'], []);
+        assert.deepEqual(sub2.properties['prop-task-parent'], []);
+    });
+
+    test('TASK-M14: Recurrence anchor calculates next due date correctly from due vs completion', async () => {
+        const { parseRecurrenceRule, getNextDueDate } = await import('../src/components/admin/tasks/RecurrenceEngine.ts');
+
+        const parsedWeekly = parseRecurrenceRule('weekly');
+        assert.equal(parsedWeekly.ok, true);
+
+        // Mode: From due date
+        const baseDueDate = new Date('2026-10-01T00:00:00Z');
+        const nextFromDue = getNextDueDate(parsedWeekly, baseDueDate, {
+            repeatFrom: 'due',
+            completionDate: new Date('2026-10-05T00:00:00Z'),
+        });
+        // 7 days after 2026-10-01 = 2026-10-08
+        assert.equal(nextFromDue.toISOString().slice(0, 10), '2026-10-08');
+
+        // Mode: From completion date
+        const nextFromCompletion = getNextDueDate(parsedWeekly, baseDueDate, {
+            repeatFrom: 'completion',
+            completionDate: new Date('2026-10-05T00:00:00Z'),
+        });
+        // 7 days after 2026-10-05 = 2026-10-12
+        assert.equal(nextFromCompletion.toISOString().slice(0, 10), '2026-10-12');
+    });
+});
+

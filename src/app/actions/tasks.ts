@@ -170,3 +170,55 @@ export async function updateTaskStatus(pageId: string, status: string) {
 
     return { success: true };
 }
+
+/**
+ * Sends an email digest of open tasks to the current user via Resend (TASK-M15).
+ */
+export async function sendTaskDigestAction() {
+    const session = await auth();
+    const tenantId = session?.user?.tenantId;
+    const userEmail = session?.user?.email;
+    const userName = session?.user?.name || undefined;
+    if (!tenantId || !userEmail) throw new Error('Unauthorized');
+
+    const tenant = await prisma.tenant.findUnique({
+        where: { id: tenantId },
+        select: { lockedDbIds: true }
+    });
+    const locked = (tenant?.lockedDbIds as Record<string, string>) || {};
+    const tasksDbId = locked['tasks'] || 'db-tasks';
+
+    // Fetch open tasks for this tenant
+    const pages = await prisma.globalPage.findMany({
+        where: { databaseId: tasksDbId },
+        select: { id: true, properties: true }
+    });
+
+    const nowStr = new Date().toISOString().slice(0, 10);
+    const digestTasks = pages.filter(p => {
+        const props = (p.properties as Record<string, any>) || {};
+        const status = props['prop-task-status'];
+        if (status === 'opt-done' || status === 'opt-dropped' || status === 't-done') return false;
+        return true;
+    }).map(p => {
+        const props = (p.properties as Record<string, any>) || {};
+        const due = props['prop-task-due'] as string | undefined;
+        return {
+            id: p.id,
+            title: (props['title'] as string) || 'Untitled Task',
+            due: due || undefined,
+            priority: props['prop-task-priority'] as string | undefined,
+            isOverdue: Boolean(due && due < nowStr),
+        };
+    });
+
+    const { sendTaskDigestEmail } = await import('@/lib/email');
+    const result = await sendTaskDigestEmail({
+        to: userEmail,
+        userName,
+        tasks: digestTasks,
+    });
+
+    return { success: result.success, count: digestTasks.length };
+}
+

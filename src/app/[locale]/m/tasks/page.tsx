@@ -21,9 +21,39 @@ import {
     ListTodo,
     FolderKanban,
     Search,
-    Trash2
+    Trash2,
+    Camera,
+    Paperclip,
+    ArrowUpRight,
+    FileText,
+    ExternalLink
 } from 'lucide-react';
 import { parseRecurrenceRule, getNextDueDate } from '@/components/admin/tasks/RecurrenceEngine';
+
+export interface TaskAttachment {
+    id: string;
+    name: string;
+    url: string; // Storage key (t_{tenantId}/tasks/...) or data URL
+    type: string;
+    size?: number;
+    pending?: boolean;
+}
+
+export function isSubtask(p: Page): boolean {
+    const parent = p.properties['prop-task-parent'];
+    if (!parent) return false;
+    if (Array.isArray(parent)) return parent.length > 0;
+    if (typeof parent === 'string') return parent.trim().length > 0;
+    return false;
+}
+
+export function getTaskParentId(p: Page): string | undefined {
+    const parent = p.properties['prop-task-parent'];
+    if (!parent) return undefined;
+    if (Array.isArray(parent)) return parent[0] || undefined;
+    if (typeof parent === 'string') return parent.trim() || undefined;
+    return undefined;
+}
 
 function getLocalDateStr(d = new Date()): string {
     const year = d.getFullYear();
@@ -123,6 +153,7 @@ export default function MobileTasksPage() {
         page: Page;
         timerId: NodeJS.Timeout;
     } | null>(null);
+    const [promoteToastMessage, setPromoteToastMessage] = useState<string | null>(null);
 
     // Fast Capture state
     const [captureOpen, setCaptureOpen] = useState(false);
@@ -153,6 +184,31 @@ export default function MobileTasksPage() {
         }
     }, [projectPickerTaskId]);
 
+    // Subtasks Indexing (coral-task-subtasks.md)
+    const subtasksByParentId = useMemo(() => {
+        const map: Record<string, Page[]> = {};
+        for (const p of allPages) {
+            const parentId = getTaskParentId(p);
+            if (parentId) {
+                if (!map[parentId]) map[parentId] = [];
+                map[parentId].push(p);
+            }
+        }
+        return map;
+    }, [allPages]);
+
+    // Attachments Upload State (TASK-M13)
+    const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
+    const cameraInputRef = useRef<HTMLInputElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // Subtasks State inside Detail Sheet
+    const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
+    const newSubtaskInputRef = useRef<HTMLInputElement>(null);
+
+    // Reminder Digest test trigger state (TASK-M15)
+    const [isSendingDigest, setIsSendingDigest] = useState(false);
+
     // Available projects derived strictly from in-memory pageIndex (zero full hydration)
     const availableProjects = useMemo(() => {
         return Object.values(pageIndex)
@@ -181,8 +237,34 @@ export default function MobileTasksPage() {
         return detailTaskId ? allPages.find(p => p.id === detailTaskId) : null;
     }, [detailTaskId, allPages]);
 
+    const handleSelectProject = useCallback((projectId?: string) => {
+        if (!projectPickerTaskId) return;
+        const val = projectId ? [projectId] : [];
+        updatePageProperty(tasksDbId, projectPickerTaskId, 'prop-task-project', val);
+
+        // Subtask inherits parent's project (coral-task-subtasks.md rule)
+        const children = allPages.filter(p => getTaskParentId(p) === projectPickerTaskId);
+        for (const child of children) {
+            updatePageProperty(tasksDbId, child.id, 'prop-task-project', val);
+        }
+
+        setProjectPickerTaskId(null);
+        setProjectSearch('');
+    }, [projectPickerTaskId, tasksDbId, updatePageProperty, allPages]);
+
     const handleDeleteTask = useCallback((page: Page) => {
         setDetailTaskId(null);
+
+        // Deleting parent: subtasks are PROMOTED to top-level tasks, never cascade-deleted (coral-task-subtasks.md)
+        const children = allPages.filter(p => getTaskParentId(p) === page.id);
+        if (children.length > 0) {
+            for (const child of children) {
+                updatePageProperty(tasksDbId, child.id, 'prop-task-parent', []);
+            }
+            setPromoteToastMessage(t('tasks_subtasks_promoted', { count: children.length }));
+            setTimeout(() => setPromoteToastMessage(null), 4000);
+        }
+
         deletePage(tasksDbId, page.id);
 
         const timerId = setTimeout(() => {
@@ -190,7 +272,7 @@ export default function MobileTasksPage() {
         }, 5000);
 
         setDeletedUndo({ page, timerId });
-    }, [deletePage, tasksDbId]);
+    }, [deletePage, tasksDbId, allPages, updatePageProperty, t]);
 
     const handleUndoDelete = useCallback(() => {
         if (!deletedUndo) return;
@@ -198,6 +280,191 @@ export default function MobileTasksPage() {
         createPage(tasksDbId, deletedUndo.page.properties, deletedUndo.page.id, deletedUndo.page.blocks);
         setDeletedUndo(null);
     }, [deletedUndo, createPage, tasksDbId]);
+
+    // Subtasks for current detailTask (coral-task-subtasks.md)
+    const currentTaskSubtasks = useMemo(() => {
+        if (!detailTask) return [];
+        return subtasksByParentId[detailTask.id] || [];
+    }, [detailTask, subtasksByParentId]);
+
+    const parentTaskId = useMemo(() => {
+        return detailTask ? getTaskParentId(detailTask) : undefined;
+    }, [detailTask]);
+
+    const parentTask = useMemo(() => {
+        return parentTaskId ? allPages.find(p => p.id === parentTaskId) : null;
+    }, [parentTaskId, allPages]);
+
+    const parentTaskTitle = useMemo(() => {
+        if (!parentTask) return null;
+        return (parentTask.properties['title'] as string) || 'Untitled Task';
+    }, [parentTask]);
+
+    // Candidate parents for demoting (top-level tasks excluding self, max 1 level)
+    const candidateParentTasks = useMemo(() => {
+        if (!detailTask) return [];
+        return allPages.filter(p => p.id !== detailTask.id && !isSubtask(p) && isMyTask(p, currentUserId));
+    }, [allPages, detailTask, currentUserId]);
+
+    const handleAddSubtask = () => {
+        if (!newSubtaskTitle.trim() || !detailTask) return;
+        createPage(tasksDbId, {
+            title: newSubtaskTitle.trim(),
+            'prop-task-status': 'opt-todo',
+            'prop-task-parent': [detailTask.id],
+            'prop-task-project': detailTask.properties['prop-task-project'] || [],
+            'prop-task-assignee': detailTask.properties['prop-task-assignee'] || [],
+        });
+        setNewSubtaskTitle('');
+        setTimeout(() => newSubtaskInputRef.current?.focus(), 50);
+    };
+
+    const handlePromoteCurrentTask = () => {
+        if (!detailTask) return;
+        updatePageProperty(tasksDbId, detailTask.id, 'prop-task-parent', []);
+    };
+
+    const handleDemoteTask = (targetParentId: string) => {
+        if (!detailTask) return;
+        updatePageProperty(tasksDbId, detailTask.id, 'prop-task-parent', [targetParentId]);
+        const targetParent = allPages.find(p => p.id === targetParentId);
+        if (targetParent && targetParent.properties['prop-task-project']) {
+            updatePageProperty(tasksDbId, detailTask.id, 'prop-task-project', targetParent.properties['prop-task-project']);
+        }
+    };
+
+    // Attachments for detailTask (TASK-M13)
+    const attachments = useMemo(() => {
+        return (detailTask?.properties['prop-task-attachments'] as TaskAttachment[]) || [];
+    }, [detailTask]);
+
+    const photos = useMemo(() => {
+        return attachments.filter(a => a.type?.startsWith('image/'));
+    }, [attachments]);
+
+    const docFiles = useMemo(() => {
+        return attachments.filter(a => !a.type?.startsWith('image/'));
+    }, [attachments]);
+
+    const handleFileUpload = async (files: FileList | null) => {
+        if (!files || files.length === 0 || !detailTask) return;
+        setIsUploadingAttachment(true);
+        const filesArray = Array.from(files);
+
+        let current = [...((detailTask.properties['prop-task-attachments'] as TaskAttachment[]) || [])];
+
+        for (const file of filesArray) {
+            // Offline queueing support (TASK-M13)
+            if (typeof navigator !== 'undefined' && !navigator.onLine) {
+                const dataUrl = await new Promise<string>((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result as string);
+                    reader.readAsDataURL(file);
+                });
+                const pendingAttach: TaskAttachment = {
+                    id: 'att-' + Math.random().toString(36).slice(2, 9),
+                    name: file.name,
+                    url: dataUrl,
+                    type: file.type || 'application/octet-stream',
+                    size: file.size,
+                    pending: true,
+                };
+                current.push(pendingAttach);
+                updatePageProperty(tasksDbId, detailTask.id, 'prop-task-attachments', current);
+                continue;
+            }
+
+            try {
+                const { uploadFileAction } = await import('@/app/actions/files');
+                const formData = new FormData();
+                formData.append('file', file);
+                const res = await uploadFileAction(formData, 'tasks', detailTask.id);
+                if (res.success && res.key) {
+                    const newAttach: TaskAttachment = {
+                        id: 'att-' + Math.random().toString(36).slice(2, 9),
+                        name: file.name,
+                        url: res.key,
+                        type: file.type || 'application/octet-stream',
+                        size: file.size,
+                    };
+                    current.push(newAttach);
+                    updatePageProperty(tasksDbId, detailTask.id, 'prop-task-attachments', current);
+                } else {
+                    alert(`Upload failed: ${res.error || 'Unknown error'}`);
+                }
+            } catch (e: any) {
+                console.error('File upload error', e);
+                alert(`Upload error: ${e?.message || 'Failed'}`);
+            }
+        }
+        setIsUploadingAttachment(false);
+    };
+
+    const handleDeleteAttachment = async (attach: TaskAttachment) => {
+        if (!detailTask) return;
+        if (!window.confirm(t('tasks_delete_attachment_confirm'))) return;
+
+        const current = ((detailTask.properties['prop-task-attachments'] as TaskAttachment[]) || []);
+        const updated = current.filter(a => a.id !== attach.id);
+        updatePageProperty(tasksDbId, detailTask.id, 'prop-task-attachments', updated);
+
+        if (attach.url && !attach.url.startsWith('data:') && !attach.pending) {
+            try {
+                const { deleteFileAction } = await import('@/app/actions/files');
+                await deleteFileAction(attach.url);
+            } catch (e) {
+                console.error('Failed to delete file from storage', e);
+            }
+        }
+    };
+
+    // Recurrence Next Date Preview (TASK-M14)
+    const recurrencePreview = useMemo(() => {
+        if (!detailTask) return null;
+        const recurStr = (detailTask.properties['prop-task-recurrence'] as string) || '';
+        if (!recurStr) return null;
+        const anchorMode = (detailTask.properties['prop-task-recurrence-anchor'] as string) || 'opt-anchor-due';
+        const dueStr = (detailTask.properties['prop-task-due'] as string) || '';
+
+        if (anchorMode === 'opt-anchor-due' && !dueStr) {
+            return { error: t('tasks_recurrence_no_due') };
+        }
+
+        const parsed = parseRecurrenceRule(recurStr);
+        if (!parsed.ok) return null;
+
+        try {
+            const baseDate = (anchorMode === 'opt-anchor-due' && dueStr) ? new Date(dueStr) : new Date();
+            const nextDate = getNextDueDate(parsed, baseDate, {
+                completionDate: new Date(),
+                repeatFrom: anchorMode === 'opt-anchor-completion' || !dueStr ? 'completion' : 'due',
+            });
+            const dateDisplay = nextDate.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+            return { text: t('tasks_recurrence_next', { date: dateDisplay }) };
+        } catch {
+            return null;
+        }
+    }, [detailTask, t]);
+
+    // Send Digest Action (TASK-M15)
+    const handleSendDigestTest = async () => {
+        setIsSendingDigest(true);
+        try {
+            const { sendTaskDigestAction } = await import('@/app/actions/tasks');
+            const res = await sendTaskDigestAction();
+            if (res.success) {
+                setPromoteToastMessage(t('tasks_digest_sent'));
+                setTimeout(() => setPromoteToastMessage(null), 4000);
+            } else {
+                alert('Failed to send digest email');
+            }
+        } catch (e: any) {
+            console.error(e);
+            alert(e?.message || 'Error sending digest');
+        } finally {
+            setIsSendingDigest(false);
+        }
+    };
 
     // Pending 4-second Undo state for 1-tap completions
     const [pendingUndos, setPendingUndos] = useState<Record<string, PendingUndo>>({});
@@ -207,8 +474,11 @@ export default function MobileTasksPage() {
 
     const todayStr = useMemo(() => getLocalDateStr(), []);
 
-    // Filter personal tasks by OWNERSHIP
-    const personalPages = useMemo(() => allPages.filter(p => isMyTask(p, currentUserId)), [allPages, currentUserId]);
+    // Filter personal tasks by OWNERSHIP.
+    // Subtasks do NOT appear as separate rows in My Tasks (coral-task-subtasks.md).
+    const personalPages = useMemo(() => {
+        return allPages.filter(p => isMyTask(p, currentUserId) && !isSubtask(p));
+    }, [allPages, currentUserId]);
 
     // Cleanup timers on unmount
     useEffect(() => {
@@ -235,15 +505,19 @@ export default function MobileTasksPage() {
         updatePageProperty(tasksDbId, page.id, 'prop-task-status', 'opt-done');
         updatePageProperty(tasksDbId, page.id, 'prop-task-completed-at', new Date().toISOString());
 
-        // Handle recurring tasks: create next occurrence
+        // Handle recurring tasks: create next occurrence (TASK-M8 / TASK-M14)
         let createdRecurringPageId: string | undefined;
         const recurStr = page.properties['prop-task-recurrence'] as string | undefined;
         if (recurStr?.trim()) {
             const parsed = parseRecurrenceRule(recurStr);
             if (parsed.ok) {
+                const anchorMode = (page.properties['prop-task-recurrence-anchor'] as string) || 'opt-anchor-due';
                 const baseDueStr = page.properties['prop-task-due'] as string | undefined;
-                const baseDueDate = baseDueStr ? new Date(baseDueStr) : new Date();
-                const nextDueDate = getNextDueDate(parsed, baseDueDate, { completionDate: new Date() });
+                const baseDueDate = (anchorMode === 'opt-anchor-due' && baseDueStr) ? new Date(baseDueStr) : new Date();
+                const nextDueDate = getNextDueDate(parsed, baseDueDate, {
+                    completionDate: new Date(),
+                    repeatFrom: anchorMode === 'opt-anchor-completion' || !baseDueStr ? 'completion' : 'due',
+                });
                 const nextDueStr = getLocalDateStr(nextDueDate);
 
                 const newPage = createPage(tasksDbId, {
@@ -320,14 +594,7 @@ export default function MobileTasksPage() {
         }
     }, [captureTitle, createPage, tasksDbId]);
 
-    // Project picker selection handler (TASK-M10)
-    const handleSelectProject = useCallback((projectId?: string) => {
-        if (!projectPickerTaskId) return;
-        const relationVal = projectId ? [projectId] : [];
-        updatePageProperty(tasksDbId, projectPickerTaskId, 'prop-task-project', relationVal);
-        setProjectPickerTaskId(null);
-        setProjectSearch('');
-    }, [projectPickerTaskId, tasksDbId, updatePageProperty]);
+
 
     // Visible tasks calculation
     const visibleTasks = useMemo(() => {
@@ -575,6 +842,41 @@ export default function MobileTasksPage() {
                                                     {t('tasks_flagged')}
                                                 </span>
                                             )}
+
+                                            {/* Subtask Progress Chip (coral-task-subtasks.md) */}
+                                            {(() => {
+                                                const children = subtasksByParentId[task.id] || [];
+                                                if (children.length === 0) return null;
+                                                const doneChildren = children.filter(isDoneTask).length;
+                                                const isAllDone = doneChildren === children.length;
+                                                return (
+                                                    <span className={`flex items-center gap-1 px-1.5 py-0.5 rounded font-bold ${
+                                                        isAllDone
+                                                            ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                                                            : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400'
+                                                    }`}>
+                                                        <ListTodo className="w-3 h-3" />
+                                                        <span>{doneChildren}/{children.length}</span>
+                                                        {isAllDone && (
+                                                            <span className="text-[9px] font-semibold text-emerald-600 dark:text-emerald-400">
+                                                                {t('tasks_ready_to_close')}
+                                                            </span>
+                                                        )}
+                                                    </span>
+                                                );
+                                            })()}
+
+                                            {/* Attachments Indicator (TASK-M13) */}
+                                            {(() => {
+                                                const attachList = (task.properties['prop-task-attachments'] as any[]) || [];
+                                                if (attachList.length === 0) return null;
+                                                return (
+                                                    <span className="flex items-center gap-0.5 text-neutral-400 dark:text-neutral-500 font-medium">
+                                                        <Paperclip className="w-3 h-3" />
+                                                        <span>{attachList.length}</span>
+                                                    </span>
+                                                );
+                                            })()}
 
                                             {/* Warm-Offline Pending Sync indicator */}
                                             {isPendingSync && (
@@ -935,7 +1237,139 @@ export default function MobileTasksPage() {
                             </button>
                         </div>
 
-                        {/* Recurrence */}
+                        {/* Subtasks (coral-task-subtasks.md) */}
+                        <div className="pt-1">
+                            <div className="flex items-center justify-between mb-2">
+                                <label className="text-[11px] font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider flex items-center gap-1.5">
+                                    <ListTodo className="w-3.5 h-3.5 text-orange-500" />
+                                    <span>{t('tasks_subtasks')}</span>
+                                    {currentTaskSubtasks.length > 0 && (
+                                        <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-neutral-200 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300">
+                                            {currentTaskSubtasks.filter(isDoneTask).length}/{currentTaskSubtasks.length}
+                                        </span>
+                                    )}
+                                </label>
+                            </div>
+
+                            {/* If this task IS a subtask: cannot add subtasks (1-level limit enforced) */}
+                            {isSubtask(detailTask) ? (
+                                <div className="p-3 rounded-xl bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200/60 dark:border-white/5 space-y-2">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-xs text-neutral-500 dark:text-neutral-400 truncate pr-2">
+                                            {t('tasks_parent_task')}: <strong className="text-neutral-800 dark:text-neutral-200">{parentTaskTitle || 'Parent'}</strong>
+                                        </span>
+                                        <button
+                                            type="button"
+                                            onClick={handlePromoteCurrentTask}
+                                            className="min-h-[36px] px-2.5 py-1 rounded-lg bg-white dark:bg-neutral-700 border border-neutral-200 dark:border-white/10 text-neutral-700 dark:text-neutral-200 text-xs font-semibold flex items-center gap-1 hover:bg-neutral-100 shrink-0"
+                                        >
+                                            <ArrowUpRight className="w-3.5 h-3.5" />
+                                            <span>{t('tasks_promote_to_task')}</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="space-y-2">
+                                    {/* Inline add input */}
+                                    <div className="flex gap-2">
+                                        <input
+                                            ref={newSubtaskInputRef}
+                                            type="text"
+                                            value={newSubtaskTitle}
+                                            onChange={(e) => setNewSubtaskTitle(e.target.value)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    handleAddSubtask();
+                                                }
+                                            }}
+                                            placeholder={t('tasks_add_subtask_placeholder')}
+                                            className="flex-1 min-h-[44px] bg-neutral-100 dark:bg-neutral-800 rounded-xl px-3 py-2 text-xs font-semibold outline-none text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:ring-2 focus:ring-orange-500/30"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={handleAddSubtask}
+                                            disabled={!newSubtaskTitle.trim()}
+                                            className="min-w-[44px] min-h-[44px] rounded-xl bg-orange-500 hover:bg-orange-600 disabled:opacity-40 text-white flex items-center justify-center transition-colors shadow-sm"
+                                            aria-label="Add subtask"
+                                        >
+                                            <Plus className="w-4 h-4 stroke-[2.5]" />
+                                        </button>
+                                    </div>
+
+                                    {/* Subtask list */}
+                                    {currentTaskSubtasks.length > 0 && (
+                                        <div className="divide-y divide-neutral-100 dark:divide-white/5 bg-neutral-50 dark:bg-neutral-850 rounded-xl border border-neutral-200/60 dark:border-white/5 overflow-hidden">
+                                            {currentTaskSubtasks.map(sub => {
+                                                const isDone = isDoneTask(sub);
+                                                return (
+                                                    <div key={sub.id} className="flex items-center justify-between p-2.5 gap-2">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleToggleComplete(sub)}
+                                                            className="min-w-[36px] min-h-[36px] flex items-center justify-center -ml-1 text-neutral-400 hover:text-neutral-600"
+                                                        >
+                                                            <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${
+                                                                isDone ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-neutral-300 dark:border-neutral-600'
+                                                            }`}>
+                                                                {isDone && <Check className="w-3 h-3 stroke-[3]" />}
+                                                            </div>
+                                                        </button>
+                                                        <span className={`flex-1 min-w-0 text-xs font-semibold truncate ${
+                                                            isDone ? 'line-through text-neutral-400 dark:text-neutral-500' : 'text-neutral-800 dark:text-neutral-200'
+                                                        }`}>
+                                                            {(sub.properties['title'] as string) || 'Untitled Subtask'}
+                                                        </span>
+                                                        <div className="flex items-center gap-1">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => updatePageProperty(tasksDbId, sub.id, 'prop-task-parent', [])}
+                                                                className="min-w-[36px] min-h-[36px] flex items-center justify-center text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200"
+                                                                title={t('tasks_promote_to_task')}
+                                                            >
+                                                                <ArrowUpRight className="w-3.5 h-3.5" />
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => deletePage(tasksDbId, sub.id)}
+                                                                className="min-w-[36px] min-h-[36px] flex items-center justify-center text-neutral-400 hover:text-red-500"
+                                                                title="Delete subtask"
+                                                            >
+                                                                <Trash2 className="w-3.5 h-3.5" />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+
+                                    {/* Demote candidate parent selector if this task has no children */}
+                                    {currentTaskSubtasks.length === 0 && candidateParentTasks.length > 0 && (
+                                        <div className="pt-1">
+                                            <select
+                                                value=""
+                                                onChange={(e) => {
+                                                    if (e.target.value) {
+                                                        handleDemoteTask(e.target.value);
+                                                    }
+                                                }}
+                                                className="w-full min-h-[40px] bg-neutral-100 dark:bg-neutral-800 rounded-xl px-3 py-1.5 text-xs text-neutral-600 dark:text-neutral-400 font-medium outline-none"
+                                            >
+                                                <option value="">{t('tasks_demote_to_subtask')}</option>
+                                                {candidateParentTasks.map(cp => (
+                                                    <option key={cp.id} value={cp.id}>
+                                                        {(cp.properties['title'] as string) || cp.id}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Recurrence & Anchor Setting (TASK-M14) */}
                         <div>
                             <label className="text-[11px] font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1.5 block">
                                 {t('tasks_recurrence')}
@@ -946,10 +1380,222 @@ export default function MobileTasksPage() {
                                 className="w-full min-h-[44px] bg-neutral-100 dark:bg-neutral-800 rounded-xl px-3 py-2 text-xs font-semibold outline-none text-neutral-900 dark:text-white"
                             >
                                 <option value="">{t('tasks_recurrence_none')}</option>
-                                <option value="daily">Daily</option>
-                                <option value="weekly">Weekly</option>
-                                <option value="monthly">Monthly</option>
+                                <option value="daily">{t('tasks_recurrence_daily')}</option>
+                                <option value="weekly">{t('tasks_recurrence_weekly')}</option>
+                                <option value="monthly">{t('tasks_recurrence_monthly')}</option>
                             </select>
+
+                            {/* Recurrence Anchor Setting & Next Date Preview */}
+                            {Boolean(detailTask.properties['prop-task-recurrence']) && (
+                                <div className="mt-2.5 p-3 rounded-xl bg-neutral-50 dark:bg-neutral-850 border border-neutral-200/70 dark:border-white/5 space-y-2">
+                                    <label className="text-[10px] font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider block">
+                                        {t('tasks_recurrence_anchor')}
+                                    </label>
+                                    <div className="grid grid-cols-2 gap-1.5">
+                                        <button
+                                            type="button"
+                                            onClick={() => updatePageProperty(tasksDbId, detailTask.id, 'prop-task-recurrence-anchor', 'opt-anchor-due')}
+                                            className={`min-h-[40px] px-2 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+                                                ((detailTask.properties['prop-task-recurrence-anchor'] as string) || 'opt-anchor-due') === 'opt-anchor-due'
+                                                    ? 'bg-orange-50 dark:bg-orange-500/10 border-orange-300 dark:border-orange-500/30 text-orange-700 dark:text-orange-300 font-bold'
+                                                    : 'bg-white dark:bg-neutral-800 border-neutral-200 dark:border-white/10 text-neutral-600 dark:text-neutral-400'
+                                            }`}
+                                        >
+                                            {t('tasks_repeat_from_due')}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => updatePageProperty(tasksDbId, detailTask.id, 'prop-task-recurrence-anchor', 'opt-anchor-completion')}
+                                            className={`min-h-[40px] px-2 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+                                                ((detailTask.properties['prop-task-recurrence-anchor'] as string) || 'opt-anchor-due') === 'opt-anchor-completion'
+                                                    ? 'bg-orange-50 dark:bg-orange-500/10 border-orange-300 dark:border-orange-500/30 text-orange-700 dark:text-orange-300 font-bold'
+                                                    : 'bg-white dark:bg-neutral-800 border-neutral-200 dark:border-white/10 text-neutral-600 dark:text-neutral-400'
+                                            }`}
+                                        >
+                                            {t('tasks_repeat_from_completion')}
+                                        </button>
+                                    </div>
+
+                                    {/* Next Date Preview */}
+                                    {recurrencePreview && (
+                                        <div className="pt-1">
+                                            {recurrencePreview.text && (
+                                                <p className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                                                    <Clock className="w-3.5 h-3.5" />
+                                                    <span>{recurrencePreview.text}</span>
+                                                </p>
+                                            )}
+                                            {recurrencePreview.error && (
+                                                <p className="text-[11px] font-medium text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+                                                    <AlertCircle className="w-3.5 h-3.5" />
+                                                    <span>{recurrencePreview.error}</span>
+                                                </p>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Email Reminder (TASK-M15) */}
+                        <div>
+                            <div className="flex items-center justify-between mb-1.5">
+                                <label className="text-[11px] font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider block">
+                                    {t('tasks_reminder')}
+                                </label>
+                                <button
+                                    type="button"
+                                    onClick={handleSendDigestTest}
+                                    disabled={isSendingDigest}
+                                    className="text-[11px] font-semibold text-orange-600 dark:text-orange-400 hover:underline disabled:opacity-50"
+                                >
+                                    {isSendingDigest ? t('tasks_uploading') : t('tasks_send_digest_now')}
+                                </button>
+                            </div>
+                            <select
+                                value={(detailTask.properties['prop-task-reminder'] as string) || 'opt-rem-none'}
+                                onChange={(e) => updatePageProperty(tasksDbId, detailTask.id, 'prop-task-reminder', e.target.value)}
+                                className="w-full min-h-[44px] bg-neutral-100 dark:bg-neutral-800 rounded-xl px-3 py-2 text-xs font-semibold outline-none text-neutral-900 dark:text-white"
+                            >
+                                <option value="opt-rem-none">{t('tasks_reminder_none')}</option>
+                                <option value="opt-rem-morning">{t('tasks_reminder_morning')}</option>
+                                <option value="opt-rem-day-before">{t('tasks_reminder_day_before')}</option>
+                            </select>
+                        </div>
+
+                        {/* File Attachments (TASK-M13) */}
+                        <div>
+                            <div className="flex items-center justify-between mb-2">
+                                <label className="text-[11px] font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider flex items-center gap-1.5">
+                                    <Paperclip className="w-3.5 h-3.5 text-orange-500" />
+                                    <span>{t('tasks_attachments')}</span>
+                                    {attachments.length > 0 && (
+                                        <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-neutral-200 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300">
+                                            {attachments.length}
+                                        </span>
+                                    )}
+                                </label>
+                            </div>
+
+                            {/* Camera & File Upload Buttons (Min 44px Touch Target) */}
+                            <div className="flex gap-2 mb-3">
+                                <button
+                                    type="button"
+                                    onClick={() => cameraInputRef.current?.click()}
+                                    disabled={isUploadingAttachment}
+                                    className="flex-1 min-h-[44px] px-3 py-2 rounded-xl bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-750 flex items-center justify-center gap-2 font-semibold text-neutral-800 dark:text-neutral-200 transition-colors"
+                                >
+                                    <Camera className="w-4 h-4 text-neutral-500" />
+                                    <span>{t('tasks_take_photo')}</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => fileInputRef.current?.click()}
+                                    disabled={isUploadingAttachment}
+                                    className="flex-1 min-h-[44px] px-3 py-2 rounded-xl bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-750 flex items-center justify-center gap-2 font-semibold text-neutral-800 dark:text-neutral-200 transition-colors"
+                                >
+                                    <Paperclip className="w-4 h-4 text-neutral-500" />
+                                    <span>{t('tasks_attach_file')}</span>
+                                </button>
+                                <input
+                                    ref={cameraInputRef}
+                                    type="file"
+                                    accept="image/*"
+                                    capture="environment"
+                                    className="hidden"
+                                    onChange={(e) => handleFileUpload(e.target.files)}
+                                />
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    multiple
+                                    className="hidden"
+                                    onChange={(e) => handleFileUpload(e.target.files)}
+                                />
+                            </div>
+
+                            {/* Uploading progress indicator */}
+                            {isUploadingAttachment && (
+                                <div className="p-3 mb-2 rounded-xl bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-semibold flex items-center gap-2">
+                                    <Clock className="w-3.5 h-3.5 animate-spin" />
+                                    <span>{t('tasks_uploading')}</span>
+                                </div>
+                            )}
+
+                            {/* Attachment Grid / List */}
+                            {attachments.length === 0 ? (
+                                <div className="p-4 rounded-xl border border-dashed border-neutral-200 dark:border-white/10 text-center text-xs text-neutral-400">
+                                    {t('tasks_no_attachments')}
+                                </div>
+                            ) : (
+                                <div className="space-y-2">
+                                    {/* Photos Grid */}
+                                    {photos.length > 0 && (
+                                        <div className="grid grid-cols-3 gap-2">
+                                            {photos.map(p => {
+                                                const fileUrl = p.url.startsWith('data:') ? p.url : `/api/files/${encodeURIComponent(p.url)}`;
+                                                return (
+                                                    <div key={p.id} className="relative aspect-square rounded-xl overflow-hidden border border-neutral-200 dark:border-white/10 group bg-neutral-100 dark:bg-neutral-800">
+                                                        <img
+                                                            src={fileUrl}
+                                                            alt={p.name}
+                                                            className="w-full h-full object-cover cursor-pointer"
+                                                            onClick={() => window.open(fileUrl, '_blank')}
+                                                        />
+                                                        {p.pending && (
+                                                            <span className="absolute top-1 left-1 px-1 rounded bg-blue-600 text-[9px] text-white font-bold">
+                                                                {t('tasks_pending_upload')}
+                                                            </span>
+                                                        )}
+                                                        <button
+                                                            type="button"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleDeleteAttachment(p);
+                                                            }}
+                                                            className="min-w-[36px] min-h-[36px] absolute top-1 right-1 rounded-full bg-black/60 text-white flex items-center justify-center active:scale-95"
+                                                            title="Delete"
+                                                        >
+                                                            <Trash2 className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+
+                                    {/* Documents / Files */}
+                                    {docFiles.length > 0 && (
+                                        <div className="space-y-1.5">
+                                            {docFiles.map(d => {
+                                                const fileUrl = d.url.startsWith('data:') ? d.url : `/api/files/${encodeURIComponent(d.url)}`;
+                                                return (
+                                                    <div key={d.id} className="flex items-center justify-between p-2.5 rounded-xl bg-neutral-50 dark:bg-neutral-800 border border-neutral-200/60 dark:border-white/5">
+                                                        <a
+                                                            href={fileUrl}
+                                                            target="_blank"
+                                                            rel="noreferrer"
+                                                            className="flex items-center gap-2 flex-1 min-w-0"
+                                                        >
+                                                            <FileText className="w-4 h-4 text-neutral-500 shrink-0" />
+                                                            <span className="text-xs font-semibold truncate text-neutral-900 dark:text-white">
+                                                                {d.name}
+                                                            </span>
+                                                        </a>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleDeleteAttachment(d)}
+                                                            className="min-w-[36px] min-h-[36px] flex items-center justify-center text-neutral-400 hover:text-red-500 ml-1"
+                                                        >
+                                                            <Trash2 className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
 
                         {/* Defer Date */}
@@ -992,6 +1638,20 @@ export default function MobileTasksPage() {
                     </div>
                 )}
             </BottomSheet>
+
+            {/* Subtask Promoted / Notification Toast Banner */}
+            {promoteToastMessage && (
+                <div className="fixed bottom-20 left-4 right-4 z-40 max-w-md mx-auto bg-neutral-900 text-white dark:bg-white dark:text-black rounded-2xl px-4 py-3 shadow-2xl flex items-center justify-between animate-in slide-in-from-bottom duration-200 text-xs font-semibold">
+                    <span>{promoteToastMessage}</span>
+                    <button
+                        type="button"
+                        onClick={() => setPromoteToastMessage(null)}
+                        className="p-1 hover:opacity-70"
+                    >
+                        <X className="w-4 h-4" />
+                    </button>
+                </div>
+            )}
 
             {/* Delete Undo Banner */}
             {deletedUndo && (

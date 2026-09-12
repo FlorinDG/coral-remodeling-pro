@@ -88,7 +88,13 @@ The tool built to be trusted is currently showing some completed tasks as open.
 |---|---|---|
 | **2.5 = `TS-1`** | **Mobile reads BOTH conventions, writes only `opt-*`.** `isDone` accepts `opt-done` **or** `t-done`; the open-list filter excludes `opt-done`/`opt-dropped`/`t-done`. Comment the reason at the read site naming `PROJ-2`. Extend `tests/task-part-a.test.ts` (`t-done` -> done; `t-todo`/`t-prog` -> open). **Only `src/app/[locale]/m/tasks/page.tsx` and the test file.** | Spec: `coral-task-status-two-subsystems.md`. **Reverses the earlier "no `t-*` hedge" instruction.** **No project-subsystem files. No data migration.** |
 
-**Phase 2 closes when `2.5`/`TS-1` is verified — the 5 `t-done` project tasks no longer show as open on mobile, `t-todo`/`t-prog` still do, and the project progress automation is untouched.** Only then does `3.1` begin.
+| **2.6** | **`TASK-M12` — one `BottomSheet` primitive**: `dvh` not `vh`, `overscroll-contain`, body scroll lock, fixed footer holding Delete. Fixes 4 of Florin's 6 complaints at once. | `coder-directive-tasks-sheet.md`. **One primitive, three adopters — no per-sheet patching.** |
+| **2.7** | **`TASK-M13` — file attachment on a task** (camera/library, `storage.put`, offline-queued). Planner omission. | Reuse the existing attachment path; declare the property. |
+| **2.8** | **`TASK-M14` — recurrence states its anchor** and shows the next date. | No silent no-op when there is no due date. |
+| **2.9** | **`TASK-M15` — reminders: EMAIL DIGEST** (decided). Resend, no new infra. SMS is a later channel choice, not a reminder project. | `coral-sms-transport.md` — 2FA drives the SMS decision, not reminders. |
+| **2.10** | **`TASK-SUBTASKS` — subtasks.** Self-relation `prop-task-parent`, one level, inherit project, inline add in the sheet, parent shows `3/5`. **No auto-close, no cascade delete.** | `coral-task-subtasks.md`. After the sheet fixes — subtasks live inside it. |
+
+**Phase 2 closes when `2.5`–`2.9` are verified — the 5 `t-done` project tasks no longer show as open on mobile, `t-todo`/`t-prog` still do, and the project progress automation is untouched.** Only then does `3.1` begin.
 
 *(Planner error, recorded: `t-*` was read as legacy from a value mismatch, without tracing **who writes it**. The `grep` that revealed five live writers should have preceded the SQL. Same failure mode flagged twice in the coder's plans — inference from code shape instead of evidence.)*
 
@@ -106,7 +112,7 @@ Spec: `coral-r1-tenancy.md`
 ## PHASE 4 — R2 · WRITE PATH ROOT 🟥
 Spec: `coral-r2-write-path.md` · **Do not start before `3.5` is merged.**
 
-**4.1** `R2-5` characterization tests **first** · **4.2** `R2-1` one `saveRecord()` (also fixes the fabricated `blocks: []` / `blocksVersion: 1` return, `R2-1-FABRICATED-PAGE`) · **4.3** `R2-2` field-level intents · **4.4** `R2-3` one authority on "current"; re-prove the single-flight lock · **4.5** `R2-4` — **re-cut by the `(c)` decision: shrink the store to INDEX + WORKING SET + sync queue**, not a four-way split. The general page cache goes; dirty-page protection and the queue are untouchable. · **4.6** `R2-7` **what defines a working set** (explicit pin? today's shifts? last-opened?) — **FLORIN decision, do not infer.**
+**4.1** `R2-5` characterization tests **first** · **4.2** `R2-1` one `saveRecord()` (also fixes the fabricated `blocks: []` / `blocksVersion: 1` return, `R2-1-FABRICATED-PAGE`) · **4.3** `R2-2` field-level intents · **4.4** `R2-3` one authority on "current"; re-prove the single-flight lock · **4.5** `R2-4` — **re-cut by the `(c)` decision: shrink the store to INDEX + WORKING SET + sync queue**, not a four-way split. The general page cache goes; dirty-page protection and the queue are untouchable. **This is also where the ~15 remaining surfaces migrate — once, to the hybrid — and where `IS_LAZY_DATA_ENABLED` is DELETED rather than re-enabled. `LAZY-5` is cancelled and absorbed here** (`coral-lazy-load-regression.md` → COURSE CORRECTION). · **4.6** `R2-7` **what defines a working set** (explicit pin? today's shifts? last-opened?) — **FLORIN decision, do not infer.**
 
 ---
 

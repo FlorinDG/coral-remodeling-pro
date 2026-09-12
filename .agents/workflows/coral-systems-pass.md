@@ -120,10 +120,12 @@ System writers (cron, webhooks, services) don't get an exemption — they get an
 
 The OCC saga was five wrong theories against a system with two notions of current state. `server-first create + no client sync`, the unlocked sync queue, and the store's persist behaviour are the same root. **Depends on R1** (the write path is where the scope gets enforced).
 
-### R3 · THE RECORD SURFACE — the grid 🟧 *(Florin's example)*
+### R3 · THE RECORD SURFACE — the grid 🟧 *(Florin's example — re-cut 2026-09-12: delivered via GRID-REPLACE)*
 **Invariant:** *A cell edit commits its own field and nothing else. A view's state is where the user put it.*
 
 Worth being precise about, because it changes the order: **the grid is not a root — it is the most-visible leaf of R2.** N1 (typing a name, clicking the date cell, losing the text) is a whole-row read-modify-write race, which is shape #3, which lives in the write path. Fixing the grid before R2 means fixing it twice. `store.ts` is **2,215 lines**; going in without the write path settled is how the last three grid fixes became the next three grid bugs. **Do R2 first, then the grid mostly falls out** — and what remains (view prop state, relation link icon, paste focus, column visibility) is genuinely grid-local and small.
+
+**Revised after Florin's review:** the grid is not repaired at all — it is **replaced**, via the existing `GRID-REPLACE` plan (TanStack, five phases, `ground-zero-triage.md:1190`), *after* R2 so V2 consumes the core intent API instead of porting the diff loop. `NotionGrid.tsx` / `columns/*` are **frozen** until then: fixing DSG's cursor-model defects now is paying twice for something being deleted. Florin's second point becomes the leaf-ordering rule: **a leaf with dependents is done before its dependents, and none of them is done twice.**
 
 ### R4 · THE DOCUMENT ENGINE 🟧
 **Invariant:** *The blocks are the document. Every surface renders the same tree through the same reader, and totals are derived once.*
@@ -143,7 +145,7 @@ Invariant: *one way to read a file; only `lib/storage` touches the provider.* St
 DELETE test-payment-plan          ← today, independent of everything
 R1 tenancy boundary               ← the pass starts here
 R2 one write path                 ← unblocks the grid
-R3 grid            R4 engine      ← now mostly leaves
+R3 GRID-REPLACE    R4 engine      ← now mostly leaves; V2 built on the core
 R6 · R7 sweeps                    ← can run in parallel, low risk
 ```
 

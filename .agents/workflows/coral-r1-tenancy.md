@@ -44,19 +44,102 @@ Plus a *"self-healing fallback for new system databases not yet in legacy tenant
 
 ---
 
+## 📎 PASTED FACTS — everything below is copied from the repo, not recalled
+*(Per `coder-profile.md` rule 1: an API that is not pasted will be invented. Rule 2: our stack post-dates the model's March-2026 knowledge — read the installed types, do not write from memory.)*
+
+**Installed:** Next 16.1.6 · React 19.2.3 · Prisma **6.19.2** · zustand 5.0.11 · next-intl 4.8.2
+
+```ts
+// src/auth.ts:34 — the ONLY source of tenant identity
+export const { handlers, auth, signIn, signOut } = NextAuth({ … });
+// usage, 86 sites: const session = await auth(); const tenantId = session?.user?.tenantId;
+```
+```prisma
+// prisma/schema.prisma:707 — note: NO logicalKey field yet; R1-1 adds it
+model GlobalDatabase {
+  id String @id @default(cuid())
+  tenantId String
+  name String
+  properties Json @default("[]")
+  views Json @default("[]")
+  …
+}
+// :68 on model Tenant
+lockedDbIds Json @default("{}")
+```
+```ts
+// src/lib/lockedDbUtils.ts — CLIENT SAFE, no Prisma
+export type LockedDbKey = 'invoices' | 'clients' | 'suppliers' | 'expenses' | 'tickets'
+  | 'quotations' | 'payments-in' | 'payments-out' | 'projects' | 'tasks' | 'articles'
+  | 'crm' | 'bobex' | 'bestek' | 'journal-general' | 'hr';              // 16 keys
+export type LockedDbIds = Partial<Record<LockedDbKey, string>>;
+export const BASE_TO_KEY: Record<string, LockedDbKey>;                  // 16 entries
+export function getLockedDbId(base: string, lockedDbIds: Record<string, string>): string;
+//                            ↑ takes the MAP, not a tenant. Returns the bare base on failure.
+```
+```ts
+// src/lib/systemDatabases.ts
+export const SYSTEM_DB_PREFIXES: readonly string[];   // 14 entries
+export const SERVER_PROVISIONED_BASES: Set<string>;   // 8 entries
+export function isSystemDatabase(id: string): boolean;   // id === prefix || id.startsWith(prefix + '-')
+export function getBaseDbId(id: string): string;         // 'db-clients-abc123' → 'db-clients'
+```
+**Id format, confirmed:** `<base>-<tenantSuffix>`, e.g. `db-invoices-abc12345`. `getBaseDbId` strips the suffix by prefix match.
+
+**Prisma extension API — VERIFY BEFORE WRITING.** `node_modules/@prisma/client/extension.d.ts` exists and exports `defineExtension`. **Read the installed types first.** Do **not** reach for `prisma.$use()` middleware from memory — `$extends` is the supported path on 6.x and `$use` is legacy. Confirm against the installed `.d.ts`, not against recollection.
+
+---
+
+## 🔴 NEW FINDING WHILE HARDENING THIS SPEC — two disagreeing lists of "system database"
+
+`SYSTEM_DB_PREFIXES` has **14** entries. `BASE_TO_KEY` has **16** — it additionally knows `db-journal-general` and `db-hr`. So:
+
+```ts
+isSystemDatabase('db-hr-abc12345')             // → FALSE   (not in SYSTEM_DB_PREFIXES)
+BASE_TO_KEY['db-hr']                           // → 'hr'    (it IS a locked, tenant-scoped DB)
+```
+
+And `createPageServerFirst` resolves the tenant's real database id **only when `isSystemDatabase()` is true** (`app/actions/pages.ts:66-77`). Therefore **pages created in `db-hr` and `db-journal-general` skip tenant resolution entirely** and use the client-supplied id as given.
+
+Defect shape #1 — *two representations of one concept* — in the tenancy layer itself. **R1-1 must reconcile these into one list before anything is built on top of them.**
+
+---
+
 ## THE WORK
 
 ### R1-0 · DELETE THE SCRATCH ROUTE 🟥🟥 — first commit, no dependencies
 - [ ] Delete `src/app/api/test-payment-plan/route.ts`. Unauthenticated `GET`, no guard, `findFirst` across all tenants, then **writes**. Delete it; do not repair it.
 
-### R1-1 · SEPARATE THE TWO FACTS 🟥 — *the enabling change*
+### R1-1a · RECONCILE THE TWO LISTS 🟥 — *first, it is a prerequisite for everything else*
+- [ ] `SYSTEM_DB_PREFIXES` (14) and `BASE_TO_KEY` (16) must become **one** list with one derivation. Decide explicitly whether `db-hr` and `db-journal-general` are system databases — they are in `lockedDbIds`, so the answer is almost certainly yes, and `isSystemDatabase()` has been wrong about them.
+- [ ] **Report, do not silently fix:** count existing `GlobalPage` rows whose `databaseId` resolves to `db-hr*` or `db-journal-general*` and whose parent `GlobalDatabase.tenantId` is not the expected tenant. This is read-only and tells Florin whether the gap has already produced mis-scoped rows.
+- [ ] `SERVER_PROVISIONED_BASES` (8) is a deliberate **subset** and stays separate — do not merge it in.
+
+### R1-1b · SEPARATE THE TWO FACTS 🟥 — *the enabling change*
 - [ ] A database is identified by **`logicalKey`** (`db-invoices` — what kind) **and** its **id** (this tenant's instance). Type questions ask `logicalKey`; identity questions use the id. Never one string for both.
-- [ ] Add `logicalKey` to `GlobalDatabase` (additive, backfilled from `lockedDbIds` — **no data moves**, no risk to `GlobalPage`).
-- [ ] Every `startsWith('db-…')` type test migrates to `logicalKey` equality. **55 sites.** This is what retires `cron/vat-backfill`'s cross-tenant `LIKE` as a *class*, not as one fix.
+- [ ] Add `logicalKey String?` to `GlobalDatabase` (additive; **nothing on `GlobalPage`**, no data movement).
+- [ ] **Backfill source already exists and is exact:** `getBaseDbId(db.id)` (`systemDatabases.ts:61`) returns the base prefix. Backfill `logicalKey = getBaseDbId(id)` for every row, then verify no NULLs on rows whose id matches a known prefix.
+- [ ] Every `startsWith('db-…')` type test migrates to `logicalKey` equality. **55 sites.** This retires `cron/vat-backfill`'s cross-tenant `LIKE 'db-invoices%'` as a **class**, not as one fix.
+- [ ] `getBaseDbId` then has exactly one remaining legitimate caller: the backfill. Everything else reads the column.
 
 ### R1-2 · ONE CANONICAL RESOLVER, FAIL-CLOSED 🟥
-- [ ] `resolveDatabaseId(logicalKey, tenant)` — a **lookup in `lockedDbIds`**, nothing else. No substring inspection, no sibling-value inference, no self-healing invention.
-- [ ] **Unknown key → throw.** Delete the `(base) => base` pass-through default. A resolver that cannot resolve must fail, not hand back an unscoped id.
+**Replaces `getLockedDbId(base, lockedDbIds)` entirely.** The three constructs to delete from `lib/lockedDbUtils.ts` — each is identity inferred by guessing:
+```ts
+const existingMappedVal = Object.values(lockedDbIds).find(val => val.includes('-'));  // (1) any sibling with a dash
+const suffix = existingMappedVal.split('-').pop();                                     // (2) …assume that's the tenant
+if (anyMappedVal) return `${base}-${suffix}`;                                          // (3) self-healing INVENTION
+return base;                                                                           // (4) fail-open
+```
+- [ ] New signature — a **lookup, nothing else**:
+  ```ts
+  export function resolveDatabaseId(logicalKey: string, lockedDbIds: LockedDbIds): string;  // throws if unresolvable
+  ```
+- [ ] **Unknown key → throw.** Also delete the client-side pass-through default:
+  ```ts
+  // src/context/TenantContext.tsx:26 — DELETE
+  resolveDbId: (base) => base, // safe default — falls back to bare ID
+  ```
+  It is not a safe default; it is a fail-open one. The context default must throw or the provider must not render until the tenant is loaded.
 - [ ] Provisioning a tenant is the **only** writer of `lockedDbIds`. If a logical key is missing at read time, that is a provisioning defect and must surface as one — a loud error naming the key, per the ERROR-SURFACING DIRECTIVE. (The current "self-healing fallback" hides exactly this.)
 - [ ] Audit tenant provisioning: every system database a tenant can reach is registered at creation, so the fallback has nothing left to do.
 

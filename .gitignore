@@ -57,3 +57,6 @@ dev.log
 * 2.*
 * 2/
 
+# Office / Excel temporary lock files
+.~lock.*#
+~$*

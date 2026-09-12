@@ -6,7 +6,7 @@ import { Link, usePathname } from '@/i18n/routing';
 import { TenantProvider } from '@/context/TenantContext';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import {
-    LayoutDashboard, FileText, Wallet, Users,
+    LayoutDashboard, FileText, Wallet, Users, CheckSquare,
     Menu, X, LogOut, Settings, FileSignature, ChevronDown, FolderOpen, Loader2
 } from 'lucide-react';
 import { signOut } from 'next-auth/react';
@@ -41,9 +41,9 @@ export default function MobileShell({
 
     const TABS: NavTab[] = [
         { id: 'home',     label: t('nav_dashboard'), href: '/m',           icon: <LayoutDashboard className="w-5 h-5" /> },
+        { id: 'tasks',    label: t('nav_tasks'),     href: '/m/tasks',     icon: <CheckSquare className="w-5 h-5" /> },
         { id: 'invoices', label: t('nav_invoices'),  href: '/m/invoices',  icon: <FileText className="w-5 h-5" /> },
         { id: 'expenses', label: t('nav_expenses'),  href: '/m/expenses',  icon: <Wallet className="w-5 h-5" /> },
-        { id: 'clients',  label: t('nav_clients'),   href: '/m/clients',   icon: <Users className="w-5 h-5" /> },
         { id: 'quotes',   label: t('nav_quotes'),    href: '/m/quotes',    icon: <FileSignature className="w-5 h-5" /> },
     ];
     const [settingsExpanded, setSettingsExpanded] = useState(false);

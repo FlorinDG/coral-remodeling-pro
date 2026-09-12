@@ -21,11 +21,9 @@ import {
     ListTodo,
     FolderKanban,
     Search,
-    AlertTriangle,
     Trash2
 } from 'lucide-react';
 import { parseRecurrenceRule, getNextDueDate } from '@/components/admin/tasks/RecurrenceEngine';
-import { getTaskDependencies } from '@/components/admin/tasks/DependencyEngine';
 
 function getLocalDateStr(d = new Date()): string {
     const year = d.getFullYear();
@@ -427,13 +425,6 @@ export default function MobileTasksPage() {
                                 ? (pageIndex[projectId]?.title || getPageLabel(projectId) || t('tasks_assign_project'))
                                 : undefined;
 
-                            // Dependency status computation (Option a: Informational & honest surfacing)
-                            const depInfo = getTaskDependencies(task, allPages);
-                            const blockerNames = [
-                                ...depInfo.openPrerequisites.map(p => (p.properties['title'] as string) || 'Untitled Task'),
-                                ...depInfo.danglingPrerequisiteIds.map(id => `[Task ${id.slice(-4)}]`),
-                            ];
-
                             return (
                                 <div
                                     key={task.id}
@@ -502,14 +493,6 @@ export default function MobileTasksPage() {
                                                     <Plus className="w-2.5 h-2.5" />
                                                     <span>{t('tasks_assign_project')}</span>
                                                 </button>
-                                            )}
-
-                                            {/* Dependency Blocked Status (Option a: Loud surface visibility) */}
-                                            {depInfo.isBlocked && (
-                                                <span className="flex items-center gap-1 font-semibold px-2 py-0.5 rounded-md bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20">
-                                                    <AlertTriangle className="w-3 h-3 text-amber-600 dark:text-amber-400 shrink-0" />
-                                                    <span>{t('tasks_blocked_by')}: {blockerNames.join(', ')}</span>
-                                                </span>
                                             )}
 
                                             {/* Overdue badge */}

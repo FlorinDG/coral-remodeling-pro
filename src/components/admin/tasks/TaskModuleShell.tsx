@@ -15,13 +15,12 @@ import { TaskDetailPanel } from './TaskDetailPanel';
 import { TaskContextMenu } from './TaskContextMenu';
 import { TaskBoardView } from './TaskBoardView';
 import { ReviewMode } from './ReviewMode';
-import { DependencyGraph } from './DependencyGraph';
 import { PerspectiveBuilder } from './PerspectiveBuilder';
 import { useTaskFilter, ActivePerspective } from './hooks/useTaskFilter';
 import { useMyDayReset } from './hooks/useMyDayReset';
 import { useRecurrence } from './hooks/useRecurrence';
 import { FilterRule } from '@/components/admin/database/types';
-import { Layers, Kanban, Eye, Network, Plus, ArrowLeft } from 'lucide-react';
+import { Layers, Kanban, Eye, Plus, ArrowLeft } from 'lucide-react';
 import { useRouter } from '@/i18n/routing';
 
 export default function TaskModuleShell() {
@@ -51,7 +50,7 @@ export default function TaskModuleShell() {
         x: number;
         y: number;
     } | null>(null);
-    const [activeView, setActiveView] = useState<'list' | 'board' | 'review' | 'dependencies'>('list');
+    const [activeView, setActiveView] = useState<'list' | 'board' | 'review'>('list');
     const [showPerspBuilder, setShowPerspBuilder] = useState(false);
 
     const selectedPage = pages.find(p => p.id === selectedPageId);
@@ -127,7 +126,6 @@ export default function TaskModuleShell() {
             'prop-task-estimated':  parsed.estimated || null,
             'prop-task-completed-at': '',
             'prop-task-reviewed-at':  '',
-            'prop-task-depends-on':   [],
             'prop-task-notes':      '',
         };
 
@@ -261,17 +259,6 @@ export default function TaskModuleShell() {
                             <Eye className="w-3.5 h-3.5" />
                             GTD Review
                         </button>
-                        <button
-                            onClick={() => setActiveView('dependencies')}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all
-                                ${activeView === 'dependencies'
-                                    ? 'bg-neutral-100 dark:bg-white/10 text-neutral-950 dark:text-white'
-                                    : 'text-neutral-500 hover:text-neutral-950 dark:hover:text-white'
-                                }`}
-                        >
-                            <Network className="w-3.5 h-3.5" />
-                            Dependencies
-                        </button>
                     </div>
 
                     {/* Explicit New Task Button */}
@@ -333,23 +320,6 @@ export default function TaskModuleShell() {
                             pages={pages}
                             onUpdatePage={handleUpdate}
                             onComplete={handleComplete}
-                        />
-                    )
-                )}
-
-                {activeView === 'dependencies' && (
-                    !isEnterprise ? (
-                        <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-neutral-50 dark:bg-neutral-900/10">
-                            <Network className="w-12 h-12 text-indigo-400 mb-3" />
-                            <h3 className="text-sm font-semibold text-neutral-900 dark:text-white mb-1">Dependency Flow is Enterprise</h3>
-                            <p className="text-xs text-neutral-500 max-w-xs mb-4">
-                                Visualizing sequential task prerequisite streams is gated by Enterprise. Elevate your plan to unlock.
-                            </p>
-                        </div>
-                    ) : (
-                        <DependencyGraph
-                            pages={pages}
-                            onPageClick={p => setSelectedPageId(p.id)}
                         />
                     )
                 )}

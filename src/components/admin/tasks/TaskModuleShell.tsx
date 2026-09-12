@@ -6,6 +6,7 @@ import { useDatabaseStore } from '@/components/admin/database/store';
 import { useTenant } from '@/context/TenantContext';
 import { Page, PropertyValue } from '@/components/admin/database/types';
 import { getDatabaseRoute } from '@/lib/databaseRoute';
+import { toast } from 'sonner';
 
 import { TaskSidebar } from './TaskSidebar';
 import { TaskListView } from './TaskListView';
@@ -403,7 +404,12 @@ export default function TaskModuleShell() {
                             onUpdate={handleUpdate}
                             onDelete={handleDelete}
                             onOpenFullPage={(pageId) => {
-                                router.push(getDatabaseRoute(db.id, pageId));
+                                const route = getDatabaseRoute(db.id, pageId);
+                                if (!route) {
+                                    toast.error(`Kan record niet openen: onbekende database (${db.id})`);
+                                    return;
+                                }
+                                router.push(route);
                             }}
                         />
                     </div>

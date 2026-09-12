@@ -1,6 +1,7 @@
 "use client";
 
 import { getDatabaseRoute } from '@/lib/databaseRoute';
+import { toast } from 'sonner';
 
 import React, { useState, useEffect, useRef } from 'react';
 import { ExternalLink, Loader2, Plus, Link2, Search, X } from 'lucide-react';
@@ -100,7 +101,12 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
         updatePageProperty(databaseId, pageId, prop.id, [...currentRelations, newPage.id]);
 
         // Navigate to the new page
-        router.push(`/${locale}${getDatabaseRoute(resolvedTargetDbId, newPage.id)}`);
+        const route = getDatabaseRoute(resolvedTargetDbId, newPage.id);
+        if (!route) {
+            toast.error(`Kan record niet openen: onbekende database (${resolvedTargetDbId})`);
+            return;
+        }
+        router.push(`/${locale}${route}`);
         setIsCreating(null);
         setIsOpen(false);
     };
@@ -475,7 +481,11 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
                                             className="w-full flex items-center justify-between p-2 hover:bg-neutral-50 dark:hover:bg-white/[0.02] border border-neutral-100 dark:border-white/5 hover:border-neutral-200 dark:hover:border-white/10 rounded-xl transition-all group"
                                         >
                                             <button
-                                                onClick={() => router.push(`/${locale}${getDatabaseRoute(lp.db.id, lp.page.id)}`)}
+                                                onClick={() => {
+                                                    const route = getDatabaseRoute(lp.db.id, lp.page.id);
+                                                    if (!route) { toast.error(`Kan record niet openen: onbekende database (${lp.db.id})`); return; }
+                                                    router.push(`/${locale}${route}`);
+                                                }}
                                                 className="flex-1 flex items-center gap-2 min-w-0 text-left"
                                             >
                                                 <span className="text-xs font-semibold text-neutral-800 dark:text-neutral-200 group-hover:text-orange-500 transition-colors truncate">
@@ -488,7 +498,11 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
                                             
                                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <button
-                                                    onClick={() => router.push(`/${locale}${getDatabaseRoute(lp.db.id, lp.page.id)}`)}
+                                                    onClick={() => {
+                                                        const route = getDatabaseRoute(lp.db.id, lp.page.id);
+                                                        if (!route) { toast.error(`Kan record niet openen: onbekende database (${lp.db.id})`); return; }
+                                                        router.push(`/${locale}${route}`);
+                                                    }}
                                                     className="p-1 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-white/5 rounded-lg transition-colors"
                                                     title="View Detail"
                                                 >
@@ -530,7 +544,11 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
                                 className="w-full flex items-center justify-between p-2 hover:bg-orange-50/50 dark:hover:bg-orange-950/10 border border-neutral-100 dark:border-white/5 hover:border-orange-200 dark:hover:border-orange-800/30 rounded-xl transition-all group"
                             >
                                 <button
-                                    onClick={() => router.push(`/${locale}${getDatabaseRoute(bl.db.id, bl.page.id)}`)}
+                                    onClick={() => {
+                                        const route = getDatabaseRoute(bl.db.id, bl.page.id);
+                                        if (!route) { toast.error(`Kan record niet openen: onbekende database (${bl.db.id})`); return; }
+                                        router.push(`/${locale}${route}`);
+                                    }}
                                     className="flex-1 flex items-center gap-2 min-w-0 text-left"
                                 >
                                     <span className="text-xs font-semibold text-neutral-800 dark:text-neutral-200 group-hover:text-orange-500 transition-colors truncate">
@@ -542,7 +560,11 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
                                 </button>
                                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                     <button
-                                        onClick={() => router.push(`/${locale}${getDatabaseRoute(bl.db.id, bl.page.id)}`)}
+                                        onClick={() => {
+                                            const route = getDatabaseRoute(bl.db.id, bl.page.id);
+                                            if (!route) { toast.error(`Kan record niet openen: onbekende database (${bl.db.id})`); return; }
+                                            router.push(`/${locale}${route}`);
+                                        }}
                                         className="p-1 text-neutral-400 hover:text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950/20 rounded-lg transition-colors"
                                         title="View"
                                     >

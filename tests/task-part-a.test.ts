@@ -19,12 +19,12 @@ function isMyTask(p: Page, currentUserId?: string): boolean {
 
 function isDoneTask(p: Page): boolean {
     const status = p.properties['prop-task-status'];
-    return status === 'opt-done' || status === 't-done';
+    return status === 'opt-done';
 }
 
 function isClosedTask(p: Page): boolean {
     const status = p.properties['prop-task-status'];
-    return status === 'opt-done' || status === 't-done' || status === 'opt-dropped';
+    return status === 'opt-done' || status === 'opt-dropped';
 }
 
 function createMockTask(opts: {
@@ -87,14 +87,12 @@ describe('Tasks Part A — Ownership & Scope Invariants', () => {
         assert.equal(isMyTask(task, 'user-florin'), false);
     });
 
-    test('Canonical Status: Recognizes both opt-done and legacy t-done as complete', () => {
+    test('Canonical Status: Recognizes opt-done as complete and opt-dropped as closed', () => {
         const taskOptDone = createMockTask({ id: 't5', title: 'Done task', status: 'opt-done' });
-        const taskTDone = createMockTask({ id: 't6', title: 'Done legacy', status: 't-done' });
         const taskTodo = createMockTask({ id: 't7', title: 'Open task', status: 'opt-todo' });
         const taskDropped = createMockTask({ id: 't8', title: 'Dropped', status: 'opt-dropped' });
 
         assert.equal(isDoneTask(taskOptDone), true);
-        assert.equal(isDoneTask(taskTDone), true);
         assert.equal(isDoneTask(taskTodo), false);
 
         assert.equal(isClosedTask(taskOptDone), true);

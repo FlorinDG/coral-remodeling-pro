@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
-import { useSession } from 'next-auth/react';
 import { useTenant } from '@/context/TenantContext';
 import { useDatabaseStore } from '@/components/admin/database/store';
 import { Page, PropertyValue } from '@/components/admin/database/types';
@@ -50,12 +49,12 @@ function isMyTask(p: Page, currentUserId?: string): boolean {
 
 function isDoneTask(p: Page): boolean {
     const status = p.properties['prop-task-status'];
-    return status === 'opt-done' || status === 't-done';
+    return status === 'opt-done';
 }
 
 function isClosedTask(p: Page): boolean {
     const status = p.properties['prop-task-status'];
-    return status === 'opt-done' || status === 't-done' || status === 'opt-dropped';
+    return status === 'opt-done' || status === 'opt-dropped';
 }
 
 interface PendingUndo {
@@ -68,13 +67,12 @@ interface PendingUndo {
 
 export default function MobileTasksPage() {
     const t = useTranslations('Mobile');
-    const { data: session } = useSession();
-    const currentUserId = session?.user?.id;
     const { resolveDbId } = useTenant();
     const tasksDbId = resolveDbId('db-tasks');
     const projectsDbId = resolveDbId('db-1');
 
     // Store selectors
+    const currentUserId = useDatabaseStore(s => s.sessionUserId) || undefined;
     const databases = useDatabaseStore(s => s.databases);
     const pageIndex = useDatabaseStore(s => s.pageIndex || {});
     const getPageLabel = useDatabaseStore(s => s.getPageLabel);

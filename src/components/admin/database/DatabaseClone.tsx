@@ -631,6 +631,18 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
         { id: 'ty-task', name: 'Taak',      color: 'blue'   },
         { id: 'ty-mat',  name: 'Materiaal', color: 'orange' },
       ]}},
+      { id: 'prop-task-due',          name: 'Due Date',      type: 'date' },
+      { id: 'prop-task-defer',        name: 'Defer Until',   type: 'date' },
+      { id: 'prop-task-flagged',      name: 'Flagged',       type: 'checkbox' },
+      { id: 'prop-task-my-day',       name: 'My Day',        type: 'checkbox' },
+      { id: 'prop-task-priority',     name: 'Priority',      type: 'select', config: { options: [
+        { id: 'opt-p1', name: 'Urgent', color: 'red' },
+        { id: 'opt-p2', name: 'High',   color: 'orange' },
+        { id: 'opt-p3', name: 'Medium', color: 'yellow' },
+        { id: 'opt-p4', name: 'Low',    color: 'gray' },
+      ]}},
+      { id: 'prop-task-notes',        name: 'Notes',         type: 'text' },
+      { id: 'prop-task-completed-at', name: 'Completed At',  type: 'date' },
     ],
     'db-articles': [
       { id: 'title',              name: 'Naam',              type: 'text' },

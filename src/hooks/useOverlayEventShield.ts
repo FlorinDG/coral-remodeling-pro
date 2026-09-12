@@ -26,8 +26,12 @@ const SHIELDED_EVENTS = [
  * 3. Stops stray events outside the overlay in capture phase before reaching document bubble listeners.
  * 4. Stops events inside the overlay at the root boundary in bubble phase.
  */
-export function useOverlayEventShield(rootRef: RefObject<HTMLElement | null>) {
+export function useOverlayEventShield(
+    rootRef: RefObject<HTMLElement | null>,
+    enabled: boolean = true
+) {
     useEffect(() => {
+        if (!enabled) return;
         const root = rootRef.current;
         if (!root) return;
 
@@ -57,5 +61,5 @@ export function useOverlayEventShield(rootRef: RefObject<HTMLElement | null>) {
                 document.removeEventListener(type, handleCapture, true);
             }
         };
-    }, [rootRef]);
+    }, [rootRef, enabled]);
 }

@@ -3,6 +3,7 @@ import { X, Paperclip, Send, Loader2, FileText, CheckSquare, Square, Plus, Uploa
 import { uploadFileAction } from '@/app/actions/files';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { listRecordFiles } from '@/app/actions/list-record-files';
+import { useOverlayEventShield } from '@/hooks/useOverlayEventShield';
 
 interface QuoteSendModalProps {
     isOpen: boolean;
@@ -50,6 +51,8 @@ export function QuoteSendModal({
     const [isLoadingFiles, setIsLoadingFiles] = useState(false);
     const [uploadingFiles, setUploadingFiles] = useState<{ filename: string }[]>([]);
     const fileInputRef = React.useRef<HTMLInputElement>(null);
+    const modalRef = React.useRef<HTMLDivElement>(null);
+    useOverlayEventShield(modalRef, isOpen);
 
     const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || []);
@@ -141,7 +144,7 @@ export function QuoteSendModal({
     };
 
     return (
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 sm:p-6 bg-black/50 animate-in fade-in duration-200">
+        <div ref={modalRef} className="fixed inset-0 z-[99999] flex items-center justify-center p-4 sm:p-6 bg-black/50 animate-in fade-in duration-200">
             <div className="bg-white dark:bg-neutral-900 rounded-xl shadow-2xl w-full max-w-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200 dark:border-white/10 shrink-0">

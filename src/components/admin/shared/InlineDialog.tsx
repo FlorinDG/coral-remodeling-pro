@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
+import { useOverlayEventShield } from '@/hooks/useOverlayEventShield';
 
 interface InlineDialogProps {
     isOpen: boolean;
@@ -25,14 +26,15 @@ export default function InlineDialog({
     variant = 'default',
 }: InlineDialogProps) {
     const overlayRef = useRef<HTMLDivElement>(null);
+    useOverlayEventShield(overlayRef, isOpen);
 
     useEffect(() => {
         if (!isOpen) return;
         const handleEsc = (e: KeyboardEvent) => {
             if (e.key === 'Escape') onClose();
         };
-        window.addEventListener('keydown', handleEsc);
-        return () => window.removeEventListener('keydown', handleEsc);
+        window.addEventListener('keydown', handleEsc, true);
+        return () => window.removeEventListener('keydown', handleEsc, true);
     }, [isOpen, onClose]);
 
     if (!isOpen) return null;

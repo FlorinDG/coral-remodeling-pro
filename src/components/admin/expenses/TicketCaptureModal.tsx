@@ -13,6 +13,7 @@ import { parseDecimal } from '@/lib/decimal-parser';
 import { useTenant } from '@/context/TenantContext';
 import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/routing';
+import { useOverlayEventShield } from '@/hooks/useOverlayEventShield';
 
 interface TicketCaptureModalProps {
     onClose: () => void;
@@ -97,6 +98,8 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
     const fileInputRef = useRef<HTMLInputElement>(null);
     const cameraInputRef = useRef<HTMLInputElement>(null);
     const lastFileRef = useRef<File | null>(null);
+    const modalRef = useRef<HTMLDivElement>(null);
+    useOverlayEventShield(modalRef);
 
     const [form, setForm] = useState<TicketFormData>({
         merchant: '',
@@ -460,6 +463,7 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
     // ── Render ────────────────────────────────────────────────────────────────
     return (
         <div
+            ref={modalRef}
             className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4 sm:p-6"
             onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
         >

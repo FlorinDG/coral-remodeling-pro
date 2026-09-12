@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useDatabaseStore } from '../store';
 import { VariantsConfig, VariantAxis, VariantOption } from '../types';
 import { Settings2, Plus, Trash2, X } from 'lucide-react';
+import { useOverlayEventShield } from '@/hooks/useOverlayEventShield';
 
 interface Props {
     databaseId: string;
@@ -14,6 +15,8 @@ interface Props {
 
 export default function VariantsPropertyEditor({ databaseId, pageId, propertyId, initialConfig }: Props) {
     const [isOpen, setIsOpen] = useState(false);
+    const modalRef = useRef<HTMLDivElement>(null);
+    useOverlayEventShield(modalRef, isOpen);
     const updatePageProperty = useDatabaseStore(state => state.updatePageProperty);
     const config: VariantsConfig = Array.isArray(initialConfig) ? initialConfig : [];
 
@@ -87,7 +90,7 @@ export default function VariantsPropertyEditor({ databaseId, pageId, propertyId,
             </button>
 
             {isOpen && (
-                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4">
+                <div ref={modalRef} className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4">
                     <div className="bg-white dark:bg-[#1a1a1a] border border-neutral-200 dark:border-white/10 w-full max-w-2xl max-h-[80vh] overflow-y-auto rounded-xl shadow-2xl flex flex-col">
                         <div className="sticky top-0 bg-white dark:bg-[#1a1a1a] border-b border-neutral-200 dark:border-white/10 p-4 flex items-center justify-between z-10">
                             <div>

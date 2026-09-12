@@ -1,7 +1,8 @@
 "use client";
 
 import { X } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
+import { useOverlayEventShield } from '@/hooks/useOverlayEventShield';
 
 interface ModalProps {
     isOpen: boolean;
@@ -11,6 +12,9 @@ interface ModalProps {
 }
 
 export default function Modal({ isOpen, onClose, title, children }: ModalProps) {
+    const modalRef = useRef<HTMLDivElement>(null);
+    useOverlayEventShield(modalRef, isOpen);
+
     useEffect(() => {
         if (isOpen) {
             document.body.style.overflow = 'hidden';
@@ -23,7 +27,7 @@ export default function Modal({ isOpen, onClose, title, children }: ModalProps) 
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+        <div ref={modalRef} className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
             <div
                 className="absolute inset-0 bg-black/75 animate-in fade-in duration-300"
                 onClick={onClose}

@@ -7,6 +7,7 @@ import { uploadFileAction } from '@/app/actions/files';
 import { useDatabaseStore } from '../database/store';
 import { useRouter } from 'next/navigation';
 import { useLocale } from 'next-intl';
+import { useOverlayEventShield } from '@/hooks/useOverlayEventShield';
 
 interface AiDocumentImportModalProps {
     onClose: () => void;
@@ -26,6 +27,8 @@ export default function AiDocumentImportModal({ onClose, targetDatabaseId = 'db-
     const [jobs, setJobs] = useState<UploadJob[]>([]);
     const [isDragging, setIsDragging] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const modalRef = useRef<HTMLDivElement>(null);
+    useOverlayEventShield(modalRef);
     const router = useRouter();
     const locale = useLocale();
 
@@ -99,7 +102,7 @@ export default function AiDocumentImportModal({ onClose, targetDatabaseId = 'db-
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+        <div ref={modalRef} className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
             <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col border border-neutral-200 dark:border-neutral-800 relative max-h-[90vh]">
                 
                 {/* Header */}

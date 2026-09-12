@@ -7,6 +7,7 @@ import { useDatabaseStore } from '../store';
 import { evaluateFormula } from '../formulaEngine';
 import { FORMULA_FUNCTIONS, CATEGORY_META, FormulaFunctionDef } from '../formulaReference';
 import { Property } from '../types';
+import { useOverlayEventShield } from '@/hooks/useOverlayEventShield';
 
 interface FormulaEditorModalProps {
     databaseId: string;
@@ -114,6 +115,8 @@ export default function FormulaEditorModal({
     const [hoveredFunction, setHoveredFunction] = useState<FormulaFunctionDef | null>(null);
     const [copied, setCopied] = useState(false);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const modalRef = useRef<HTMLDivElement>(null);
+    useOverlayEventShield(modalRef);
 
     const database = useDatabaseStore(state => state.databases.find(db => db.id === databaseId));
     const updateProperty = useDatabaseStore(state => state.updateProperty);
@@ -223,12 +226,12 @@ export default function FormulaEditorModal({
         const handler = (e: KeyboardEvent) => {
             if (e.key === 'Escape') onClose();
         };
-        document.addEventListener('keydown', handler);
-        return () => document.removeEventListener('keydown', handler);
+        document.addEventListener('keydown', handler, true);
+        return () => document.removeEventListener('keydown', handler, true);
     }, [onClose]);
 
     return createPortal(
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 p-4">
+        <div ref={modalRef} className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 p-4">
             <div
                 className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 flex flex-col"
                 style={{ maxHeight: 'min(680px, 85vh)' }}

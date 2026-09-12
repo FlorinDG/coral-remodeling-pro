@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { X, FolderKanban } from 'lucide-react';
+import { useOverlayEventShield } from '@/hooks/useOverlayEventShield';
 
 interface CreateProjectModalProps {
     isOpen: boolean;
@@ -22,6 +23,8 @@ const FIELD_DEFS = [
 
 export default function CreateProjectModal({ isOpen, onClose, onCreated, createPage, projectDbId, preselectedClientId }: CreateProjectModalProps) {
     const [form, setForm] = useState<Record<string, string>>({});
+    const modalRef = useRef<HTMLDivElement>(null);
+    useOverlayEventShield(modalRef, isOpen);
 
     if (!isOpen) return null;
 
@@ -49,7 +52,7 @@ export default function CreateProjectModal({ isOpen, onClose, onCreated, createP
     };
 
     return (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50" onClick={onClose}>
+        <div ref={modalRef} className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50" onClick={onClose}>
             <div
                 className="w-full max-w-md bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border border-neutral-200 dark:border-white/10 overflow-hidden animate-in fade-in zoom-in-95 duration-150"
                 onClick={(e) => e.stopPropagation()}

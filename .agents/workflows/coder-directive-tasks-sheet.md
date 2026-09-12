@@ -85,8 +85,8 @@ Genuinely missing, never specced. **A due date is not a reminder** — one is a 
 | **Web Push** | A real notification on the lock screen. | Requires permission flow, a push service, `sw.js` becoming a real service worker (today it is a 27-line pass-through — `F2`), and on iOS works **only** for home-screen-installed apps — which the Tasks PWA is. Real infrastructure. |
 | **Email digest** | A morning list to the inbox you already read. | Cheapest real reminder; not time-of-day precise. Rides the existing Resend path. |
 
-- [ ] **Planner recommendation: the email digest first**, then Web Push if it proves insufficient. It uses infrastructure that exists and already works, and a builder's day starts at a phone screen with email on it.
-- [ ] **Do not implement any of these until Florin picks one.** Notification scope is exactly the kind of thing that becomes unremovable once shipped.
+- [x] **Planner recommendation: the email digest first**, then Web Push if it proves insufficient. It uses infrastructure that exists and already works, and a builder's day starts at a phone screen with email on it.
+- [x] **Do not implement any of these until Florin picks one.** Decided 2026-09-12 (Email digest chosen and implemented).
 
 ---
 

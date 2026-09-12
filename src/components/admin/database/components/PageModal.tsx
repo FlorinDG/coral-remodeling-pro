@@ -23,6 +23,7 @@ import { Property, VariantsConfig } from '../types';
 import { Search, Loader2, Check, GripVertical, Globe, Clock, User, Users, Euro, Percent, CheckSquare, Calendar, Hash, Calculator, TrendingUp } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { toast } from 'sonner';
+import { useOverlayEventShield } from '@/hooks/useOverlayEventShield';
 import SmartVATLookup from './SmartVATLookup';
 import { COLOR_STYLES } from '../columns/SelectColumn';
 import LinkedRecords from './LinkedRecords';
@@ -590,6 +591,7 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
     const router = useRouter();
     const locale = useLocale();
     const modalRef = useRef<HTMLDivElement>(null);
+    useOverlayEventShield(modalRef);
     const [animationDone, setAnimationDone] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
 
@@ -610,9 +612,6 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
 
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
-        e.stopPropagation(); // Stop React synthetic propagation
-        e.nativeEvent.stopPropagation(); // Stop native keydown bubbling to window/document (DSG listeners)
-        
         if (e.key === 'Escape') {
             onClose();
             e.preventDefault();

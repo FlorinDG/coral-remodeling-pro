@@ -61,14 +61,18 @@ function isMyTask(p: Page, currentUserId?: string): boolean {
     return true;
 }
 
+// TS-1 (coral-task-status-two-subsystems.md):
+// Mobile reads BOTH status conventions, writes only opt-*.
+// Project tasks actively write t-* (t-todo, t-prog, t-done) via ProjectDetailView,
+// quote-service, and store.ts progress automations. Held until unified in PROJ-2.
 function isDoneTask(p: Page): boolean {
     const status = p.properties['prop-task-status'];
-    return status === 'opt-done';
+    return status === 'opt-done' || status === 't-done';
 }
 
 function isClosedTask(p: Page): boolean {
     const status = p.properties['prop-task-status'];
-    return status === 'opt-done' || status === 'opt-dropped';
+    return status === 'opt-done' || status === 't-done' || status === 'opt-dropped';
 }
 
 interface PendingUndo {
@@ -330,9 +334,8 @@ export default function MobileTasksPage() {
             const isCompleted = isDoneTask(page);
             const isPendingUndo = Boolean(pendingUndos[page.id]);
 
-            // Exclude completed or dropped unless in the 4-second undo grace period
-            if (isCompleted && !isPendingUndo) return false;
-            if (page.properties['prop-task-status'] === 'opt-dropped') return false;
+            // Exclude closed tasks (opt-done, t-done, opt-dropped) unless in the 4-second undo grace period
+            if (isClosedTask(page) && !isPendingUndo) return false;
 
             if (activeTab === 'today') {
                 const due = page.properties['prop-task-due'] as string | undefined;

@@ -17,14 +17,16 @@ function isMyTask(p: Page, currentUserId?: string): boolean {
     return true;
 }
 
+// TS-1 (coral-task-status-two-subsystems.md):
+// Reads both opt-done and t-done. Project subsystem actively writes t-*.
 function isDoneTask(p: Page): boolean {
     const status = p.properties['prop-task-status'];
-    return status === 'opt-done';
+    return status === 'opt-done' || status === 't-done';
 }
 
 function isClosedTask(p: Page): boolean {
     const status = p.properties['prop-task-status'];
-    return status === 'opt-done' || status === 'opt-dropped';
+    return status === 'opt-done' || status === 't-done' || status === 'opt-dropped';
 }
 
 function createMockTask(opts: {
@@ -87,16 +89,29 @@ describe('Tasks Part A — Ownership & Scope Invariants', () => {
         assert.equal(isMyTask(task, 'user-florin'), false);
     });
 
-    test('Canonical Status: Recognizes opt-done as complete and opt-dropped as closed', () => {
+    test('TS-1: Recognizes opt-done and project t-done as complete, t-todo/t-prog as open', () => {
         const taskOptDone = createMockTask({ id: 't5', title: 'Done task', status: 'opt-done' });
-        const taskTodo = createMockTask({ id: 't7', title: 'Open task', status: 'opt-todo' });
+        const taskTDone = createMockTask({ id: 't6', title: 'Done project task', status: 't-done' });
+        const taskTTodo = createMockTask({ id: 't7a', title: 'Project todo', status: 't-todo' });
+        const taskTProg = createMockTask({ id: 't7b', title: 'Project in progress', status: 't-prog' });
+        const taskOptTodo = createMockTask({ id: 't7c', title: 'Open personal task', status: 'opt-todo' });
         const taskDropped = createMockTask({ id: 't8', title: 'Dropped', status: 'opt-dropped' });
 
+        // isDoneTask: opt-done and t-done are done
         assert.equal(isDoneTask(taskOptDone), true);
-        assert.equal(isDoneTask(taskTodo), false);
+        assert.equal(isDoneTask(taskTDone), true);
+        assert.equal(isDoneTask(taskTTodo), false);
+        assert.equal(isDoneTask(taskTProg), false);
+        assert.equal(isDoneTask(taskOptTodo), false);
 
+        // isClosedTask: opt-done, t-done, and opt-dropped are closed
         assert.equal(isClosedTask(taskOptDone), true);
+        assert.equal(isClosedTask(taskTDone), true);
         assert.equal(isClosedTask(taskDropped), true);
-        assert.equal(isClosedTask(taskTodo), false);
+
+        // Open: t-todo, t-prog, opt-todo are open
+        assert.equal(isClosedTask(taskTTodo), false);
+        assert.equal(isClosedTask(taskTProg), false);
+        assert.equal(isClosedTask(taskOptTodo), false);
     });
 });

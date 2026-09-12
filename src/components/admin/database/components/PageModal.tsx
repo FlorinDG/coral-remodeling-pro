@@ -607,22 +607,7 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
         return () => clearTimeout(timer);
     }, []);
 
-    useEffect(() => {
-        // (3) Clear/blur the DSG active cell
-        if (document.activeElement instanceof HTMLElement) {
-            document.activeElement.blur();
-        }
 
-        // Basic focus trap: focus first field
-        if (modalRef.current) {
-            const focusable = modalRef.current.querySelectorAll<HTMLElement>(
-                'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-            );
-            if (focusable.length > 0) {
-                focusable[0].focus();
-            }
-        }
-    }, []);
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
         e.stopPropagation(); // Stop React synthetic propagation
@@ -685,6 +670,37 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
     const isPagesLoading = useDatabaseStore(state => state.loadingDatabaseIds.includes(databaseId));
     const loadDatabasePages = useDatabaseStore(state => state.loadDatabasePages);
     const page = database?.pages.find(p => p.id === pageId);
+
+    const hasInitialFocused = useRef(false);
+    useEffect(() => {
+        if (hasInitialFocused.current || !modalRef.current) return;
+
+        // If an element inside the modal is already focused (e.g. child autoFocus), do not disturb it
+        if (document.activeElement && modalRef.current.contains(document.activeElement)) {
+            hasInitialFocused.current = true;
+            return;
+        }
+
+        // Clear/blur any outside active elements (e.g. background grid cell)
+        if (document.activeElement instanceof HTMLElement && !modalRef.current.contains(document.activeElement)) {
+            document.activeElement.blur();
+        }
+
+        // Auto-focus title ONLY when creating a new blank record
+        const isNewBlankRecord = !page?.properties?.title && !page?.properties?.name;
+        if (isNewBlankRecord) {
+            const titleInput = modalRef.current.querySelector<HTMLInputElement>('input[placeholder="Untitled"]');
+            if (titleInput) {
+                titleInput.focus();
+                hasInitialFocused.current = true;
+                return;
+            }
+        }
+
+        // Otherwise focus modal container so keyboard navigation/trap works without stealing input focus
+        modalRef.current.focus();
+        hasInitialFocused.current = true;
+    }, [page?.id]);
 
     useEffect(() => {
         if (databaseId && !isPagesLoaded && !isPagesLoading && !page) {
@@ -786,7 +802,8 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
     return createPortal(
         <div 
             ref={modalRef}
-            className="fixed inset-0 z-[99999] flex justify-end"
+            tabIndex={-1}
+            className="fixed inset-0 z-[99999] flex justify-end outline-none"
             onPointerDown={(e) => e.stopPropagation()}
             onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}

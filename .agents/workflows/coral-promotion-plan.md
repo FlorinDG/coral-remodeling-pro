@@ -57,11 +57,16 @@ That is correct and it is what you asked for — but **nothing today prevents it
   `LAZY-4` set the flag to **opt-in**: `IS_LAZY_DATA_ENABLED = process.env.NEXT_PUBLIC_LAZY_DATA === 'true'` (`feature-flags.ts:85`). **Lazy loading is OFF unless explicitly switched on.** So the 16 exposed surfaces hydrate fully and behave exactly as they do on `main` today — the regression is **neutralised**, and promoting no longer risks them.
   ⚠️ **Be clear about what this means: the regression is MASKED, not resolved.** `LAZY-2` built the accessor (`usePagesOf` / `useLabelsOf`), but **only `TaskModuleShell` consumes it.** The other ~15 surfaces still read the old way. **Turning the flag back on would break them again.**
   ⚠️ **And the cost: `MEM-3`'s entire benefit is switched off.** We are back to full hydration — 52 MB payload, the 307 MB invocation baseline. Production is no worse than today (`main` never had `MEM-3`), but the memory work is banked, not realised. See `LAZY-5`.
-- [x] **Phase 2 complete** — `2.1`–`2.5`/`TS-1` all landed (`66ef43a`, `62865a7`, `896f38f`, `afbf405`).
+- [x] **Phase 2 complete** — `2.1`–`2.5`/`TS-1` (`66ef43a`, `62865a7`, `896f38f`, `afbf405`), `2.6`–`2.10` (`1c25ee6`, `2ffcb1a`), `2.10-b` desktop subtasks (`3d9995a`), `2.11`–`2.15` app-shell hardening (`3b8f773`). Verified against the repo: 7 importers of `lib/tasks/subtasks.ts`, one `useScrollLock`, one shared `FileViewer`, z-scale `chrome 40 / overlay 60`, tenant prefix assert unchanged.
 - [ ] **G-2 · Florin has actually used `/m/tasks`.** Not "it matches the spec" — "I would trust it with my week."
-- [ ] **G-3 · `npm run test:compile` clean · full suite green** except the known `i18n` red, which is itself worth fixing first (`I18N-MISSING-KEYS`) so the baseline is honestly green.
-- [ ] **G-4 · `P-1` DB verification clean.**
-- [ ] **G-5 · Neon snapshot taken immediately before**, and PITR window confirmed. `pd.md` DATA-SAFETY.
+  **Status 2026-09-13: close, but not yet met.** Five real defects were found by *using* it, and all five are fixed — *"major improvement"*. **But the fixes are hours old.** The gate is a week's use, not a good first impression; the first pass through this module produced five findings, and the second pass is worth having before 99 commits go to `main`. **Use it for the working days of the staging pass** — that satisfies `G-2` and `G-6` in the same elapsed time rather than in series.
+- [x] **G-3 · `npm run test:compile` clean · full suite green — ✅ MET (2026-09-13).**
+  **Measured 2026-09-13: `116 tests · 116 pass · 0 fail`.** `i18n` missing keys, `Tasks.Hr` deduplication, and Romanian parity all resolved (`I18N-1..3`). All four locales (`en`, `nl`, `fr`, `ro`) in 100% lockstep parity (846 keys each). `npm run test:compile` (`tsc --noEmit`) passes cleanly with 0 errors.
+- [x] **G-4 · `P-1` DB verification — ✅ CLEAN (Florin ran it, 2026-09-13).**
+  `prisma migrate status` → 3 migrations found, no pending, no failed. `migrate diff` against the live datasource → **`"This is an empty migration."`** — Prisma's literal output for **no drift**.
+  **Production's structure matches `schema.prisma` exactly.**
+  🔻 **Planner correction:** I predicted drift, reasoning that 55 models across 3 migrations (last one `20260729…`) implied history advanced by `db push`. **That inference was wrong.** It is the same mistake as the retracted `C1` blocker and the 38 `t-*` records: **inferring the state of data from the shape of the code.** The census answers; the code shape only raises the question. The suspicion was worth stating — it is exactly what `P-1` exists to catch — but it should have been stated as a question, which is how it was run, and the answer is a clean bill.
+- [x] **G-5 · Neon snapshot — ✅ TAKEN (Florin, 2026-09-13).** Confirm the PITR window still covers the merge at the moment you merge, not only now.
 - [ ] **G-6 · A staging pass on `release/*`.** There is a `staging` branch on the remote and `pd.md` Rule 8 specifies it. **99 commits is exactly the case that branch exists for.** Do not go `develop` → `main` directly.
 
 ---

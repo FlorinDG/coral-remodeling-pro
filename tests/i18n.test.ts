@@ -23,8 +23,8 @@ const ROOT = path.resolve(import.meta.dirname, '..');
 const MESSAGES = path.join(ROOT, 'src', 'messages');
 const SRC = path.join(ROOT, 'src');
 
-/** Locales that must stay in lockstep. `ro` is intentionally excluded — see the test below. */
-const ACTIVE_LOCALES = ['en', 'nl', 'fr'];
+/** Locales that must stay in lockstep. */
+const ACTIVE_LOCALES = ['en', 'nl', 'fr', 'ro'];
 const REFERENCE_LOCALE = 'en';
 
 function leafKeys(obj: Record<string, unknown>, prefix = ''): string[] {
@@ -146,15 +146,3 @@ describe('i18n — every key referenced in source exists', () => {
     });
 });
 
-describe('i18n — Romanian is a known laggard, tracked not enforced', () => {
-    test('ro.json is reported but does not fail the suite', () => {
-        const ref = new Set(leafKeys(loadLocale(REFERENCE_LOCALE)));
-        let ro: Set<string>;
-        try { ro = new Set(leafKeys(loadLocale('ro'))); } catch { return; }
-        const missing = [...ref].filter(k => !ro.has(k));
-        if (missing.length > 0) {
-            console.log(`  ℹ ro.json is behind by ${missing.length} keys (not enforced — add 'ro' to ACTIVE_LOCALES to enforce)`);
-        }
-        assert.ok(true);
-    });
-});

@@ -161,7 +161,7 @@ export default function ColumnHeader({ databaseId, viewId, property, index = 0, 
                 >
                     <Icon className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
                     <span className="font-medium truncate flex-1 select-none pointer-events-none">
-                        {t.has('db.col.' + property.id) ? t('db.col.' + property.id as any) : property.name}
+                        {t.has(`db.col.${property.id}`) ? t(`db.col.${property.id}` as any) : property.name}
                     </span>
                 </button>
             </div>

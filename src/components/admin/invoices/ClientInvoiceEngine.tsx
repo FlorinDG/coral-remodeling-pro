@@ -31,7 +31,7 @@ import ErrorBoundary from '@/components/common/ErrorBoundary';
 import { performLocalPreflight } from '@/lib/peppol-payload';
 import { toast } from 'sonner';
 import { createPageServerFirst } from '@/app/actions/pages';
-import { t } from '@/lib/document-i18n';
+import { t as ti18n } from '@/lib/document-i18n';
 import CreateClientModal from './CreateClientModal';
 import CreateProjectModal from './CreateProjectModal';
 import SearchableSelect from '@/components/ui/SearchableSelect';
@@ -1290,13 +1290,13 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                                 {/* Interactive status selector */}
                                 {isHydrated && (() => {
                                     const STATUS_MAP: Record<string, { label: string; bg: string; text: string; dot: string }> = {
-                                        'opt-draft':              { label: t('engine_status_draft', locale), bg: 'bg-neutral-100 dark:bg-neutral-800', text: 'text-neutral-600 dark:text-neutral-300', dot: 'bg-neutral-400' },
-                                        'opt-sent':               { label: t('engine_status_sent', locale), bg: 'bg-orange-50 dark:bg-orange-900/30',     text: 'text-orange-700 dark:text-orange-300',       dot: 'bg-orange-500' },
-                                        'opt-paid':               { label: t('engine_status_paid', locale), bg: 'bg-green-50 dark:bg-green-900/30',   text: 'text-green-700 dark:text-green-300',     dot: 'bg-green-500' },
-                                        'opt-overdue':            { label: t('engine_status_overdue', locale), bg: 'bg-red-50 dark:bg-red-900/30',       text: 'text-red-700 dark:text-red-300',         dot: 'bg-red-500' },
-                                        'opt-credited':           { label: t('engine_status_credited', locale), bg: 'bg-pink-50 dark:bg-pink-900/30', text: 'text-pink-700 dark:text-pink-300', dot: 'bg-pink-500' },
-                                        'opt-partially-credited': { label: t('engine_status_partially_credited', locale), bg: 'bg-pink-50 dark:bg-pink-900/30', text: 'text-pink-700 dark:text-pink-300', dot: 'bg-pink-400' },
-                                        'opt-uncollectible':      { label: t('engine_status_uncollectible', locale), bg: 'bg-purple-50 dark:bg-purple-900/30', text: 'text-purple-700 dark:text-purple-300',   dot: 'bg-purple-500' },
+                                        'opt-draft':              { label: ti18n('engine_status_draft', locale), bg: 'bg-neutral-100 dark:bg-neutral-800', text: 'text-neutral-600 dark:text-neutral-300', dot: 'bg-neutral-400' },
+                                        'opt-sent':               { label: ti18n('engine_status_sent', locale), bg: 'bg-orange-50 dark:bg-orange-900/30',     text: 'text-orange-700 dark:text-orange-300',       dot: 'bg-orange-500' },
+                                        'opt-paid':               { label: ti18n('engine_status_paid', locale), bg: 'bg-green-50 dark:bg-green-900/30',   text: 'text-green-700 dark:text-green-300',     dot: 'bg-green-500' },
+                                        'opt-overdue':            { label: ti18n('engine_status_overdue', locale), bg: 'bg-red-50 dark:bg-red-900/30',       text: 'text-red-700 dark:text-red-300',         dot: 'bg-red-500' },
+                                        'opt-credited':           { label: ti18n('engine_status_credited', locale), bg: 'bg-pink-50 dark:bg-pink-900/30', text: 'text-pink-700 dark:text-pink-300', dot: 'bg-pink-500' },
+                                        'opt-partially-credited': { label: ti18n('engine_status_partially_credited', locale), bg: 'bg-pink-50 dark:bg-pink-900/30', text: 'text-pink-700 dark:text-pink-300', dot: 'bg-pink-400' },
+                                        'opt-uncollectible':      { label: ti18n('engine_status_uncollectible', locale), bg: 'bg-purple-50 dark:bg-purple-900/30', text: 'text-purple-700 dark:text-purple-300',   dot: 'bg-purple-500' },
                                     };
                                     const current = STATUS_MAP[invoiceStatus] || STATUS_MAP['opt-draft'];
                                     return (
@@ -2090,12 +2090,12 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                 peppolDisabledReason={(!clientId || isLocked || isProforma) ? 'Factuur kan momenteel niet via Peppol worden verzonden.' : peppolDisabledReason}
                 peppolUnknownWarning={peppolUnknownWarning}
                 clientEmail={clients.find(c => c.id === clientId)?.email || ''}
-                defaultSubject={`${t('subject_invoice', docLanguage)}: ${betreft || invoiceTitle} — ${tenant?.commercialName || tenant?.companyName || 'Coral'}`}
-                defaultBody={t('email_invoice_body', docLanguage)}
+                defaultSubject={`${ti18n('subject_invoice', docLanguage)}: ${betreft || invoiceTitle} — ${tenant?.commercialName || tenant?.companyName || 'Coral'}`}
+                defaultBody={ti18n('email_invoice_body', docLanguage)}
                 projectId={projectId || undefined}
                 documentId={id}
                 documentType="invoice"
-                documentFileName={`${t('invoice', docLanguage)}_${(betreft || invoiceTitle || '').replace(/[^a-zA-Z0-9]/g, '_')}.pdf`}
+                documentFileName={`${ti18n('invoice', docLanguage)}_${(betreft || invoiceTitle || '').replace(/[^a-zA-Z0-9]/g, '_')}.pdf`}
                 isSending={isSending || isSendingPeppol}
             />
 

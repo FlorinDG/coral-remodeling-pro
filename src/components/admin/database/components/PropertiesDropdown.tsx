@@ -120,7 +120,7 @@ export default function PropertiesDropdown({ databaseId, viewId }: PropertiesDro
                                                             <GripVertical size={14} />
                                                         </div>
                                                         <span className={`truncate ${isHidden ? 'text-neutral-400 dark:text-neutral-500' : 'text-neutral-700 dark:text-neutral-200'} ${isTitle ? 'font-medium' : ''}`}>
-                                                            {t.has('db.col.' + prop.id) ? t('db.col.' + prop.id as any) : prop.name}
+                                                            {t.has(`db.col.${prop.id}`) ? t(`db.col.${prop.id}` as any) : prop.name}
                                                         </span>
                                                     </div>
                                                     <button

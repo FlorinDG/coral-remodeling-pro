@@ -11,8 +11,7 @@ interface FilterBarProps {
 }
 
 export default function FilterBar({ onSearch, onFilterChange, statuses, placeholder }: FilterBarProps) {
-    const t = useTranslations('Admin.filter');
-    const ts = useTranslations('Admin.status');
+    const t = useTranslations('Admin');
     const [statusValue, setStatusValue] = useState('ALL');
 
     return (
@@ -21,7 +20,7 @@ export default function FilterBar({ onSearch, onFilterChange, statuses, placehol
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
                 <input
                     type="text"
-                    placeholder={placeholder || t('search')}
+                    placeholder={placeholder || t('filter.search')}
                     className="w-full bg-white dark:bg-black/20 border border-neutral-200 dark:border-white/5 rounded-xl pl-10 pr-4 py-2 text-sm focus:border-[var(--brand-color,#d35400)] transition-colors outline-none text-neutral-900 dark:text-white"
                     onChange={(e) => onSearch(e.target.value)}
                 />
@@ -29,12 +28,12 @@ export default function FilterBar({ onSearch, onFilterChange, statuses, placehol
             <div className="min-w-[160px]">
                 <SearchableSelect
                     options={[
-                        { value: 'ALL', label: t('all') },
-                        ...statuses.map(status => ({ value: status, label: ts(status) })),
+                        { value: 'ALL', label: t('filter.all') },
+                        ...statuses.map(status => ({ value: status, label: t.has(`status.${status}`) ? t(`status.${status}` as any) : status })),
                     ]}
                     value={statusValue}
                     onChange={(v) => { setStatusValue(v); onFilterChange(v); }}
-                    placeholder={t('all')}
+                    placeholder={t('filter.all')}
                     searchPlaceholder="Filter..."
                 />
             </div>

@@ -156,6 +156,12 @@ The tool built to be trusted is currently showing some completed tasks as open.
 ## PHASE 3 — R1 · TENANCY ROOT 🟥
 Spec: `coral-r1-tenancy.md`
 
+> 🛑 **BLOCKED UNTIL `main` IS CURRENT — Florin, 2026-09-13:** *"We first close the production gap and then we follow the plan."*
+> **Nothing in Phase 3 or beyond starts until `release/2026-09` is merged to `main` and has run for the 48h watch in `coral-promotion-plan.md` §6.**
+> **Why this ordering and not the reverse:** `R1-2` deletes `TenantContext.tsx:26`'s `resolveDbId: (base) => base` — the fail-open default **every scoped surface depends on**. Doing that while `main` is 99 commits behind would mean a production incident debugged against a branch that does not resemble production. **Promotion is the cheap step; it is also the one that makes R1 debuggable.**
+> Confirmed against the codebase 2026-09-13: `logicalKey` **absent** from `schema.prisma`, `resolveDbId: (base) => base` **still present**, `saveRecord()` **does not exist**. **The kernel is untouched, so the promotion carries no structural change** — which is exactly why it is safe to do first.
+> **Remaining before this unblocks:** `I18N-1…3` → `G-3` green → cut `release/2026-09` → staging → `G-2` (a week of real `/m/tasks` use) → merge → 48h watch.
+
 **3.1** `R1-1a` reconcile the two system-database lists (+ read-only mis-scoping count) · **3.2** `R1-1b` `logicalKey` on `GlobalDatabase`, backfilled from `getBaseDbId` · **3.3** `R1-2` canonical fail-closed resolver; delete the `(base) => base` default · **3.4** `R1-3` server never trusts a supplied id · **3.5** `R1-4` + `R1-5` accessor **and** CI gate — **ship together or not at all** · **3.6** `R1-6` system writers + `vat-backfill` · **3.7** `R1-7` migrate the call sites, module by module.
 
 ⚠️ `3.2` needs a migration: **Florin runs it.** Additive, nullable, backfill, verify, then tighten — never `db push`, never `--accept-data-loss`.

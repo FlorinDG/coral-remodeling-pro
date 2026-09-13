@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useRef } from 'react';
 import { X } from 'lucide-react';
+import { useScrollLock } from './useScrollLock';
 
 export interface BottomSheetProps {
     isOpen: boolean;
@@ -16,11 +17,11 @@ export interface BottomSheetProps {
 }
 
 /**
- * TASK-M12: Canonical BottomSheet primitive for mobile.
+ * TASK-M12 / TASK-M16: Canonical BottomSheet primitive for mobile.
  * Features:
  * - dvh sizing (never vh) to respect iOS browser address bar
  * - overscroll-behavior: contain to prevent background rubber-banding
- * - body scroll lock with reference-counted cleanup for sequential sheets
+ * - scroll lock of nearest scrollable ancestor via useScrollLock
  * - fixed header, scrollable body, and fixed footer for primary/destructive actions (e.g. Delete)
  * - safe-area-inset-bottom padding in footer
  */
@@ -35,32 +36,15 @@ export function BottomSheet({
     maxHeightClass = 'max-h-[85dvh]',
     bodyClassName = 'p-4 text-xs',
 }: BottomSheetProps) {
-    // Body scroll lock with reference counting for nested/sequential sheets
-    useEffect(() => {
-        if (!isOpen) return;
-        const currentLocks = parseInt(document.body.dataset.sheetLocks || '0', 10);
-        if (currentLocks === 0) {
-            document.body.style.overflow = 'hidden';
-            document.body.style.touchAction = 'none';
-        }
-        document.body.dataset.sheetLocks = String(currentLocks + 1);
-
-        return () => {
-            const count = parseInt(document.body.dataset.sheetLocks || '1', 10) - 1;
-            document.body.dataset.sheetLocks = String(Math.max(0, count));
-            if (count <= 0) {
-                document.body.style.overflow = '';
-                document.body.style.touchAction = '';
-                delete document.body.dataset.sheetLocks;
-            }
-        };
-    }, [isOpen]);
+    const containerRef = useRef<HTMLDivElement>(null);
+    useScrollLock(isOpen, containerRef);
 
     if (!isOpen) return null;
 
     return (
         <div
-            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex flex-col justify-end"
+            ref={containerRef}
+            className="fixed inset-0 z-60 bg-black/60 backdrop-blur-xs flex flex-col justify-end"
             onClick={onClose}
         >
             <div

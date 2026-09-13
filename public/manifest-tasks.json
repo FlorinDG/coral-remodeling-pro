@@ -3,7 +3,7 @@
   "short_name": "Tasks",
   "description": "Coral Tasks — Fast capture and personal action list",
   "start_url": "/m/tasks?capture=1",
-  "scope": "/m",
+  "scope": "/m/tasks",
   "display": "standalone",
   "background_color": "#0a0a0a",
   "theme_color": "#c2440f",

@@ -63,6 +63,26 @@ Commit `2ffcb1a` *"feat(tasks): implement sheet directives and subtasks"* was wr
 
 ---
 
+## ▶️ AUTHORISED RUN #3 — `2.11` THROUGH `2.15`, THEN `2.10-b` (Florin, 2026-09-13)
+**Directive:** `coder-directive-tasks-app-shell.md`. Second real use of the installed PWA; five complaints.
+
+| | |
+|---|---|
+| **2.11** | **`TASK-M16` — lock the element that actually scrolls.** `body` never scrolls; `<main>` does (`MobileShell:169`), so `TASK-M12`'s lock was a **no-op**. One `useScrollLock` hook, nearest-scrollable-ancestor, position preserved. **Remove `touch-action:none`** — it degrades scrolling *inside* the sheet. |
+| **2.12** | **`TASK-M17` — the footer is under the TAB BAR, not the system bar.** Nav and sheet both `z-50`; the nav is later in the DOM, so it paints over Delete. Z-index scale: chrome below overlays. **Prove it while the nav still exists.** |
+| **2.13** | **`TASK-M18` — the Tasks PWA stops being an ERP launcher.** Explicit `MobileAppScope` prop (**never inferred from `pathname`**); `'tasks'` drops the whole tab bar; `'erp'` unchanged. |
+| **2.14** | **`TASK-M19` — `/m/tasks/settings`, task settings only.** No company info, VAT, users, modules or billing. |
+| **2.15** | **`TASK-M20` — attachments open, not download.** Route passes through Blob's default `attachment` disposition → the OS takes the download and leaves a blank context (**that is the white screen**). Default `inline`, `?download=1` to force. **Promote the existing `FileViewerModal` to shared `FileViewer` — mobile and desktop, one viewer.** Tenant prefix assert **unchanged**. |
+| **2.10-b** | The desktop half of subtasks, **after** the above. |
+
+**Order is not optional:** `2.12` before `2.13`. Removing the nav would *hide* the z-index defect rather than fix it, and it would return at the first sheet opened elsewhere in the mobile app.
+
+**📅 CALENDAR IS OUT — Florin, 2026-09-13:** *"Since our calendar module is not yet defined, you will agree that a tasks calendar integration is for a later moment."* **Agreed and recorded.** No calendar surface, field or sync in the Tasks module until the calendar module is specced. Building against an undefined shape means unpicking it later.
+
+**🔴 The `TASK-M12` lesson, binding from now on:** it was verified against its own props and passed; it failed on the phone because the page it opens on was never checked. **A fix to a behaviour is verified on the surface where the behaviour occurs — the installed PWA, not a browser tab.**
+
+---
+
 ## ▶️ AUTHORISED RUN #1 — `1.2` THROUGH `2.4`, NO CHECK-IN REQUIRED (Florin, 2026-09-12)
 The coder proceeds through items **1.0 → 1.2 → 1.3 → 1.4 → 2.1 → 2.2 → 2.3 → 2.4** in order, **without pausing for approval between them.** Report after each item as specified; do not wait for a reply. The rules in §🔒 still bind — in particular, **stop and report** on: a blocked item · a `FLORIN` decision · a file not named in the directive · a dirty `t-*` count at `2.1` · a surface fitting neither class A nor B at `1.2`.
 **Do not proceed past `2.4` into Phase 3.** Parts B/C and `DEP-*` remain unauthorised.
@@ -121,8 +141,13 @@ The tool built to be trusted is currently showing some completed tasks as open.
 | **2.8** | **`TASK-M14` — recurrence states its anchor** and shows the next date. | No silent no-op when there is no due date. |
 | **2.9** | **`TASK-M15` — reminders: EMAIL DIGEST** (decided). Resend, no new infra. SMS is a later channel choice, not a reminder project. | `coral-sms-transport.md` — 2FA drives the SMS decision, not reminders. |
 | **2.10** | **`TASK-SUBTASKS` — subtasks.** Self-relation `prop-task-parent`, one level, inherit project, inline add in the sheet, parent shows `3/5`. **No auto-close, no cascade delete.** | `coral-task-subtasks.md`. After the sheet fixes — subtasks live inside it. |
+| **2.11** | **`TASK-M16` — nearest-ancestor scroll lock**: `useScrollLock.ts`, ref-counted, preserves scroll, removes `touch-action: none`. | Pass grep gate. |
+| **2.12** | **`TASK-M17` — z-index hierarchy**: `z-index.ts`, chrome `z-40`, overlays `z-60`, toasts `z-80`. | Sheet out-ranks nav while nav exists. |
+| **2.13** | **`TASK-M18` — mobile app scope**: `MobileAppScope = 'erp' \| 'tasks'`. No nav in tasks, manifest scoped to `/m/tasks`. | No scope inferred from pathname. |
+| **2.14** | **`TASK-M19` — task settings page**: `/m/tasks/settings` for task-only prefs, reuse `useUserPreferences`. | Zero tenant-wide settings. |
+| **2.15** | **`TASK-M20` — inline file viewer**: default `inline` Content-Disposition in `/api/files/[...key]`, shared `FileViewer.tsx`. | Byte-identical tenant check at `:32`. |
 
-**Phase 2 closes when `2.5`–`2.9` are verified — the 5 `t-done` project tasks no longer show as open on mobile, `t-todo`/`t-prog` still do, and the project progress automation is untouched.** Only then does `3.1` begin.
+**Phase 2 closes when `2.5`–`2.15` and `2.10-b` are verified.** Only then does `3.1` begin.
 
 *(Planner error, recorded: `t-*` was read as legacy from a value mismatch, without tracing **who writes it**. The `grep` that revealed five live writers should have preceded the SQL. Same failure mode flagged twice in the coder's plans — inference from code shape instead of evidence.)*
 

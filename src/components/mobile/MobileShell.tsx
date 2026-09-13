@@ -12,7 +12,9 @@ import {
 import { signOut } from 'next-auth/react';
 import { del } from 'idb-keyval';
 import { useTranslations } from 'next-intl';
+import { useMobileScope, MobileAppScope } from './MobileScopeContext';
 
+export type { MobileAppScope };
 
 interface NavTab {
     id: string;
@@ -21,23 +23,29 @@ interface NavTab {
     icon: React.ReactNode;
 }
 
-export default function MobileShell({
-    children,
-    activeModules,
-    planType,
-    lockedDbIds,
-    tenant,
-}: {
+export interface MobileShellProps {
     children: React.ReactNode;
     activeModules: string[];
     planType: string;
     lockedDbIds: Record<string, string>;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     tenant?: any;
-}) {
+    scope?: MobileAppScope;
+}
+
+export default function MobileShell({
+    children,
+    activeModules,
+    planType,
+    lockedDbIds,
+    tenant,
+    scope: propScope,
+}: MobileShellProps) {
     const t = useTranslations('Mobile');
     const { data: session } = useSession();
     const pathname = usePathname();
+    const { scope: contextScope } = useMobileScope();
+    const currentScope: MobileAppScope = propScope || contextScope || 'erp';
 
     const TABS: NavTab[] = [
         { id: 'home',     label: t('nav_dashboard'), href: '/m',           icon: <LayoutDashboard className="w-5 h-5" /> },
@@ -138,24 +146,36 @@ export default function MobileShell({
         >
             {/* ── Top Bar ── */}
             <header
-                className="sticky top-0 z-50 bg-white/90 dark:bg-neutral-950/90 backdrop-blur-xl border-b border-neutral-300 dark:border-white/10"
+                className="sticky top-0 z-40 bg-white/90 dark:bg-neutral-950/90 backdrop-blur-xl border-b border-neutral-300 dark:border-white/10"
                 style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
             >
                 <div className="flex items-center justify-between h-14 px-4 max-w-lg mx-auto w-full">
-                    <div className="flex items-center gap-2 min-w-0">
-                        <h1 className="text-sm font-black tracking-tight truncate max-w-[180px]" style={{ color: brandColor }}>
-                            {companyName || 'CoralOS'}
-                        </h1>
-                        <span className="text-[9px] font-bold text-neutral-700 dark:text-neutral-300 uppercase tracking-widest shrink-0">
-                            {planType}
-                        </span>
-                    </div>
+                    {currentScope === 'tasks' ? (
+                        <div className="flex items-center gap-2 min-w-0">
+                            <div className="w-7 h-7 rounded-xl bg-orange-500/10 dark:bg-orange-500/20 flex items-center justify-center">
+                                <CheckSquare className="w-4 h-4 text-orange-500" />
+                            </div>
+                            <h1 className="text-sm font-black tracking-tight" style={{ color: brandColor }}>
+                                Tasks
+                            </h1>
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-2 min-w-0">
+                            <h1 className="text-sm font-black tracking-tight truncate max-w-[180px]" style={{ color: brandColor }}>
+                                {companyName || 'CoralOS'}
+                            </h1>
+                            <span className="text-[9px] font-bold text-neutral-700 dark:text-neutral-300 uppercase tracking-widest shrink-0">
+                                {planType}
+                            </span>
+                        </div>
+                    )}
 
                     <div className="flex items-center gap-1.5">
                         <ThemeToggle />
                         <Link
-                            href="/m/settings?tab=company-info"
+                            href={currentScope === 'tasks' ? "/m/tasks/settings" : "/m/settings?tab=company-info"}
                             className="p-1 rounded-xl hover:bg-neutral-100 dark:hover:bg-white/5 transition-colors"
+                            title={currentScope === 'tasks' ? "Task Settings" : "Settings"}
                         >
                             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center text-white text-xs font-bold shadow-inner">
                                 {firstName[0]}
@@ -166,40 +186,42 @@ export default function MobileShell({
             </header>
 
             {/* ── Content ── */}
-            <main className="flex-1 pb-20 overflow-y-auto overscroll-y-contain">
+            <main className={`flex-1 overflow-y-auto overscroll-y-contain ${currentScope === 'tasks' ? '' : 'pb-20'}`}>
                 <TenantProvider activeModules={activeModules} planType={planType} lockedDbIds={lockedDbIds} tenant={tenant}>
                     {children}
                 </TenantProvider>
             </main>
 
-            {/* ── Bottom Tab Bar ── */}
-            <nav className="fixed bottom-0 inset-x-0 z-50 border-t border-neutral-300 dark:border-white/10 bg-white/95 dark:bg-neutral-950/95 backdrop-blur-xl shadow-lg">
-                <div className="flex items-center justify-around h-16 max-w-lg mx-auto" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
-                    {TABS.map(tab => (
-                        <Link
-                            key={tab.id}
-                            href={tab.href}
-                            className={`flex flex-col items-center justify-center gap-0.5 py-1 px-2 rounded-xl transition-all relative ${
-                                isActive(tab.href)
-                                    ? 'text-[var(--brand-color)]'
-                                    : 'text-neutral-700 dark:text-neutral-300 hover:text-neutral-950 dark:hover:text-white'
-                            }`}
-                        >
-                            <div className={`transition-transform ${isActive(tab.href) ? 'scale-110' : ''}`}>
-                                {tab.icon}
-                            </div>
-                            <span className={`text-[9.5px] font-extrabold tracking-wider ${
-                                isActive(tab.href) ? 'text-[var(--brand-color)]' : ''
-                            }`}>
-                                {tab.label}
-                            </span>
-                            {isActive(tab.href) && (
-                                <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-5 h-0.5 rounded-full" style={{ backgroundColor: brandColor }} />
-                            )}
-                        </Link>
-                    ))}
-                </div>
-            </nav>
+            {/* ── Bottom Tab Bar (ERP Scope Only) ── */}
+            {currentScope !== 'tasks' && (
+                <nav className="fixed bottom-0 inset-x-0 z-40 border-t border-neutral-300 dark:border-white/10 bg-white/95 dark:bg-neutral-950/95 backdrop-blur-xl shadow-lg">
+                    <div className="flex items-center justify-around h-16 max-w-lg mx-auto" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+                        {TABS.map(tab => (
+                            <Link
+                                key={tab.id}
+                                href={tab.href}
+                                className={`flex flex-col items-center justify-center gap-0.5 py-1 px-2 rounded-xl transition-all relative ${
+                                    isActive(tab.href)
+                                        ? 'text-[var(--brand-color)]'
+                                        : 'text-neutral-700 dark:text-neutral-300 hover:text-neutral-950 dark:hover:text-white'
+                                }`}
+                            >
+                                <div className={`transition-transform ${isActive(tab.href) ? 'scale-110' : ''}`}>
+                                    {tab.icon}
+                                </div>
+                                <span className={`text-[9.5px] font-extrabold tracking-wider ${
+                                    isActive(tab.href) ? 'text-[var(--brand-color)]' : ''
+                                }`}>
+                                    {tab.label}
+                                </span>
+                                {isActive(tab.href) && (
+                                    <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-5 h-0.5 rounded-full" style={{ backgroundColor: brandColor }} />
+                                )}
+                            </Link>
+                        ))}
+                    </div>
+                </nav>
+            )}
         </div>
     );
 }

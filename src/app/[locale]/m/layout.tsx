@@ -6,6 +6,7 @@ import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
 import { provisionLockedDatabases } from "@/lib/provisionTenantDbs";
 import MobileShell from "@/components/mobile/MobileShell";
+import { MobileScopeProvider } from "@/components/mobile/MobileScopeContext";
 
 export default async function MobileLayout({ children }: { children: React.ReactNode }) {
     let activeModules: string[]             = ['INVOICING'];
@@ -113,9 +114,11 @@ export default async function MobileLayout({ children }: { children: React.React
     return (
         <AuthProvider>
             <GlobalDatabaseSyncer databases={databases} pageIndex={pageIndex} tenantId={tenantId} userId={userId} />
-            <MobileShell activeModules={activeModules} planType={planType} lockedDbIds={lockedDbIds} tenant={fullTenant}>
-                {children}
-            </MobileShell>
+            <MobileScopeProvider>
+                <MobileShell activeModules={activeModules} planType={planType} lockedDbIds={lockedDbIds} tenant={fullTenant}>
+                    {children}
+                </MobileShell>
+            </MobileScopeProvider>
         </AuthProvider>
     );
 }

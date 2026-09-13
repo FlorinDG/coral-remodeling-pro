@@ -10,6 +10,8 @@ import {
     ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { CustomDatePicker } from '@/components/ui/CustomDatePicker';
+import FileViewer from '@/components/files/FileViewer';
+
 
 import { Page } from '@/components/admin/database/types';
 import { StatusIcon, STATUS_CONFIG, PRIORITY_CONFIG } from './TaskRow';
@@ -218,6 +220,7 @@ export function TaskDetailPanel({ page, onClose, onUpdate, onDelete, onOpenFullP
 
     // Retrieve attachments list from property
     const attachments = (props['prop-task-attachments'] as TaskAttachment[]) || [];
+    const [viewerIndex, setViewerIndex] = useState<number | null>(null);
 
     // File Upload Handler
     const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -301,6 +304,7 @@ export function TaskDetailPanel({ page, onClose, onUpdate, onDelete, onOpenFullP
     const photos = attachments.filter(a => a.type.startsWith('image/') && !a.uploading);
     const docFiles = attachments.filter(a => !a.type.startsWith('image/') && !a.uploading);
     const uploadingList = attachments.filter(a => a.uploading);
+    const viewableAttachments = [...photos, ...docFiles];
 
     return (
         <div className="h-full flex flex-col bg-white dark:bg-neutral-950 border-l border-neutral-300 dark:border-white/20 shadow-xl">
@@ -479,24 +483,32 @@ export function TaskDetailPanel({ page, onClose, onUpdate, onDelete, onOpenFullP
                                     <h4 className="text-[9px] font-black text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">Photos</h4>
                                     <div className="grid grid-cols-3 gap-2.5">
                                         {photos.map(p => (
-                                            <div key={p.id} className="group/photo relative aspect-square border border-neutral-300 dark:border-white/10 rounded-xl overflow-hidden bg-neutral-100 dark:bg-neutral-900 shadow-sm transition-all hover:scale-[1.02]">
+                                            <div
+                                                key={p.id}
+                                                onClick={() => {
+                                                    const idx = viewableAttachments.findIndex(a => a.id === p.id);
+                                                    if (idx !== -1) setViewerIndex(idx);
+                                                }}
+                                                className="group/photo relative aspect-square border border-neutral-300 dark:border-white/10 rounded-xl overflow-hidden bg-neutral-100 dark:bg-neutral-900 shadow-sm transition-all hover:scale-[1.02] cursor-pointer"
+                                            >
                                                 <img src={getAttachmentUrl(p.url)} alt={p.name} className="w-full h-full object-cover" />
                                                 <div className="absolute inset-0 backdrop-blur-sm bg-black/40 opacity-0 group-hover/photo:opacity-100 transition-opacity flex flex-col justify-between p-2">
                                                     <button
-                                                        onClick={() => handleDeleteAttachment(p.id)}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleDeleteAttachment(p.id);
+                                                        }}
                                                         className="self-end w-6 h-6 rounded-full bg-red-650 text-white flex items-center justify-center hover:bg-red-750 transition-colors shadow-lg active:scale-90"
                                                         title="Delete Photo"
                                                     >
                                                         <Trash2 className="w-3.5 h-3.5" />
                                                     </button>
-                                                    <a
-                                                        href={getAttachmentUrl(p.url)}
-                                                        download={p.name}
-                                                        className="block text-[9px] font-bold text-white truncate text-center hover:underline"
+                                                    <span
+                                                        className="block text-[9px] font-bold text-white truncate text-center"
                                                         title={p.name}
                                                     >
                                                         {p.name}
-                                                    </a>
+                                                    </span>
                                                 </div>
                                             </div>
                                         ))}
@@ -510,16 +522,26 @@ export function TaskDetailPanel({ page, onClose, onUpdate, onDelete, onOpenFullP
                                     <h4 className="text-[9px] font-black text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">Documents</h4>
                                     <div className="space-y-2">
                                         {docFiles.map(d => (
-                                            <div key={d.id} className="flex items-center justify-between p-2.5 rounded-xl border border-neutral-200 dark:border-white/10 bg-neutral-50/40 dark:bg-white/[0.01] hover:border-orange-300 dark:hover:border-orange-500/30 transition-all shadow-sm">
-                                                <a href={getAttachmentUrl(d.url)} download={d.name} className="flex items-center gap-2.5 flex-1 min-w-0 hover:underline text-neutral-800 dark:text-neutral-200">
+                                            <div
+                                                key={d.id}
+                                                onClick={() => {
+                                                    const idx = viewableAttachments.findIndex(a => a.id === d.id);
+                                                    if (idx !== -1) setViewerIndex(idx);
+                                                }}
+                                                className="flex items-center justify-between p-2.5 rounded-xl border border-neutral-200 dark:border-white/10 bg-neutral-50/40 dark:bg-white/[0.01] hover:border-orange-300 dark:hover:border-orange-500/30 transition-all shadow-sm cursor-pointer"
+                                            >
+                                                <div className="flex items-center gap-2.5 flex-1 min-w-0 text-neutral-800 dark:text-neutral-200">
                                                     <FileText className="w-4 h-4 text-neutral-550 dark:text-neutral-400 flex-shrink-0" />
                                                     <div className="min-w-0">
                                                         <p className="text-xs font-bold text-neutral-900 dark:text-white truncate">{d.name}</p>
                                                         <p className="text-[9px] text-neutral-500 dark:text-neutral-450 font-semibold">{formatSize(d.size)}</p>
                                                     </div>
-                                                </a>
+                                                </div>
                                                 <button
-                                                    onClick={() => handleDeleteAttachment(d.id)}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleDeleteAttachment(d.id);
+                                                    }}
                                                     className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-red-50 dark:hover:bg-red-950/20 text-red-650 border border-neutral-250 dark:border-white/10 transition-colors shadow-sm ml-2 active:scale-90"
                                                     title="Delete Document"
                                                 >
@@ -601,6 +623,23 @@ export function TaskDetailPanel({ page, onClose, onUpdate, onDelete, onOpenFullP
                     <Trash2 className="w-4 h-4" />
                 </button>
             </div>
+
+            {/* In-app File Viewer */}
+            {viewerIndex !== null && (
+                <FileViewer
+                    files={viewableAttachments.map(a => ({
+                        id: a.id,
+                        name: a.name,
+                        url: a.url,
+                        type: a.type,
+                        mimeType: a.type,
+                        size: a.size,
+                    }))}
+                    index={viewerIndex}
+                    onIndexChange={setViewerIndex}
+                    onClose={() => setViewerIndex(null)}
+                />
+            )}
         </div>
     );
 }

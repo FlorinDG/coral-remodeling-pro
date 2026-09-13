@@ -47,9 +47,25 @@ export async function GET(
         }
 
         const headers = new Headers();
-        if (result.blob.contentDisposition) headers.set('Content-Disposition', result.blob.contentDisposition);
         if (result.blob.cacheControl) headers.set('Cache-Control', result.blob.cacheControl);
-        if (result.blob.contentType) headers.set('Content-Type', result.blob.contentType);
+        
+        const rawFilename = key.split('/').pop() || 'file';
+        const sanitizedFilename = rawFilename.replace(/["\r\n\\]/g, '_');
+        const contentType = result.blob.contentType || 'application/octet-stream';
+        headers.set('Content-Type', contentType);
+
+        const isExplicitDownload = request.nextUrl.searchParams.get('download') === '1';
+        const isRenderable = 
+            contentType.startsWith('image/') ||
+            contentType === 'application/pdf' ||
+            contentType.startsWith('text/') ||
+            /\.(jpe?g|png|webp|gif|svg|bmp|ico|avif|pdf|txt|md|csv|json)$/i.test(sanitizedFilename);
+
+        if (!isExplicitDownload && isRenderable) {
+            headers.set('Content-Disposition', `inline; filename="${sanitizedFilename}"`);
+        } else {
+            headers.set('Content-Disposition', `attachment; filename="${sanitizedFilename}"`);
+        }
         
         return new NextResponse(result.stream, {
             status: 200,

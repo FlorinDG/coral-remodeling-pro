@@ -6,7 +6,7 @@ import { FileContextType, FileNode } from './types';
 import { LayoutGrid, List, UploadCloud, Search, FileIcon, ImageIcon, FileText, ChevronRight, MoreVertical, Loader2, Download, PackageOpen, Receipt, FileSignature, Trash2 } from 'lucide-react';
 import { cn } from '@/components/time-tracker/lib/utils';
 import { format } from 'date-fns';
-import FileViewerModal from './FileViewerModal';
+import FileViewer from '@/components/files/FileViewer';
 
 // -------------------------------------------------------------
 // Sub-component: The Grid/List view to display nodes
@@ -391,7 +391,7 @@ export default function FileManager({ contextType, contextId }: FileManagerProps
                 </div>
 
                 {viewingFileIndex !== null && displayedNodes.length > 0 && (
-                    <FileViewerModal
+                    <FileViewer
                         files={displayedNodes}
                         index={viewingFileIndex}
                         onIndexChange={setViewingFileIndex}

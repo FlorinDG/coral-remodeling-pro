@@ -29,6 +29,10 @@ import {
     ExternalLink
 } from 'lucide-react';
 import { parseRecurrenceRule, getNextDueDate } from '@/components/admin/tasks/RecurrenceEngine';
+import FileViewer from '@/components/files/FileViewer';
+import { useUserPreferences } from '@/hooks/useUserPreferences';
+import { DEFAULT_TASK_SETTINGS, TaskSettingsPreferences } from './settings/page';
+
 
 export interface TaskAttachment {
     id: string;
@@ -141,6 +145,20 @@ export default function MobileTasksPage() {
 
     // Active tab: 'today' (landing view) or 'all'
     const [activeTab, setActiveTab] = useState<'today' | 'all'>('today');
+
+    // Task preferences (TASK-M19)
+    const [taskSettings] = useUserPreferences<TaskSettingsPreferences>('tasks_settings', DEFAULT_TASK_SETTINGS);
+    const [hasInitializedDefaultView, setHasInitializedDefaultView] = useState(false);
+
+    useEffect(() => {
+        if (!hasInitializedDefaultView && taskSettings?.defaultView) {
+            setActiveTab(taskSettings.defaultView === 'all' ? 'all' : 'today');
+            setHasInitializedDefaultView(true);
+        }
+    }, [hasInitializedDefaultView, taskSettings?.defaultView]);
+
+    // Attachment Viewer (TASK-M20)
+    const [viewerIndex, setViewerIndex] = useState<number | null>(null);
 
     // Task Detail Sheet state (TASK-M11)
     const [detailTaskId, setDetailTaskId] = useState<string | null>(null);
@@ -594,11 +612,10 @@ export default function MobileTasksPage() {
     // Visible tasks calculation
     const visibleTasks = useMemo(() => {
         return personalPages.filter(page => {
-            const isCompleted = isDoneTask(page);
             const isPendingUndo = Boolean(pendingUndos[page.id]);
 
-            // Exclude closed tasks (opt-done, t-done, opt-dropped) unless in the 4-second undo grace period
-            if (isClosedTask(page) && !isPendingUndo) return false;
+            // Exclude closed tasks (opt-done, t-done, opt-dropped) unless showCompleted is enabled or in undo grace period
+            if (!taskSettings?.showCompleted && isClosedTask(page) && !isPendingUndo) return false;
 
             if (activeTab === 'today') {
                 const due = page.properties['prop-task-due'] as string | undefined;
@@ -610,6 +627,21 @@ export default function MobileTasksPage() {
 
             return true;
         }).sort((a, b) => {
+            const sortPref = taskSettings?.defaultSort || 'due';
+
+            if (sortPref === 'title') {
+                const aTitle = ((a.properties.title as string) || '').toLowerCase();
+                const bTitle = ((b.properties.title as string) || '').toLowerCase();
+                return aTitle.localeCompare(bTitle);
+            }
+
+            if (sortPref === 'priority') {
+                const PRIORITY_RANK: Record<string, number> = { 'opt-p1': 0, 'opt-p2': 1, 'opt-p3': 2, 'opt-p4': 3 };
+                const aPri = PRIORITY_RANK[(a.properties['prop-task-priority'] as string) || 'opt-p4'] ?? 4;
+                const bPri = PRIORITY_RANK[(b.properties['prop-task-priority'] as string) || 'opt-p4'] ?? 4;
+                if (aPri !== bPri) return aPri - bPri;
+            }
+
             const aDue = (a.properties['prop-task-due'] as string | undefined) || '';
             const bDue = (b.properties['prop-task-due'] as string | undefined) || '';
             const aOverdue = Boolean(aDue && aDue < todayStr);
@@ -634,7 +666,7 @@ export default function MobileTasksPage() {
             const bTime = new Date(b.createdAt).getTime();
             return bTime - aTime;
         });
-    }, [personalPages, pendingUndos, activeTab, todayStr]);
+    }, [personalPages, pendingUndos, activeTab, todayStr, taskSettings]);
 
     // Count today's tasks
     const todayCount = useMemo(() => {
@@ -1557,8 +1589,11 @@ export default function MobileTasksPage() {
                                                         <img
                                                             src={fileUrl}
                                                             alt={p.name}
-                                                            className="w-full h-full object-cover cursor-pointer"
-                                                            onClick={() => window.open(fileUrl, '_blank')}
+                                                            className="w-full h-full object-cover cursor-pointer hover:opacity-95 transition-opacity"
+                                                            onClick={() => {
+                                                                const idx = attachments.findIndex(a => a.id === p.id);
+                                                                if (idx !== -1) setViewerIndex(idx);
+                                                            }}
                                                         />
                                                         {p.pending && (
                                                             <span className="absolute top-1 left-1 px-1 rounded bg-blue-600 text-[9px] text-white font-bold">
@@ -1571,8 +1606,9 @@ export default function MobileTasksPage() {
                                                                 e.stopPropagation();
                                                                 handleDeleteAttachment(p);
                                                             }}
-                                                            className="min-w-[36px] min-h-[36px] absolute top-1 right-1 rounded-full bg-black/60 text-white flex items-center justify-center active:scale-95"
+                                                            className="min-w-[36px] min-h-[36px] absolute top-1 right-1 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center active:scale-95 transition-colors"
                                                             title="Delete"
+                                                            aria-label="Delete attachment"
                                                         >
                                                             <Trash2 className="w-3.5 h-3.5" />
                                                         </button>
@@ -1586,24 +1622,30 @@ export default function MobileTasksPage() {
                                     {docFiles.length > 0 && (
                                         <div className="space-y-1.5">
                                             {docFiles.map(d => {
-                                                const fileUrl = d.url.startsWith('data:') ? d.url : `/api/files/${encodeURIComponent(d.url)}`;
                                                 return (
-                                                    <div key={d.id} className="flex items-center justify-between p-2.5 rounded-xl bg-neutral-50 dark:bg-neutral-800 border border-neutral-200/60 dark:border-white/5">
-                                                        <a
-                                                            href={fileUrl}
-                                                            target="_blank"
-                                                            rel="noreferrer"
-                                                            className="flex items-center gap-2 flex-1 min-w-0"
-                                                        >
+                                                    <div
+                                                        key={d.id}
+                                                        onClick={() => {
+                                                            const idx = attachments.findIndex(a => a.id === d.id);
+                                                            if (idx !== -1) setViewerIndex(idx);
+                                                        }}
+                                                        className="flex items-center justify-between p-2.5 rounded-xl bg-neutral-50 dark:bg-neutral-800 border border-neutral-200/60 dark:border-white/5 cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-750 transition-colors"
+                                                    >
+                                                        <div className="flex items-center gap-2 flex-1 min-w-0">
                                                             <FileText className="w-4 h-4 text-neutral-500 shrink-0" />
                                                             <span className="text-xs font-semibold truncate text-neutral-900 dark:text-white">
                                                                 {d.name}
                                                             </span>
-                                                        </a>
+                                                        </div>
                                                         <button
                                                             type="button"
-                                                            onClick={() => handleDeleteAttachment(d)}
-                                                            className="min-w-[36px] min-h-[36px] flex items-center justify-center text-neutral-400 hover:text-red-500 ml-1"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleDeleteAttachment(d);
+                                                            }}
+                                                            className="min-w-[36px] min-h-[36px] flex items-center justify-center text-neutral-400 hover:text-red-500 ml-1 transition-colors"
+                                                            title="Delete"
+                                                            aria-label="Delete attachment"
                                                         >
                                                             <Trash2 className="w-3.5 h-3.5" />
                                                         </button>
@@ -1657,9 +1699,26 @@ export default function MobileTasksPage() {
                 )}
             </BottomSheet>
 
-            {/* Subtask Promoted / Notification Toast Banner */}
+            {/* Attachment In-App File Viewer (TASK-M20) */}
+            {viewerIndex !== null && (
+                <FileViewer
+                    files={attachments.map(a => ({
+                        id: a.id,
+                        name: a.name,
+                        url: a.url,
+                        type: a.type,
+                        mimeType: a.type,
+                        size: a.size,
+                    }))}
+                    index={viewerIndex}
+                    onIndexChange={setViewerIndex}
+                    onClose={() => setViewerIndex(null)}
+                />
+            )}
+
+            {/* Subtask Promoted / Notification Toast Banner (Canonical z-80) */}
             {promoteToastMessage && (
-                <div className="fixed bottom-20 left-4 right-4 z-40 max-w-md mx-auto bg-neutral-900 text-white dark:bg-white dark:text-black rounded-2xl px-4 py-3 shadow-2xl flex items-center justify-between animate-in slide-in-from-bottom duration-200 text-xs font-semibold">
+                <div className="fixed bottom-6 left-4 right-4 z-80 max-w-md mx-auto bg-neutral-900 text-white dark:bg-white dark:text-black rounded-2xl px-4 py-3 shadow-2xl flex items-center justify-between animate-in slide-in-from-bottom duration-200 text-xs font-semibold">
                     <span>{promoteToastMessage}</span>
                     <button
                         type="button"
@@ -1671,9 +1730,9 @@ export default function MobileTasksPage() {
                 </div>
             )}
 
-            {/* Delete Undo Banner */}
+            {/* Delete Undo Banner (Canonical z-80) */}
             {deletedUndo && (
-                <div className="fixed bottom-20 left-4 right-4 z-40 max-w-md mx-auto bg-neutral-900 text-white dark:bg-white dark:text-black rounded-2xl px-4 py-3 shadow-2xl flex items-center justify-between animate-in slide-in-from-bottom duration-200">
+                <div className="fixed bottom-6 left-4 right-4 z-80 max-w-md mx-auto bg-neutral-900 text-white dark:bg-white dark:text-black rounded-2xl px-4 py-3 shadow-2xl flex items-center justify-between animate-in slide-in-from-bottom duration-200">
                     <span className="text-xs font-semibold truncate pr-2">
                         {t('tasks_delete_confirm')}
                     </span>

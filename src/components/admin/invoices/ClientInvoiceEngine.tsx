@@ -851,11 +851,31 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
             );
 
             if (response.success) {
-                // Auto-transition to "sent" status and persist receiptUrl atomically (D1)
-                updatePageProperties(invoicesDbId, invoice.id, {
-                    status: 'opt-sent',
-                    ...(response.archiveKey ? { receiptUrl: response.archiveKey } : {})
-                });
+                // SEND-1: Refresh record from server response without calling client-side updatePageProperties
+                const serverPage = response.page;
+                useDatabaseStore.setState(state => ({
+                    databases: state.databases.map(db => {
+                        if (db.id !== invoicesDbId) return db;
+                        return {
+                            ...db,
+                            pages: db.pages.map(p => {
+                                if (p.id !== invoice.id) return p;
+                                return {
+                                    ...p,
+                                    properties: {
+                                        ...p.properties,
+                                        ...(serverPage?.properties || {}),
+                                        status: 'opt-sent',
+                                        ...(response.archiveKey ? { receiptUrl: response.archiveKey } : {})
+                                    },
+                                    updatedAt: serverPage?.updatedAt || new Date().toISOString(),
+                                    baseUpdatedAt: serverPage?.updatedAt || p.baseUpdatedAt,
+                                };
+                            }),
+                            updatedAt: new Date().toISOString()
+                        };
+                    })
+                }));
                 let successMsg = 'Factuur is succesvol verzonden!';
                 if (response.archiveFilename) {
                     successMsg += ` (Gearchiveerd als ${response.archiveFilename})`;
@@ -1103,11 +1123,31 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
             }
 
             if (data.success) {
-                // Auto-transition to "sent" status and persist receiptUrl atomically (D1)
-                updatePageProperties(invoicesDbId, invoice.id, {
-                    status: 'opt-sent',
-                    ...(data.archiveKey ? { receiptUrl: data.archiveKey } : {})
-                });
+                // SEND-1: Refresh record from server response without calling client-side updatePageProperties
+                const serverPage = data.page;
+                useDatabaseStore.setState(state => ({
+                    databases: state.databases.map(db => {
+                        if (db.id !== invoicesDbId) return db;
+                        return {
+                            ...db,
+                            pages: db.pages.map(p => {
+                                if (p.id !== invoice.id) return p;
+                                return {
+                                    ...p,
+                                    properties: {
+                                        ...p.properties,
+                                        ...(serverPage?.properties || {}),
+                                        status: 'opt-sent',
+                                        ...(data.archiveKey ? { receiptUrl: data.archiveKey } : {})
+                                    },
+                                    updatedAt: serverPage?.updatedAt || new Date().toISOString(),
+                                    baseUpdatedAt: serverPage?.updatedAt || p.baseUpdatedAt,
+                                };
+                            }),
+                            updatedAt: new Date().toISOString()
+                        };
+                    })
+                }));
                 const baseSuccessMsg = isCreditNote ? 'Creditnota succesvol verzonden via Peppol! ✅' : 'Factuur succesvol verzonden via Peppol! ✅';
                 toast.success(data.archiveFilename ? `${baseSuccessMsg} (Gearchiveerd als ${data.archiveFilename})` : baseSuccessMsg);
             } else if (data.code === 'PEPPOL_SEND_LIMIT') {

@@ -126,20 +126,6 @@ export async function POST(req: Request) {
             archiveKey = archiveResult.key;
             archiveFilename = archiveResult.filename;
 
-            // Write receiptUrl to record through server door (DOC-ARCH-1c)
-            const currentProps = (page.properties ?? {}) as Record<string, any>;
-            const updateRes = await updatePageServerFirst(invoiceId, {
-                ...currentProps,
-                receiptUrl: archiveResult.key,
-            });
-            if (!updateRes.success) {
-                return NextResponse.json({
-                    error: 'ARCHIVE_SAVE_FAILED',
-                    code: 'ARCHIVE_SAVE_FAILED',
-                    success: false,
-                    issues: `Opslaan van receiptUrl mislukt: ${updateRes.error}`,
-                }, { status: 500 });
-            }
         }
 
         // 5. Check for tenant-specific e-invoice.be API key (provisioned via onboarding)
@@ -241,6 +227,27 @@ export async function POST(req: Request) {
                 console.log(ublXml);
             }
 
+            let serverPage: any = undefined;
+            if (archiveKey) {
+                const { updatePageServerFirst } = await import('@/app/actions/pages');
+                const page = await prisma.globalPage.findUnique({
+                    where: { id: invoiceId },
+                });
+                if (page) {
+                    const currentProps = (page.properties ?? {}) as Record<string, any>;
+                    const updateRes = await updatePageServerFirst(invoiceId, {
+                        ...currentProps,
+                        receiptUrl: archiveKey,
+                        status: 'opt-sent',
+                    });
+                    if (updateRes.success) {
+                        serverPage = updateRes.page;
+                    } else {
+                        console.error('[Peppol] Failed to save status and receiptUrl in manual dispatch:', updateRes.error);
+                    }
+                }
+            }
+
             // Return seamless success to the tenant
             await incrementPeppolSent(tenantId);
             return NextResponse.json({
@@ -248,6 +255,7 @@ export async function POST(req: Request) {
                 message: 'PEPPOL_SENT_OK',
                 archiveKey,
                 archiveFilename,
+                page: serverPage,
             });
         }
 
@@ -462,6 +470,26 @@ export async function POST(req: Request) {
             incrementPeppolSent(tenantId)
         ]);
 
+        // ── SEND-1: Persist status & receiptUrl in one server write AFTER successful transmission ──
+        let serverPage: any = undefined;
+        const { updatePageServerFirst } = await import('@/app/actions/pages');
+        const page = await prisma.globalPage.findUnique({
+            where: { id: invoiceId },
+        });
+        if (page) {
+            const currentProps = (page.properties ?? {}) as Record<string, any>;
+            const updateRes = await updatePageServerFirst(invoiceId, {
+                ...currentProps,
+                ...(archiveKey ? { receiptUrl: archiveKey } : {}),
+                status: 'opt-sent',
+            });
+            if (updateRes.success) {
+                serverPage = updateRes.page;
+            } else {
+                console.error('[Peppol] Failed to save status and receiptUrl in live mode:', updateRes.error);
+            }
+        }
+
         return NextResponse.json({
             success: true,
             documentId: createData.id,
@@ -469,6 +497,7 @@ export async function POST(req: Request) {
             message: 'PEPPOL_SENT_OK',
             archiveKey,
             archiveFilename,
+            page: serverPage,
         });
 
     } catch (error: any) {

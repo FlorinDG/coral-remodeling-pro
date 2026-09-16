@@ -635,9 +635,9 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
     const handleExportCSV = useExportCSV({
         database,
         filteredPages: acctDateFilteredPages,
-        isAccountant,
-        updatePageProperty,
+        selectedRowIds,
     });
+
 
     const handleAccountantExport = async () => {
         const now = new Date();
@@ -716,6 +716,13 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
             document.body.removeChild(a);
             setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
             toast.success('Boekhouder export succesvol gedownload!', { id: toastId });
+
+            // R2: Transparently report excluded drafts in requested period
+            const excludedDraftsHeader = res.headers.get('X-Excluded-Drafts-Count');
+            const excludedDrafts = excludedDraftsHeader ? parseInt(excludedDraftsHeader, 10) : 0;
+            if (excludedDrafts > 0) {
+                toast.info(`${excludedDrafts} conceptdocument${excludedDrafts > 1 ? 'en' : ''} in deze periode ${excludedDrafts > 1 ? 'zijn' : 'is'} niet opgenomen in de export.`, { duration: 7000 });
+            }
         } catch (err: any) {
             console.error('Accountant export download failed:', err);
             toast.error('Boekhouder export mislukt: netwerk- of serverfout.', { id: toastId });

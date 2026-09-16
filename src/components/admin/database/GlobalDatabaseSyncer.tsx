@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useDatabaseStore } from './store';
 import { Database, Page, PageIndexEntry } from './types';
 import { toast } from 'sonner';
-import { useState } from 'react';
 import {
     Dialog,
     DialogContent,
@@ -25,6 +25,7 @@ interface GlobalDatabaseSyncerProps {
 }
 
 export default function GlobalDatabaseSyncer({ databases, pageIndex, tenantId, userId }: GlobalDatabaseSyncerProps) {
+    const tExportLock = useTranslations('Admin.exportLock');
     const hasHydrated = useRef(false);
     const serverDbs = useRef(databases);
     const serverPageIndex = useRef(pageIndex);
@@ -101,10 +102,32 @@ export default function GlobalDatabaseSyncer({ databases, pageIndex, tenantId, u
             useDatabaseStore.getState()._processSyncQueue();
         };
 
+        const handleExportLocked = (e: Event) => {
+            const detail = (e as CustomEvent).detail;
+            if (!detail) return;
+            const { docTitle, blockedFields = [], propertyLabels = {} } = detail;
+            const hasBlocks = blockedFields.includes('blocks');
+            const propFields = blockedFields.filter((f: string) => f !== 'blocks');
+            const friendlyFields = propFields.map((f: string) => propertyLabels[f] || f).join(', ');
+            const document = docTitle || tExportLock('fallback_document');
+
+            let msg = '';
+            if (hasBlocks && propFields.length === 0) {
+                msg = tExportLock('blocks_only', { document });
+            } else if (!hasBlocks && propFields.length > 0) {
+                msg = tExportLock('properties_only', { document, fields: friendlyFields });
+            } else {
+                msg = tExportLock('both', { document, fields: friendlyFields });
+            }
+            toast.error(msg, { duration: 8000 });
+        };
+
+        window.addEventListener('coral-export-locked', handleExportLocked);
         window.addEventListener('coral-sync-conflict', handleConflict);
         window.addEventListener('online', handleOnline);
 
         return () => {
+            window.removeEventListener('coral-export-locked', handleExportLocked);
             window.removeEventListener('coral-sync-conflict', handleConflict);
             window.removeEventListener('online', handleOnline);
         };

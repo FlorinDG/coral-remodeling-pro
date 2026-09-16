@@ -254,6 +254,12 @@
     "yourProject": "Votre Projet"
   },
   "Admin": {
+    "exportLock": {
+      "blocks_only": "{document} a déjà été envoyé au comptable. Les lignes ne peuvent plus être modifiées.",
+      "properties_only": "{document} a déjà été envoyé au comptable. Les champs suivants ne peuvent plus être modifiés: {fields}.",
+      "both": "{document} a déjà été envoyé au comptable. Les lignes et les champs suivants ne peuvent plus être modifiés: {fields}.",
+      "fallback_document": "Ce document"
+    },
     "loading": "Chargement des données...",
     "failedCreate": "Échec de la création du portail",
     "namePrompt": "Nom du Client :",

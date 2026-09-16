@@ -123,18 +123,27 @@ export async function GET(req: Request) {
         const clientMap = new Map(clients.map(c => [c.id, c]));
         const supplierMap = new Map(suppliers.map(s => [s.id, s]));
 
-        // Filter by date range in memory
-        const filteredInvoices = invoices.filter(page => {
-            const dateStr = (page.properties as any)?.invoiceDate;
-            if (!dateStr) return false;
-            return dateStr >= startDate && dateStr <= endDate;
-        });
+        const isDraft = (p: any) => {
+            const s = String((p.properties as any)?.status || '').toLowerCase();
+            return s === 'opt-draft' || s === 'draft';
+        };
 
-        const filteredExpenses = expenses.filter(page => {
-            const dateStr = (page.properties as any)?.invoiceDate;
-            if (!dateStr) return false;
-            return dateStr >= startDate && dateStr <= endDate;
-        });
+        const dateInRange = (p: any) => {
+            const dateStr = (p.properties as any)?.invoiceDate;
+            return Boolean(dateStr && dateStr >= startDate && dateStr <= endDate);
+        };
+
+        const invoicesInRange = invoices.filter(dateInRange);
+        const expensesInRange = expenses.filter(dateInRange);
+
+        const excludedDraftInvoices = invoicesInRange.filter(isDraft);
+        const excludedDraftExpenses = expensesInRange.filter(isDraft);
+        const totalExcludedDrafts = excludedDraftInvoices.length + excludedDraftExpenses.length;
+
+        // Drafts are strictly excluded from accountant export (LOCK-4 / R2)
+        const filteredInvoices = invoicesInRange.filter(p => !isDraft(p));
+        const filteredExpenses = expensesInRange.filter(p => !isDraft(p));
+
 
         // Resolve helpers
         const getClientName = (page: any) => {
@@ -412,6 +421,7 @@ export async function GET(req: Request) {
             headers: {
                 'Content-Type': 'application/zip',
                 'Content-Disposition': `attachment; filename="boekhouding_export_${periodStr}.zip"`,
+                'X-Excluded-Drafts-Count': String(totalExcludedDrafts),
             }
         });
 

@@ -5,7 +5,7 @@ import { Database, Page, Property, DatabaseView, Block, PageIndexEntry } from '@
 import { revalidatePath } from 'next/cache';
 
 import { auth } from '@/auth';
-import { checkExportLock } from '@/lib/records/export-lock';
+import { checkExportLock, isWipeHazard } from '@/lib/records/export-lock';
 
 /**
  * Validates and sanitizes a string ID, preventing undefined/null values from hitting Prisma
@@ -421,30 +421,57 @@ export async function saveGlobalPage(page: Page) {
                 updatedAt: true, 
                 properties: true, 
                 lastEditedBy: true,
-                blocksVersion: true 
+                blocksVersion: true,
+                blocks: true
             }
         });
 
         if (existingPage) {
-            const dbProps = Array.isArray(parentDb?.properties) ? (parentDb.properties as Array<{ id: string; type?: string }>) : [];
+            // R1 safeguard: Never allow [] to overwrite existing document blocks
+            if (isWipeHazard(existingPage.blocks, page.blocks)) {
+                return {
+                    success: false,
+                    error: 'EMPTY_BLOCKS_PROTECTION: Refused to overwrite existing document lines with empty array.',
+                    errorCode: 'EMPTY_BLOCKS_PROTECTION'
+                };
+            }
+
+            const dbProps = Array.isArray(parentDb?.properties) ? (parentDb.properties as Array<{ id: string; name?: string; type?: string }>) : [];
             const relationPropertyIds = new Set<string>(
                 dbProps.filter(p => p.type === 'relation').map(p => p.id)
             );
+            const propertyLabels: Record<string, string> = {};
+            for (const prop of dbProps) {
+                if (prop.id && prop.name) propertyLabels[prop.id] = prop.name;
+            }
+
             const violation = checkExportLock(
                 existingPage.properties,
                 page.properties as Record<string, unknown>,
-                relationPropertyIds
+                relationPropertyIds,
+                existingPage.blocks,
+                page.blocks
             );
             if (violation) {
+                const docTitle = String((existingPage.properties as any)?.title || (page.properties as any)?.title || '');
                 return {
                     success: false,
-                    error: `[ExportLocked] Dit document is al naar de boekhouder verzonden. Geblokkeerde velden: ${violation.blockedFields.join(', ')}`
+                    error: '[ExportLocked]',
+                    errorCode: 'EXPORT_LOCKED',
+                    blockedFields: violation.blockedFields,
+                    docTitle,
+                    propertyLabels,
+                    serverProperties: existingPage.properties,
+                    serverBlocks: existingPage.blocks,
+                    serverUpdatedAt: existingPage.updatedAt.toISOString(),
+                    serverBlocksVersion: existingPage.blocksVersion
                 };
             }
+
         }
 
         let finalProperties = page.properties;
-        const finalBlocks = page.blocks;
+        const finalBlocks = page.blocks !== undefined ? page.blocks : (existingPage?.blocks ?? []);
 
         if (existingPage && page.baseUpdatedAt) {
             const serverTime = existingPage.updatedAt.getTime();
@@ -603,32 +630,55 @@ export async function saveGlobalPagesBatch(pages: Page[]) {
                 // Optimistic Concurrency Control
                 const existingPage = await prisma.globalPage.findUnique({
                     where: { id: page.id },
-                    select: { updatedAt: true, properties: true, lastEditedBy: true, blocksVersion: true }
+                    select: { updatedAt: true, properties: true, lastEditedBy: true, blocksVersion: true, blocks: true }
                 });
 
                 if (existingPage) {
-                    const parentDb = dbMap.get(page.databaseId);
-                    const dbProps = Array.isArray(parentDb?.properties) ? (parentDb.properties as Array<{ id: string; type?: string }>) : [];
-                    const relationPropertyIds = new Set<string>(
-                        dbProps.filter(p => p.type === 'relation').map(p => p.id)
-                    );
-                    const violation = checkExportLock(
-                        existingPage.properties,
-                        page.properties as Record<string, unknown>,
-                        relationPropertyIds
-                    );
-                    if (violation) {
+                    if (isWipeHazard(existingPage.blocks, page.blocks)) {
                         results.push({
                             id: page.id,
                             success: false,
-                            error: `[ExportLocked] Dit document is al naar de boekhouder verzonden. Geblokkeerde velden: ${violation.blockedFields.join(', ')}`
+                            error: 'EMPTY_BLOCKS_PROTECTION: Refused to overwrite existing document lines with empty array.',
+                            errorCode: 'EMPTY_BLOCKS_PROTECTION'
                         });
                         continue;
                     }
+
+                    const parentDb = dbMap.get(page.databaseId);
+                    const dbProps = Array.isArray(parentDb?.properties) ? (parentDb.properties as Array<{ id: string; name?: string; type?: string }>) : [];
+                    const relationPropertyIds = new Set<string>(
+                        dbProps.filter(p => p.type === 'relation').map(p => p.id)
+                    );
+                    const propertyLabels: Record<string, string> = {};
+                    for (const prop of dbProps) {
+                        if (prop.id && prop.name) propertyLabels[prop.id] = prop.name;
+                    }
+
+                    const violation = checkExportLock(
+                        existingPage.properties,
+                        page.properties as Record<string, unknown>,
+                        relationPropertyIds,
+                        existingPage.blocks,
+                        page.blocks
+                    );
+                    if (violation) {
+                        const docTitle = String((existingPage.properties as any)?.title || (page.properties as any)?.title || '');
+                        results.push({
+                            id: page.id,
+                            success: false,
+                            error: '[ExportLocked]',
+                            errorCode: 'EXPORT_LOCKED',
+                            blockedFields: violation.blockedFields,
+                            docTitle,
+                            propertyLabels
+                        });
+                        continue;
+                    }
+
                 }
 
                 let finalProperties = page.properties;
-                const finalBlocks = page.blocks;
+                const finalBlocks = page.blocks !== undefined ? page.blocks : (existingPage?.blocks ?? []);
 
                 if (existingPage && page.baseUpdatedAt) {
                     const serverTime = existingPage.updatedAt.getTime();

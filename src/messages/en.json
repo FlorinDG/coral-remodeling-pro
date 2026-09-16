@@ -255,6 +255,12 @@
     "yourProject": "Your Project"
   },
   "Admin": {
+    "exportLock": {
+      "blocks_only": "{document} has already been sent to the accountant. The line items can no longer be changed.",
+      "properties_only": "{document} has already been sent to the accountant. The following fields can no longer be changed: {fields}.",
+      "both": "{document} has already been sent to the accountant. The line items and the following fields can no longer be changed: {fields}.",
+      "fallback_document": "This document"
+    },
     "loading": "Loading System Data...",
     "failedCreate": "Failed to create portal",
     "namePrompt": "Client Name:",

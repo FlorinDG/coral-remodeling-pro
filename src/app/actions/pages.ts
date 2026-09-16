@@ -165,7 +165,7 @@ export async function createPageServerFirst(
 export async function updatePageServerFirst(
     pageId: string,
     properties: Record<string, PropertyValue>
-): Promise<{ success: true; page: Page } | { success: false; error: string }> {
+): Promise<{ success: true; page: Page } | { success: false; error: string; errorCode?: string; blockedFields?: string[]; docTitle?: string; propertyLabels?: Record<string, string> }> {
     const session = await auth();
     const tenantId = session?.user?.tenantId;
     if (!tenantId) return { success: false, error: 'Not authenticated' };
@@ -180,21 +180,34 @@ export async function updatePageServerFirst(
         if (!existing) return { success: false, error: 'Page not found' };
         if (existing.database.tenantId !== tenantId) return { success: false, error: 'Unauthorized' };
 
-        const dbProps = Array.isArray(existing.database.properties) ? (existing.database.properties as Array<{ id: string; type?: string }>) : [];
+        const dbProps = Array.isArray(existing.database.properties) ? (existing.database.properties as Array<{ id: string; name?: string; type?: string }>) : [];
         const relationPropertyIds = new Set<string>(
             dbProps.filter(p => p.type === 'relation').map(p => p.id)
         );
+        const propertyLabels: Record<string, string> = {};
+        for (const prop of dbProps) {
+            if (prop.id && prop.name) propertyLabels[prop.id] = prop.name;
+        }
+
         const violation = checkExportLock(
             existing.properties,
             properties as Record<string, unknown>,
-            relationPropertyIds
+            relationPropertyIds,
+            existing.blocks,
+            undefined
         );
         if (violation) {
+            const docTitle = String((existing.properties as any)?.title || (properties as any)?.title || '');
             return {
                 success: false,
-                error: `[ExportLocked] Dit document is al naar de boekhouder verzonden. Geblokkeerde velden: ${violation.blockedFields.join(', ')}`
+                error: '[ExportLocked]',
+                errorCode: 'EXPORT_LOCKED',
+                blockedFields: violation.blockedFields,
+                docTitle,
+                propertyLabels
             };
         }
+
 
         const saved = await prisma.globalPage.update({
             where: { id: pageId },

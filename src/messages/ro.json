@@ -255,6 +255,12 @@
     "yourProject": "Proiectul tău"
   },
   "Admin": {
+    "exportLock": {
+      "blocks_only": "{document} a fost deja trimis contabilului. Liniile nu mai pot fi modificate.",
+      "properties_only": "{document} a fost deja trimis contabilului. Următoarele câmpuri nu mai pot fi modificate: {fields}.",
+      "both": "{document} a fost deja trimis contabilului. Liniile și următoarele câmpuri nu mai pot fi modificate: {fields}.",
+      "fallback_document": "Acest document"
+    },
     "loading": "Se încarcă datele...",
     "failedCreate": "Crearea portalului a eșuat",
     "namePrompt": "Nume Client:",

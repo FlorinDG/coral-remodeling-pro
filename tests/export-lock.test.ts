@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { checkExportLock } from '../src/lib/records/export-lock.ts';
+import { checkExportLock, isWipeHazard } from '../src/lib/records/export-lock.ts';
 
 test('checkExportLock: not locked → always allowed', () => {
     const existing = { title: 'Old Title', amount: 100, accountantExportedAt: false };
@@ -101,3 +101,100 @@ test('checkExportLock: locked + archive fields AND ordinary field changed → bl
     assert.notEqual(result, null);
     assert.deepEqual(result?.blockedFields, ['title']);
 });
+
+test('checkExportLock: locked + blocks omitted (undefined) → allowed (R1)', () => {
+    const existing = { title: 'Same Title', accountantExportedAt: true };
+    const incoming = { title: 'Same Title' };
+    const existingBlocks = [{ id: 'b1', type: 'financial-row', quantity: 2, unitPrice: 100 }];
+
+    const result = checkExportLock(existing, incoming, new Set(), existingBlocks, undefined);
+    assert.equal(result, null);
+});
+
+test('checkExportLock: locked + blocks identical → allowed', () => {
+    const existing = { title: '2026-55', accountantExportedAt: true };
+    const incoming = { title: '2026-55' };
+    const existingBlocks = [{ id: 'b1', type: 'financial-row', content: 'Wall paint', quantity: 2, unitPrice: 100 }];
+    const incomingBlocks = [{ id: 'b1', type: 'financial-row', content: 'Wall paint', quantity: 2, unitPrice: 100 }];
+
+    const result = checkExportLock(existing, incoming, new Set(), existingBlocks, incomingBlocks);
+    assert.equal(result, null);
+});
+
+test('checkExportLock: locked + volatile UI state changed on blocks → allowed without over-blocking (R1)', () => {
+    const existing = { title: '2026-55', accountantExportedAt: true };
+    const incoming = { title: '2026-55' };
+    const existingBlocks = [{ id: 'b1', type: 'financial-row', content: 'Wall paint', quantity: 2, unitPrice: 100, isParentCollapsed: false }];
+    // incoming has different key order and isParentCollapsed: true
+    const incomingBlocks = [{ isParentCollapsed: true, unitPrice: 100, quantity: 2, content: 'Wall paint', id: 'b1', type: 'financial-row' }];
+
+    const result = checkExportLock(existing, incoming, new Set(), existingBlocks, incomingBlocks);
+    assert.equal(result, null, 'Volatile UI keys like isParentCollapsed or key order must not trigger lock refusal');
+});
+
+test('checkExportLock: locked + line item quantity/price edited → violation naming blocks (LOCK-1)', () => {
+    const existing = { title: '2026-55', accountantExportedAt: true };
+    const incoming = { title: '2026-55' };
+    const existingBlocks = [{ id: 'b1', type: 'financial-row', content: 'Wall paint', quantity: 2, unitPrice: 100 }];
+    const incomingBlocks = [{ id: 'b1', type: 'financial-row', content: 'Wall paint', quantity: 5, unitPrice: 100 }];
+
+    const result = checkExportLock(existing, incoming, new Set(), existingBlocks, incomingBlocks);
+    assert.notEqual(result, null);
+    assert.deepEqual(result?.blockedFields, ['blocks']);
+});
+
+test('checkExportLock: locked + line item added/deleted → violation naming blocks', () => {
+    const existing = { title: '2026-55', accountantExportedAt: true };
+    const incoming = { title: '2026-55' };
+    const existingBlocks = [{ id: 'b1', type: 'financial-row', content: 'Line 1' }];
+    const incomingBlocks = [
+        { id: 'b1', type: 'financial-row', content: 'Line 1' },
+        { id: 'b2', type: 'financial-row', content: 'Line 2' }
+    ];
+
+    const result = checkExportLock(existing, incoming, new Set(), existingBlocks, incomingBlocks);
+    assert.notEqual(result, null);
+    assert.deepEqual(result?.blockedFields, ['blocks']);
+});
+
+test('checkExportLock: locked + both property and line item edited → violation naming both', () => {
+    const existing = { title: '2026-55', vatRegime: '21', accountantExportedAt: true };
+    const incoming = { title: '2026-55', vatRegime: '6' };
+    const existingBlocks = [{ id: 'b1', quantity: 1 }];
+    const incomingBlocks = [{ id: 'b1', quantity: 2 }];
+
+    const result = checkExportLock(existing, incoming, new Set(), existingBlocks, incomingBlocks);
+    assert.notEqual(result, null);
+    assert.deepEqual(result?.blockedFields, ['vatRegime', 'blocks']);
+});
+
+test('checkExportLock: not locked + line items edited → allowed', () => {
+    const existing = { title: '2026-55', accountantExportedAt: false };
+    const incoming = { title: '2026-55' };
+    const existingBlocks = [{ id: 'b1', quantity: 1 }];
+    const incomingBlocks = [{ id: 'b1', quantity: 99 }];
+
+    const result = checkExportLock(existing, incoming, new Set(), existingBlocks, incomingBlocks);
+    assert.equal(result, null);
+});
+
+test('R1 safeguard: server has 3 blocks, incoming is [] on NON-exported record → wipe hazard detected', () => {
+    const existingBlocks = [
+        { id: 'b1', content: 'Item 1' },
+        { id: 'b2', content: 'Item 2' },
+        { id: 'b3', content: 'Item 3' }
+    ];
+    const incomingBlocks: unknown[] = [];
+
+    // Must detect hazard and refuse to silently wipe
+    assert.equal(isWipeHazard(existingBlocks, incomingBlocks), true);
+
+    // If incoming is omitted (undefined), it is NOT a wipe hazard
+    assert.equal(isWipeHazard(existingBlocks, undefined), false);
+
+    // If server has no blocks, incoming [] is not a wipe hazard
+    assert.equal(isWipeHazard([], incomingBlocks), false);
+});
+
+
+

@@ -255,6 +255,12 @@
     "yourProject": "Uw Project"
   },
   "Admin": {
+    "exportLock": {
+      "blocks_only": "{document} is al naar de boekhouder verzonden. De regels kunnen niet meer gewijzigd worden.",
+      "properties_only": "{document} is al naar de boekhouder verzonden. De volgende velden kunnen niet meer gewijzigd worden: {fields}.",
+      "both": "{document} is al naar de boekhouder verzonden. De regels en de volgende velden kunnen niet meer gewijzigd worden: {fields}.",
+      "fallback_document": "Dit document"
+    },
     "loading": "Systeemgegevens laden...",
     "failedCreate": "Aanmaken van portal mislukt",
     "namePrompt": "Naam Klant:",

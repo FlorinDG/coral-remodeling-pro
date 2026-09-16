@@ -515,6 +515,50 @@ export const useDatabaseStore = create<DatabaseState>()(
                                     } : d)
                                 }));
                                 get()._dequeueSync(entry.pageId);
+                            } else if (result.errorCode === 'EXPORT_LOCKED' || result.error?.startsWith('[ExportLocked]')) {
+                                console.warn('[store] PERMANENT REFUSAL (EXPORT_LOCKED) for page', entry.pageId, result.error);
+                                
+                                // 1. Dequeue immediately — never retry a permanent refusal
+                                get()._dequeueSync(entry.pageId);
+
+                                // 2. R3: Revert optimistic state to server baseline and DISCARD rejected edits
+                                if (result.serverProperties) {
+                                    set(s => ({
+                                        databases: s.databases.map(d => d.id === entry.databaseId ? {
+                                            ...d,
+                                            pages: d.pages.map((p: Page) => {
+                                                if (p.id !== entry.pageId) return p;
+                                                return { 
+                                                    ...p, 
+                                                    properties: result.serverProperties as Record<string, PropertyValue>,
+                                                    blocks: (result.serverBlocks as unknown as Block[]) || p.blocks,
+                                                    baseUpdatedAt: result.serverUpdatedAt || p.baseUpdatedAt,
+                                                    blocksVersion: result.serverBlocksVersion !== undefined ? result.serverBlocksVersion : p.blocksVersion,
+                                                    dirtyBase: {},
+                                                    dirtyBaseBlocks: false
+                                                };
+                                            })
+                                        } : d)
+                                    }));
+                                }
+
+                                // 3. User-visible notification via UI i18n event handler.
+                                // Strictly DO NOT dispatch 'coral-sync-conflict' (R3 collision prevention)
+                                if (typeof window !== 'undefined') {
+                                    window.dispatchEvent(new CustomEvent('coral-export-locked', {
+                                        detail: {
+                                            pageId: entry.pageId,
+                                            databaseId: entry.databaseId,
+                                            docTitle: (result as any).docTitle || '',
+                                            blockedFields: (result as any).blockedFields || [],
+                                            propertyLabels: (result as any).propertyLabels || {}
+                                        }
+                                    }));
+                                }
+                            } else if (result.errorCode === 'EMPTY_BLOCKS_PROTECTION') {
+                                console.warn('[store] EMPTY_BLOCKS_PROTECTION refusal for page', entry.pageId);
+                                get()._dequeueSync(entry.pageId);
+                                toast.error('Wijziging geweigerd: factuurregels kunnen niet leeg worden gemaakt.', { duration: 6000 });
                             } else if (result.errorCode === 'STALE_WRITE') {
                                 console.warn('STALE WRITE CONFLICT DETECTED FOR PAGE', entry.pageId);
                                 

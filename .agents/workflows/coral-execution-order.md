@@ -158,7 +158,7 @@ Spec: `coral-r1-tenancy.md`
 
 > 🛑 **BLOCKED UNTIL `main` IS CURRENT — Florin, 2026-09-13:** *"We first close the production gap and then we follow the plan."*
 > **Nothing in Phase 3 or beyond starts until `release/2026-09` is merged to `main` and has run for the 48h watch in `coral-promotion-plan.md` §6.**
-> **Why this ordering and not the reverse:** `R1-2` deletes `TenantContext.tsx:26`'s `resolveDbId: (base) => base` — the fail-open default **every scoped surface depends on**. Doing that while `main` is 99 commits behind would mean a production incident debugged against a branch that does not resemble production. **Promotion is the cheap step; it is also the one that makes R1 debuggable.**
+> **Why this ordering and not the reverse:** `R1-2` deletes `TenantContext.tsx:26`'s `resolveDbId: (base) => base` — the fail-open default **every scoped surface depends on**. Doing that while `main` is 114 commits behind would mean a production incident debugged against a branch that does not resemble production. **Promotion is the cheap step; it is also the one that makes R1 debuggable.**
 > Confirmed against the codebase 2026-09-13: `logicalKey` **absent** from `schema.prisma`, `resolveDbId: (base) => base` **still present**, `saveRecord()` **does not exist**. **The kernel is untouched, so the promotion carries no structural change** — which is exactly why it is safe to do first.
 > **Remaining before this unblocks:** `I18N-1…3` → `G-3` green → cut `release/2026-09` → staging → `G-2` (a week of real `/m/tasks` use) → merge → 48h watch.
 

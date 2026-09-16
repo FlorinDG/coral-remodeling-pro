@@ -2,7 +2,7 @@
 
 **Florin: *"main is indeed by now so far behind the apps don't look alike anymore."***
 
-**99 commits.** Every client-facing money path changed: `send-invoice.ts`, `send-quote.ts`, `peppol/send`, `financials/export`. This is not a routine promotion, and it is the riskiest thing on the horizon. **Florin executes every step; the Planner does not push, deploy or migrate.**
+**114 commits** (measured 2026-09-13; the plan was drafted at 99). Every client-facing money path changed: `send-invoice.ts`, `send-quote.ts`, `peppol/send`, `financials/export`. This is not a routine promotion, and it is the riskiest thing on the horizon. **Florin executes every step; the Planner does not push, deploy or migrate.**
 
 ---
 
@@ -51,6 +51,20 @@ That is correct and it is what you asked for — but **nothing today prevents it
 
 ---
 
+### 🟥 2.7 · THE REMINDER DIGEST WILL NEVER FIRE — *found 2026-09-13, not yet fixed*
+`src/app/api/cron/reminders/route.ts` was built by `TASK-M15` and works if called. **`vercel.json` declares only two crons** — `trial-check` and `invoice-overdue`. **`reminders` is not registered, so nothing will ever call it.**
+
+The code is correct, the tests pass, and the feature does nothing. This is the exact case `TASK-M15` opened with: *a reminder that does not fire is worse than no reminder at all* — because you stop keeping the list in your head.
+
+**🔻 SUPERSEDED 2026-09-13 — Florin: *"I don't need a digest, I need an alert/notification triggered by the task as a reminder. Digest is useless pollution."*** See `coral-task-reminders.md`.
+
+**🟢 DO NOT REGISTER THE CRON. The unregistered route is now a piece of luck, not a defect** — it has never run, and it would not have survived real data. Reviewing it turned up four further problems, the worst being an **unfiltered `globalPage.findMany()` across every tenant** which then `JSON.stringify`s each page, and a **reminder test that substring-matches a date next to a 🔔 anywhere in any property or block.** Registering it would put a cross-tenant full scan on a schedule.
+
+- [x] **Nothing to add to `vercel.json` before the merge.** The digest is withdrawn; the route is rewritten under `REM-1…4` **after** promotion.
+- [ ] 🛑 **FLORIN, BLOCKING for `REM-2`: which Vercel plan?** Minute-level crons need **Pro**; Hobby is ~once daily — and **a once-daily sweep is a digest under another name.**
+
+---
+
 ## 3 · GATES — all must be green before promoting
 
 - [x] **G-1 · `LAZY-1…4` complete — ✅ MET, and in a way that makes promotion SAFER than planned.**
@@ -59,7 +73,7 @@ That is correct and it is what you asked for — but **nothing today prevents it
   ⚠️ **And the cost: `MEM-3`'s entire benefit is switched off.** We are back to full hydration — 52 MB payload, the 307 MB invocation baseline. Production is no worse than today (`main` never had `MEM-3`), but the memory work is banked, not realised. See `LAZY-5`.
 - [x] **Phase 2 complete** — `2.1`–`2.5`/`TS-1` (`66ef43a`, `62865a7`, `896f38f`, `afbf405`), `2.6`–`2.10` (`1c25ee6`, `2ffcb1a`), `2.10-b` desktop subtasks (`3d9995a`), `2.11`–`2.15` app-shell hardening (`3b8f773`). Verified against the repo: 7 importers of `lib/tasks/subtasks.ts`, one `useScrollLock`, one shared `FileViewer`, z-scale `chrome 40 / overlay 60`, tenant prefix assert unchanged.
 - [ ] **G-2 · Florin has actually used `/m/tasks`.** Not "it matches the spec" — "I would trust it with my week."
-  **Status 2026-09-13: close, but not yet met.** Five real defects were found by *using* it, and all five are fixed — *"major improvement"*. **But the fixes are hours old.** The gate is a week's use, not a good first impression; the first pass through this module produced five findings, and the second pass is worth having before 99 commits go to `main`. **Use it for the working days of the staging pass** — that satisfies `G-2` and `G-6` in the same elapsed time rather than in series.
+  **Status 2026-09-13: close, but not yet met.** Five real defects were found by *using* it, and all five are fixed — *"major improvement"*. **But the fixes are hours old.** The gate is a week's use, not a good first impression; the first pass through this module produced five findings, and the second pass is worth having before 114 commits go to `main`. **Use it for the working days of the staging pass** — that satisfies `G-2` and `G-6` in the same elapsed time rather than in series.
 - [x] **G-3 · `npm run test:compile` clean · full suite green — ✅ MET (2026-09-13).**
   **Measured 2026-09-13: `116 tests · 116 pass · 0 fail`.** `i18n` missing keys, `Tasks.Hr` deduplication, and Romanian parity all resolved (`I18N-1..3`). All four locales (`en`, `nl`, `fr`, `ro`) in 100% lockstep parity (846 keys each). `npm run test:compile` (`tsc --noEmit`) passes cleanly with 0 errors.
 - [x] **G-4 · `P-1` DB verification — ✅ CLEAN (Florin ran it, 2026-09-13).**
@@ -67,7 +81,7 @@ That is correct and it is what you asked for — but **nothing today prevents it
   **Production's structure matches `schema.prisma` exactly.**
   🔻 **Planner correction:** I predicted drift, reasoning that 55 models across 3 migrations (last one `20260729…`) implied history advanced by `db push`. **That inference was wrong.** It is the same mistake as the retracted `C1` blocker and the 38 `t-*` records: **inferring the state of data from the shape of the code.** The census answers; the code shape only raises the question. The suspicion was worth stating — it is exactly what `P-1` exists to catch — but it should have been stated as a question, which is how it was run, and the answer is a clean bill.
 - [x] **G-5 · Neon snapshot — ✅ TAKEN (Florin, 2026-09-13).** Confirm the PITR window still covers the merge at the moment you merge, not only now.
-- [ ] **G-6 · A staging pass on `release/*`.** There is a `staging` branch on the remote and `pd.md` Rule 8 specifies it. **99 commits is exactly the case that branch exists for.** Do not go `develop` → `main` directly.
+- [ ] **G-6 · A staging pass on `release/*`.** There is a `staging` branch on the remote and `pd.md` Rule 8 specifies it. **114 commits is exactly the case that branch exists for.** Do not go `develop` → `main` directly.
 
 ---
 
@@ -87,7 +101,30 @@ That is correct and it is what you asked for — but **nothing today prevents it
 
 ---
 
+## 4b · STAGING ENVIRONMENT — settled 2026-09-13
+
+- `release/2026-09-13` cut from `develop` and pushed. Preview URL live, **Deployment Protection ON** (so installing it as a PWA may need a bypass token — `G-2`'s mobile item may have to wait for production).
+- 🔴 **Found and fixed:** `DATABASE_URL`/`DIRECT_URL` were **All Environments** — *every preview deploy ever made pointed at production data.* Now **Production → production branch, Preview → Neon `staging` branch**, mapped through the Neon↔Vercel integration (the Vercel-side fields are integration-managed and greyed out; the mapping lives on Neon's side).
+- [ ] **Verify the split before item 1.** Change something visible on preview → confirm production does **not** show it. **The env var is not proof; the observation is.**
+- ⚠️ **A database branch isolates the database and nothing else.** Still shared: **Resend** (email really sends — address test invoices to yourself), **Peppol** (real network, **irreversible**), **Vercel Blob** (same token — staging archives land in the production store).
+
 ## 5 · THE STAGING PASS — the things that must be exercised with real data
+
+**Run order: 3 · 4 · 1 · 2 · 5 · 6 · 7 · 8 · 9.** The export lock and the accountant export go first — they are the legally-binding paths, and a failure there means stopping rather than fixing forward.
+
+### RUN LOG — staging pass on `release/2026-09-13`
+| | Result |
+|---|---|
+| **Env isolation** | ✅ Preview → Neon `staging`. Verified by observation: an edit on preview did **not** appear in production. |
+| **1 · attachments** | ✅ **Two annexes sent, both arrived.** The `ATT-1/2/3` + `BLOB-1` fix confirmed — these were being silently dropped. |
+| **1 · magic link** | ✅ after `CLEAN-6`. Initially 404'd because `NEXT_PUBLIC_APP_URL` fell back to production; **the 404 was isolation working correctly.** Preview-scoped var + redeploy → the document opens. |
+| **1 · status / receiptUrl** | 🛑 **BLOCKED — `SEND-1`.** Sync Conflict on send: server writes `receiptUrl`, client then writes `status: opt-sent` against a pre-send snapshot. `coder-directive-send-conflict.md`. **Item 1 is not complete and the `D1` reload check is not yet meaningful.** |
+| **2 · Peppol** | ⏸ Not run. **Will fail identically** — `ClientInvoiceEngine.tsx:1108` has the same two-door shape. |
+| **3 · export lock** | 🛑 **FAILS — `LOCK-1…4`.** The lock covers `properties` only; **invoice line items live in `blocks` and are unprotected.** Chain confirmed by observation: `vatRegime` reverted on reload (lock fired) · article + quantity persisted (blocks unchecked) · `store.ts:545` swallowed the refusal with a silent retry, so the UI showed success · **`useExportCSV` reads `filteredPages` (client store), so a CSV exported the next day still carried the refused value.** `coder-directive-export-lock-gap.md`. |
+| **4 · accountant export** | 🛑 **Two doors.** `/api/financials/export` (server-side, period required, PDFs, `BLOB-4` all-or-nothing) vs the CSV button (client-side, ignores selection, stamps after `link.click()`). Florin selected 10 rows → **86 exported and frozen**, including an `opt-draft`. Folded into `LOCK-3/4`. **Which door survives is Florin's decision.** |
+| **5–9** | ⏸ **Unaffected by `SEND-1` or `LOCK-*` — still worth running on the frozen branch before returning to `develop`.** |
+
+**🛑 The pass is paused at `SEND-1`.** Fix on `develop`, cherry-pick onto `release/2026-09-13`, **restart at item 1.**
 
 1. **Send an invoice by email** with two annexes → three attachments arrive → **the PDF is archived** and `receiptUrl` survives a reload *after the sync queue drains* (the `D1` clobber case).
 2. **Send via Peppol** → same archive, document accepted.
@@ -114,6 +151,6 @@ Code is a revert of the merge commit and a redeploy — **cheap, and it is the r
 ---
 
 ## THE HONEST SUMMARY
-The schema is almost certainly fine. The 99 commits are mostly fixes. **The risk is that four money paths changed at once and you will meet the new behaviour in the middle of a working day.** §2 exists so you meet it here instead.
+The schema is almost certainly fine. The 114 commits are mostly fixes. **The risk is that four money paths changed at once and you will meet the new behaviour in the middle of a working day.** §2 exists so you meet it here instead.
 
 **And the hard gate is `G-1`:** `develop` currently has 16 broken surfaces that work fine in production today. Promoting before Phase 1 finishes would be a straight downgrade.

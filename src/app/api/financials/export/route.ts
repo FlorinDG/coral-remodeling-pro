@@ -80,6 +80,8 @@ function calculateVatSplit(page: any) {
     return split;
 }
 
+import { canRunAccountantExport } from '@/lib/roles';
+
 export async function GET(req: Request) {
     try {
         const session = await auth();
@@ -87,6 +89,15 @@ export async function GET(req: Request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
         const tenantId = (session.user as any).tenantId;
+        const role = (session.user as any)?.role;
+        const isImpersonating = !!(session.user as any)?.isImpersonating;
+
+        if (!canRunAccountantExport(role, isImpersonating)) {
+            return NextResponse.json(
+                { error: 'Forbidden: only accountants and workspace administrators can perform accountant export' },
+                { status: 403 }
+            );
+        }
 
         const url = new URL(req.url);
         const startDate = url.searchParams.get('startDate');
@@ -385,35 +396,97 @@ export async function GET(req: Request) {
         // 4. Generate the ZIP buffer first (ensures ZIP generation succeeds before any DB write)
         const zipBuffer = await zip.generateAsync({ type: 'nodebuffer' });
 
-        // 5. Stamp accountantExportedAt = true only after ZIP successfully exists (atomic transaction)
+        // 5. Stamp accountantExportedAt = true and record actor details only after ZIP successfully exists (atomic transaction)
+        const actorUserId = (session.user as any)?.id || (session.user as any)?.email || 'system';
+        const actorEmail = (session.user as any)?.email || '';
+        const actorName = (session.user as any)?.name || '';
+        const actorRole = (session.user as any)?.role || 'ACCOUNTANT';
+        const actorIdentifier = actorName ? `${actorName} (${actorEmail || actorRole})` : (actorEmail || actorUserId);
+        const exportTimestamp = new Date().toISOString();
+
         const invoiceUpdates = filteredInvoices
             .filter(inv => (inv.properties as any)?.accountantExportedAt !== true)
             .map(inv => {
-                const props = { ...((inv.properties as any) || {}), accountantExportedAt: true };
+                const props = {
+                    ...((inv.properties as any) || {}),
+                    accountantExportedAt: true,
+                    accountantExportedBy: actorIdentifier,
+                    accountantExportedById: actorUserId,
+                    accountantExportedTimestamp: exportTimestamp,
+                };
                 return prisma.globalPage.update({
                     where: { id: inv.id },
                     data: {
                         properties: props,
-                        lastEditedBy: 'system:accountant-export'
+                        lastEditedBy: actorEmail || actorUserId || 'system:accountant-export'
                     }
                 });
             });
+
+        const invoiceAuditLogs = filteredInvoices
+            .filter(inv => (inv.properties as any)?.accountantExportedAt !== true)
+            .map(inv => prisma.auditLog.create({
+                data: {
+                    tenantId,
+                    actorUserId,
+                    entityType: 'globalPage',
+                    entityId: inv.id,
+                    action: 'accountant-export',
+                    field: 'accountantExportedAt',
+                    before: { accountantExportedAt: false },
+                    after: {
+                        accountantExportedAt: true,
+                        accountantExportedBy: actorIdentifier,
+                        accountantExportedTimestamp: exportTimestamp,
+                        role: actorRole,
+                    },
+                    reason: `Accountant export for period ${periodStr}`,
+                }
+            }));
 
         const expenseUpdates = filteredExpenses
             .filter(exp => (exp.properties as any)?.accountantExportedAt !== true)
             .map(exp => {
-                const props = { ...((exp.properties as any) || {}), accountantExportedAt: true };
+                const props = {
+                    ...((exp.properties as any) || {}),
+                    accountantExportedAt: true,
+                    accountantExportedBy: actorIdentifier,
+                    accountantExportedById: actorUserId,
+                    accountantExportedTimestamp: exportTimestamp,
+                };
                 return prisma.globalPage.update({
                     where: { id: exp.id },
                     data: {
                         properties: props,
-                        lastEditedBy: 'system:accountant-export'
+                        lastEditedBy: actorEmail || actorUserId || 'system:accountant-export'
                     }
                 });
             });
 
-        if (invoiceUpdates.length > 0 || expenseUpdates.length > 0) {
-            await prisma.$transaction([...invoiceUpdates, ...expenseUpdates]);
+        const expenseAuditLogs = filteredExpenses
+            .filter(exp => (exp.properties as any)?.accountantExportedAt !== true)
+            .map(exp => prisma.auditLog.create({
+                data: {
+                    tenantId,
+                    actorUserId,
+                    entityType: 'globalPage',
+                    entityId: exp.id,
+                    action: 'accountant-export',
+                    field: 'accountantExportedAt',
+                    before: { accountantExportedAt: false },
+                    after: {
+                        accountantExportedAt: true,
+                        accountantExportedBy: actorIdentifier,
+                        accountantExportedTimestamp: exportTimestamp,
+                        role: actorRole,
+                    },
+                    reason: `Accountant export for period ${periodStr}`,
+                }
+            }));
+
+        const allOps = [...invoiceUpdates, ...expenseUpdates, ...invoiceAuditLogs, ...expenseAuditLogs];
+        if (allOps.length > 0) {
+            await prisma.$transaction(allOps);
         }
 
         return new NextResponse(new Uint8Array(zipBuffer), {

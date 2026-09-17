@@ -30,6 +30,7 @@ import { useGridColumns } from './hooks/useGridColumns';
 
 import { useVatLookup } from './hooks/useVatLookup';
 import { useExportCSV } from './hooks/useExportCSV';
+import { canRunAccountantExport } from '@/lib/roles';
 
 // ── Add Column Button (rendered at the end of the header row) ───────────────
 function AddColumnButton({ databaseId }: { databaseId: string }) {
@@ -79,7 +80,10 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
     const router = useRouter();
     const t = useTranslations('Admin');
     const { data: session } = useSession();
-    const isAccountant = session?.user?.role === 'ACCOUNTANT';
+    const role = session?.user?.role;
+    const isImpersonating = !!(session?.user as any)?.isImpersonating;
+    const isAccountant = role === 'ACCOUNTANT';
+    const showAccountantExport = canRunAccountantExport(role, isImpersonating);
     const updatePageProperty = useDatabaseStore(state => state.updatePageProperty);
     const createPage = useDatabaseStore(state => state.createPage);
     const deletePage = useDatabaseStore(state => state.deletePage);
@@ -542,11 +546,8 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
         }
     }, [database, filteredPages, activeView?.sorts, isEditing]);
 
-    // ── Accountant date range filtering (applied after sort) ──────────────
-    const acctDateFilteredPages = useMemo(() => {
-        if (!isAccountant) return sortedPages;
-
-        // Resolve preset to from/to dates
+    // ── Accountant date range resolution and filtering ──────────────────────
+    const { acctFrom, acctTo } = useMemo(() => {
         const now = new Date();
         let from = acctDateFrom;
         let to = acctDateTo;
@@ -582,19 +583,19 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                     to = now.toISOString().split('T')[0];
                     break;
                 case 'last-year':
-                    from = `${y - 1}-01-01`;
-                    to = `${y - 1}-12-31`;
-                    break;
                 case 'last-calendar-year':
                     from = `${y - 1}-01-01`;
                     to = `${y - 1}-12-31`;
                     break;
-                default:
-                    return sortedPages;
             }
         }
+        return { acctFrom: from, acctTo: to };
+    }, [acctDatePreset, acctDateFrom, acctDateTo]);
 
-        if (!from && !to) return sortedPages;
+    // Pages matching the accountant export period
+    const acctExportPeriodPages = useMemo(() => {
+        if (!showAccountantExport) return sortedPages;
+        if (!acctFrom && !acctTo) return sortedPages;
 
         // Find the date property to filter on
         const dateField = database?.properties.find(p =>
@@ -605,11 +606,15 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
             const dateVal = page.properties[dateField];
             if (!dateVal) return false;
             const d = String(dateVal).split('T')[0];
-            if (from && d < from) return false;
-            if (to && d > to) return false;
+            if (acctFrom && d < acctFrom) return false;
+            if (acctTo && d > acctTo) return false;
             return true;
         });
-    }, [sortedPages, isAccountant, acctDatePreset, acctDateFrom, acctDateTo, database?.properties]);
+    }, [sortedPages, showAccountantExport, acctFrom, acctTo, database?.properties]);
+
+    // For ACCOUNTANT, grid rows are filtered to the selected period.
+    // For workspace owners/admins, grid retains full sortedPages while export uses the period picker.
+    const acctDateFilteredPages = isAccountant ? acctExportPeriodPages : sortedPages;
 
     // Convert sorted filtered pages to row data by flattening properties to the top level for data-sheet-grid access
     // Memoizing this to prevent infinite re-renders or synchronous onChange triggers from DataSheetGrid
@@ -640,47 +645,8 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
 
 
     const handleAccountantExport = async () => {
-        const now = new Date();
-        let from = acctDateFrom;
-        let to = acctDateTo;
-        const y = now.getFullYear();
-        const m = now.getMonth();
-
-        if (acctDatePreset !== 'custom') {
-            switch (acctDatePreset) {
-                case 'last-month': {
-                    const d = new Date(y, m - 1, 1);
-                    from = d.toISOString().split('T')[0];
-                    to = new Date(y, m, 0).toISOString().split('T')[0];
-                    break;
-                }
-                case 'last-trimester': {
-                    const qStart = Math.floor(m / 3) * 3;
-                    from = new Date(y, qStart - 3, 1).toISOString().split('T')[0];
-                    to = new Date(y, qStart, 0).toISOString().split('T')[0];
-                    break;
-                }
-                case 'last-semester': {
-                    if (m < 6) {
-                        from = `${y - 1}-07-01`;
-                        to = `${y - 1}-12-31`;
-                    } else {
-                        from = `${y}-01-01`;
-                        to = `${y}-06-30`;
-                    }
-                    break;
-                }
-                case 'this-year':
-                    from = `${y}-01-01`;
-                    to = now.toISOString().split('T')[0];
-                    break;
-                case 'last-year':
-                case 'last-calendar-year':
-                    from = `${y - 1}-01-01`;
-                    to = `${y - 1}-12-31`;
-                    break;
-            }
-        }
+        const from = acctFrom;
+        const to = acctTo;
 
         if (!from && !to) {
             toast.error('Selecteer een periode');
@@ -762,8 +728,8 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                     </button>
                     )}
 
-                    {/* Accountant: date range filter + export */}
-                    {isAccountant && (
+                    {/* Accountant / Owner: date range filter + export */}
+                    {showAccountantExport && (
                     <div className="flex items-center gap-2 flex-wrap">
                         {/* Period preset */}
                         <div className="relative min-w-[160px]">
@@ -812,7 +778,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
 
                         {/* Result count */}
                         <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-1 rounded-md">
-                            {acctDateFilteredPages.length} records
+                            {acctExportPeriodPages.length} records
                         </span>
 
                         {/* Export button */}

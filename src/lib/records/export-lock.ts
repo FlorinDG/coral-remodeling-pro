@@ -78,7 +78,7 @@ export function checkExportLock(
     if (existing.accountantExportedAt !== true) return null;
 
     const blocked = Object.keys(incomingProperties).filter((key) => {
-        if (key === 'accountantExportedAt' || ARCHIVE_FIELDS.has(key)) return false;
+        if (key.startsWith('accountantExported') || ARCHIVE_FIELDS.has(key)) return false;
         if (relationPropertyIds.has(key)) return false;
         return JSON.stringify(incomingProperties[key]) !== JSON.stringify(existing[key]);
     });

@@ -108,3 +108,34 @@ export const PLAN_USER_LIMITS: Record<string, number> = {
     FOUNDER:    Infinity,
     CUSTOM:     Infinity,
 };
+
+// ── Financial export authorization (LOCK-6) ─────────────────────────
+
+export function isAccountantRole(role?: string | null): boolean {
+    return role === ROLES.ACCOUNTANT || role === ROLES.BOOKKEEPING;
+}
+
+export function isOwnerOrAdminRole(role?: string | null): boolean {
+    if (!role) return false;
+    return (
+        role === ROLES.SUPERADMIN ||
+        role === ROLES.TENANT_MANAGER ||
+        role === ROLES.APP_MANAGER ||
+        role === 'TENANT_ADMIN' ||
+        role === ROLES.TENANT_FREE ||
+        role === ROLES.TENANT_PRO_OWNER ||
+        role === ROLES.TENANT_ENTERPRISE_OWNER ||
+        role === ROLES.TENANT_ENTERPRISE_MANAGER ||
+        role.includes('OWNER') ||
+        role.includes('ADMIN')
+    );
+}
+
+/**
+ * Determines whether a user role is permitted to perform the official accountant export.
+ * Authorized roles: ACCOUNTANT / BOOKKEEPING, workspace owners/admins, and superadmin impersonations.
+ */
+export function canRunAccountantExport(role?: string | null, isImpersonating?: boolean): boolean {
+    if (isImpersonating) return true;
+    return isAccountantRole(role) || isOwnerOrAdminRole(role);
+}

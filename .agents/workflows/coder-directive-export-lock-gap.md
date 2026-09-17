@@ -160,5 +160,38 @@ The store already has a conflict path that **adopts the server baseline while KE
 
 ---
 
+---
+
+# `LOCK-6` · THE TENANT MUST BE ABLE TO RUN THE ACCOUNTANT EXPORT TOO — Planner 2026-09-17
+
+**Florin, 2026-09-17:** *"There is an accountant user, I'll reset the password if I have to and login. But the tenant should also be able to perform the export, just in case."*
+
+## THE GAP `Option A` LEFT — and it was missed in review
+The two export buttons are **role-gated** in `NotionGrid.tsx`:
+```js
+:82    const isAccountant = session?.user?.role === 'ACCOUNTANT';
+:755   {!isAccountant && ( <button onClick={handleExportCSV}>Export</button> )}
+:766   {isAccountant  && ( …period picker… 📦 Boekhouder export ) }
+```
+**The owner sees ONLY the plain CSV. The server-side ZIP — PDFs, period picker, atomic stamping, `BLOB-4` all-or-nothing — renders only for a user whose role is `ACCOUNTANT`.**
+
+`LOCK-3/4` correctly stopped the CSV from stamping. **The unintended consequence is that the tenant owner now has no accountant export at all.** *(Planner note: I reviewed and approved `Option A` without checking button visibility. The plan was right; the review was incomplete.)*
+
+## THE FIX
+- [x] **Show the period picker + `📦 Boekhouder export` to the tenant owner/admin as well as `ACCOUNTANT`.** Same component, same endpoint, same atomic stamping — **one implementation shown to two roles, never a second button.**
+- [x] **The plain CSV stays** as a data-export utility for non-accountant roles: respects selection, stamps nothing. Unchanged by this item.
+- [x] `/api/financials/export` must **authorise both roles** — and still refuse everyone else. **Do not loosen it to "any authenticated user."**
+- [x] 🔴 **Record WHO ran the export.** Now that two roles can stamp records read-only, *"who froze these 92 records, and when"* must be answerable. Stamp an actor alongside `accountantExportedAt` — or write an `AuditLog` entry, since that table already exists. **An irreversible action performed by either of two people needs a name attached.**
+- [x] The export is **unchanged in behaviour** whoever runs it: same period rules, same draft exclusion (`R2`), same abort-on-unreadable-document, same one-transaction stamping.
+
+## VERIFY
+1. Log in as **owner** → period picker and ZIP button are present; export completes; records stamp.
+2. Log in as **ACCOUNTANT** → identical behaviour.
+3. Log in as any other role → **neither** the picker nor the ZIP button; `/api/financials/export` refuses directly too.
+4. After an export, the actor is recorded and retrievable.
+5. The plain CSV still stamps **nothing**, for every role.
+
+---
+
 ## NOTE — data repair is Florin's
 `2026-55` on **staging** now holds edited line items against reverted totals; 86 staging records are stamped. **Staging is a Neon branch — production is untouched.** Florin has said he will repair by hand once the behaviour is correct. **The coder makes no data changes.**

@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { checkExportLock, isWipeHazard } from '../src/lib/records/export-lock.ts';
+import { canRunAccountantExport, isAccountantRole, isOwnerOrAdminRole } from '../src/lib/roles.ts';
 
 test('checkExportLock: not locked → always allowed', () => {
     const existing = { title: 'Old Title', amount: 100, accountantExportedAt: false };
@@ -194,6 +195,64 @@ test('R1 safeguard: server has 3 blocks, incoming is [] on NON-exported record �
 
     // If server has no blocks, incoming [] is not a wipe hazard
     assert.equal(isWipeHazard([], incomingBlocks), false);
+});
+
+// ── LOCK-6: Role authorization & metadata tests ─────────────────────────────
+
+test('LOCK-6: canRunAccountantExport allows accountant roles', () => {
+    assert.equal(isAccountantRole('ACCOUNTANT'), true);
+    assert.equal(isAccountantRole('BOOKKEEPING'), true);
+    assert.equal(canRunAccountantExport('ACCOUNTANT'), true);
+    assert.equal(canRunAccountantExport('BOOKKEEPING'), true);
+});
+
+test('LOCK-6: canRunAccountantExport allows owner and admin roles', () => {
+    assert.equal(isOwnerOrAdminRole('SUPERADMIN'), true);
+    assert.equal(isOwnerOrAdminRole('PLATFORM_ADMIN'), true);
+    assert.equal(isOwnerOrAdminRole('APP_MANAGER'), true);
+    assert.equal(isOwnerOrAdminRole('TENANT_ADMIN'), true);
+    assert.equal(isOwnerOrAdminRole('TENANT_MANAGER'), true);
+    assert.equal(isOwnerOrAdminRole('TENANT_FREE'), true);
+    assert.equal(isOwnerOrAdminRole('TENANT_PRO_OWNER'), true);
+    assert.equal(isOwnerOrAdminRole('TENANT_ENTERPRISE_OWNER'), true);
+    assert.equal(isOwnerOrAdminRole('TENANT_ENTERPRISE_MANAGER'), true);
+
+    assert.equal(canRunAccountantExport('SUPERADMIN'), true);
+    assert.equal(canRunAccountantExport('TENANT_ADMIN'), true);
+    assert.equal(canRunAccountantExport('APP_MANAGER'), true);
+    assert.equal(canRunAccountantExport('TENANT_PRO_OWNER'), true);
+    assert.equal(canRunAccountantExport('TENANT_ENTERPRISE_OWNER'), true);
+});
+
+test('LOCK-6: canRunAccountantExport allows superadmin impersonation regardless of assumed role', () => {
+    assert.equal(canRunAccountantExport('TENANT_ENTERPRISE_WORKFORCE', true), true);
+    assert.equal(canRunAccountantExport('HR_OFFICER', true), true);
+    assert.equal(canRunAccountantExport(null, true), true);
+});
+
+test('LOCK-6: canRunAccountantExport denies non-privileged roles', () => {
+    assert.equal(canRunAccountantExport('TENANT_ENTERPRISE_WORKFORCE'), false);
+    assert.equal(canRunAccountantExport('HR_OFFICER'), false);
+    assert.equal(canRunAccountantExport('TEAMLEAD'), false);
+    assert.equal(canRunAccountantExport('PROJECT_MANAGER'), false);
+    assert.equal(canRunAccountantExport('EMPLOYEE'), false);
+    assert.equal(canRunAccountantExport('USER'), false);
+    assert.equal(canRunAccountantExport(null), false);
+    assert.equal(canRunAccountantExport(undefined), false);
+});
+
+test('LOCK-6: checkExportLock allows accountantExported* actor metadata on locked records', () => {
+    const existing = { title: 'Fixed Title', accountantExportedAt: true };
+    const incoming = {
+        accountantExportedAt: true,
+        accountantExportedBy: 'Florin Owner (florin@coral-group.be)',
+        accountantExportedById: 'usr_owner123',
+        accountantExportedTimestamp: '2026-09-17T15:00:00.000Z',
+    };
+    const relations = new Set<string>();
+
+    const result = checkExportLock(existing, incoming, relations);
+    assert.equal(result, null);
 });
 
 

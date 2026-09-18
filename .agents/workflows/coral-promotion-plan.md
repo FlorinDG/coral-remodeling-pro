@@ -124,7 +124,21 @@ The code is correct, the tests pass, and the feature does nothing. This is the e
 | **4 · accountant export** | 🛑 **Two doors.** `/api/financials/export` (server-side, period required, PDFs, `BLOB-4` all-or-nothing) vs the CSV button (client-side, ignores selection, stamps after `link.click()`). Florin selected 10 rows → **86 exported and frozen**, including an `opt-draft`. Folded into `LOCK-3/4`. **Which door survives is Florin's decision.** |
 | **5–9** | ⏸ **Unaffected by `SEND-1` or `LOCK-*` — still worth running on the frozen branch before returning to `develop`.** |
 
-**🛑 The pass is paused at `SEND-1`.** Fix on `develop`, cherry-pick onto `release/2026-09-13`, **restart at item 1.**
+### 🔄 REVISED APPROACH — Florin, 2026-09-16: *"We created the new branch for a reason. Let's not modify the app any further before the purpose is realized."*
+**Correct, and it overrides my "cherry-pick and restart" instinct.** The release branch is an **observation platform**; its value is that it does not move. Cherry-picking invalidates everything already tested on it, and doing that once per defect is the worst possible loop. **The pass produces a defect LIST, not a green tick.**
+
+So: **collect everything on the frozen branch → fix the batch on `develop` → re-cut → re-run §5 clean.**
+
+### ▶️ ROUTE TO THE MERGE — as of 2026-09-18
+| | |
+|---|---|
+| **1. Close `develop`** | `SEND-1` ✅ (`1bad49b`) · `LOCK-1…5` ✅ (`d07f98b`) · **`LOCK-6`** with the coder · **the selection bug** — still unexplained after full source tracing. **Needs instrumentation, not more reading:** log `selectedRowIds.size` and `pagesToExport.length` at export time. |
+| **2. Re-cut** | Fresh `release/2026-09-XX` from `develop`. **New shareable link after the re-cut** — the bypass is per-deployment. |
+| **3. Re-run §5 from the top** | Items **1 · 2 · 3 · 4** all failed or were blocked and must be re-tested. **5 · 6** unblock via the share link. **8** likely waits for production — an installed PWA will not carry the bypass cookie into its isolated storage container. **7 · 9** passed; cheap to repeat. |
+| **4. Merge** | `main`, then the 48h watch in §6. |
+| **5. Then** | `R1` unblocks. `coral-execution-order.md` Phase 3. |
+
+**Judgement call, recorded:** do not test item 4 before `LOCK-6` lands — it changes which button runs the accountant export, so testing it first means testing it twice.
 
 1. **Send an invoice by email** with two annexes → three attachments arrive → **the PDF is archived** and `receiptUrl` survives a reload *after the sync queue drains* (the `D1` clobber case).
 2. **Send via Peppol** → same archive, document accepted.

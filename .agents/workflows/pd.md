@@ -162,6 +162,59 @@ The shield stops bubble-phase propagation at the overlay root to protect against
 
 ---
 
+## 📖 IDENTITY DIRECTIVE — THE SERAPH'S BOOK (binding — Florin 2026-09-18)
+
+> **Florin:** *"Creation of the id is a kernel function. Nothing can disagree or overwrite the assigned id. Then it can just go in the return of a function, sort of public var, read FROM THE SERAPH'S BOOK. And it can normally be called ONLY through module gate downwards to the seraph gate, for stability and security. Upwards written, downwards read-only."*
+
+**The rule, in one line: identity is minted at the lowest layer that owns it, recorded in the seraph's book, and is immutable to everything above.**
+
+- **Minting is a KERNEL function.** Nothing above the kernel may generate an identifier. Not a module, not a leaf, and **never a browser**.
+- **The book is the register.** `Tenant.lockedDbIds` already is it — it just is not authoritative yet. **The seraph reads the book; it does not guess, derive, or repair it.**
+- **Direction of flow:**
+  - **Upwards — WRITE.** A value originates at the layer that owns it and surfaces upward as a fact.
+  - **Downwards — READ ONLY.** A layer above asks the gate for an identity. **It never asserts one, never proposes one, and never supplies one as a parameter.**
+- **A caller reaches identity only through the module gate, downward to the seraph.** No shortcut, no direct read of the underlying store.
+
+### The call, stated the way Florin states it
+> *"Hey server, make me an ID for this new database that I will call 'MyDB'."*
+> **The name is just the leaf's label. The id is immutable.**
+
+```ts
+const { id } = await createDatabase({ name: 'MyDB' });   // the server answers
+```
+The caller offers a **label** and receives an **identity**. Those are two different facts and they travel in opposite directions.
+
+**And the freedom is the point, not the restriction.** Because the id is immutable, **the name costs nothing** — rename it, translate it, let a tenant call it whatever they like, in any language. Nothing breaks, because nothing was ever keyed on it.
+
+**Today the opposite is true, and it is why renaming is quietly dangerous:**
+- `schema-cleanup:129` deletes databases **by display name** (`GARBAGE_NAMES`)
+- `DatabaseClone:961-977` creates databases **from a hardcoded name map**
+- a census `GROUP BY d.name` silently merged **three different databases** into one row of 133
+
+**Every one of those is a label doing an identity's job.** Separate them and the label becomes what a label should be: something a human changes on a whim, with no consequence.
+
+### What this makes illegal, today
+```ts
+store.ts:175/859/865   createDatabase(name, description, specificId?, …)   // caller SUPPLIES the id
+store.ts:865           id: specificId || uuidv4()                          // minted IN THE BROWSER
+global-databases:356   upsert({ where: { id: safeId(db.id) } })            // server ACCEPTS the client's id
+lockedDbUtils.ts:52-60 return `${base}-${suffix}`                          // the gate INVENTS a book entry
+```
+**All four are the same violation from different directions:** something other than the kernel decides what an identity is, and the book is written from above.
+
+`getLockedDbId`'s "self-healing fallback" is the clearest case — **a layer above the book writing into it**, and calling the write a repair. That is why it reads as helpful and behaves as a leak.
+
+### The shape it must take
+- [ ] `mintDatabaseId()` — kernel, server-side, the only source of a new identifier.
+- [ ] Creation returns the identity. **The caller learns it; the caller never chooses it.**
+- [ ] The server **rejects** a client-supplied id rather than honouring it. *(This is `R1-3` — "never trust a supplied id" — stated as a property of the system rather than a check to remember.)*
+- [ ] The book has **exactly one writer**: provisioning. Every other path reads.
+- [ ] 🛑 **An identity that cannot be found is an error, never a value.** No fallback, no derivation, no invention. `R1-2`.
+
+**Why this is worth a directive rather than a task:** every identity defect found so far — bare `db-*` ids, four "New Workspace" databases, the founder fallback resolving to Florin's data, `db-projects-hr` registered nowhere — is the same rule being absent. **Written down, it is one rule. Absent, it is a new bug per surface.**
+
+---
+
 ## The Three Domains Are the Same Problem
 
 | Domain | Deduction | Inference | Failure |

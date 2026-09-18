@@ -63,5 +63,17 @@ const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.coral-group.be';
 
 ---
 
+## 🔔 `CLEAN-7` · REMINDER — next time anyone opens `ClientInvoiceEngine.tsx`
+**Planner-flagged 2026-09-17, deliberately not fixed alone.** In the `SEND-1` refresh (`:868` email path, `:1140` Peppol path):
+```js
+...(serverPage?.properties || {}),
+status: 'opt-sent',          // ← asserted AFTER the server spread
+```
+If `serverPage` is ever null, **the client asserts "sent" without server confirmation** — the optimistic override we spent two days removing, in miniature. Harmless today because the server always sets `status` on success (`send-invoice.ts:124`, `peppol/send:241,484`), so it is redundant rather than wrong.
+- [ ] **Trust `serverPage` entirely**; if it is null, surface that instead of assuming success.
+- [ ] Also check: **test count moved 125 → 124** at `d07f98b`. Confirm a test was *superseded*, not dropped.
+
+---
+
 ## ORDER
 `CLEAN-4` verification is **part of the staging pass**, not cleanup. `CLEAN-1` and `CLEAN-3` are free-standing and can go on `develop` any time after the merge. `CLEAN-2` and `CLEAN-5` belong to `R1` and `R5` respectively and **must not be done alone.**

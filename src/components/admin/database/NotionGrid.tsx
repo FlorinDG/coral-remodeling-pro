@@ -21,6 +21,7 @@ import { Checkbox } from '@/components/common/Checkbox';
 import PageModal from './components/PageModal';
 import PropertiesDropdown from './components/PropertiesDropdown';
 import { SpreadsheetImportModal } from './components/SpreadsheetImportModal';
+import { AccountantExportDialog } from './components/AccountantExportDialog';
 import DatabaseFooter from './components/DatabaseFooter';
 import AddColumnFlyout from './components/AddColumnFlyout';
 import { Property, Page } from './types';
@@ -97,6 +98,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
     const [externalModal, setExternalModal] = useState<{ databaseId: string, pageId: string } | null>(null);
     const [selectedRowIds, setSelectedRowIds] = useState<Set<string>>(new Set());
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+    const [isAccountantExportDialogOpen, setIsAccountantExportDialogOpen] = useState(false);
     const [resizingProperty, setResizingProperty] = useState<string | null>(null);
     const [resizeOffset, setResizeOffset] = useState<number>(0);
     // Track last-committed resize widths per property so the columns memo can
@@ -643,56 +645,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
     });
 
 
-    const handleAccountantExport = async () => {
-        const from = acctFrom;
-        const to = acctTo;
 
-        if (!from && !to) {
-            toast.error('Selecteer een periode');
-            return;
-        }
-
-        const url = new URL('/api/financials/export', window.location.origin);
-        if (from) url.searchParams.set('startDate', from);
-        if (to) url.searchParams.set('endDate', to);
-        
-        const toastId = toast.loading('Boekhouder export voorbereiden...');
-        try {
-            const res = await fetch(url.toString());
-            if (!res.ok) {
-                const data = await res.json().catch(() => null);
-                if (data?.failedDocuments && data.failedDocuments.length > 0) {
-                    const sample = data.failedDocuments.map((d: any) => `${d.title || d.id} (${d.type})`).slice(0, 5).join(', ');
-                    const overflow = data.failedDocuments.length > 5 ? ` (+${data.failedDocuments.length - 5} meer)` : '';
-                    toast.error(`Export mislukt: documenten ontbreken of onleesbaar: ${sample}${overflow}`, { id: toastId, duration: 8000 });
-                } else {
-                    toast.error(`Export mislukt: ${data?.error || res.statusText}`, { id: toastId });
-                }
-                return;
-            }
-
-            const blob = await res.blob();
-            const blobUrl = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = blobUrl;
-            a.download = `boekhouding_export_${from}_tot_${to}.zip`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
-            toast.success('Boekhouder export succesvol gedownload!', { id: toastId });
-
-            // R2: Transparently report excluded drafts in requested period
-            const excludedDraftsHeader = res.headers.get('X-Excluded-Drafts-Count');
-            const excludedDrafts = excludedDraftsHeader ? parseInt(excludedDraftsHeader, 10) : 0;
-            if (excludedDrafts > 0) {
-                toast.info(`${excludedDrafts} conceptdocument${excludedDrafts > 1 ? 'en' : ''} in deze periode ${excludedDrafts > 1 ? 'zijn' : 'is'} niet opgenomen in de export.`, { duration: 7000 });
-            }
-        } catch (err: any) {
-            console.error('Accountant export download failed:', err);
-            toast.error('Boekhouder export mislukt: netwerk- of serverfout.', { id: toastId });
-        }
-    };
 
     // processImportedData and handleImportFile stripped in favor of the unified <SpreadsheetImportModal>
 
@@ -782,7 +735,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
 
                         {/* Export button */}
                         <button
-                            onClick={handleAccountantExport}
+                            onClick={() => setIsAccountantExportDialogOpen(true)}
                             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition"
                         >
                             📦 Boekhouder export
@@ -1185,6 +1138,15 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                     isOpen={isImportModalOpen}
                     onClose={() => setIsImportModalOpen(false)}
                     databaseId={database.id}
+                />
+
+                {/* Accountant Export Settings Dialog (EXPDLG-1) */}
+                <AccountantExportDialog
+                    isOpen={isAccountantExportDialogOpen}
+                    onClose={() => setIsAccountantExportDialogOpen(false)}
+                    initialPreset={acctDatePreset}
+                    initialFrom={acctDateFrom}
+                    initialTo={acctDateTo}
                 />
 
                 {/* ── VAT Lookup Flyout ──────────────────────────────── */}

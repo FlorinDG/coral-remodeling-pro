@@ -102,6 +102,8 @@ export async function GET(req: Request) {
         const url = new URL(req.url);
         const startDate = url.searchParams.get('startDate');
         const endDate = url.searchParams.get('endDate');
+        const isPreview = url.searchParams.get('preview') === 'true';
+        const includeAlreadyExported = url.searchParams.get('includeAlreadyExported') === 'true';
 
         if (!startDate || !endDate) {
             return NextResponse.json({ error: 'startDate and endDate are required' }, { status: 400 });
@@ -139,8 +141,19 @@ export async function GET(req: Request) {
             return s === 'opt-draft' || s === 'draft';
         };
 
+        const getDocDate = (p: any) => {
+            const d = (p.properties as any)?.invoiceDate || (p.properties as any)?.date;
+            return typeof d === 'string' ? d.split('T')[0] : '';
+        };
+
+        const isUndated = (p: any) => !getDocDate(p);
+
+        const undatedInvoices = invoices.filter(isUndated);
+        const undatedExpenses = expenses.filter(isUndated);
+        const undatedCount = undatedInvoices.length + undatedExpenses.length;
+
         const dateInRange = (p: any) => {
-            const dateStr = (p.properties as any)?.invoiceDate;
+            const dateStr = getDocDate(p);
             return Boolean(dateStr && dateStr >= startDate && dateStr <= endDate);
         };
 
@@ -151,9 +164,36 @@ export async function GET(req: Request) {
         const excludedDraftExpenses = expensesInRange.filter(isDraft);
         const totalExcludedDrafts = excludedDraftInvoices.length + excludedDraftExpenses.length;
 
-        // Drafts are strictly excluded from accountant export (LOCK-4 / R2)
-        const filteredInvoices = invoicesInRange.filter(p => !isDraft(p));
-        const filteredExpenses = expensesInRange.filter(p => !isDraft(p));
+        const nonDraftInvoices = invoicesInRange.filter(p => !isDraft(p));
+        const nonDraftExpenses = expensesInRange.filter(p => !isDraft(p));
+
+        const alreadyExportedInvoices = nonDraftInvoices.filter(p => (p.properties as any)?.accountantExportedAt === true);
+        const alreadyExportedExpenses = nonDraftExpenses.filter(p => (p.properties as any)?.accountantExportedAt === true);
+        const alreadyExportedCount = alreadyExportedInvoices.length + alreadyExportedExpenses.length;
+
+        // When includeAlreadyExported is false (default), documents with accountantExportedAt === true are excluded from the ZIP content
+        const filteredInvoices = includeAlreadyExported
+            ? nonDraftInvoices
+            : nonDraftInvoices.filter(p => (p.properties as any)?.accountantExportedAt !== true);
+
+        const filteredExpenses = includeAlreadyExported
+            ? nonDraftExpenses
+            : nonDraftExpenses.filter(p => (p.properties as any)?.accountantExportedAt !== true);
+
+        const toExportCount = filteredInvoices.length + filteredExpenses.length;
+
+        // EXPDLG-1: Server-side preview of counts prior to running the export
+        if (isPreview) {
+            return NextResponse.json({
+                success: true,
+                period: { startDate, endDate },
+                includeAlreadyExported,
+                toExportCount,
+                alreadyExportedCount,
+                draftCount: totalExcludedDrafts,
+                undatedCount,
+            });
+        }
 
 
         // Resolve helpers

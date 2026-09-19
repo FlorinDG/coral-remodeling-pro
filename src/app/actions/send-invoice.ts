@@ -116,15 +116,24 @@ export async function sendInvoiceToClient(
             throw new Error(error.message);
         }
 
-        // ── SEND-1: Persist status & receiptUrl in one server write AFTER successful transmission ──
+        // ── SP-2: Resolve invoiceDate and dueDate on send (never overwriting user-chosen dates) ──
+        const { resolveInvoiceDatesOnSend } = await import('@/lib/invoices/due-date');
+        const tenantRecord = await prisma.tenant.findUnique({
+            where: { id: page.database.tenantId },
+            select: { defaultPaymentTermDays: true }
+        });
         const currentProps = (page.properties ?? {}) as Record<string, any>;
+        const dateResolution = resolveInvoiceDatesOnSend(currentProps, tenantRecord?.defaultPaymentTermDays);
+
+        // ── SEND-1: Persist status, receiptUrl & dates in one server write AFTER successful transmission ──
         const updateRes = await updatePageServerFirst(invoiceId, {
             ...currentProps,
+            ...dateResolution.updates,
             receiptUrl: archiveResult.key,
             status: 'opt-sent',
         });
         if (!updateRes.success) {
-            throw new Error(`[sendInvoiceToClient] Opslaan van status en receiptUrl mislukt: ${updateRes.error}`);
+            throw new Error(`[sendInvoiceToClient] Opslaan van status, datums en receiptUrl mislukt: ${updateRes.error}`);
         }
 
         return { 

@@ -614,8 +614,8 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
         });
     }, [sortedPages, showAccountantExport, acctFrom, acctTo, database?.properties]);
 
-    // For ACCOUNTANT and workspace owners/admins, grid rows are filtered to the selected period.
-    const acctDateFilteredPages = showAccountantExport ? acctExportPeriodPages : sortedPages;
+    // For ACCOUNTANT role, grid rows are filtered to the selected period. For owners/admins, the grid remains unfiltered.
+    const acctDateFilteredPages = isAccountant ? acctExportPeriodPages : sortedPages;
 
     // Convert sorted filtered pages to row data by flattening properties to the top level for data-sheet-grid access
     // Memoizing this to prevent infinite re-renders or synchronous onChange triggers from DataSheetGrid

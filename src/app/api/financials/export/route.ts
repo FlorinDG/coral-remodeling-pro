@@ -182,8 +182,15 @@ export async function GET(req: Request) {
 
         const toExportCount = filteredInvoices.length + filteredExpenses.length;
 
-        // EXPDLG-1: Server-side preview of counts prior to running the export
+        // EXPDLG-1 & SP-3: Server-side preview of counts prior to running the export
         if (isPreview) {
+            const mapDocSample = (p: any) => ({
+                id: p.id,
+                title: String((p.properties as any)?.title || 'Zonder nummer / titel'),
+                type: p.databaseId?.includes('ticket') ? 'Ticket' : ((p.properties as any)?.docType === 'opt-credit-note' ? 'Creditnota' : 'Factuur'),
+            });
+            const undatedSamples = [...undatedInvoices, ...undatedExpenses].map(mapDocSample);
+
             return NextResponse.json({
                 success: true,
                 period: { startDate, endDate },
@@ -192,6 +199,7 @@ export async function GET(req: Request) {
                 alreadyExportedCount,
                 draftCount: totalExcludedDrafts,
                 undatedCount,
+                undatedDocuments: undatedSamples,
             });
         }
 

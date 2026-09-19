@@ -25,6 +25,7 @@ import { InvoicePDFTemplate } from './InvoicePDFTemplate';
 import PDFImportModal from './PDFImportModal';
 import { QuoteSendModal } from '../quotations/QuoteSendModal';
 import { calculateInvoiceTotals } from '@/lib/invoice-totals';
+import { calculateDueDate } from '@/lib/invoices/due-date';
 import InlineDialog from '@/components/admin/shared/InlineDialog';
 import DbPropertiesPanel from '@/components/admin/database/components/DbPropertiesPanel';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
@@ -605,17 +606,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
         updatePageBlocks(invoicesDbId, id, [...blocks, ...newBlocks]);
     };
 
-    const calculateDueDate = (invDate: string, method: string): string => {
-        if (!invDate) return '';
-        const base = new Date(invDate);
-        let days = 30; // default
-        if (method && method.startsWith('pay-')) {
-            const parsed = parseInt(method.split('-')[1], 10);
-            if (!isNaN(parsed)) days = parsed;
-        }
-        base.setDate(base.getDate() + days);
-        return base.toISOString().split('T')[0];
-    };
+
 
     const handleUpdateProperty = (key: string, value: any) => {
         if (!invoice) return;

@@ -26,6 +26,7 @@ export async function POST(req: Request) {
                 street: true, postalCode: true, city: true,
                 email: true, iban: true, bic: true,
                 eInvoiceApiKey: true,
+                defaultPaymentTermDays: true,
             },
         });
 
@@ -230,20 +231,23 @@ export async function POST(req: Request) {
             let serverPage: any = undefined;
             if (archiveKey) {
                 const { updatePageServerFirst } = await import('@/app/actions/pages');
+                const { resolveInvoiceDatesOnSend } = await import('@/lib/invoices/due-date');
                 const page = await prisma.globalPage.findUnique({
                     where: { id: invoiceId },
                 });
                 if (page) {
                     const currentProps = (page.properties ?? {}) as Record<string, any>;
+                    const dateResolution = resolveInvoiceDatesOnSend(currentProps, tenant.defaultPaymentTermDays);
                     const updateRes = await updatePageServerFirst(invoiceId, {
                         ...currentProps,
+                        ...dateResolution.updates,
                         receiptUrl: archiveKey,
                         status: 'opt-sent',
                     });
                     if (updateRes.success) {
                         serverPage = updateRes.page;
                     } else {
-                        console.error('[Peppol] Failed to save status and receiptUrl in manual dispatch:', updateRes.error);
+                        console.error('[Peppol] Failed to save status, dates and receiptUrl in manual dispatch:', updateRes.error);
                     }
                 }
             }
@@ -470,23 +474,26 @@ export async function POST(req: Request) {
             incrementPeppolSent(tenantId)
         ]);
 
-        // ── SEND-1: Persist status & receiptUrl in one server write AFTER successful transmission ──
+        // ── SEND-1 & SP-2: Persist status, receiptUrl & dates in one server write AFTER successful transmission ──
         let serverPage: any = undefined;
         const { updatePageServerFirst } = await import('@/app/actions/pages');
+        const { resolveInvoiceDatesOnSend } = await import('@/lib/invoices/due-date');
         const page = await prisma.globalPage.findUnique({
             where: { id: invoiceId },
         });
         if (page) {
             const currentProps = (page.properties ?? {}) as Record<string, any>;
+            const dateResolution = resolveInvoiceDatesOnSend(currentProps, tenant.defaultPaymentTermDays);
             const updateRes = await updatePageServerFirst(invoiceId, {
                 ...currentProps,
+                ...dateResolution.updates,
                 ...(archiveKey ? { receiptUrl: archiveKey } : {}),
                 status: 'opt-sent',
             });
             if (updateRes.success) {
                 serverPage = updateRes.page;
             } else {
-                console.error('[Peppol] Failed to save status and receiptUrl in live mode:', updateRes.error);
+                console.error('[Peppol] Failed to save status, dates and receiptUrl in live mode:', updateRes.error);
             }
         }
 

@@ -21,6 +21,7 @@ interface PreviewCounts {
     alreadyExportedCount: number;
     draftCount: number;
     undatedCount: number;
+    undatedDocuments?: Array<{ id: string; title: string; type: string }>;
 }
 
 export function AccountantExportDialog({
@@ -130,6 +131,7 @@ export function AccountantExportDialog({
                 alreadyExportedCount: data.alreadyExportedCount ?? 0,
                 draftCount: data.draftCount ?? 0,
                 undatedCount: data.undatedCount ?? 0,
+                undatedDocuments: data.undatedDocuments || [],
             });
         } catch (err: any) {
             console.error('Failed to fetch preview counts:', err);
@@ -339,9 +341,17 @@ export function AccountantExportDialog({
                                     </span>
                                 </div>
                                 {counts.undatedCount > 0 && (
-                                    <div className="flex items-center justify-between text-neutral-500 dark:text-neutral-400 text-[11px]">
-                                        <span>{counts.undatedCount} zonder datum</span>
-                                        <span className="font-semibold">niet opgenomen</span>
+                                    <div className="space-y-1 pt-0.5 border-t border-neutral-200/50 dark:border-white/5">
+                                        <div className="flex items-center justify-between text-neutral-500 dark:text-neutral-400 text-[11px]">
+                                            <span>{counts.undatedCount} zonder factuurdatum</span>
+                                            <span className="font-semibold text-amber-600 dark:text-amber-400">niet opgenomen</span>
+                                        </div>
+                                        {counts.undatedDocuments && counts.undatedDocuments.length > 0 && (
+                                            <p className="text-[10px] text-neutral-400 dark:text-neutral-500 truncate" title={counts.undatedDocuments.map(d => `${d.title} (${d.type})`).join(', ')}>
+                                                Ontbreekt datum: {counts.undatedDocuments.slice(0, 3).map(d => `${d.title} (${d.type})`).join(', ')}
+                                                {counts.undatedDocuments.length > 3 && ` (+${counts.undatedDocuments.length - 3} meer)`}
+                                            </p>
+                                        )}
                                     </div>
                                 )}
                                 {counts.draftCount > 0 && (

@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [develop, main]
+  pull_request:
+    branches: [develop, main]
+
+jobs:
+  ci:
+    name: Build, Lint & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Typecheck
+        run: npm run test:compile
+
+      - name: Lint (CLEAN-1)
+        # 🔴 Note for R1: The Seraph import-boundary gate cannot ride on next build;
+        # it runs here as an explicit lint/boundary check in CI.
+        run: npm run test:lint
+
+      - name: Unit Tests
+        run: node --import ./tests/register.mjs --test 'tests/*.test.ts'

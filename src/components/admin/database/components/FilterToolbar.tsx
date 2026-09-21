@@ -86,7 +86,7 @@ export default function FilterToolbar({ databaseId, viewId }: FilterToolbarProps
             const rect = buttonRef.current.getBoundingClientRect();
             setPanelPos({
                 top: rect.bottom + 6,
-                left: Math.max(8, rect.right - 520), // 520 = panel width, keep on screen
+                left: Math.max(8, rect.right - 640), // 640 = panel width, keep on screen
             });
         }
     }, []);
@@ -165,7 +165,7 @@ export default function FilterToolbar({ databaseId, viewId }: FilterToolbarProps
     const panel = isOpen && panelPos && typeof document !== 'undefined' && createPortal(
         <div
             ref={panelRef}
-            className="fixed w-[520px] bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl shadow-2xl overflow-hidden"
+            className="fixed w-[640px] max-w-[calc(100vw-16px)] bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl shadow-2xl overflow-hidden"
             style={{ top: panelPos.top, left: panelPos.left, zIndex: 99999, animation: 'filterFlyoutIn 150ms ease-out' }}
         >
             {/* Header */}
@@ -345,7 +345,7 @@ function FilterValueInput({
         (operator === 'equals' || operator === 'does_not_equal')) {
         const options = prop?.config?.options || [];
         return (
-            <div className="relative flex-1 min-w-0">
+            <div className="relative flex-1 min-w-[180px]">
                 <select
                     className="w-full appearance-none bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-md px-2.5 py-1.5 pr-7 text-xs font-medium text-neutral-700 dark:text-neutral-200 outline-none focus:border-orange-400 dark:focus:border-orange-500 transition-colors cursor-pointer"
                     value={value || ''}
@@ -365,7 +365,7 @@ function FilterValueInput({
     // Checkbox → simple true/false dropdown
     if (type === 'checkbox') {
         return (
-            <div className="relative flex-1 min-w-0">
+            <div className="relative flex-1 min-w-[180px]">
                 <select
                     className="w-full appearance-none bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-md px-2.5 py-1.5 pr-7 text-xs font-medium text-neutral-700 dark:text-neutral-200 outline-none focus:border-orange-400 dark:focus:border-orange-500 transition-colors cursor-pointer"
                     value={String(value ?? '')}
@@ -384,7 +384,7 @@ function FilterValueInput({
     // Default: text input
     return (
         <input
-            className="flex-1 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-md px-2.5 py-1.5 text-xs text-neutral-700 dark:text-neutral-200 outline-none placeholder:text-neutral-400 focus:border-orange-400 dark:focus:border-orange-500 transition-colors min-w-0"
+            className="flex-1 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-md px-2.5 py-1.5 text-xs text-neutral-700 dark:text-neutral-200 outline-none placeholder:text-neutral-400 focus:border-orange-400 dark:focus:border-orange-500 transition-colors min-w-[180px]"
             placeholder="Type a value..."
             value={value as string || ''}
             onChange={e => onChange(e.target.value)}

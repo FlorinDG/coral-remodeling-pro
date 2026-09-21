@@ -15,6 +15,8 @@ import FormulaEditorModal from '@/components/admin/database/components/FormulaEd
 import { isSystemDatabase } from '@/lib/systemDatabases';
 import SearchableSelect from '@/components/ui/SearchableSelect';
 import { useSession } from 'next-auth/react';
+import { useTenant } from '@/context/TenantContext';
+import { resolveRelationTarget } from '@/lib/relations/resolve';
 
 const PROPERTY_TYPES: { id: PropertyType; label: string; icon: any }[] = [
     { id: 'text', label: 'Text', icon: Type },
@@ -108,6 +110,7 @@ export default function DatabaseConfigurator() {
     const addProperty = useDatabaseStore(state => state.addProperty);
     const updatePropertyOrder = useDatabaseStore(state => state.updatePropertyOrder);
     const toggleSchemaUngating = useDatabaseStore(state => state.toggleSchemaUngating);
+    const { resolveDbId } = useTenant();
     const { data: session } = useSession();
     const isSuperadmin = session?.user?.role === 'SUPERADMIN' || session?.user?.role === 'TENANT_MANAGER' || (session?.user as any)?.isImpersonating;
     
@@ -388,7 +391,10 @@ export default function DatabaseConfigurator() {
                                                                                     ...allDatabases.filter(d => d.id !== databaseId).map(d => ({ value: d.id, label: d.name })),
                                                                                 ]}
                                                                                 value={prop.config?.relationDatabaseId || ''}
-                                                                                onChange={(v) => updateProperty(databaseId, prop.id, { config: { ...prop.config, relationDatabaseId: v, relationDisplayPropertyId: '' } })}
+                                                                                onChange={(v) => {
+                                                                                    const resolvedTargetId = v ? resolveRelationTarget(v, { resolveDbId }).databaseId : '';
+                                                                                    updateProperty(databaseId, prop.id, { config: { ...prop.config, relationDatabaseId: resolvedTargetId, relationDisplayPropertyId: '' } });
+                                                                                }}
                                                                                 placeholder="-- Database --"
                                                                                 searchPlaceholder="Search databases..."
                                                                             />
@@ -396,7 +402,7 @@ export default function DatabaseConfigurator() {
                                                                                 <SearchableSelect
                                                                                     options={[
                                                                                         { value: '', label: '-- Default (Title) --' },
-                                                                                        ...(allDatabases.find(d => d.id === prop.config!.relationDatabaseId)?.properties.map(p => ({ value: p.id, label: p.name })) || []),
+                                                                                        ...(allDatabases.find(d => d.id === resolveRelationTarget(prop.config!.relationDatabaseId, { resolveDbId }).databaseId)?.properties.map(p => ({ value: p.id, label: p.name })) || []),
                                                                                     ]}
                                                                                     value={prop.config.relationDisplayPropertyId || ''}
                                                                                     onChange={(v) => updateProperty(databaseId, prop.id, { config: { ...prop.config, relationDisplayPropertyId: v } })}
@@ -441,7 +447,7 @@ export default function DatabaseConfigurator() {
                                                                                         { value: '', label: '-- Property --' },
                                                                                         ...(() => {
                                                                                             const relationProp = database.properties.find(p => p.id === prop.config!.rollupPropertyId);
-                                                                                            const targetDbId = relationProp?.config?.relationDatabaseId;
+                                                                                            const targetDbId = relationProp?.config?.relationDatabaseId ? resolveRelationTarget(relationProp.config.relationDatabaseId, { resolveDbId }).databaseId : '';
                                                                                             const targetDb = allDatabases.find(d => d.id === targetDbId);
                                                                                             return targetDb?.properties.map(p => ({ value: p.id, label: p.name })) || [];
                                                                                         })(),

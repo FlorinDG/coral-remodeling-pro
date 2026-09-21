@@ -40,6 +40,7 @@ import { Bot, Mail, CloudUpload, Send, AlertTriangle, ChevronDown, Search, Type,
 import { Link } from '@/i18n/routing';
 import SelectDropdown from '@/components/admin/database/components/SelectDropdown';
 import { useTranslations } from 'next-intl';
+import { useUserPreferences } from '@/hooks/useUserPreferences';
 
 const FALLBACK_PAGES: Page[] = [];
 
@@ -76,6 +77,30 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
     const [isReconstructing, setIsReconstructing] = useState(false);
     const [isPreviewing, setIsPreviewing] = useState(false);
     const [showProperties, setShowProperties] = useState(false);
+    const [panelWidth, setPanelWidth] = useUserPreferences<number>('client_invoice_panel_width', 420);
+    const [isResizing, setIsResizing] = useState(false);
+
+    const handleResizeMouseDown = useCallback((e: React.MouseEvent) => {
+        e.preventDefault();
+        setIsResizing(true);
+        const startX = e.clientX;
+        const startWidth = panelWidth;
+
+        const onMouseMove = (moveEvent: MouseEvent) => {
+            const delta = startX - moveEvent.clientX;
+            const newWidth = Math.max(320, Math.min(800, startWidth + delta));
+            setPanelWidth(newWidth);
+        };
+
+        const onMouseUp = () => {
+            setIsResizing(false);
+            window.removeEventListener('mousemove', onMouseMove);
+            window.removeEventListener('mouseup', onMouseUp);
+        };
+
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onMouseUp);
+    }, [panelWidth, setPanelWidth]);
     const [offerteImportDialog, setOfferteImportDialog] = useState<{ open: boolean; quotationId: string; quotationTitle: string; lineCount: number }>({ open: false, quotationId: '', quotationTitle: '', lineCount: 0 });
     const [peppolLimitDialog, setPeppolLimitDialog] = useState(false);
     const [showNewClientModal, setShowNewClientModal] = useState(false);
@@ -1820,7 +1845,16 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
 
                 {/* DB Properties Panel — shows all record fields including Excel-imported ones */}
                 {showProperties && (
-                    <aside className="w-80 lg:w-96 flex-shrink-0 border-l border-neutral-200 dark:border-white/10 overflow-hidden">
+                    <aside
+                        style={{ width: `${panelWidth}px` }}
+                        className="flex-shrink-0 border-l border-neutral-200 dark:border-white/10 overflow-hidden relative"
+                    >
+                        {/* Drag handle on left edge */}
+                        <div
+                            onMouseDown={handleResizeMouseDown}
+                            className={`absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-orange-500/60 active:bg-orange-500 transition-colors z-20 ${isResizing ? 'bg-orange-500' : ''}`}
+                            title="Drag to resize panel"
+                        />
                         <ErrorBoundary componentName="DbPropertiesPanel">
                             <DbPropertiesPanel
                                 databaseId={invoicesDbId}

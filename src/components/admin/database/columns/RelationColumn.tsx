@@ -2,9 +2,10 @@ import React, { useMemo, useRef, useState, useLayoutEffect, useEffect } from 're
 import { createPortal } from 'react-dom';
 import { CellProps, Column } from 'react-datasheet-grid';
 import { useDatabaseStore } from '../store';
-import { Link, Search, ExternalLink, Plus } from 'lucide-react';
+import { Link, Search, ExternalLink, Plus, Loader2, AlertCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useLocale } from 'next-intl';
+import { useRelationTarget, resolveRelationTitle } from '@/lib/relations/resolve';
 
 interface RelationComponentProps extends CellProps<any, any> {
     relationDatabaseId: string;
@@ -34,29 +35,35 @@ const RelationComponent = ({ rowData, setRowData, focus, active, stopEditing, re
             stopEditing({ nextRow: false });
         };
 
-        document.addEventListener('mousedown', handleClickOutside);
-        document.addEventListener('touchstart', handleClickOutside);
+        const handleWheelOutside = (e: WheelEvent) => {
+            if (popoverRef.current?.contains(e.target as Node)) {
+                return;
+            }
+            stopEditing({ nextRow: false });
+        };
+
+        document.addEventListener('mousedown', handleClickOutside, true);
+        document.addEventListener('touchstart', handleClickOutside, true);
+        window.addEventListener('wheel', handleWheelOutside, true);
+
         return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-            document.removeEventListener('touchstart', handleClickOutside);
+            document.removeEventListener('mousedown', handleClickOutside, true);
+            document.removeEventListener('touchstart', handleClickOutside, true);
+            window.removeEventListener('wheel', handleWheelOutside, true);
         };
     }, [focus, active, stopEditing]);
 
-    // Manage portal position
+    // Position detection for portal
     useLayoutEffect(() => {
-        if ((focus || active) && cellRef.current) {
-            setRect(cellRef.current.getBoundingClientRect());
-        }
-    }, [focus, active]);
-
-    // Keep position updated on scroll/resize
-    useEffect(() => {
-        if (!focus && !active) return;
+        if (!cellRef.current || (!focus && !active)) return;
 
         const updateRect = () => {
-            if (cellRef.current) setRect(cellRef.current.getBoundingClientRect());
+            if (cellRef.current) {
+                setRect(cellRef.current.getBoundingClientRect());
+            }
         };
 
+        updateRect();
         window.addEventListener('scroll', updateRect, true);
         window.addEventListener('resize', updateRect);
 
@@ -70,65 +77,38 @@ const RelationComponent = ({ rowData, setRowData, focus, active, stopEditing, re
     const rawValue = rowData?.properties?.[propId];
     const value = useMemo(() => Array.isArray(rawValue) ? rawValue : (typeof rawValue === 'string' && rawValue ? [rawValue] : []), [rawValue]);
 
-    // Subscribe to the target database to fetch titles
-    const targetDatabase = useDatabaseStore(state => state.getDatabase(relationDatabaseId));
+    // Subscribe to unified relation resolver
+    const { status: relationStatus, databaseId: resolvedDbId, options: relationOptions, targetDatabase } = useRelationTarget(relationDatabaseId, { displayPropertyId });
     const pageIndex = useDatabaseStore(state => state.pageIndex);
 
     const selectedItems = useMemo(() => {
         if (value.length === 0) return [];
         return value.map(id => {
-            // Priority 1: pageIndex (O(1) lookup, works even if target database pages are not loaded!)
-            const indexEntry = pageIndex[id];
-            if (indexEntry?.title) {
-                return { id, title: indexEntry.title };
-            }
-            // Priority 2: fallback to targetDatabase in-memory pages
-            const page = targetDatabase?.pages.find(p => p.id === id);
-            const pageTitle = page?.properties?.[displayPropertyId] || page?.properties?.title || page?.properties?.name || page?.properties?.['prop-title'];
-            return {
-                id,
-                title: (pageTitle as string) || 'Untitled'
-            };
+            const title = resolveRelationTitle(id, { pageIndex, targetDatabase, displayPropertyId }) || 'Untitled';
+            return { id, title };
         });
     }, [pageIndex, targetDatabase, value, displayPropertyId]);
 
     const selectedTitles = useMemo(() => selectedItems.map(item => item.title), [selectedItems]);
 
     const filteredTargetPages = useMemo(() => {
-        // If targetDatabase has loaded pages, use them
-        if (targetDatabase?.pages && targetDatabase.pages.length > 0) {
-            if (!searchQuery.trim()) return targetDatabase.pages;
-            return targetDatabase.pages.filter(page => {
-                const title = String(page.properties[displayPropertyId] || page.properties?.title || 'Untitled');
-                return title.toLowerCase().includes(searchQuery.toLowerCase());
-            });
-        }
-
-        // Fallback: Query pageIndex for entries belonging to relationDatabaseId
-        const indexEntries = Object.values(pageIndex).filter(e => e.databaseId === relationDatabaseId);
-        const filteredEntries = searchQuery.trim()
-            ? indexEntries.filter(e => (e.title || '').toLowerCase().includes(searchQuery.toLowerCase()))
-            : indexEntries;
-
-        return filteredEntries.map(e => ({
-            id: e.id,
-            databaseId: e.databaseId,
-            order: 0,
-            properties: { [displayPropertyId]: e.title, title: e.title },
-            blocks: [],
-            blocksVersion: 1,
-            createdAt: e.updatedAt,
-            updatedAt: e.updatedAt,
-            createdBy: 'system',
-            lastEditedBy: 'system'
-        }));
-    }, [targetDatabase, pageIndex, relationDatabaseId, searchQuery, displayPropertyId]);
+        if (!searchQuery.trim()) return relationOptions;
+        return relationOptions.filter(opt => opt.title.toLowerCase().includes(searchQuery.toLowerCase()));
+    }, [relationOptions, searchQuery]);
 
     const router = useRouter();
     const locale = useLocale();
 
     if (!focus && !active) {
         if (selectedItems.length === 0) {
+            if (relationStatus === 'unknown-database') {
+                return (
+                    <div className="w-full h-full p-2 flex items-center text-red-500 text-xs font-mono" title={`Relation target ${relationDatabaseId} not found for this tenant`}>
+                        <AlertCircle className="w-3 h-3 mr-1 text-red-500 shrink-0" />
+                        Target DB error
+                    </div>
+                );
+            }
             return <div className="w-full h-full p-2 flex items-center text-neutral-400 text-sm">Empty</div>;
         }
         return (
@@ -140,7 +120,7 @@ const RelationComponent = ({ rowData, setRowData, focus, active, stopEditing, re
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
-                                router.push(`/${locale}/admin/database/${relationDatabaseId}/${item.id}`);
+                                router.push(`/${locale}/admin/database/${resolvedDbId}/${item.id}`);
                             }}
                             className="p-0.5 rounded opacity-0 group-hover:opacity-100 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-all ml-0.5 text-orange-500 hover:text-orange-600"
                             title="Open related record"
@@ -226,13 +206,25 @@ const RelationComponent = ({ rowData, setRowData, focus, active, stopEditing, re
                     </div>
                 )}
 
-                {/* List of avaiable pages in target DB */}
-                <div className="flex flex-col gap-0.5 overflow-y-auto">
-                    {filteredTargetPages.length === 0 ? (
-                        <div className="text-xs text-neutral-400 italic p-2 text-center">No results found.</div>
+                {/* List of available pages in target DB */}
+                <div className="flex flex-col gap-0.5 overflow-y-auto max-h-48">
+                    {relationStatus === 'unknown-database' ? (
+                        <div className="text-xs text-red-500 font-medium p-2 flex items-center gap-1.5 bg-red-50 dark:bg-red-950/40 rounded">
+                            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                            <span>Relation target {relationDatabaseId} not found for this tenant</span>
+                        </div>
+                    ) : relationStatus === 'not-loaded' ? (
+                        <div className="text-xs text-neutral-400 p-2 flex items-center gap-1.5">
+                            <Loader2 className="w-3.5 h-3.5 animate-spin text-orange-500" />
+                            <span>Loading records...</span>
+                        </div>
+                    ) : filteredTargetPages.length === 0 ? (
+                        <div className="text-xs text-neutral-400 italic p-2 text-center">
+                            {searchQuery ? 'No matching pages' : 'No records available'}
+                        </div>
                     ) : (
                         filteredTargetPages.map(page => {
-                            const title = String(page.properties[displayPropertyId] || 'Untitled');
+                            const title = page.title || 'Untitled';
                             const isSelected = value.includes(page.id);
 
                             return (
@@ -262,21 +254,17 @@ const RelationComponent = ({ rowData, setRowData, focus, active, stopEditing, re
                                 >
                                     {title}
                                 </button>
-                            )
+                            );
                         })
                     )}
                 </div>
 
-                {searchQuery.trim() && !filteredTargetPages.some(p => String(p.properties[displayPropertyId] || 'Untitled').toLowerCase() === searchQuery.trim().toLowerCase()) && (
+                {relationStatus !== 'unknown-database' && searchQuery.trim() && !filteredTargetPages.some(p => p.title.toLowerCase() === searchQuery.trim().toLowerCase()) && (
                     <button
                         onPointerDown={async (e) => {
                             e.preventDefault();
                             e.stopPropagation();
                             const { createPage } = useDatabaseStore.getState();
-                            
-                            // Determine the actual Target DB ID resolving references
-                            const dbState = useDatabaseStore.getState();
-                            let resolvedDbId = relationDatabaseId;
                             
                             const newPage = createPage(resolvedDbId, {
                                 [displayPropertyId]: searchQuery.trim()

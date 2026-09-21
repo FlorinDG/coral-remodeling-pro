@@ -8,13 +8,14 @@ import { Property, PropertyValue, SelectOption } from '../types';
 import {
     Type, Hash, Calendar, CheckSquare, Link2, List, Tag,
     Lock, Search, ChevronDown, ChevronRight, X, GripVertical,
-    Mail, Phone, MapPin, ExternalLink
+    Mail, Phone, MapPin, ExternalLink, Loader2, AlertCircle
 } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { COLOR_STYLES } from '../columns/SelectColumn';
 import SelectDropdown from './SelectDropdown';
 import { RecurrenceSelector } from '../../tasks/RecurrenceSelector';
 import postcodesData from '@/lib/belgian-postcodes.json';
+import { useRelationTarget, resolveRelationTitle } from '@/lib/relations/resolve';
 
 const isPostalField = (name: string, id: string) => {
     const n = name.toLowerCase();
@@ -345,6 +346,82 @@ function PostcodeCityInput({
     );
 }
 
+// ─── Unified relation property field (PANEL-1) ─────────────────────────────
+function RelationPropertyField({
+    property,
+    value,
+    isReadOnly,
+    onChange,
+}: {
+    property: Property;
+    value: PropertyValue;
+    isReadOnly: boolean;
+    onChange: (propId: string, val: PropertyValue) => void;
+}) {
+    const ids: string[] = Array.isArray(value) ? (value as unknown[]).map(v => String(v ?? '')) : [];
+    const relationDatabaseId = property.config?.relationDatabaseId;
+    const resolution = useRelationTarget(relationDatabaseId, {
+        displayPropertyId: property.config?.relationDisplayPropertyId || 'title',
+    });
+    const pageIndex = useDatabaseStore(s => s.pageIndex);
+
+    if (resolution.status === 'unknown-database') {
+        return (
+            <div className="text-[11px] text-red-500 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 rounded px-2 py-1 flex items-center gap-1.5 w-full">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0 text-red-500" />
+                <span>Relation target {relationDatabaseId || 'unknown'} not found for this tenant</span>
+            </div>
+        );
+    }
+
+    if (resolution.status === 'not-loaded') {
+        return (
+            <div className="text-xs text-neutral-400 flex items-center gap-1.5 py-1">
+                <Loader2 className="w-3 h-3 animate-spin text-orange-500" />
+                <span>Loading records...</span>
+            </div>
+        );
+    }
+
+    const unselected = resolution.options.filter(opt => !ids.includes(opt.id));
+
+    return (
+        <div className="flex flex-col gap-1.5 w-full">
+            <div className="flex flex-wrap gap-1">
+                {ids.map(sid => {
+                    const safeSid = String(sid || '');
+                    const title = resolveRelationTitle(safeSid, {
+                        pageIndex,
+                        targetDatabase: resolution.targetDatabase,
+                        displayPropertyId: property.config?.relationDisplayPropertyId || 'title',
+                    }) || (safeSid.slice(0, 8) + '…');
+
+                    return (
+                        <div key={sid} className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-neutral-100 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded text-[11px] text-neutral-700 dark:text-neutral-300">
+                            <span className="truncate max-w-[120px]">{title}</span>
+                            {!isReadOnly && (
+                                <button onClick={() => onChange(property.id, ids.filter(x => x !== sid))} className="hover:text-red-500 transition-colors ml-1">
+                                    <X className="w-2.5 h-2.5" />
+                                </button>
+                            )}
+                        </div>
+                    );
+                })}
+            </div>
+            {!isReadOnly && unselected.length > 0 && (
+                <SearchableSelectDropdown
+                    options={unselected}
+                    getId={(opt) => opt.id}
+                    getLabel={(opt) => opt.title}
+                    onSelect={(opt) => onChange(property.id, [...ids, opt.id])}
+                    placeholder="+ link record..."
+                />
+            )}
+            {ids.length === 0 && isReadOnly && <span className="text-neutral-400 text-xs italic">—</span>}
+        </div>
+    );
+}
+
 // ─── Individual property row ──────────────────────────────────────────────
 function PropertyRow({
     property,
@@ -424,47 +501,13 @@ function PropertyRow({
             </div>
         );
     } else if (property.type === 'relation') {
-        const ids: string[] = Array.isArray(value) ? (value as unknown[]).map(v => String(v ?? '')) : [];
-        const relationDatabaseId = property.config?.relationDatabaseId;
-        const targetDb = useDatabaseStore.getState().databases.find(db => db.id === relationDatabaseId);
-        const unselected = targetDb 
-            ? targetDb.pages.filter(p => !ids.includes(p.id)) 
-            : [];
         valueEl = (
-            <div className="flex flex-col gap-1.5 w-full">
-                <div className="flex flex-wrap gap-1">
-                    {ids.map(sid => {
-                        const safeSid = String(sid || '');
-                        let title = safeSid.slice(0, 8) + '…';
-                        if (targetDb) {
-                            const page = targetDb.pages.find(p => p.id === sid);
-                            if (page) {
-                                title = String(page.properties?.['title'] || page.properties?.['name'] || safeSid.slice(0, 8));
-                            }
-                        }
-                        return (
-                            <div key={sid} className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-neutral-100 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded text-[11px] text-neutral-700 dark:text-neutral-300">
-                                <span className="truncate max-w-[120px]">{title}</span>
-                                {!isReadOnly && (
-                                    <button onClick={() => onChange(property.id, ids.filter(x => x !== sid))} className="hover:text-red-500 transition-colors ml-1">
-                                        <X className="w-2.5 h-2.5" />
-                                    </button>
-                                )}
-                            </div>
-                        );
-                    })}
-                </div>
-                {!isReadOnly && unselected.length > 0 && (
-                    <SearchableSelectDropdown
-                        options={unselected}
-                        getId={(p) => p.id}
-                        getLabel={(p) => String(p.properties?.['title'] || p.properties?.['name'] || String(p.id || '').slice(0, 8))}
-                        onSelect={(p) => onChange(property.id, [...ids, p.id])}
-                        placeholder="+ link record..."
-                    />
-                )}
-                {ids.length === 0 && isReadOnly && <span className="text-neutral-400 text-xs italic">—</span>}
-            </div>
+            <RelationPropertyField
+                property={property}
+                value={value}
+                isReadOnly={isReadOnly}
+                onChange={onChange}
+            />
         );
     } else if (property.type === 'date') {
         const strVal = String(value || '').slice(0, 10); // ISO date

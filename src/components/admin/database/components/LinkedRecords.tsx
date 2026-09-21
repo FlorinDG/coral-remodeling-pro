@@ -10,6 +10,7 @@ import { Database, Page, Property, PropertyValue } from '@/components/admin/data
 import { useTenant } from '@/context/TenantContext';
 import { useRouter, useParams } from 'next/navigation';
 import SearchableSelect from '@/components/ui/SearchableSelect';
+import { resolveRelationTarget, resolveRelationTitle } from '@/lib/relations/resolve';
 
 interface LinkedRecordsProps {
     databaseId: string;
@@ -34,6 +35,8 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
     const locale = (params.locale as string) || 'nl';
 
     const allDatabases = useDatabaseStore((state) => state.databases);
+    const pageIndex = useDatabaseStore((state) => state.pageIndex);
+    const loadedDatabaseIds = useDatabaseStore((state) => state.loadedDatabaseIds);
     const updatePageProperty = useDatabaseStore((state) => state.updatePageProperty);
     const createPage = useDatabaseStore((state) => state.createPage);
     const addProperty = useDatabaseStore((state) => state.addProperty);
@@ -71,12 +74,17 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
     const selectedProp = relationProps.find(p => p.id === effectiveSelectedPropId);
 
     const handleCreateAndLink = async (prop: Property) => {
-        const targetDbId = prop.config?.relationDatabaseId;
-        if (!targetDbId) return;
+        const resolution = resolveRelationTarget(prop.config?.relationDatabaseId, {
+            databases: allDatabases,
+            pageIndex,
+            loadedDatabaseIds,
+            resolveDbId,
+        });
+        if (resolution.status === 'unknown-database' || !resolution.databaseId) return;
 
         setIsCreating(prop.id);
-        const resolvedTargetDbId = resolveDbId(targetDbId);
-        const targetDb = allDatabases.find(d => d.id === resolvedTargetDbId);
+        const resolvedTargetDbId = resolution.databaseId;
+        const targetDb = resolution.targetDatabase || allDatabases.find(d => d.id === resolvedTargetDbId);
         
         const clientName = String(page.properties?.['title'] || page.properties?.['name'] || 'Item');
         
@@ -86,9 +94,11 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
         };
 
         // If the target DB has a relation back to this DB, try to auto-link it
-        const targetRelationToCurrent = (targetDb?.properties || []).find(p => 
-            p.type === 'relation' && p.config?.relationDatabaseId === databaseId
-        );
+        const targetRelationToCurrent = (targetDb?.properties || []).find(p => {
+            if (p.type !== 'relation') return false;
+            const backRes = resolveRelationTarget(p.config?.relationDatabaseId, { databases: allDatabases, resolveDbId });
+            return backRes.databaseId === databaseId;
+        });
         if (targetRelationToCurrent) {
             initialProps[targetRelationToCurrent.id] = [pageId];
         }
@@ -112,11 +122,16 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
     };
 
     const handleLinkExisting = (prop: Property, targetPageId: string) => {
-        const targetDbId = prop.config?.relationDatabaseId;
-        if (!targetDbId) return;
+        const resolution = resolveRelationTarget(prop.config?.relationDatabaseId, {
+            databases: allDatabases,
+            pageIndex,
+            loadedDatabaseIds,
+            resolveDbId,
+        });
+        if (resolution.status === 'unknown-database' || !resolution.databaseId) return;
 
-        const resolvedTargetDbId = resolveDbId(targetDbId);
-        const targetDb = allDatabases.find(d => d.id === resolvedTargetDbId);
+        const resolvedTargetDbId = resolution.databaseId;
+        const targetDb = resolution.targetDatabase || allDatabases.find(d => d.id === resolvedTargetDbId);
 
         // 1. Update current page's relation to include the targetPageId
         const currentRelations = (page.properties?.[prop.id] as string[]) || [];
@@ -125,9 +140,11 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
         }
 
         // 2. Establish backlink if target database has a relation field back to this database
-        const targetRelationToCurrent = (targetDb?.properties || []).find(p => 
-            p.type === 'relation' && p.config?.relationDatabaseId === databaseId
-        );
+        const targetRelationToCurrent = (targetDb?.properties || []).find(p => {
+            if (p.type !== 'relation') return false;
+            const backRes = resolveRelationTarget(p.config?.relationDatabaseId, { databases: allDatabases, resolveDbId });
+            return backRes.databaseId === databaseId;
+        });
         if (targetRelationToCurrent) {
             const targetPage = targetDb?.pages.find(p => p.id === targetPageId);
             if (targetPage) {
@@ -142,20 +159,27 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
     };
 
     const handleUnlink = (prop: Property, targetPageId: string) => {
-        const targetDbId = prop.config?.relationDatabaseId;
-        if (!targetDbId) return;
+        const resolution = resolveRelationTarget(prop.config?.relationDatabaseId, {
+            databases: allDatabases,
+            pageIndex,
+            loadedDatabaseIds,
+            resolveDbId,
+        });
+        if (resolution.status === 'unknown-database' || !resolution.databaseId) return;
 
-        const resolvedTargetDbId = resolveDbId(targetDbId);
-        const targetDb = allDatabases.find(d => d.id === resolvedTargetDbId);
+        const resolvedTargetDbId = resolution.databaseId;
+        const targetDb = resolution.targetDatabase || allDatabases.find(d => d.id === resolvedTargetDbId);
 
         // 1. Remove targetPageId from current page's relations
         const currentRelations = (page.properties?.[prop.id] as string[]) || [];
         updatePageProperty(databaseId, pageId, prop.id, currentRelations.filter(id => id !== targetPageId));
 
         // 2. Remove pageId from the target page's relations (backlink)
-        const targetRelationToCurrent = (targetDb?.properties || []).find(p => 
-            p.type === 'relation' && p.config?.relationDatabaseId === databaseId
-        );
+        const targetRelationToCurrent = (targetDb?.properties || []).find(p => {
+            if (p.type !== 'relation') return false;
+            const backRes = resolveRelationTarget(p.config?.relationDatabaseId, { databases: allDatabases, resolveDbId });
+            return backRes.databaseId === databaseId;
+        });
         if (targetRelationToCurrent) {
             const targetPage = targetDb?.pages.find(p => p.id === targetPageId);
             if (targetPage) {
@@ -168,21 +192,37 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
     // Gather existing pages for the search dropdown of the selected target database
     const getTargetDbOptions = () => {
         if (!selectedProp) return [];
-        const targetDbId = selectedProp.config?.relationDatabaseId;
-        if (!targetDbId) return [];
-
-        const resolvedTargetDbId = resolveDbId(targetDbId);
-        const targetDb = allDatabases.find(d => d.id === resolvedTargetDbId);
-        if (!targetDb) return [];
+        const resolution = resolveRelationTarget(selectedProp.config?.relationDatabaseId, {
+            databases: allDatabases,
+            pageIndex,
+            loadedDatabaseIds,
+            resolveDbId,
+        });
+        if (resolution.status === 'unknown-database' || !resolution.databaseId) return [];
 
         const currentRelations = (page.properties?.[selectedProp.id] as string[]) || [];
 
-        return targetDb.pages
-            .filter(p => !currentRelations.includes(p.id)) // exclude already connected ones
-            .filter(p => {
+        return resolution.options
+            .filter(opt => !currentRelations.includes(opt.id))
+            .filter(opt => {
                 if (!search.trim()) return true;
-                const title = String(p.properties?.['title'] || p.properties?.['name'] || 'Untitled').toLowerCase();
-                return title.includes(search.toLowerCase());
+                return opt.title.toLowerCase().includes(search.toLowerCase());
+            })
+            .map(opt => {
+                const fullPage = resolution.targetDatabase?.pages.find(p => p.id === opt.id);
+                if (fullPage) return fullPage;
+                return {
+                    id: opt.id,
+                    databaseId: opt.databaseId,
+                    order: 0,
+                    properties: { title: opt.title },
+                    blocks: [],
+                    blocksVersion: 1,
+                    createdAt: '',
+                    updatedAt: '',
+                    createdBy: '',
+                    lastEditedBy: ''
+                } as Page;
             });
     };
 
@@ -224,8 +264,8 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
         if (!selectedUniversalDb) return;
         // Check if there's already a relation property from current DB → target DB
         let relProp = relationProps.find(p => {
-            const targetDbId = p.config?.relationDatabaseId;
-            return targetDbId && (resolveDbId(targetDbId) === selectedUniversalDb.id || targetDbId === selectedUniversalDb.id);
+            const relResolution = resolveRelationTarget(p.config?.relationDatabaseId, { databases: allDatabases, resolveDbId });
+            return relResolution.databaseId === selectedUniversalDb.id;
         });
 
         // Auto-create a relation property if none exists
@@ -233,7 +273,11 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
             addProperty(databaseId, `Related ${selectedUniversalDb.name}`, 'relation', { relationDatabaseId: selectedUniversalDb.id });
             // Re-fetch the database to get the newly created property
             const freshDb = useDatabaseStore.getState().databases.find(d => d.id === databaseId);
-            relProp = (freshDb?.properties || []).find(p => p.type === 'relation' && p.config?.relationDatabaseId === selectedUniversalDb.id) || undefined;
+            relProp = (freshDb?.properties || []).find(p => {
+                if (p.type !== 'relation') return false;
+                const relRes = resolveRelationTarget(p.config?.relationDatabaseId, { databases: allDatabases, resolveDbId });
+                return relRes.databaseId === selectedUniversalDb.id;
+            }) || undefined;
             if (!relProp) return;
         }
 
@@ -244,9 +288,11 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
         }
 
         // Backlink from target
-        const targetRelationToCurrent = (selectedUniversalDb.properties || []).find(p =>
-            p.type === 'relation' && p.config?.relationDatabaseId === databaseId
-        );
+        const targetRelationToCurrent = (selectedUniversalDb.properties || []).find(p => {
+            if (p.type !== 'relation') return false;
+            const backRes = resolveRelationTarget(p.config?.relationDatabaseId, { databases: allDatabases, resolveDbId });
+            return backRes.databaseId === databaseId;
+        });
         if (targetRelationToCurrent) {
             const targetPage = selectedUniversalDb.pages.find(p => p.id === targetPageId);
             if (targetPage) {
@@ -257,8 +303,9 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
             }
         }
 
-        setIsOpen(false);
+        setSelectedUniversalDbId(null);
         setUniversalMode(false);
+        setIsOpen(false);
     };
 
     return (
@@ -447,21 +494,44 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
                     const ids: string[] = Array.isArray(rawVal)
                         ? rawVal
                         : (typeof rawVal === 'string' && rawVal ? [rawVal] : []);
-                    const targetDbId = prop.config?.relationDatabaseId;
-                    const resolvedTargetDbId = targetDbId ? resolveDbId(targetDbId) : null;
-                    const targetDb = allDatabases.find(d => d.id === resolvedTargetDbId);
+                    const resolution = resolveRelationTarget(prop.config?.relationDatabaseId, {
+                        databases: allDatabases,
+                        pageIndex,
+                        loadedDatabaseIds,
+                        resolveDbId,
+                    });
+                    const targetDb = resolution.targetDatabase || allDatabases.find(d => d.id === resolution.databaseId);
                     
                     const linkedPages = ids.map(id => {
                         const p = targetDb?.pages.find((pg: Page) => pg.id === id);
-                        if (!p) {
-                            // Fallback search across all DBs
-                            for (const d of allDatabases) {
-                                const found = d.pages.find((pg: Page) => pg.id === id);
-                                if (found) return { db: d, page: found };
-                            }
-                            return null;
+                        if (p) {
+                            return { db: targetDb as Database, page: p };
                         }
-                        return { db: targetDb as Database, page: p };
+                        // Fallback search across all DBs
+                        for (const d of allDatabases) {
+                            const found = d.pages.find((pg: Page) => pg.id === id);
+                            if (found) return { db: d, page: found };
+                        }
+                        // Fallback to pageIndex so record is visible even when target DB is not hydrated
+                        const title = resolveRelationTitle(id, { pageIndex, targetDatabase: targetDb });
+                        if (title) {
+                            return {
+                                db: targetDb || { id: resolution.databaseId, name: prop.name } as Database,
+                                page: {
+                                    id,
+                                    databaseId: resolution.databaseId,
+                                    order: 0,
+                                    properties: { title },
+                                    blocks: [],
+                                    blocksVersion: 1,
+                                    createdAt: '',
+                                    updatedAt: '',
+                                    createdBy: '',
+                                    lastEditedBy: ''
+                                } as Page
+                            };
+                        }
+                        return null;
                     }).filter(Boolean) as { db: Database, page: Page }[];
 
                     return (

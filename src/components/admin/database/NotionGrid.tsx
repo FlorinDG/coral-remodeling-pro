@@ -12,7 +12,6 @@ import './NotionGrid.css';
 import { useRouter } from 'next/navigation';
 import { Download, Upload, Search, Building2, MapPin, CheckCircle2, X, Loader2, Plus, Lock, Trash } from 'lucide-react';
 import { useTenant } from '@/context/TenantContext';
-import SearchableSelect from '@/components/ui/SearchableSelect';
 import { useSession } from 'next-auth/react';
 import ColumnHeader from './components/ColumnHeader';
 import FilterToolbar from './components/FilterToolbar';
@@ -109,11 +108,6 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
 
     const [isEditing, setIsEditing] = useState(false);
     const frozenPagesRef = useRef<Page[] | null>(null);
-
-    // ── Accountant date range filter ───────────────────────────────────
-    const [acctDatePreset, setAcctDatePreset] = useState<string>('this-year');
-    const [acctDateFrom, setAcctDateFrom] = useState<string>('');
-    const [acctDateTo, setAcctDateTo] = useState<string>('');
 
 
     // VAT lookup state is managed by the useVatLookup hook (called after rowData is computed)
@@ -548,84 +542,15 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
         }
     }, [database, filteredPages, activeView?.sorts, isEditing]);
 
-    // ── Accountant date range resolution and filtering ──────────────────────
-    const { acctFrom, acctTo } = useMemo(() => {
-        const now = new Date();
-        let from = acctDateFrom;
-        let to = acctDateTo;
-
-        if (acctDatePreset !== 'custom') {
-            const y = now.getFullYear();
-            const m = now.getMonth();
-            switch (acctDatePreset) {
-                case 'last-month': {
-                    const d = new Date(y, m - 1, 1);
-                    from = d.toISOString().split('T')[0];
-                    to = new Date(y, m, 0).toISOString().split('T')[0];
-                    break;
-                }
-                case 'last-trimester': {
-                    const qStart = Math.floor(m / 3) * 3;
-                    from = new Date(y, qStart - 3, 1).toISOString().split('T')[0];
-                    to = new Date(y, qStart, 0).toISOString().split('T')[0];
-                    break;
-                }
-                case 'last-semester': {
-                    if (m < 6) {
-                        from = `${y - 1}-07-01`;
-                        to = `${y - 1}-12-31`;
-                    } else {
-                        from = `${y}-01-01`;
-                        to = `${y}-06-30`;
-                    }
-                    break;
-                }
-                case 'this-year':
-                    from = `${y}-01-01`;
-                    to = now.toISOString().split('T')[0];
-                    break;
-                case 'last-year':
-                case 'last-calendar-year':
-                    from = `${y - 1}-01-01`;
-                    to = `${y - 1}-12-31`;
-                    break;
-            }
-        }
-        return { acctFrom: from, acctTo: to };
-    }, [acctDatePreset, acctDateFrom, acctDateTo]);
-
-    // Pages matching the accountant export period
-    const acctExportPeriodPages = useMemo(() => {
-        if (!showAccountantExport) return sortedPages;
-        if (!acctFrom && !acctTo) return sortedPages;
-
-        // Find the date property to filter on
-        const dateField = database?.properties.find(p =>
-            p.id === 'invoiceDate' || p.id === 'date'
-        )?.id || 'invoiceDate';
-
-        return sortedPages.filter(page => {
-            const dateVal = page.properties[dateField];
-            if (!dateVal) return false;
-            const d = String(dateVal).split('T')[0];
-            if (acctFrom && d < acctFrom) return false;
-            if (acctTo && d > acctTo) return false;
-            return true;
-        });
-    }, [sortedPages, showAccountantExport, acctFrom, acctTo, database?.properties]);
-
-    // For ACCOUNTANT role, grid rows are filtered to the selected period. For owners/admins, the grid remains unfiltered.
-    const acctDateFilteredPages = isAccountant ? acctExportPeriodPages : sortedPages;
-
     // Convert sorted filtered pages to row data by flattening properties to the top level for data-sheet-grid access
     // Memoizing this to prevent infinite re-renders or synchronous onChange triggers from DataSheetGrid
-    const rowData = useMemo(() => acctDateFilteredPages.map(page => ({
+    const rowData = useMemo(() => sortedPages.map(page => ({
         ...page,
         ...page.properties,
         _isSelected: selectedRowIds.has(page.id),
         // Force DSG cell re-render when property values change by including a lightweight hash
         _propHash: JSON.stringify(page.properties)
-    })), [acctDateFilteredPages, selectedRowIds]);
+    })), [sortedPages, selectedRowIds]);
 
     // ── Live VAT lookup flyout logic (encapsulated in useVatLookup hook) ─────
     const { vatLookup, setVatLookup, applyVatLookup } = useVatLookup({
@@ -635,12 +560,9 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
         updatePageProperty,
     });
 
-
-
-
     const handleExportCSV = useExportCSV({
         database,
-        filteredPages: acctDateFilteredPages,
+        filteredPages: sortedPages,
         selectedRowIds,
     });
 
@@ -680,67 +602,14 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                     </button>
                     )}
 
-                    {/* Accountant / Owner: date range filter + export */}
+                    {/* Accountant / Owner: export dialog trigger */}
                     {showAccountantExport && (
-                    <div className="flex items-center gap-2 flex-wrap">
-                        {/* Period preset */}
-                        <div className="relative min-w-[160px]">
-                            <SearchableSelect
-                                options={[
-                                    { value: 'this-year', label: 'This Year' },
-                                    { value: 'last-month', label: 'Last Month' },
-                                    { value: 'last-trimester', label: 'Last Trimester' },
-                                    { value: 'last-semester', label: 'Last Semester' },
-                                    { value: 'last-calendar-year', label: 'Last Calendar Year' },
-                                    { value: 'last-year', label: 'Last Year' },
-                                    { value: 'custom', label: 'Custom Range' },
-                                ]}
-                                value={acctDatePreset}
-                                onChange={(v) => {
-                                    setAcctDatePreset(v);
-                                    if (v !== 'custom') {
-                                        setAcctDateFrom('');
-                                        setAcctDateTo('');
-                                    }
-                                }}
-                                placeholder={t('placeholders.period')}
-                            />
-                        </div>
-
-                        {/* Custom date inputs */}
-                        {acctDatePreset === 'custom' && (
-                            <>
-                                <input
-                                    type="date"
-                                    value={acctDateFrom}
-                                    onChange={e => setAcctDateFrom(e.target.value)}
-                                    className="text-xs px-2 py-1.5 rounded-lg border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-neutral-700 dark:text-neutral-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-                                    placeholder={t('placeholders.from')}
-                                />
-                                <span className="text-xs text-neutral-400">&rarr;</span>
-                                <input
-                                    type="date"
-                                    value={acctDateTo}
-                                    onChange={e => setAcctDateTo(e.target.value)}
-                                    className="text-xs px-2 py-1.5 rounded-lg border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-neutral-700 dark:text-neutral-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-                                    placeholder={t('placeholders.to')}
-                                />
-                            </>
-                        )}
-
-                        {/* Result count */}
-                        <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-1 rounded-md">
-                            {acctExportPeriodPages.length} records
-                        </span>
-
-                        {/* Export button */}
                         <button
                             onClick={() => setIsAccountantExportDialogOpen(true)}
                             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition"
                         >
                             📦 Boekhouder export
                         </button>
-                    </div>
                     )}
 
                     {!lockedSchema && !isAccountant && !isBestekReadOnly && (
@@ -822,7 +691,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
 
             {/* ── Export lock banner (non-accountant users) ────────────────────── */}
             {!isAccountant && (() => {
-                const exportedCount = acctDateFilteredPages.filter(p => p.properties.accountantExportedAt).length;
+                const exportedCount = sortedPages.filter(p => p.properties.accountantExportedAt).length;
                 if (exportedCount === 0) return null;
                 return (
                     <div className="px-4 py-2 bg-amber-50 dark:bg-amber-500/10 border-b border-amber-200 dark:border-amber-500/20 flex items-center gap-2">
@@ -1144,9 +1013,6 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                 <AccountantExportDialog
                     isOpen={isAccountantExportDialogOpen}
                     onClose={() => setIsAccountantExportDialogOpen(false)}
-                    initialPreset={acctDatePreset}
-                    initialFrom={acctDateFrom}
-                    initialTo={acctDateTo}
                 />
 
                 {/* ── VAT Lookup Flyout ──────────────────────────────── */}

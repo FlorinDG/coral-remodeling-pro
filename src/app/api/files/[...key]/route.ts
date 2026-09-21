@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import { get } from '@vercel/blob';
-import { decodeStorageKey } from '@/lib/storage';
+import { getBlobStream, decodeStorageKey } from '@/lib/storage';
 
 export const runtime = 'nodejs'; // Use Node.js runtime for large file streaming
 
@@ -44,7 +43,7 @@ export async function GET(
     }
 
     try {
-        const result = await get(key, { token, access: 'private' });
+        const result = await getBlobStream(key, { token, access: 'private' });
 
         if (!result || !result.blob) {
             return NextResponse.json({ error: 'File not found' }, { status: 404 });

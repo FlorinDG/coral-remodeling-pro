@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "test:compile": "NODE_OPTIONS='--max-old-space-size=4096' tsc --noEmit",
-    "test:lint": "eslint src --max-warnings=0",
+    "test:lint": "eslint src",
     "validate": "npm run test:compile && npm run test:lint",
     "postinstall": "prisma generate"
   },

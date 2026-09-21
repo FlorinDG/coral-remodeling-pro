@@ -96,6 +96,7 @@ export default function JournalModulePage() {
     const loading = databases.length === 0;
 
     // Resolve general journal DB through resolveDbId
+    // TODO(R1-2): Fail-open fallback (|| GENERAL_DB_ID) must die when R1-2 fail-closed resolver lands.
     const resolvedGeneralDbId = resolveDbId(GENERAL_DB_ID) || GENERAL_DB_ID;
     const generalDb = databases.find(d => d.id === resolvedGeneralDbId);
 
@@ -783,7 +784,7 @@ function JournalDatabaseView({ entries }: { entries: JournalEntry[] }) {
                                 </td>
                                 <td className="px-5 py-3.5 text-right">
                                     <Link href={
-                                        entry.databaseId === GENERAL_DB_ID
+                                        (entry.databaseId === GENERAL_DB_ID || entry.databaseId.startsWith(GENERAL_DB_ID))
                                             ? `/admin/journal/${entry.id}` as `/${string}`
                                             : `/admin/database/${entry.databaseId}/${entry.id}` as `/${string}`
                                     }>

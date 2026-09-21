@@ -387,16 +387,15 @@ export async function GET(req: Request) {
             newlyImportedCount++;
 
             try {
-                const { createNotification } = await import('@/lib/notifications');
+                const { notify } = await import('@/lib/notifications');
                 const isCreditNote = doc.type === 'credit_note';
-                await createNotification({
+                await notify({
                     tenantId,
                     userId: null,
-                    type: isCreditNote ? 'CREDIT_NOTE' : 'PEPPOL_RECEIVED',
+                    topic: isCreditNote ? 'invoices.credit_note' : 'peppol.received',
                     title: isCreditNote ? 'Credit Note Received' : 'Peppol Invoice Received',
                     body: `New Peppol ${isCreditNote ? 'credit note' : 'invoice'} from ${parsed.supplierName || 'supplier'}`,
-                    entityType: 'invoice',
-                    entityId: pageId,
+                    entity: { type: 'invoice', id: pageId },
                     href: `/nl/admin/database/db-expenses/${pageId}`
                 });
             } catch (e) {

@@ -55,16 +55,16 @@ export async function GET(req: Request) {
                     });
                     
                     try {
-                        const { createNotification } = await import('@/lib/notifications');
+                        const { notify } = await import('@/lib/notifications');
                         const invTitle = props.title || 'Factuur';
-                        await createNotification({
+                        const assigneeId = (page.assignedTo && page.assignedTo.length > 0) ? page.assignedTo[0] : (page.createdBy || null);
+                        await notify({
                             tenantId: page.database.tenantId,
-                            userId: null,
-                            type: 'INVOICE_OVERDUE',
+                            userId: assigneeId,
+                            topic: 'invoices.overdue',
                             title: 'Invoice Overdue',
                             body: `Invoice ${invTitle} is overdue.`,
-                            entityType: 'invoice',
-                            entityId: page.id,
+                            entity: { type: 'invoice', id: page.id },
                             href: `/nl/admin/database/db-invoices/${page.id}`
                         });
                     } catch (e) {

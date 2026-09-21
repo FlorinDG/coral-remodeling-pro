@@ -60,17 +60,17 @@ export async function acceptQuotation({ quoteId, signatureBase64, signatureMetho
                 const quoteTitle = (currentProps.betreft as string) || (currentProps.title as string) || 'Offerte';
 
                 // Emit in-app notification
-                const { createNotification } = await import('@/lib/notifications');
-                await createNotification({
+                const { notify } = await import('@/lib/notifications');
+                const assigneeId = (quote.assignedTo && quote.assignedTo.length > 0) ? quote.assignedTo[0] : (quote.createdBy || null);
+                await notify({
                     tenantId: quoteWithDb.database.tenantId,
-                    userId: null,
-                    type: 'QUOTE_ACCEPTED',
+                    userId: assigneeId,
+                    topic: 'quotes.accepted',
                     title: 'Quote Accepted',
                     body: `Quote ${quoteTitle} accepted by ${consentName}`,
-                    entityType: 'quote',
-                    entityId: quoteId,
+                    entity: { type: 'quote', id: quoteId },
                     href: `/nl/admin/database/db-quotations/${quoteId}`
-                }).catch(e => console.error("Failed to create QUOTE_ACCEPTED notification:", e));
+                }).catch(e => console.error("Failed to create quotes.accepted notification:", e));
 
                 if (tenant?.email) {
                     const { Resend } = await import('resend');

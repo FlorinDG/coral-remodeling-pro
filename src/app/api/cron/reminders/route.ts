@@ -19,7 +19,7 @@ export async function GET(req: Request) {
             include: { database: { select: { tenantId: true } } }
         });
 
-        const { createNotification } = await import('@/lib/notifications');
+        const { notify } = await import('@/lib/notifications');
 
         for (const page of pages) {
             // Check if blocks or properties contain the date string
@@ -34,15 +34,15 @@ export async function GET(req: Request) {
                 const title = props?.title || props?.name || 'Item';
                 
                 const href = `/nl/admin/database/${page.databaseId}/${page.id}`;
+                const assigneeId = (page.assignedTo && page.assignedTo.length > 0) ? page.assignedTo[0] : (page.createdBy || null);
                 
-                await createNotification({
+                await notify({
                     tenantId: page.database.tenantId,
-                    userId: null,
-                    type: 'DATE_REMINDER',
+                    userId: assigneeId,
+                    topic: 'tasks.reminder',
                     title: 'Date Reminder',
                     body: `Reminder for ${title} on ${todayStr}`,
-                    entityType: 'page',
-                    entityId: page.id,
+                    entity: { type: 'page', id: page.id },
                     href
                 });
 

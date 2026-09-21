@@ -383,20 +383,20 @@ async function recalculateInvoiceStatus(tenantId: string, invoiceId: string) {
 
         if (newStatus === 'opt-paid') {
             try {
-                const { createNotification } = await import('@/lib/notifications');
+                const { notify } = await import('@/lib/notifications');
                 const invTitle = (invProps.title as string) || 'Factuur';
-                await createNotification({
+                const assigneeId = (invoice.assignedTo && invoice.assignedTo.length > 0) ? invoice.assignedTo[0] : (invoice.createdBy || null);
+                await notify({
                     tenantId,
-                    userId: null,
-                    type: 'INVOICE_PAID',
+                    userId: assigneeId,
+                    topic: 'invoices.paid',
                     title: 'Invoice Paid',
                     body: `Invoice ${invTitle} has been fully paid.`,
-                    entityType: 'invoice',
-                    entityId: invoiceId,
+                    entity: { type: 'invoice', id: invoiceId },
                     href: `/nl/admin/database/db-invoices/${invoiceId}`
                 });
             } catch (err) {
-                console.error('[Automation] Failed to create INVOICE_PAID notification:', err);
+                console.error('[Automation] Failed to create invoices.paid notification:', err);
             }
         }
     }

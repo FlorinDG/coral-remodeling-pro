@@ -641,17 +641,20 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
             const currentStatus = invoice.properties?.['status'];
             if (currentStatus !== value) {
                 if (value === 'opt-paid' || value === 'opt-sent') {
+                    const assignedProp = invoice.properties?.['assignedTo'];
+                    const assigneeId = (Array.isArray(assignedProp) && assignedProp.length > 0)
+                        ? String(assignedProp[0])
+                        : (invoice.createdBy || null);
                     emitNotificationAction({
-                        userId: null,
-                        type: value === 'opt-paid' ? 'INVOICE_PAID' : 'INVOICE_SENT',
+                        userId: assigneeId,
+                        topic: value === 'opt-paid' ? 'invoices.paid' : 'invoices.sent',
                         title: value === 'opt-paid' ? 'Invoice Paid' : 'Invoice Sent',
                         body: `Invoice ${invoiceTitle} marked as ${value === 'opt-paid' ? 'paid' : 'sent'}.`,
-                        entityType: 'invoice',
-                        entityId: invoice.id,
+                        entity: { type: 'invoice', id: invoice.id },
                         href: `/nl/admin/financials/income/invoices/${invoice.id}`
                     }).catch(err => {
                         console.error(err);
-                        toast.error('Failed to fetch contact details');
+                        toast.error('Failed to emit notification');
                     });
                 }
             }

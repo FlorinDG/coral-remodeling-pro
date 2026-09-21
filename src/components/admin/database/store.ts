@@ -857,6 +857,7 @@ export const useDatabaseStore = create<DatabaseState>()(
                 }));
             },
 
+            // KERN-3b: Must not be wired to UI until minting moves server-side (CUSTOM-2 / CUSTOM-6).
             createDatabase: (name, description, properties) => {
                 if (!name || name.trim() === '' || name === 'New Workspace' || name === 'New Database' || name === 'GlobalDatabase') {
                     console.warn(`[store] Blocked auto-creation of garbage database: ${name}`);

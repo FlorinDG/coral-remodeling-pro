@@ -1,8 +1,9 @@
 "use client";
 
 import { X } from 'lucide-react';
-import { useEffect, useRef } from 'react';
+import { useRef } from 'react';
 import { useOverlayEventShield } from '@/hooks/useOverlayEventShield';
+import { useScrollLock } from '@/components/mobile/useScrollLock';
 
 interface ModalProps {
     isOpen: boolean;
@@ -14,15 +15,7 @@ interface ModalProps {
 export default function Modal({ isOpen, onClose, title, children }: ModalProps) {
     const modalRef = useRef<HTMLDivElement>(null);
     useOverlayEventShield(modalRef, isOpen);
-
-    useEffect(() => {
-        if (isOpen) {
-            document.body.style.overflow = 'hidden';
-        } else {
-            document.body.style.overflow = 'unset';
-        }
-        return () => { document.body.style.overflow = 'unset'; };
-    }, [isOpen]);
+    useScrollLock(isOpen, modalRef);
 
     if (!isOpen) return null;
 

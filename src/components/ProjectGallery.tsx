@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { ChevronUp, ChevronDown, X, Phone, Mail, MapPin, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslations } from 'next-intl';
+import { useScrollLock } from '@/components/mobile/useScrollLock';
 
 interface ProjectImage {
     src: string;
@@ -32,16 +33,7 @@ export default function ProjectGallery({ title, location, images, slug }: Projec
     }, []);
 
     // Prevent scrolling when modal is open
-    useEffect(() => {
-        if (isOpen) {
-            document.body.style.overflow = 'hidden';
-        } else {
-            document.body.style.overflow = 'unset';
-        }
-        return () => {
-            document.body.style.overflow = 'unset';
-        };
-    }, [isOpen]);
+    useScrollLock(isOpen);
 
     const nextImage = (e?: React.MouseEvent) => {
         e?.stopPropagation();

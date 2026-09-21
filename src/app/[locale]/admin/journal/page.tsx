@@ -95,16 +95,17 @@ export default function JournalModulePage() {
 
     const loading = databases.length === 0;
 
-    // Ensure the general journal DB exists (create on first access if missing)
-    const generalDb = databases.find(d => d.id === GENERAL_DB_ID);
+    // Resolve general journal DB through resolveDbId
+    const resolvedGeneralDbId = resolveDbId(GENERAL_DB_ID) || GENERAL_DB_ID;
+    const generalDb = databases.find(d => d.id === resolvedGeneralDbId);
 
     // Database Mapping for module tabs
     const moduleMap = useMemo(() => ({
         [resolveDbId('db-1') || 'db-1']: 'projects' as Module,
         [resolveDbId('db-clients') || 'db-clients']: 'clients' as Module,
         [resolveDbId('db-crm') || 'db-crm']: 'crm' as Module,
-        [GENERAL_DB_ID]: 'general' as Module,
-    }), [resolveDbId]);
+        [resolvedGeneralDbId]: 'general' as Module,
+    }), [resolveDbId, resolvedGeneralDbId]);
 
     // Resolve linkable DBs for the modal
     const linkableDatabases = useMemo(() => {
@@ -137,7 +138,7 @@ export default function JournalModulePage() {
     databases.forEach(db => {
         const mod = moduleMap[db.id];
         if (!mod) return;
-        if (db.id === GENERAL_DB_ID) return; // Handle journal DB separately below
+        if (db.id === resolvedGeneralDbId || db.id === GENERAL_DB_ID) return; // Handle journal DB separately below
 
         db.pages.forEach(page => {
             if (page.blocks && page.blocks.length > 0) {
@@ -184,8 +185,8 @@ export default function JournalModulePage() {
             allEntries.push({
                 id: page.id,
                 title: String(props?.title || props?.name || 'Untitled Note'),
-                databaseId: GENERAL_DB_ID,
-                databaseName: 'General Journal',
+                databaseId: resolvedGeneralDbId,
+                databaseName: generalDb.name || 'General Journal',
                 module: resolvedModule,
                 updatedAt: new Date(page.updatedAt),
                 blocks: page.blocks || [],
@@ -236,7 +237,7 @@ export default function JournalModulePage() {
 
         // Update the page with the final properties
         for (const [k, v] of Object.entries(pageProps)) {
-            useDatabaseStore.getState().updatePageProperty(GENERAL_DB_ID, draftId, k, v);
+            useDatabaseStore.getState().updatePageProperty(resolvedGeneralDbId, draftId, k, v);
         }
 
         // Reset & Close Modal
@@ -249,7 +250,7 @@ export default function JournalModulePage() {
     
     const handleCancelEntry = () => {
         if (draftId) {
-            useDatabaseStore.getState().deletePage(GENERAL_DB_ID, draftId);
+            useDatabaseStore.getState().deletePage(resolvedGeneralDbId, draftId);
             setDraftId(null);
         }
         setIsAddModalOpen(false);
@@ -329,7 +330,10 @@ export default function JournalModulePage() {
 
                         {/* "New Entry" Trigger */}
                         <Button 
+                            disabled={!generalDb}
+                            title={!generalDb ? "Not available for this workspace yet" : undefined}
                             onClick={() => {
+                                if (!generalDb) return;
                                 const newDraftId = uuidv4();
                                 setDraftId(newDraftId);
                                 setIsAddModalOpen(true);
@@ -338,12 +342,12 @@ export default function JournalModulePage() {
                                 setNewEntryTitle('');
                                 
                                 // Create the draft page so BlockEditor can attach to it
-                                useDatabaseStore.getState().createPage(GENERAL_DB_ID, {
+                                useDatabaseStore.getState().createPage(resolvedGeneralDbId, {
                                     title: `Note — ${format(new Date(), 'dd MMM yyyy, HH:mm')}`,
                                     author: authorName || 'System',
                                 }, newDraftId);
                             }}
-                            className="bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl flex items-center gap-1.5 px-4 py-2 uppercase tracking-wider text-xs shadow-sm hover:shadow transition-all"
+                            className={`${!generalDb ? 'opacity-50 cursor-not-allowed bg-neutral-400' : 'bg-orange-500 hover:bg-orange-600'} text-white font-bold rounded-xl flex items-center gap-1.5 px-4 py-2 uppercase tracking-wider text-xs shadow-sm hover:shadow transition-all`}
                         >
                             <Plus className="w-4 h-4" /> New Entry
                         </Button>
@@ -379,20 +383,30 @@ export default function JournalModulePage() {
                     <div className="max-w-4xl mx-auto pb-20">
                         {view === 'feed' ? (
                             <>
-                                {dateGroupedEntries.length === 0 && (
+                                {activeTab === 'general' && !generalDb ? (
                                     <div className="text-center py-20">
-                                        <PenLine className="w-12 h-12 text-neutral-200 dark:text-neutral-700 mx-auto mb-4" />
-                                        <p className="text-neutral-400 mb-4">No journal entries found for this criteria.</p>
-                                        <button
-                                            onClick={() => setIsAddModalOpen(true)}
-                                            className="flex items-center gap-2 mx-auto px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl text-sm font-bold transition-colors"
-                                        >
-                                            <Plus className="w-4 h-4" /> Create your first note
-                                        </button>
+                                        <Notebook className="w-12 h-12 text-neutral-300 dark:text-neutral-700 mx-auto mb-4" />
+                                        <p className="text-neutral-500 font-medium mb-1">Journal not available for this workspace yet</p>
+                                        <p className="text-xs text-neutral-400">The general journal database has not been provisioned for this workspace.</p>
                                     </div>
-                                )}
-                                {dateGroupedEntries.map(group => (
-                                    <div key={group.label} className="mb-8">
+                                ) : (
+                                    <>
+                                        {dateGroupedEntries.length === 0 && (
+                                            <div className="text-center py-20">
+                                                <PenLine className="w-12 h-12 text-neutral-200 dark:text-neutral-700 mx-auto mb-4" />
+                                                <p className="text-neutral-400 mb-4">No journal entries found for this criteria.</p>
+                                                {generalDb && (
+                                                    <button
+                                                        onClick={() => setIsAddModalOpen(true)}
+                                                        className="flex items-center gap-2 mx-auto px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl text-sm font-bold transition-colors"
+                                                    >
+                                                        <Plus className="w-4 h-4" /> Create your first note
+                                                    </button>
+                                                )}
+                                            </div>
+                                        )}
+                                        {dateGroupedEntries.map(group => (
+                                            <div key={group.label} className="mb-8">
                                         {/* Date Group Header */}
                                         <div className="flex items-center gap-3 mb-4">
                                             <span className="text-xs font-black uppercase tracking-widest text-neutral-400 dark:text-neutral-500">
@@ -416,9 +430,11 @@ export default function JournalModulePage() {
                                     </div>
                                 ))}
                             </>
-                        ) : (
-                            <JournalDatabaseView entries={filteredEntries} />
                         )}
+                        </>
+                    ) : (
+                        <JournalDatabaseView entries={filteredEntries} />
+                    )}
                     </div>
                 )}
             </main>
@@ -508,7 +524,7 @@ export default function JournalModulePage() {
                                 {draftId && (
                                     <div className="border border-neutral-200 dark:border-white/10 rounded-xl overflow-hidden mt-4">
                                         <div className="bg-white dark:bg-[#191919] min-h-[300px] overflow-y-auto max-h-[50vh]">
-                                            <BlockEditor databaseId={GENERAL_DB_ID} pageId={draftId} />
+                                            <BlockEditor databaseId={resolvedGeneralDbId} pageId={draftId} />
                                         </div>
                                     </div>
                                 )}
@@ -556,7 +572,7 @@ function JournalFeedCard({ entry }: JournalFeedCardProps) {
     const mc = moduleColors[entry.module] || moduleColors.general;
 
     // Determine the correct href: journal entries go to /journal/[id], others go to database record
-    const entryHref = entry.databaseId === GENERAL_DB_ID
+    const entryHref = (entry.databaseId === GENERAL_DB_ID || entry.databaseId.startsWith(GENERAL_DB_ID))
         ? `/admin/journal/${entry.id}` as `/${string}`
         : `/admin/database/${entry.databaseId}/${entry.id}` as `/${string}`;
     

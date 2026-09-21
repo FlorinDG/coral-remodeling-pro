@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { useDatabaseStore } from '@/components/admin/database/store';
+import { useTenant } from '@/context/TenantContext';
 import { ArrowLeft, PenLine, Calendar, User, Notebook } from 'lucide-react';
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
@@ -19,6 +20,9 @@ interface JournalEntryPageClientProps {
 
 export default function JournalEntryPageClient({ entryId, locale }: JournalEntryPageClientProps) {
     const router = useRouter();
+    const { resolveDbId } = useTenant();
+    const resolvedDbId = resolveDbId(GENERAL_DB_ID) || GENERAL_DB_ID;
+
     const [isHydrated, setIsHydrated] = useState(() => {
         if (typeof window === "undefined") return false;
         return useDatabaseStore.persist?.hasHydrated() || false;
@@ -34,10 +38,10 @@ export default function JournalEntryPageClient({ entryId, locale }: JournalEntry
     }, []);
 
     const database = useDatabaseStore(state =>
-        state.databases.find(db => db.id === GENERAL_DB_ID)
+        state.databases.find(db => db.id === resolvedDbId || db.id === GENERAL_DB_ID)
     );
     const page = useDatabaseStore(state =>
-        state.databases.find(db => db.id === GENERAL_DB_ID)?.pages.find(p => p.id === entryId)
+        state.databases.find(db => db.id === resolvedDbId || db.id === GENERAL_DB_ID)?.pages.find(p => p.id === entryId)
     );
 
     if (!isHydrated) {
@@ -107,7 +111,7 @@ export default function JournalEntryPageClient({ entryId, locale }: JournalEntry
                     <input
                         type="text"
                         value={title}
-                        onChange={e => updatePageProperty(GENERAL_DB_ID, entryId, 'title', e.target.value)}
+                        onChange={e => updatePageProperty(database?.id || resolvedDbId, entryId, 'title', e.target.value)}
                         placeholder="Untitled"
                         className="w-full text-4xl font-black tracking-tight text-neutral-900 dark:text-white bg-transparent outline-none border-none focus:ring-0 placeholder:text-neutral-300 dark:placeholder:text-neutral-700 mb-1"
                     />
@@ -122,7 +126,7 @@ export default function JournalEntryPageClient({ entryId, locale }: JournalEntry
                     </div>
 
                     {/* Block editor — the core note-taking experience */}
-                    <BlockEditor databaseId={GENERAL_DB_ID} pageId={entryId} />
+                    <BlockEditor databaseId={database?.id || resolvedDbId} pageId={entryId} />
                 </div>
             </div>
         </div>

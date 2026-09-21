@@ -572,9 +572,35 @@
       "totalBudget": "Total Budget (€)",
       "paidAmount": "Paid Amount (€)",
       "clickToEditTitle": "Click to edit title",
-      "openTaskDetail": "Open task detail",
-      "openTaskToAddAttachments": "Open task to add attachments",
-      "addCard": "Add card"
+      "openTaskDetail": "Deschide detaliile sarcinii",
+      "openTaskToAddAttachments": "Deschide sarcina pentru a adăuga atașamente",
+      "addCard": "Adaugă card"
+    },
+    "bordereau": {
+      "title": "Borderou",
+      "subtitle": "Borderou de șantier",
+      "siteSheet": "Borderou de șantier",
+      "project": "Proiect",
+      "date": "Data",
+      "print": "Tipărește borderoul",
+      "loading": "Se încarcă borderoul...",
+      "projectNotFound": "Proiectul nu a fost găsit",
+      "goBack": "Înapoi",
+      "noticeTitle": "Instrucțiuni de execuție pentru lucrătorii de pe șantier.",
+      "noticeBody": "Acest document conține exclusiv sarcinile de executat și materialele necesare. Datele financiare (prețuri și marje) sunt ascunse.",
+      "tasksTitle": "Listă sarcini & Materiale",
+      "check": "Bifă",
+      "description": "Descriere (Sarcină / Material)",
+      "workerNotes": "Notițe Muncitor",
+      "noTasks": "Nicio sarcină specifică asociată acestui proiect.",
+      "signatureSupervisor": "Semnătură Șef de șantier",
+      "signatureClient": "Semnătură Client (Recepție)"
+    },
+    "documentVocabulary": {
+      "bordereau": "Borderou",
+      "bordereauDeChantier": "Borderou de șantier",
+      "bestelbon": "Comandă furnizor (PO)",
+      "werkbon": "Bon de lucru"
     }
   },
   "Footer": {

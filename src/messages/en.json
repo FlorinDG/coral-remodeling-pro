@@ -575,6 +575,32 @@
       "openTaskDetail": "Open task detail",
       "openTaskToAddAttachments": "Open task to add attachments",
       "addCard": "Add card"
+    },
+    "bordereau": {
+      "title": "Bordereau",
+      "subtitle": "Bordereau de chantier",
+      "siteSheet": "Site Job Sheet",
+      "project": "Project",
+      "date": "Date",
+      "print": "Print Job Sheet",
+      "loading": "Loading Bordereau...",
+      "projectNotFound": "Project Not Found",
+      "goBack": "Go Back",
+      "noticeTitle": "Execution instructions for site workers.",
+      "noticeBody": "This document contains only the tasks to be performed and required materials. Financial data (prices and margins) are hidden.",
+      "tasksTitle": "Task List & Materials",
+      "check": "Check",
+      "description": "Description (Task / Material)",
+      "workerNotes": "Worker Notes",
+      "noTasks": "No specific tasks linked to this project.",
+      "signatureSupervisor": "Site Supervisor Signature",
+      "signatureClient": "Client Signature (Completion)"
+    },
+    "documentVocabulary": {
+      "bordereau": "Bordereau",
+      "bordereauDeChantier": "Bordereau de chantier",
+      "bestelbon": "Purchase Order (PO)",
+      "werkbon": "Work Order"
     }
   },
   "Footer": {

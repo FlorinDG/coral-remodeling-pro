@@ -2,15 +2,18 @@
 
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useDatabaseStore } from '@/components/admin/database/store';
 import { ArrowLeft, Printer, HardHat, CheckSquare } from 'lucide-react';
 import { Page } from '@/components/admin/database/types';
 import { useTenant } from '@/context/TenantContext';
+import { formatDate } from '@/lib/format/date';
 
 export default function BordereauPage() {
     const params = useParams();
     const router = useRouter();
     const id = params?.id as string;
+    const t = useTranslations('Admin.bordereau');
 
     const [isHydrated, setIsHydrated] = useState(() => {
         if (typeof window === "undefined") return false;
@@ -41,8 +44,8 @@ export default function BordereauPage() {
         });
     }, [allTasks, id]);
 
-    if (!isHydrated) return <div className="flex h-screen items-center justify-center font-mono text-sm text-neutral-500">Loading Bordereau...</div>;
-    if (!project) return <div className="flex h-screen items-center justify-center flex-col gap-4"><h1>Project Not Found</h1><button onClick={() => router.back()} className="text-blue-500 underline">Go Back</button></div>;
+    if (!isHydrated) return <div className="flex h-screen items-center justify-center font-mono text-sm text-neutral-500">{t('loading')}</div>;
+    if (!project) return <div className="flex h-screen items-center justify-center flex-col gap-4"><h1>{t('projectNotFound')}</h1><button onClick={() => router.back()} className="text-blue-500 underline">{t('goBack')}</button></div>;
 
     const projectTitle = String(project.properties['title'] || 'Unnamed Project');
 
@@ -59,7 +62,7 @@ export default function BordereauPage() {
                         <ArrowLeft className="w-5 h-5 text-neutral-500" />
                     </button>
                     <div>
-                        <h1 className="text-lg font-bold">Bordereau / Werkbon</h1>
+                        <h1 className="text-lg font-bold">{t('title')}</h1>
                         <p className="text-xs text-neutral-500 font-mono tracking-wider">{id}</p>
                     </div>
                 </div>
@@ -67,7 +70,7 @@ export default function BordereauPage() {
                     onClick={handlePrint}
                     className="flex items-center gap-2 px-4 py-2 bg-black dark:bg-white text-white dark:text-black rounded-lg text-sm font-bold shadow-sm hover:opacity-80 transition-opacity"
                 >
-                    <Printer className="w-4 h-4" /> Print Job Sheet
+                    <Printer className="w-4 h-4" /> {t('print')}
                 </button>
             </div>
 
@@ -78,13 +81,13 @@ export default function BordereauPage() {
                     {/* Header */}
                     <div className="flex justify-between items-start border-b-2 border-black pb-6 mb-8">
                         <div>
-                            <h1 className="text-3xl font-black uppercase tracking-tight">Werkbon</h1>
-                            <h2 className="text-xl font-bold text-neutral-600 mt-1">Bordereau De Chantier</h2>
+                            <h1 className="text-3xl font-black uppercase tracking-tight">{t('title')}</h1>
+                            <h2 className="text-xl font-bold text-neutral-600 mt-1">{t('subtitle')}</h2>
                         </div>
                         <div className="text-right">
-                            <p className="font-bold text-sm uppercase tracking-widest text-neutral-500 mb-1">Project</p>
+                            <p className="font-bold text-sm uppercase tracking-widest text-neutral-500 mb-1">{t('project')}</p>
                             <p className="text-lg font-bold">{projectTitle}</p>
-                            <p className="text-sm font-mono mt-2 text-neutral-500">Datum: {new Date().toLocaleDateString('nl-BE')}</p>
+                            <p className="text-sm font-mono mt-2 text-neutral-500">{t('date')}: {formatDate(new Date())}</p>
                         </div>
                     </div>
 
@@ -92,29 +95,29 @@ export default function BordereauPage() {
                     <div className="bg-neutral-100 p-4 border-l-4 border-black mb-8 flex items-start gap-3">
                         <HardHat className="w-6 h-6 shrink-0 mt-0.5" />
                         <div>
-                            <p className="text-sm font-bold">Uitvoeringsinstructies voor arbeiders op de werf.</p>
-                            <p className="text-xs text-neutral-600 mt-1">Dit document bevat uitsluitend de uit te voeren taken en de benodigde materialen. Financiële gegevens (prijzen en marges) zijn verborgen.</p>
+                            <p className="text-sm font-bold">{t('noticeTitle')}</p>
+                            <p className="text-xs text-neutral-600 mt-1">{t('noticeBody')}</p>
                         </div>
                     </div>
 
                     {/* Tasks Table */}
                     <h3 className="text-lg font-bold border-b border-black pb-2 mb-4 flex items-center gap-2">
-                        <CheckSquare className="w-5 h-5" /> Takenlijst & Materialen
+                        <CheckSquare className="w-5 h-5" /> {t('tasksTitle')}
                     </h3>
 
                     <div className="border border-black">
                         <table className="w-full text-left border-collapse">
                             <thead>
                                 <tr className="border-b border-black bg-neutral-100">
-                                    <th className="p-3 text-xs font-bold uppercase tracking-wider w-16 text-center border-r border-black">Check</th>
-                                    <th className="p-3 text-xs font-bold uppercase tracking-wider">Omschrijving (Taak / Materiaal)</th>
-                                    <th className="p-3 text-xs font-bold uppercase tracking-wider w-32 border-l border-black">Notities Arbeider</th>
+                                    <th className="p-3 text-xs font-bold uppercase tracking-wider w-16 text-center border-r border-black">{t('check')}</th>
+                                    <th className="p-3 text-xs font-bold uppercase tracking-wider">{t('description')}</th>
+                                    <th className="p-3 text-xs font-bold uppercase tracking-wider w-32 border-l border-black">{t('workerNotes')}</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {tasks.length === 0 ? (
                                     <tr>
-                                        <td colSpan={3} className="p-8 text-center text-sm font-medium text-neutral-500 italic">Geen specifieke taken gekoppeld aan dit project.</td>
+                                        <td colSpan={3} className="p-8 text-center text-sm font-medium text-neutral-500 italic">{t('noTasks')}</td>
                                     </tr>
                                 ) : (
                                     tasks.map((task, index) => (
@@ -138,10 +141,10 @@ export default function BordereauPage() {
                     {/* Signatures */}
                     <div className="mt-16 grid grid-cols-2 gap-12">
                         <div className="border-t border-black pt-2">
-                            <p className="text-xs font-bold uppercase tracking-widest text-center">Handtekening Werfleider</p>
+                            <p className="text-xs font-bold uppercase tracking-widest text-center">{t('signatureSupervisor')}</p>
                         </div>
                         <div className="border-t border-black pt-2">
-                            <p className="text-xs font-bold uppercase tracking-widest text-center">Handtekening Klant (Oplevering)</p>
+                            <p className="text-xs font-bold uppercase tracking-widest text-center">{t('signatureClient')}</p>
                         </div>
                     </div>
 

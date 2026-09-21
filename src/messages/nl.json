@@ -572,9 +572,35 @@
       "totalBudget": "Total Budget (€)",
       "paidAmount": "Paid Amount (€)",
       "clickToEditTitle": "Click to edit title",
-      "openTaskDetail": "Open task detail",
-      "openTaskToAddAttachments": "Open task to add attachments",
-      "addCard": "Add card"
+      "openTaskDetail": "Open taakdetail",
+      "openTaskToAddAttachments": "Open taak om bijlagen toe te voegen",
+      "addCard": "Kaart toevoegen"
+    },
+    "bordereau": {
+      "title": "Bordereau",
+      "subtitle": "Bordereau de chantier",
+      "siteSheet": "Bordereau de chantier",
+      "project": "Project",
+      "date": "Datum",
+      "print": "Bordereau afdrukken",
+      "loading": "Bordereau laden...",
+      "projectNotFound": "Project niet gevonden",
+      "goBack": "Ga terug",
+      "noticeTitle": "Uitvoeringsinstructies voor arbeiders op de werf.",
+      "noticeBody": "Dit document bevat uitsluitend de uit te voeren taken en de benodigde materialen. Financiële gegevens (prijzen en marges) zijn verborgen.",
+      "tasksTitle": "Takenlijst & Materialen",
+      "check": "Check",
+      "description": "Omschrijving (Taak / Materiaal)",
+      "workerNotes": "Notities Arbeider",
+      "noTasks": "Geen specifieke taken gekoppeld aan dit project.",
+      "signatureSupervisor": "Handtekening Werfleider",
+      "signatureClient": "Handtekening Klant (Oplevering)"
+    },
+    "documentVocabulary": {
+      "bordereau": "Bordereau",
+      "bordereauDeChantier": "Bordereau de chantier",
+      "bestelbon": "Bestelbon",
+      "werkbon": "Werkbon"
     }
   },
   "Footer": {

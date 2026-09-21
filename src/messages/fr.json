@@ -571,9 +571,35 @@
       "totalBudget": "Total Budget (€)",
       "paidAmount": "Paid Amount (€)",
       "clickToEditTitle": "Click to edit title",
-      "openTaskDetail": "Open task detail",
-      "openTaskToAddAttachments": "Open task to add attachments",
-      "addCard": "Add card"
+      "openTaskDetail": "Ouvrir le détail de la tâche",
+      "openTaskToAddAttachments": "Ouvrir la tâche pour ajouter des pièces jointes",
+      "addCard": "Ajouter une carte"
+    },
+    "bordereau": {
+      "title": "Bordereau",
+      "subtitle": "Bordereau de chantier",
+      "siteSheet": "Bordereau de chantier",
+      "project": "Projet",
+      "date": "Date",
+      "print": "Imprimer le bordereau",
+      "loading": "Chargement du bordereau...",
+      "projectNotFound": "Projet non trouvé",
+      "goBack": "Retour",
+      "noticeTitle": "Instructions d'exécution pour les ouvriers sur le chantier.",
+      "noticeBody": "Ce document contient uniquement les tâches à exécuter et les matériaux requis. Les données financières (prix et marges) sont masquées.",
+      "tasksTitle": "Liste des tâches & Matériaux",
+      "check": "Vérif",
+      "description": "Description (Tâche / Matériel)",
+      "workerNotes": "Notes Ouvrier",
+      "noTasks": "Aucune tâche spécifique liée à ce projet.",
+      "signatureSupervisor": "Signature Chef de chantier",
+      "signatureClient": "Signature Client (Réception)"
+    },
+    "documentVocabulary": {
+      "bordereau": "Bordereau",
+      "bordereauDeChantier": "Bordereau de chantier",
+      "bestelbon": "Bon de commande",
+      "werkbon": "Bon de travail"
     }
   },
   "Footer": {

@@ -42,6 +42,22 @@ export async function streamToBuffer(stream: ReadableStream | NodeJS.ReadableStr
 }
 
 /**
+ * Safely decodes storage key segments.
+ * Accepts either an array of path segments (e.g. from route params) or a string key.
+ * Decodes per segment (preserving path structure).
+ * Already-decoded keys survive unchanged; malformed sequences return null rather than throw.
+ */
+export function decodeStorageKey(raw: string | string[]): string | null {
+    if (!raw) return null;
+    try {
+        const segments = Array.isArray(raw) ? raw : raw.split('/');
+        return segments.map(segment => decodeURIComponent(segment)).join('/');
+    } catch {
+        return null;
+    }
+}
+
+/**
  * Normalizes document storage keys across legacy formats (C1):
  * - "t_<tenantId>/..." -> trimmed key
  * - "/api/files/..." -> strips prefix
@@ -70,6 +86,10 @@ export function resolveDocumentKey(value: string | null | undefined, tenantId?: 
             return null;
         }
     }
+
+    const decoded = decodeStorageKey(key);
+    if (!decoded) return null;
+    key = decoded;
 
     if (tenantId && !key.startsWith(`t_${tenantId}/`)) {
         return null;

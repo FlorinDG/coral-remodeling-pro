@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert';
+import { decodeStorageKey } from '@/lib/storage';
 
 // We isolate the logic to test it without Next.js dependencies
 function checkIsolation(sessionTenantId: string | undefined, requestedKeySegments: string[]): { allowed: boolean, error?: string, status?: number } {
@@ -11,7 +12,10 @@ function checkIsolation(sessionTenantId: string | undefined, requestedKeySegment
         return { allowed: false, error: 'Key is required', status: 400 };
     }
 
-    const key = requestedKeySegments.map(segment => decodeURIComponent(segment)).join('/');
+    const key = decodeStorageKey(requestedKeySegments);
+    if (!key) {
+        return { allowed: false, error: 'Invalid file key', status: 400 };
+    }
     const requiredPrefix = `t_${sessionTenantId}/`;
     
     if (!key.startsWith(requiredPrefix)) {

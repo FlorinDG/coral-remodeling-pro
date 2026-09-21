@@ -9,7 +9,7 @@
  */
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { streamToBuffer, resolveDocumentKey } from '../src/lib/storage/index.ts';
+import { streamToBuffer, resolveDocumentKey, decodeStorageKey } from '../src/lib/storage/index.ts';
 import type { StorageProvider, StoragePutResult, StorageListEntry } from '../src/lib/storage/index.ts';
 
 class StubStorageProvider implements StorageProvider {
@@ -151,3 +151,51 @@ describe('resolveDocumentKey (C1 legacy shapes)', () => {
         assert.equal(foreignKey, null);
     });
 });
+
+describe('KERN-1 — decodeStorageKey & resolveDocumentKey decodes', () => {
+    test('decodeStorageKey: decodes string key with spaces and encoded slashes', () => {
+        const decoded = decodeStorageKey('t_tenant1%2Freceipts%2Fplan%202.pdf');
+        assert.equal(decoded, 't_tenant1/receipts/plan 2.pdf');
+    });
+
+    test('decodeStorageKey: decodes array of path segments correctly', () => {
+        const decoded = decodeStorageKey(['t_tenant1', 'receipts', 'plan%202.pdf']);
+        assert.equal(decoded, 't_tenant1/receipts/plan 2.pdf');
+    });
+
+    test('decodeStorageKey: leaves already-decoded key unchanged', () => {
+        const decoded = decodeStorageKey('t_tenant1/receipts/plan 2.pdf');
+        assert.equal(decoded, 't_tenant1/receipts/plan 2.pdf');
+    });
+
+    test('decodeStorageKey: returns null on malformed percent sequence rather than throw', () => {
+        const decoded = decodeStorageKey('t_tenant1/receipts/%ZZ.pdf');
+        assert.equal(decoded, null);
+
+        const decodedArray = decodeStorageKey(['t_tenant1', '%ZZ']);
+        assert.equal(decodedArray, null);
+    });
+
+    test('resolveDocumentKey: decodes key with spaces and %2F from TicketCaptureModal format', () => {
+        // TicketCaptureModal produces: /api/files/${encodeURIComponent(uploadRes.key)}
+        const encodedUrl = '/api/files/t_tenant1%2Freceipts%2Fplan%202.pdf';
+        const key = resolveDocumentKey(encodedUrl, 'tenant1');
+        assert.equal(key, 't_tenant1/receipts/plan 2.pdf');
+    });
+
+    test('resolveDocumentKey: bare key resolves without regression', () => {
+        const bareKey = 't_tenant1/receipts/a.pdf';
+        assert.equal(resolveDocumentKey(bareKey, 'tenant1'), 't_tenant1/receipts/a.pdf');
+    });
+
+    test('resolveDocumentKey: foreign tenant encoded key returns null', () => {
+        const foreignEncoded = '/api/files/t_other999%2Freceipts%2Fplan%202.pdf';
+        assert.equal(resolveDocumentKey(foreignEncoded, 'tenant1'), null);
+    });
+
+    test('resolveDocumentKey: malformed percent sequence returns null and does not throw', () => {
+        const malformedUrl = '/api/files/t_tenant1/receipts/malformed%ZZ.pdf';
+        assert.equal(resolveDocumentKey(malformedUrl, 'tenant1'), null);
+    });
+});
+

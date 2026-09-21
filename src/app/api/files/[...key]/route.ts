@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { get } from '@vercel/blob';
+import { decodeStorageKey } from '@/lib/storage';
 
 export const runtime = 'nodejs'; // Use Node.js runtime for large file streaming
 
@@ -22,8 +23,11 @@ export async function GET(
         return NextResponse.json({ error: 'Key is required' }, { status: 400 });
     }
 
-    // Decode each segment to correctly reconstruct the key with spaces, etc.
-    const key = rawKeySegments.map(segment => decodeURIComponent(segment)).join('/');
+    // Decode segments using shared storage helper (KERN-1)
+    const key = decodeStorageKey(rawKeySegments);
+    if (!key) {
+        return NextResponse.json({ error: 'Invalid file key' }, { status: 400 });
+    }
     
     // (b) asserts the requested key startsWith t_{sessionTenantId}/ — reject otherwise
     // This is the identity-check that replaces Drive's isFolderOwnedByTenant parent-walk; one prefix assert, fail-closed

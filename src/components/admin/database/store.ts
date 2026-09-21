@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage, StateStorage } from 'zustand/middleware';
 import { get, set, del } from 'idb-keyval';
 import { v4 as uuidv4 } from 'uuid';
+import { mintDatabaseId } from '@/lib/database-identity';
 import { Database, Page, Property, PropertyValue, PropertyType, PropertyConfig, FilterRule, SortRule, Block, DatabaseView, ViewPropertyState, PageIndexEntry } from './types';
 import { saveGlobalDatabase, saveGlobalPage, saveGlobalPagesBatch, deleteGlobalDatabase, deleteGlobalPage, getDatabasePages } from '@/app/actions/global-databases';
 import { generateOGM } from '@/lib/ogm';
@@ -172,7 +173,7 @@ interface DatabaseState {
     _pushUndo: (entry: UndoEntry) => void;
 
     // Database Operations
-    createDatabase: (name: string, description?: string, specificId?: string, properties?: Property[]) => Database;
+    createDatabase: (name: string, description?: string, properties?: Property[]) => Database;
     updateDatabase: (id: string, updates: Partial<Database>) => void;
     deleteDatabase: (id: string) => void;
     getDatabase: (id: string) => Database | undefined;
@@ -856,13 +857,13 @@ export const useDatabaseStore = create<DatabaseState>()(
                 }));
             },
 
-            createDatabase: (name, description, specificId, properties) => {
+            createDatabase: (name, description, properties) => {
                 if (!name || name.trim() === '' || name === 'New Workspace' || name === 'New Database' || name === 'GlobalDatabase') {
                     console.warn(`[store] Blocked auto-creation of garbage database: ${name}`);
                     return null as any;
                 }
                 const newDatabase: Database = {
-                    id: specificId || uuidv4(),
+                    id: mintDatabaseId(),
                     name,
                     description: description || null,
                     properties: properties || [

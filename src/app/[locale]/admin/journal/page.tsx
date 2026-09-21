@@ -337,16 +337,6 @@ export default function JournalModulePage() {
                                 setLinkRecordId('');
                                 setNewEntryTitle('');
                                 
-                                // Ensure journal DB exists
-                                let db = useDatabaseStore.getState().databases.find(d => d.id === GENERAL_DB_ID);
-                                if (!db) {
-                                    db = useDatabaseStore.getState().createDatabase('General Journal', 'Free-form internal notes and journal entries', GENERAL_DB_ID, [
-                                        { id: 'title', name: 'Title', type: 'text' },
-                                        { id: 'author', name: 'Author', type: 'text' },
-                                        { id: 'created', name: 'Created', type: 'created_time' },
-                                    ]);
-                                }
-
                                 // Create the draft page so BlockEditor can attach to it
                                 useDatabaseStore.getState().createPage(GENERAL_DB_ID, {
                                     title: `Note — ${format(new Date(), 'dd MMM yyyy, HH:mm')}`,

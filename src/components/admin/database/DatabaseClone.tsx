@@ -952,36 +952,7 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
       }).catch(e => console.error('[DatabaseClone] Server fetch failed:', e));
       return;
     }
-
-    // For client-only databases, auto-create if missing
-    const existing = useDatabaseStore.getState().getDatabase(resolvedId);
-    if (existing) return;
-
-    setAutoInitializing(true);
-    let parsedName = 'New Workspace';
-    if (databaseId === 'db-quotations') parsedName = 'Quotations';
-    if (databaseId === 'db-articles') parsedName = 'Material Articles';
-    if (databaseId === 'db-bestek') parsedName = 'Bestek Templates';
-    if (databaseId === 'db-1') parsedName = 'Projects';
-    if (databaseId === 'db-expenses') parsedName = 'Purchase Invoices';
-    if (databaseId === 'db-tickets') parsedName = 'Expense Tickets';
-    if (databaseId === 'db-invoices') parsedName = 'Sales Invoices';
-    if (databaseId === 'db-clients') parsedName = 'Contacts';
-    if (databaseId === 'db-suppliers') parsedName = 'Suppliers';
-    if (databaseId === 'db-crm') parsedName = 'Main Pipeline';
-    if (databaseId === 'db-bobex') parsedName = 'Bobex Pipeline';
-    if (databaseId === 'db-payments-in') parsedName = 'Received Payments';
-    if (databaseId === 'db-payments-out') parsedName = 'Outgoing Payments';
-    if (databaseId === 'db-site-visits') parsedName = 'Site Visits';
-
-    if (!parsedName || parsedName.trim() === '' || parsedName === 'New Workspace' || parsedName === 'New Database' || parsedName === 'GlobalDatabase') {
-      setAutoInitializing(false);
-      return;
-    }
-
-    const customProps = DEFAULT_PROPERTIES_MAP[databaseId];
-    useDatabaseStore.getState().createDatabase(parsedName, undefined, resolvedId, customProps);
-  }, [database, databaseId, resolvedId, autoInitializing, hydrated, clientFetchAttempted, DEFAULT_PROPERTIES_MAP]);
+  }, [database, databaseId, resolvedId, autoInitializing, hydrated, clientFetchAttempted]);
 
   if (!database || (!isPagesLoaded && isPagesLoading && (!database.pages || database.pages.length === 0))) {
     return (

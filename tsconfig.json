@@ -44,6 +44,11 @@
     ".next.nosync",
     "scripts",
     "mcp-server",
-    "tests"
+    "tests",
+    "**/* [0-9].ts",
+    "**/* [0-9].tsx",
+    "**/* copy.ts",
+    "**/* copy.tsx",
+    "**/*.tmp"
   ]
 }

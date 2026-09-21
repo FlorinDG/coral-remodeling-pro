@@ -54,9 +54,13 @@ dev.log
 /scripts/
 
 # iCloud / Dropbox sync conflict files
-* 2.*
-* 2/
+* [0-9].*
+* [0-9]/
+* copy.*
+* copy/
+*.tmp
 
 # Office / Excel temporary lock files
 .~lock.*#
 ~$*
+

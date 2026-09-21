@@ -1044,6 +1044,8 @@
     }
   },
   "Errors": {
-    "connectionLostRetrying": "Conexiune pierdută — se reîncearcă..."
+    "connectionLostRetrying": "Conexiune pierdută — se reîncearcă...",
+    "documentAlreadyExists": "Există deja un fișier cu acest nume atașat la acest document. Înlocuiți-l sau redenumiți fișierul.",
+    "documentArchivedCannotReplace": "Acest document este arhivat și nu poate fi înlocuit."
   }
 }

@@ -1044,7 +1044,9 @@
     }
   },
   "Errors": {
-    "connectionLostRetrying": "Connection lost — retrying..."
+    "connectionLostRetrying": "Connection lost — retrying...",
+    "documentAlreadyExists": "A file with this name is already attached to this document. Replace it, or rename the file.",
+    "documentArchivedCannotReplace": "This document is archived and cannot be replaced."
   }
 }
 

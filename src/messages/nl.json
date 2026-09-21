@@ -1044,7 +1044,9 @@
     }
   },
   "Errors": {
-    "connectionLostRetrying": "Verbinding verbroken — opnieuw proberen..."
+    "connectionLostRetrying": "Verbinding verbroken — opnieuw proberen...",
+    "documentAlreadyExists": "Er is al een bestand met deze naam gekoppeld aan dit document. Vervang het, of hernoem het bestand.",
+    "documentArchivedCannotReplace": "Dit document is gearchiveerd en kan niet worden vervangen."
   }
 }
 

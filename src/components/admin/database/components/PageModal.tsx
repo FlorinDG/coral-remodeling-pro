@@ -1216,6 +1216,7 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                                                                                                 const { uploadFileAction } = await import('@/app/actions/files');
                                                                                                 
                                                                                                 let lastKey = null;
+                                                                                                let uploadError: string | null = null;
                                                                                                 for (const file of files) {
                                                                                                     const fd = new FormData();
                                                                                                     fd.append('file', file);
@@ -1223,13 +1224,15 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                                                                                                     if (res.success && res.key) {
                                                                                                         lastKey = res.key;
                                                                                                     } else {
-                                                                                                        toast.error(res.error || `Upload failed for ${file.name}`);
+                                                                                                        uploadError = res.error || `Upload failed for ${file.name}`;
                                                                                                     }
                                                                                                 }
                                                                                                 
                                                                                                 if (lastKey) {
                                                                                                     updatePageProperty(databaseId, pageId, prop.id, lastKey);
                                                                                                     toast.success('Document(s) uploaded and attached', { id: 'upload' });
+                                                                                                } else {
+                                                                                                    toast.error(uploadError || 'Upload failed', { id: 'upload' });
                                                                                                 }
                                                                                             } catch (err: unknown) {
                                                                                                 toast.error(err instanceof Error ? err.message : 'Upload error', { id: 'upload' });

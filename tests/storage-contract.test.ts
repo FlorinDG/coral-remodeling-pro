@@ -9,8 +9,8 @@
  */
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { streamToBuffer, resolveDocumentKey, decodeStorageKey } from '../src/lib/storage/index.ts';
-import type { StorageProvider, StoragePutResult, StorageListEntry } from '../src/lib/storage/index.ts';
+import { streamToBuffer, resolveDocumentKey, decodeStorageKey, StorageKeyConflictError, DocumentArchivedError } from '../src/lib/storage/index.ts';
+import type { StorageProvider, StoragePutResult, StorageListEntry, StoragePutOptions } from '../src/lib/storage/index.ts';
 
 class StubStorageProvider implements StorageProvider {
     private store = new Map<string, Buffer>();
@@ -19,7 +19,14 @@ class StubStorageProvider implements StorageProvider {
         this.store.set(key, data);
     }
 
-    async put(key: string, data: any): Promise<StoragePutResult> {
+    async put(key: string, data: any, opts?: StoragePutOptions): Promise<StoragePutResult> {
+        const isArchivePath = key.includes('/documents/');
+        const allowOverwrite = isArchivePath ? false : (opts?.overwrite ?? false);
+
+        if (this.store.has(key) && !allowOverwrite) {
+            if (isArchivePath) throw new DocumentArchivedError();
+            throw new StorageKeyConflictError();
+        }
         const buf = Buffer.isBuffer(data) ? data : Buffer.from(data);
         this.store.set(key, buf);
         return { key, url: this.get(key) };
@@ -196,6 +203,76 @@ describe('KERN-1 — decodeStorageKey & resolveDocumentKey decodes', () => {
     test('resolveDocumentKey: malformed percent sequence returns null and does not throw', () => {
         const malformedUrl = '/api/files/t_tenant1/receipts/malformed%ZZ.pdf';
         assert.equal(resolveDocumentKey(malformedUrl, 'tenant1'), null);
+    });
+});
+
+describe('BLOB-7 — overwrite protection & named errors', () => {
+    test('default put (overwrite: false) throws StorageKeyConflictError on existing key', async () => {
+        const provider = new StubStorageProvider();
+        const key = 't_tenant1/receipts/factuur.pdf';
+        provider.seed(key, Buffer.from('original content'));
+
+        await assert.rejects(
+            async () => {
+                await provider.put(key, Buffer.from('new content'));
+            },
+            (err: any) => {
+                assert.ok(err instanceof StorageKeyConflictError);
+                assert.equal(err.code, 'STORAGE_KEY_CONFLICT');
+                return true;
+            }
+        );
+
+        // Original content preserved byte-identical
+        const current = await provider.read(key);
+        assert.equal(current.toString('utf-8'), 'original content');
+    });
+
+    test('explicit put with overwrite: true replaces non-archive document cleanly', async () => {
+        const provider = new StubStorageProvider();
+        const key = 't_tenant1/purchase-invoice/page-123/factuur.pdf';
+        provider.seed(key, Buffer.from('draft v1'));
+
+        const result = await provider.put(key, Buffer.from('corrected v2'), { overwrite: true });
+        assert.equal(result.key, key);
+
+        const updated = await provider.read(key);
+        assert.equal(updated.toString('utf-8'), 'corrected v2');
+    });
+
+    test('archive path /documents/ cannot be overwritten even if overwrite: true is requested', async () => {
+        const provider = new StubStorageProvider();
+        const archiveKey = 't_tenant1/documents/db-invoices/page-456/Factuur_001-v1.pdf';
+        provider.seed(archiveKey, Buffer.from('sent and locked PDF'));
+
+        await assert.rejects(
+            async () => {
+                await provider.put(archiveKey, Buffer.from('tampered content'), { overwrite: true });
+            },
+            (err: any) => {
+                assert.ok(err instanceof DocumentArchivedError);
+                assert.equal(err.code, 'DOCUMENT_ARCHIVED');
+                return true;
+            }
+        );
+
+        // Byte-identical guarantee for archived documents
+        const preserved = await provider.read(archiveKey);
+        assert.equal(preserved.toString('utf-8'), 'sent and locked PDF');
+    });
+
+    test('different filename creates separate entry without collision', async () => {
+        const provider = new StubStorageProvider();
+        const key1 = 't_tenant1/receipts/ticket-1.pdf';
+        const key2 = 't_tenant1/receipts/ticket-2.pdf';
+
+        await provider.put(key1, Buffer.from('ticket 1'));
+        await provider.put(key2, Buffer.from('ticket 2'));
+
+        const read1 = await provider.read(key1);
+        const read2 = await provider.read(key2);
+        assert.equal(read1.toString('utf-8'), 'ticket 1');
+        assert.equal(read2.toString('utf-8'), 'ticket 2');
     });
 });
 

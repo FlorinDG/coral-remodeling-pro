@@ -58,7 +58,7 @@ export default function AiDocumentImportModal({ onClose, targetDatabaseId = 'db-
                 fd.append('file', job.file);
                 const uploadRes = await uploadFileAction(fd, targetDatabaseId === 'db-expenses' ? 'purchase-invoice' : 'receipt', pageRes.page.id);
                 
-                if (!uploadRes.success) throw new Error("Upload failed");
+                if (!uploadRes.success) throw new Error(uploadRes.error || "Upload failed");
 
                 setJobs(prev => prev.map(j => j.id === job.id ? { ...j, status: 'processing' } : j));
 

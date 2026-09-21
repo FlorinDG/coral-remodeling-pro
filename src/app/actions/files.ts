@@ -1,8 +1,39 @@
 'use server';
 
 import { auth } from '@/auth';
-import { storage } from '@/lib/storage';
+import { storage, DocumentArchivedError, StorageKeyConflictError } from '@/lib/storage';
 import { v4 as uuidv4 } from 'uuid';
+
+const STORAGE_ERROR_FALLBACKS: Record<string, Record<string, string>> = {
+    nl: {
+        documentAlreadyExists: 'Er is al een bestand met deze naam gekoppeld aan dit document. Vervang het, of hernoem het bestand.',
+        documentArchivedCannotReplace: 'Dit document is gearchiveerd en kan niet worden vervangen.',
+    },
+    en: {
+        documentAlreadyExists: 'A file with this name is already attached to this document. Replace it, or rename the file.',
+        documentArchivedCannotReplace: 'This document is archived and cannot be replaced.',
+    },
+    fr: {
+        documentAlreadyExists: 'Un fichier portant ce nom est déjà associé à ce document. Remplacez-le ou renommez le fichier.',
+        documentArchivedCannotReplace: 'Ce document est archivé et ne peut pas être remplacé.',
+    },
+    ro: {
+        documentAlreadyExists: 'Există deja un fișier cu acest nume atașat la acest document. Înlocuiți-l sau redenumiți fișierul.',
+        documentArchivedCannotReplace: 'Acest document este arhivat și nu poate fi înlocuit.',
+    },
+};
+
+async function getStorageErrorMessage(key: 'documentAlreadyExists' | 'documentArchivedCannotReplace'): Promise<string> {
+    try {
+        const { getTranslations } = await import('next-intl/server');
+        const t = await getTranslations('Errors');
+        const msg = t(key);
+        if (msg && msg !== `Errors.${key}`) return msg;
+    } catch {
+        // Fall back gracefully when outside request context
+    }
+    return STORAGE_ERROR_FALLBACKS.nl[key];
+}
 
 export async function uploadFileAction(formData: FormData, recordType: string, recordId?: string) {
     const session = await auth();
@@ -25,11 +56,26 @@ export async function uploadFileAction(formData: FormData, recordType: string, r
     const cleanFilename = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
     const key = `t_${tenantId}/${recordType}/${finalRecordId}/${cleanFilename}`;
 
+    // Refuse writes to archive paths (DOC-ARCH-1 / BLOB-7)
+    if (recordType === 'document' || recordType === 'documents' || key.includes('/documents/')) {
+        return {
+            success: false,
+            error: await getStorageErrorMessage('documentArchivedCannotReplace'),
+        };
+    }
+
     try {
-        const result = await storage.put(key, file, { contentType: file.type });
+        // BLOB-7: User explicitly attaching/replacing a file on their own record passes overwrite: true
+        const result = await storage.put(key, file, { contentType: file.type, overwrite: true });
         return { success: true, key: result.key, recordId: finalRecordId };
     } catch (e: unknown) {
         console.error('Failed to upload file:', e);
+        if (e instanceof DocumentArchivedError) {
+            return { success: false, error: await getStorageErrorMessage('documentArchivedCannotReplace') };
+        }
+        if (e instanceof StorageKeyConflictError) {
+            return { success: false, error: await getStorageErrorMessage('documentAlreadyExists') };
+        }
         return { success: false, error: e instanceof Error ? e.message : 'Upload failed' };
     }
 }

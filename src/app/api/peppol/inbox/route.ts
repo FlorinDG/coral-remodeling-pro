@@ -318,7 +318,7 @@ export async function GET(req: Request) {
                 if (pdfResult) {
                     const safeName = pdfResult.fileName.replace(/[^a-zA-Z0-9.\-_]/g, '_');
                     const key = `t_${tenantId}/purchase-invoice/${pageId}/${safeName}`;
-                    const result = await storage.put(key, pdfResult.buffer, { contentType: 'application/pdf' });
+                    const result = await storage.put(key, pdfResult.buffer, { contentType: 'application/pdf', overwrite: false });
                     receiptUrl = result.key;
                 }
             } catch (pdfErr) {

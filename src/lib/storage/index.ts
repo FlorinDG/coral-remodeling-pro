@@ -105,8 +105,25 @@ export function resolveDocumentKey(value: string | null | undefined, tenantId?: 
     return key;
 }
 
+export class StorageKeyConflictError extends Error {
+    readonly code = 'STORAGE_KEY_CONFLICT';
+    constructor(message = 'A file with this name already exists in storage.') {
+        super(message);
+        this.name = 'StorageKeyConflictError';
+    }
+}
+
+export class DocumentArchivedError extends Error {
+    readonly code = 'DOCUMENT_ARCHIVED';
+    constructor(message = 'This document is archived and cannot be replaced.') {
+        super(message);
+        this.name = 'DocumentArchivedError';
+    }
+}
+
 export interface StoragePutOptions {
     contentType?: string;
+    overwrite?: boolean;
 }
 
 export interface StoragePutResult {
@@ -148,17 +165,29 @@ export class BlobStorageProvider implements StorageProvider {
     }
 
     async put(key: string, data: string | Buffer | Blob | ArrayBuffer | ReadableStream, opts?: StoragePutOptions): Promise<StoragePutResult> {
-        const result = await put(key, data, {
-            access: 'private',
-            token: this.token,
-            contentType: opts?.contentType,
-            addRandomSuffix: false // We use our own keys
-        });
+        try {
+            const result = await put(key, data, {
+                access: 'private',
+                token: this.token,
+                contentType: opts?.contentType,
+                addRandomSuffix: false, // We use our own keys
+                allowOverwrite: opts?.overwrite ?? false
+            });
 
-        return {
-            key: result.pathname,
-            url: this.get(result.pathname)
-        };
+            return {
+                key: result.pathname,
+                url: this.get(result.pathname)
+            };
+        } catch (err: any) {
+            const msg = (err?.message || '').toLowerCase();
+            if (msg.includes('already exists') || err?.name === 'BlobAlreadyExistsError') {
+                if (key.includes('/documents/')) {
+                    throw new DocumentArchivedError();
+                }
+                throw new StorageKeyConflictError();
+            }
+            throw err;
+        }
     }
 
     get(key: string): string {

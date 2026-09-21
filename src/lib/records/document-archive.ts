@@ -60,7 +60,7 @@ export async function archiveDocument(params: {
         const filename = `${safeNumber}-v${version}${reconstructed ? '-reconstructed' : ''}.pdf`;
         const key = `${prefix}${filename}`;
 
-        const result = await storageProvider.put(key, pdf, { contentType: 'application/pdf' });
+        const result = await storageProvider.put(key, pdf, { contentType: 'application/pdf', overwrite: false });
         if (!result?.key) {
             throw new DocumentArchiveError(`[DocumentArchive] Storage put failed to return a key for '${key}'`);
         }

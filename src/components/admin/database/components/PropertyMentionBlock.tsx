@@ -4,6 +4,7 @@ import React, { useMemo } from 'react';
 import { useDatabaseStore } from '../store';
 import { Block, Database, Page, PropertyValue } from '../types';
 import { Database as DatabaseIcon, Hash, AlertCircle, ChevronRight } from 'lucide-react';
+import { resolveRelationTarget } from '@/lib/relations/resolve';
 
 // ────────────────────────────────────────────────────────────────────────────────
 // PropertyMentionBlock — renders a resolved @prop or @this_page mention
@@ -27,7 +28,8 @@ function resolveValue(
     currentPageId?: string,
     currentDatabaseId?: string
 ): { value: PropertyValue; label: string; error?: string } {
-    const targetDb = databases.find(d => d.id === config.databaseId);
+    const targetRes = resolveRelationTarget(config.databaseId, { databases });
+    const targetDb = targetRes.targetDatabase || databases.find(d => d.id === config.databaseId);
     if (!targetDb) return { value: null, label: 'DB not found', error: `Database "${config.databaseId}" not found` };
 
     const prop = targetDb.properties.find(p => p.id === config.propertyId);
@@ -56,9 +58,11 @@ function resolveValue(
 
         if (currentPage && currentDb) {
             // Find relation properties in current DB that point to target DB
-            const relationProp = currentDb.properties.find(
-                p => p.type === 'relation' && p.config?.relationDatabaseId === config.databaseId
-            );
+            const relationProp = currentDb.properties.find(p => {
+                if (p.type !== 'relation' || !p.config?.relationDatabaseId) return false;
+                const res = resolveRelationTarget(p.config.relationDatabaseId, { databases });
+                return res.databaseId === targetDb.id || p.config.relationDatabaseId === config.databaseId || res.databaseId === targetRes.databaseId;
+            });
 
             if (relationProp) {
                 const relatedIds = currentPage.properties[relationProp.id];

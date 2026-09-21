@@ -4,6 +4,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useDatabaseStore } from '../store';
+import { useRelationTarget, resolveRelationTitle } from '@/lib/relations/resolve';
 import { X, Maximize2, Minimize2, MoreHorizontal, Edit3, Trash2, Plus, Link, Link2, ExternalLink, ChevronDown, Mail, Phone, MapPin, Upload } from 'lucide-react';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { applyRollupAggregation } from '../columns/RollupColumn';
@@ -97,9 +98,14 @@ const PageRollupViewer = ({ databaseId, pageId, property }: { databaseId: string
 
 const PageRelationEditor = ({ databaseId, pageId, property }: { databaseId: string, pageId: string, property: Property }) => {
     const targetDbId = property.config?.relationDatabaseId;
-    const targetDatabase = useDatabaseStore(state => state.getDatabase(targetDbId || ''));
+    const displayPropertyId = property.config?.relationDisplayPropertyId || 'title';
+    const resolution = useRelationTarget(targetDbId, {
+        displayPropertyId,
+        autoLoad: true,
+    });
     const page = useDatabaseStore(state => state.getDatabase(databaseId))?.pages.find(p => p.id === pageId);
     const updatePageProperty = useDatabaseStore(state => state.updatePageProperty);
+    const pageIndex = useDatabaseStore(state => state.pageIndex);
 
     const rawValue = page?.properties[property.id];
     const value = Array.isArray(rawValue) ? rawValue : (typeof rawValue === 'string' && rawValue ? [rawValue] : []);
@@ -123,46 +129,24 @@ const PageRelationEditor = ({ databaseId, pageId, property }: { databaseId: stri
         };
     }, []);
 
-    const pageIndex = useDatabaseStore(state => state.pageIndex);
-    const displayPropertyId = property.config?.relationDisplayPropertyId || 'title';
-
     const selectedTitles = React.useMemo(() => {
         if (value.length === 0) return [];
         return value.map(id => {
-            const indexEntry = pageIndex[id];
-            if (indexEntry?.title) return indexEntry.title;
-            const dp = targetDatabase?.pages.find(p => p.id === id);
-            return (dp?.properties[displayPropertyId] as string) || 'Untitled';
+            return resolveRelationTitle(id, {
+                pageIndex,
+                targetDatabase: resolution.targetDatabase,
+                displayPropertyId,
+            }) || 'Untitled';
         });
-    }, [pageIndex, targetDatabase, value, displayPropertyId]);
+    }, [pageIndex, resolution.targetDatabase, value, displayPropertyId]);
 
     const filteredPages = React.useMemo(() => {
-        if (targetDatabase?.pages && targetDatabase.pages.length > 0) {
-            if (!search.trim()) return targetDatabase.pages;
-            return targetDatabase.pages.filter(p => {
-                const title = String(p.properties[displayPropertyId] || p.properties?.title || 'Untitled');
-                return title.toLowerCase().includes(search.toLowerCase());
-            });
-        }
-        if (!targetDbId) return [];
-        const indexEntries = Object.values(pageIndex).filter(e => e.databaseId === targetDbId);
-        const filteredEntries = search.trim()
-            ? indexEntries.filter(e => (e.title || '').toLowerCase().includes(search.toLowerCase()))
-            : indexEntries;
-
-        return filteredEntries.map(e => ({
-            id: e.id,
-            databaseId: e.databaseId,
-            order: 0,
-            properties: { [displayPropertyId]: e.title, title: e.title },
-            blocks: [],
-            blocksVersion: 1,
-            createdAt: e.updatedAt,
-            updatedAt: e.updatedAt,
-            createdBy: 'system',
-            lastEditedBy: 'system'
-        }));
-    }, [targetDatabase, pageIndex, targetDbId, search, displayPropertyId]);
+        if (!resolution.options || resolution.options.length === 0) return [];
+        if (!search.trim()) return resolution.options;
+        return resolution.options.filter(opt =>
+            (opt.title || '').toLowerCase().includes(search.toLowerCase())
+        );
+    }, [resolution.options, search]);
 
     return (
         <div ref={ref} className="relative w-full h-full flex items-center">
@@ -223,7 +207,11 @@ const PageRelationEditor = ({ databaseId, pageId, property }: { databaseId: stri
                     )}
  
                     <div className="flex flex-col gap-0.5 max-h-48 overflow-y-auto">
-                        {filteredPages.length === 0 && <span className="text-xs text-neutral-400 p-2 italic">No results</span>}
+                        {filteredPages.length === 0 && (
+                            <span className="text-xs text-neutral-400 p-2 italic">
+                                {resolution.status === 'not-loaded' ? 'Loading pages...' : 'No results'}
+                            </span>
+                        )}
                         {filteredPages.map(p => {
                             const isSelected = value.includes(p.id);
                             return (
@@ -237,7 +225,7 @@ const PageRelationEditor = ({ databaseId, pageId, property }: { databaseId: stri
                                     }}
                                     className={`w-full text-left px-2 py-1.5 rounded text-sm ${isSelected ? 'bg-orange-50 text-orange-700 dark:bg-orange-900/20' : 'hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-200'}`}
                                 >
-                                    {String(p.properties[displayPropertyId] || 'Untitled')}
+                                    {p.title || 'Untitled'}
                                 </button>
                             );
                         })}

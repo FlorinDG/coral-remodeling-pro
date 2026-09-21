@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Upload, FileSpreadsheet, Bot, AlertCircle, Check, ArrowRight, Loader2, Database, TableProperties, FileText, Building2, CalendarDays, Hash, Coins } from 'lucide-react';
 import { useDatabaseStore } from '@/components/admin/database/store';
+import { resolveRelationTarget } from '@/lib/relations/resolve';
 import Papa from 'papaparse';
 import * as xlsx from 'xlsx';
 
@@ -370,7 +371,9 @@ export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: Spreadsh
                             if (relationCache[cacheKey]) {
                                 val = [relationCache[cacheKey]];
                             } else {
-                                const relatedDb = useDatabaseStore.getState().getDatabase(relDbId);
+                                const targetRes = resolveRelationTarget(relDbId);
+                                const targetDbId = targetRes.databaseId || relDbId;
+                                const relatedDb = targetRes.targetDatabase || useDatabaseStore.getState().getDatabase(targetDbId);
                                 if (relatedDb) {
                                     const existing = relatedDb.pages.find((p) => {
                                         const t = p.properties.title ?? p.properties.name ?? p.properties.naam ?? '';
@@ -380,12 +383,20 @@ export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: Spreadsh
                                         relationCache[cacheKey] = existing.id;
                                         val = [existing.id];
                                     } else {
-                                        const newPage = useDatabaseStore.getState().createPage(relDbId, { title: rawName });
+                                        const newPage = useDatabaseStore.getState().createPage(targetDbId, { title: rawName });
                                         relationCache[cacheKey] = newPage.id;
                                         val = [newPage.id];
                                     }
                                 } else {
-                                    val = [];
+                                    const existingOption = targetRes.options.find(opt => opt.title.toLowerCase().trim() === rawName.toLowerCase());
+                                    if (existingOption) {
+                                        relationCache[cacheKey] = existingOption.id;
+                                        val = [existingOption.id];
+                                    } else {
+                                        const newPage = useDatabaseStore.getState().createPage(targetDbId, { title: rawName });
+                                        relationCache[cacheKey] = newPage.id;
+                                        val = [newPage.id];
+                                    }
                                 }
                             }
                         } else {

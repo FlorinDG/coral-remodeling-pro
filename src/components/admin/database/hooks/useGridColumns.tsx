@@ -12,6 +12,7 @@ import { selectColumn } from '../columns/SelectColumn';
 import { dateColumn } from '../columns/DateColumn';
 import { titleColumn } from '../columns/TitleColumn';
 import { relationColumn } from '../columns/RelationColumn';
+import { resolveRelationTarget } from '@/lib/relations/resolve';
 import { rollupColumn } from '../columns/RollupColumn';
 import { formulaColumn } from '../columns/FormulaColumn';
 import { currencyColumn } from '../columns/CurrencyColumn';
@@ -167,8 +168,10 @@ export function useGridColumns({
 
                 // Relations need full row data to allow precise multi-select array mutations
                 if (prop.type === 'relation' && prop.config?.relationDatabaseId) {
+                    const resolvedTarget = resolveRelationTarget(prop.config.relationDatabaseId);
+                    const targetDbId = resolvedTarget.databaseId || prop.config.relationDatabaseId;
                     return {
-                        ...relationColumn(prop.id, prop.config.relationDatabaseId, prop.config.relationDisplayPropertyId) as any,
+                        ...relationColumn(prop.id, targetDbId, prop.config.relationDisplayPropertyId) as any,
                         title: GhostHeader,
                         basis: currentWidth,
                         grow: 0,

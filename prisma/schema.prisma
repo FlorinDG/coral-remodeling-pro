@@ -941,7 +941,7 @@ model Notification {
   href            String
   readAt          DateTime?
   createdAt       DateTime  @default(now())
-  deliveryStatus  String    @default("delivered") // attempted, delivered, denied, failed
+  deliveryStatus  String    @default("Dispatched") // attempted, delivered, denied, failed, Dispatched
   deliveryReason  String?
   channelOutcomes Json?     @default("{}")
 

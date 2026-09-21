@@ -36,15 +36,17 @@ export async function GET(req: Request) {
                 const href = `/nl/admin/database/${page.databaseId}/${page.id}`;
                 const assigneeId = (page.assignedTo && page.assignedTo.length > 0) ? page.assignedTo[0] : (page.createdBy || null);
                 
-                await notify({
-                    tenantId: page.database.tenantId,
-                    userId: assigneeId,
-                    topic: 'tasks.reminder',
-                    title: 'Date Reminder',
-                    body: `Reminder for ${title} on ${todayStr}`,
-                    entity: { type: 'page', id: page.id },
-                    href
-                });
+                await notify(
+                    {
+                        userId: assigneeId,
+                        topic: 'tasks.reminder',
+                        title: 'Date Reminder',
+                        body: `Reminder for ${title} on ${todayStr}`,
+                        entity: { type: 'page', id: page.id },
+                        href
+                    },
+                    { tenantId: page.database.tenantId, db: prisma }
+                );
 
                 remindersSent++;
             }

@@ -62,15 +62,17 @@ export async function acceptQuotation({ quoteId, signatureBase64, signatureMetho
                 // Emit in-app notification
                 const { notify } = await import('@/lib/notifications');
                 const assigneeId = (quote.assignedTo && quote.assignedTo.length > 0) ? quote.assignedTo[0] : (quote.createdBy || null);
-                await notify({
-                    tenantId: quoteWithDb.database.tenantId,
-                    userId: assigneeId,
-                    topic: 'quotes.accepted',
-                    title: 'Quote Accepted',
-                    body: `Quote ${quoteTitle} accepted by ${consentName}`,
-                    entity: { type: 'quote', id: quoteId },
-                    href: `/nl/admin/database/db-quotations/${quoteId}`
-                }).catch(e => console.error("Failed to create quotes.accepted notification:", e));
+                await notify(
+                    {
+                        userId: assigneeId,
+                        topic: 'quotes.accepted',
+                        title: 'Quote Accepted',
+                        body: `Quote ${quoteTitle} accepted by ${consentName}`,
+                        entity: { type: 'quote', id: quoteId },
+                        href: `/nl/admin/database/db-quotations/${quoteId}`
+                    },
+                    { tenantId: quoteWithDb.database.tenantId, db: prisma }
+                ).catch(e => console.error("Failed to create quotes.accepted notification:", e));
 
                 if (tenant?.email) {
                     const { Resend } = await import('resend');

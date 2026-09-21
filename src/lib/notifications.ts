@@ -1,6 +1,3 @@
-import prisma from "@/lib/prisma";
-import type { PrismaClient } from "@prisma/client";
-
 /**
  * NOTIFICATION TOPICS — Declared taxonomy in one place (NOTIF-1 / coral-notifications.md)
  * No free-text type allowed.
@@ -23,7 +20,7 @@ export function isValidTopic(topic: string): topic is NotificationTopic {
     return (NOTIFICATION_TOPICS as readonly string[]).includes(topic);
 }
 
-export type DeliveryStatus = 'attempted' | 'delivered' | 'denied' | 'failed';
+export type DeliveryStatus = 'attempted' | 'delivered' | 'denied' | 'failed' | 'Dispatched';
 
 export interface ChannelDeliveryOutcome {
     status: DeliveryStatus;
@@ -47,7 +44,6 @@ export interface NotifyEntity {
 export interface NotifyParams {
     /** Target assignee (Florin, 2026-09-21: Assignee only. Not the owner, not the tenant). */
     userId?: string | null;
-    tenantId?: string;
     topic: NotificationTopic;
     title: string;
     body: string;
@@ -61,24 +57,37 @@ export interface NotifyParams {
 
 export interface NotificationDbClient {
     notification: {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         create: (args: any) => Promise<any>;
-    };
-    user?: {
-        findUnique: (args: any) => Promise<any>;
     };
 }
 
 /**
- * L1 Notification Service (NOTIF-1)
+ * The Notification Scope (DI-1 / R1-4 seam).
+ * The caller supplies the resolved tenantId and data client.
+ * After R1-4, this will be the TenantScopedClient directly.
+ */
+export interface NotificationScope {
+    tenantId: string;
+    db: NotificationDbClient;
+}
+
+/**
+ * L1 Notification Service (NOTIF-1 / DI-1)
  *
  * In-app is ALWAYS written first and is the primary record of truth.
  * Outcome fields (deliveryStatus, deliveryReason, channelOutcomes) are recorded on the Notification row.
+ * Tenant is read off scope.tenantId; notify() performs no tenancy resolution.
  */
 export async function notify(
     params: NotifyParams,
-    db: NotificationDbClient = prisma as unknown as NotificationDbClient
+    scope: NotificationScope
 ) {
-    const { topic, title, body, href, channels } = params;
+    if (!scope || !scope.tenantId || !scope.db) {
+        throw new Error('Notification requires a valid scope with tenantId and db client.');
+    }
+
+    const { topic, title, body, href } = params;
 
     // Topic validation — unknown topic is rejected (no free-text types)
     if (!topic || !isValidTopic(topic)) {
@@ -103,23 +112,9 @@ export async function notify(
         throw new Error(`Notification requires a valid entity (type and id). Received type="${entityType}", id="${entityId}"`);
     }
 
-    // Tenant resolution: if tenantId omitted, resolve via assignee userId
-    let tenantId = params.tenantId;
     const userId = params.userId ?? null;
 
-    if (!tenantId && userId && db.user) {
-        const user = await db.user.findUnique({
-            where: { id: userId },
-            select: { tenantId: true },
-        });
-        tenantId = user?.tenantId ?? undefined;
-    }
-
-    if (!tenantId) {
-        throw new Error('Cannot send notification: tenantId could not be resolved.');
-    }
-
-    // Delivery outcomes: In-app is written first and is always delivered
+    // Delivery outcomes: In-app is written first and is always explicitly 'delivered' (NOTIF-3)
     const nowIso = new Date().toISOString();
     const channelOutcomes: ChannelOutcomes = {
         in_app: {
@@ -129,9 +124,9 @@ export async function notify(
         },
     };
 
-    const record = await db.notification.create({
+    const record = await scope.db.notification.create({
         data: {
-            tenantId,
+            tenantId: scope.tenantId,
             userId, // Assignee only
             type: topic, // type column carries the namespaced topic
             title,
@@ -139,8 +134,9 @@ export async function notify(
             entityType,
             entityId,
             href,
-            deliveryStatus: 'delivered',
+            deliveryStatus: 'delivered', // Explicitly delivered for in-app primary record (NOTIF-3)
             deliveryReason: null,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             channelOutcomes: channelOutcomes as any,
         },
     });
@@ -167,7 +163,6 @@ const LEGACY_TOPIC_MAP: Record<string, NotificationTopic> = {
 export type NotificationType = NotificationTopic;
 
 export interface CreateNotificationParams {
-    tenantId: string;
     userId?: string | null;
     type: NotificationTopic | string;
     title: string;
@@ -178,17 +173,16 @@ export interface CreateNotificationParams {
 }
 
 /**
- * @deprecated Use `notify({ userId, topic, title, body, entity, href })` instead.
+ * @deprecated Use `notify({ userId, topic, title, body, entity, href }, scope)` instead.
  */
 export async function createNotification(
     params: CreateNotificationParams,
-    db: NotificationDbClient = prisma as unknown as NotificationDbClient
+    scope: NotificationScope
 ) {
     const topic = (LEGACY_TOPIC_MAP[params.type] || params.type) as NotificationTopic;
     return (
         await notify(
             {
-                tenantId: params.tenantId,
                 userId: params.userId,
                 topic,
                 title: params.title,
@@ -199,7 +193,7 @@ export async function createNotification(
                 },
                 href: params.href,
             },
-            db
+            scope
         )
     ).notification;
 }

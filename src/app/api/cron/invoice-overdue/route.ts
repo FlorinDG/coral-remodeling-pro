@@ -58,15 +58,17 @@ export async function GET(req: Request) {
                         const { notify } = await import('@/lib/notifications');
                         const invTitle = props.title || 'Factuur';
                         const assigneeId = (page.assignedTo && page.assignedTo.length > 0) ? page.assignedTo[0] : (page.createdBy || null);
-                        await notify({
-                            tenantId: page.database.tenantId,
-                            userId: assigneeId,
-                            topic: 'invoices.overdue',
-                            title: 'Invoice Overdue',
-                            body: `Invoice ${invTitle} is overdue.`,
-                            entity: { type: 'invoice', id: page.id },
-                            href: `/nl/admin/database/db-invoices/${page.id}`
-                        });
+                        await notify(
+                            {
+                                userId: assigneeId,
+                                topic: 'invoices.overdue',
+                                title: 'Invoice Overdue',
+                                body: `Invoice ${invTitle} is overdue.`,
+                                entity: { type: 'invoice', id: page.id },
+                                href: `/nl/admin/database/db-invoices/${page.id}`
+                            },
+                            { tenantId: page.database.tenantId, db: prisma }
+                        );
                     } catch (e) {
                         console.error('[Cron] Failed to emit INVOICE_OVERDUE', e);
                     }

@@ -389,15 +389,17 @@ export async function GET(req: Request) {
             try {
                 const { notify } = await import('@/lib/notifications');
                 const isCreditNote = doc.type === 'credit_note';
-                await notify({
-                    tenantId,
-                    userId: null,
-                    topic: isCreditNote ? 'invoices.credit_note' : 'peppol.received',
-                    title: isCreditNote ? 'Credit Note Received' : 'Peppol Invoice Received',
-                    body: `New Peppol ${isCreditNote ? 'credit note' : 'invoice'} from ${parsed.supplierName || 'supplier'}`,
-                    entity: { type: 'invoice', id: pageId },
-                    href: `/nl/admin/database/db-expenses/${pageId}`
-                });
+                await notify(
+                    {
+                        userId: null,
+                        topic: isCreditNote ? 'invoices.credit_note' : 'peppol.received',
+                        title: isCreditNote ? 'Credit Note Received' : 'Peppol Invoice Received',
+                        body: `New Peppol ${isCreditNote ? 'credit note' : 'invoice'} from ${parsed.supplierName || 'supplier'}`,
+                        entity: { type: 'invoice', id: pageId },
+                        href: `/nl/admin/database/db-expenses/${pageId}`
+                    },
+                    { tenantId, db: prisma }
+                );
             } catch (e) {
                 console.error('[Peppol Inbox] Failed to emit notification', e);
             }

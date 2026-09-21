@@ -1,11 +1,11 @@
 /**
- * CHARACTERIZATION & INVARIANT TESTS — NOTIF-1 Notification Service (L1)
+ * CHARACTERIZATION & INVARIANT TESTS — NOTIF-1 / DI-1 Notification Service (L1)
  *
- * Requirements (coder-run-4.md / coral-notifications.md):
+ * Requirements (coder-directive-di-notif.md / coral-notifications.md):
  * 1. notify() always writes in-app first and is the primary record.
  * 2. Unknown topic is rejected (no free-text type).
  * 3. Outcome fields are recorded (deliveryStatus, deliveryReason, channelOutcomes).
- * 4. Assignee only: userId target is preserved, tenantId resolved if omitted.
+ * 4. Scope is required: { tenantId, db } passed explicitly; tenantId absent from NotifyParams.
  * 5. Entity normalization: accepts { type, id } or separate entity/entityId fields.
  */
 import { test, describe } from 'node:test';
@@ -16,14 +16,15 @@ import {
     NOTIFICATION_TOPICS,
     isValidTopic,
     type NotificationDbClient,
-    type NotificationTopic,
+    type NotificationScope,
 } from '../src/lib/notifications.ts';
 
 class StubNotificationDb implements NotificationDbClient {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     public createdNotifications: any[] = [];
-    public users = new Map<string, { id: string; tenantId: string }>();
 
     notification = {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         create: async ({ data }: { data: any }) => {
             const record = {
                 id: `notif_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
@@ -35,15 +36,9 @@ class StubNotificationDb implements NotificationDbClient {
             return record;
         },
     };
-
-    user = {
-        findUnique: async ({ where }: { where: { id: string } }) => {
-            return this.users.get(where.id) || null;
-        },
-    };
 }
 
-describe('NOTIF-1 — Topic Validation & Taxonomy', () => {
+describe('NOTIF-1 / DI-1 — Topic Validation & Taxonomy', () => {
     test('declares required namespaced topics', () => {
         const expected = [
             'quotes.accepted',
@@ -59,6 +54,7 @@ describe('NOTIF-1 — Topic Validation & Taxonomy', () => {
 
         for (const t of expected) {
             assert.ok(
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 NOTIFICATION_TOPICS.includes(t as any),
                 `Topic "${t}" must be in NOTIFICATION_TOPICS`
             );
@@ -68,20 +64,21 @@ describe('NOTIF-1 — Topic Validation & Taxonomy', () => {
 
     test('an unknown topic is rejected and no in-app record is created', async () => {
         const db = new StubNotificationDb();
+        const scope: NotificationScope = { tenantId: 'tenant_1', db };
 
         await assert.rejects(
             async () => {
                 await notify(
                     {
-                        tenantId: 'tenant_1',
                         userId: 'usr_assignee',
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         topic: 'random.unregistered' as any,
                         title: 'Test',
                         body: 'Test body',
                         entity: { type: 'quote', id: 'q_1' },
                         href: '/quotes/q_1',
                     },
-                    db
+                    scope
                 );
             },
             {
@@ -96,30 +93,31 @@ describe('NOTIF-1 — Topic Validation & Taxonomy', () => {
 
     test('rejects empty or free-text legacy type', async () => {
         const db = new StubNotificationDb();
+        const scope: NotificationScope = { tenantId: 'tenant_1', db };
 
         await assert.rejects(async () => {
             await notify(
                 {
-                    tenantId: 'tenant_1',
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     topic: 'FREE_TEXT_TYPE' as any,
                     title: 'Test',
                     body: 'Test body',
                     entity: { type: 'invoice', id: 'inv_1' },
                     href: '/invoices/inv_1',
                 },
-                db
+                scope
             );
         });
     });
 });
 
-describe('NOTIF-1 — notify() In-app Write & Delivery Outcome Log', () => {
-    test('notify() always writes in-app first and returns record', async () => {
+describe('NOTIF-1 / DI-1 — notify() In-app Write & Scope Handling', () => {
+    test('notify() writes in-app first using scope.tenantId and returns record', async () => {
         const db = new StubNotificationDb();
+        const scope: NotificationScope = { tenantId: 'tenant_1', db };
 
         const result = await notify(
             {
-                tenantId: 'tenant_1',
                 userId: 'usr_assignee_1',
                 topic: 'quotes.accepted',
                 title: 'Quote Accepted',
@@ -127,7 +125,7 @@ describe('NOTIF-1 — notify() In-app Write & Delivery Outcome Log', () => {
                 entity: { type: 'quote', id: 'q_123' },
                 href: '/nl/admin/database/db-quotations/q_123',
             },
-            db
+            scope
         );
 
         // Record must be created
@@ -146,12 +144,12 @@ describe('NOTIF-1 — notify() In-app Write & Delivery Outcome Log', () => {
         assert.equal(result.notification.id, record.id);
     });
 
-    test('delivery outcome fields are recorded against the notification', async () => {
+    test('delivery outcome fields are explicitly recorded as delivered against in-app (NOTIF-3)', async () => {
         const db = new StubNotificationDb();
+        const scope: NotificationScope = { tenantId: 'tenant_1', db };
 
         const result = await notify(
             {
-                tenantId: 'tenant_1',
                 userId: 'usr_assignee_2',
                 topic: 'invoices.overdue',
                 title: 'Invoice Overdue',
@@ -159,7 +157,7 @@ describe('NOTIF-1 — notify() In-app Write & Delivery Outcome Log', () => {
                 entity: { type: 'invoice', id: 'inv_456' },
                 href: '/nl/admin/database/db-invoices/inv_456',
             },
-            db
+            scope
         );
 
         // Verification: outcome fields on record
@@ -176,56 +174,33 @@ describe('NOTIF-1 — notify() In-app Write & Delivery Outcome Log', () => {
         assert.equal(result.channelOutcomes.in_app.status, 'delivered');
     });
 
-    test('assignee only: userId target is preserved and tenantId resolved if omitted', async () => {
-        const db = new StubNotificationDb();
-        db.users.set('usr_flor', { id: 'usr_flor', tenantId: 'tenant_coral' });
-
-        const result = await notify(
-            {
-                userId: 'usr_flor', // tenantId omitted, should resolve from assignee
-                topic: 'tasks.reminder',
-                title: 'Task Reminder',
-                body: 'Reminder for Site Visit',
-                entity: { type: 'page', id: 'page_site' },
-                href: '/tasks/page_site',
-            },
-            db
-        );
-
-        assert.equal(result.notification.tenantId, 'tenant_coral');
-        assert.equal(result.notification.userId, 'usr_flor');
-    });
-
-    test('throws if tenantId cannot be resolved', async () => {
-        const db = new StubNotificationDb();
-
+    test('throws if scope is missing or incomplete (DI-1 required scope)', async () => {
         await assert.rejects(
             async () => {
-                await notify(
-                    {
-                        userId: null,
-                        topic: 'peppol.received',
-                        title: 'Peppol Invoice',
-                        body: 'Received',
-                        entity: { type: 'invoice', id: 'inv_peppol' },
-                        href: '/expenses',
-                    },
-                    db
-                );
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                await notify({
+                    userId: null,
+                    topic: 'peppol.received',
+                    title: 'Peppol Invoice',
+                    body: 'Received',
+                    entity: { type: 'invoice', id: 'inv_peppol' },
+                    href: '/expenses',
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                } as any, null as any);
             },
             {
                 name: 'Error',
-                message: /Cannot send notification: tenantId could not be resolved/,
+                message: /Notification requires a valid scope with tenantId and db client/,
             }
         );
     });
 
     test('normalizes entity: handles both object {type, id} and separate fields', async () => {
         const db = new StubNotificationDb();
+        const scope: NotificationScope = { tenantId: 'tenant_1', db };
 
         await notify(
             {
-                tenantId: 'tenant_1',
                 userId: 'usr_1',
                 topic: 'invoices.paid',
                 title: 'Invoice Paid',
@@ -234,7 +209,7 @@ describe('NOTIF-1 — notify() In-app Write & Delivery Outcome Log', () => {
                 entityId: 'inv_separate_fields',
                 href: '/invoices/inv_separate_fields',
             },
-            db
+            scope
         );
 
         assert.equal(db.createdNotifications[0].entityType, 'invoice');
@@ -243,30 +218,31 @@ describe('NOTIF-1 — notify() In-app Write & Delivery Outcome Log', () => {
 
     test('throws if entity is missing or incomplete', async () => {
         const db = new StubNotificationDb();
+        const scope: NotificationScope = { tenantId: 'tenant_1', db };
 
         await assert.rejects(async () => {
             await notify(
                 {
-                    tenantId: 'tenant_1',
                     topic: 'invoices.paid',
                     title: 'Invoice Paid',
                     body: 'Paid in full',
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     entity: '' as any,
                     href: '/invoices',
                 },
-                db
+                scope
             );
         });
     });
 });
 
-describe('NOTIF-1 — createNotification backward compatibility wrapper', () => {
-    test('maps legacy uppercase topic to namespaced topic and creates record', async () => {
+describe('NOTIF-1 / DI-1 — createNotification backward compatibility wrapper', () => {
+    test('maps legacy uppercase topic to namespaced topic and creates record through scope', async () => {
         const db = new StubNotificationDb();
+        const scope: NotificationScope = { tenantId: 'tenant_1', db };
 
         const record = await createNotification(
             {
-                tenantId: 'tenant_1',
                 userId: 'usr_assignee',
                 type: 'QUOTE_ACCEPTED',
                 title: 'Legacy Quote Accepted',
@@ -275,11 +251,12 @@ describe('NOTIF-1 — createNotification backward compatibility wrapper', () => 
                 entityId: 'q_legacy',
                 href: '/quotes/q_legacy',
             },
-            db
+            scope
         );
 
         assert.equal(record.type, 'quotes.accepted');
         assert.equal(record.deliveryStatus, 'delivered');
         assert.equal(db.createdNotifications.length, 1);
+        assert.equal(db.createdNotifications[0].tenantId, 'tenant_1');
     });
 });

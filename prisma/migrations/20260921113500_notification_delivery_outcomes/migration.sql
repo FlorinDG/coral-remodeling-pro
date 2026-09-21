@@ -1,4 +1,4 @@
 -- AlterTable
-ALTER TABLE "Notification" ADD COLUMN "deliveryStatus" TEXT NOT NULL DEFAULT 'delivered',
+ALTER TABLE "Notification" ADD COLUMN "deliveryStatus" TEXT NOT NULL DEFAULT 'Dispatched',
 ADD COLUMN "deliveryReason" TEXT,
 ADD COLUMN "channelOutcomes" JSONB DEFAULT '{}'::jsonb;

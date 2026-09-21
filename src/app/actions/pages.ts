@@ -386,15 +386,17 @@ async function recalculateInvoiceStatus(tenantId: string, invoiceId: string) {
                 const { notify } = await import('@/lib/notifications');
                 const invTitle = (invProps.title as string) || 'Factuur';
                 const assigneeId = (invoice.assignedTo && invoice.assignedTo.length > 0) ? invoice.assignedTo[0] : (invoice.createdBy || null);
-                await notify({
-                    tenantId,
-                    userId: assigneeId,
-                    topic: 'invoices.paid',
-                    title: 'Invoice Paid',
-                    body: `Invoice ${invTitle} has been fully paid.`,
-                    entity: { type: 'invoice', id: invoiceId },
-                    href: `/nl/admin/database/db-invoices/${invoiceId}`
-                });
+                await notify(
+                    {
+                        userId: assigneeId,
+                        topic: 'invoices.paid',
+                        title: 'Invoice Paid',
+                        body: `Invoice ${invTitle} has been fully paid.`,
+                        entity: { type: 'invoice', id: invoiceId },
+                        href: `/nl/admin/database/db-invoices/${invoiceId}`
+                    },
+                    { tenantId, db: prisma }
+                );
             } catch (err) {
                 console.error('[Automation] Failed to create invoices.paid notification:', err);
             }

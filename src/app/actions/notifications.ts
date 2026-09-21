@@ -2,9 +2,10 @@
 
 import { notify, NotifyParams, NotificationTopic } from "@/lib/notifications";
 import { auth } from "@/auth";
+import prisma from "@/lib/prisma";
 
 export async function emitNotificationAction(
-    params: Omit<NotifyParams, 'tenantId'> | {
+    params: NotifyParams | {
         userId?: string | null;
         topic?: NotificationTopic;
         type?: string;
@@ -27,15 +28,17 @@ export async function emitNotificationAction(
             id: (params as any).entityId || '',
         };
 
-        await notify({
-            tenantId,
-            userId: params.userId,
-            topic,
-            title: params.title,
-            body: params.body,
-            entity,
-            href: params.href,
-        });
+        await notify(
+            {
+                userId: params.userId,
+                topic,
+                title: params.title,
+                body: params.body,
+                entity,
+                href: params.href,
+            },
+            { tenantId, db: prisma }
+        );
         return { success: true };
     } catch (e) {
         console.error("Failed to emit notification:", e);

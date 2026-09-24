@@ -115,10 +115,17 @@ export async function GET(
         where.userId = { in: accessibleIds };
     }
 
-    // For shift-tasks and shift-attachments, scope by shiftId from query
+    // For shift-tasks and shift-attachments, shiftId is required and parent shift must belong to tenant (TSC-4a)
     if (entity === 'shift-tasks' || entity === 'shift-attachments') {
         const shiftId = url.searchParams.get('shiftId');
-        if (shiftId) where.shiftId = shiftId;
+        if (!shiftId) return NextResponse.json({ error: 'shiftId required' }, { status: 400 });
+        // TODO(R1-4): Class-B parent check — TenantScopedClient makes this automatic (TSC-0 D7). Delete this block when R1-4 lands.
+        const parent = await prisma.scheduledShift.findFirst({
+            where: { id: shiftId, tenantId: ctx.tenantId },
+            select: { id: true },
+        });
+        if (!parent) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+        where.shiftId = shiftId;
     }
 
     // For team-members, scope by teamId from query, and ALWAYS scope by tenant
@@ -386,6 +393,18 @@ export async function POST(
         data.tenantId = ctx.tenantId;
     }
 
+    // For shift-tasks and shift-attachments, verify parent shift belongs to tenant before creating (TSC-4b)
+    if (entity === 'shift-tasks' || entity === 'shift-attachments') {
+        const shiftId = data.shiftId as string | undefined;
+        if (!shiftId) return NextResponse.json({ error: 'shiftId required' }, { status: 400 });
+        // TODO(R1-4): Class-B parent check — TenantScopedClient makes this automatic (TSC-0 D7). Delete this block when R1-4 lands.
+        const parent = await prisma.scheduledShift.findFirst({
+            where: { id: shiftId, tenantId: ctx.tenantId },
+            select: { id: true },
+        });
+        if (!parent) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    }
+
     // Auto-inject userId if not provided (only for entities that have userId)
     const entitiesWithUserId = ['clock-entries', 'shifts', 'shift-templates', 'worker-schedules', 'time-off'];
     if (!data.userId && entitiesWithUserId.includes(entity)) {
@@ -541,16 +560,15 @@ export async function PATCH(
                 return NextResponse.json({ error: 'Not found' }, { status: 404 });
             }
         } else if (entity === 'shift-tasks' || entity === 'shift-attachments') {
-            // shift-tasks/attachments don't have tenantId — verify via parent shift
+            // shift-tasks/attachments don't have tenantId — verify via parent shift (TSC-4c: unconditional check)
             const existing = await model.findUnique({ where: { id } });
-            if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-            // Verify the parent shift belongs to this tenant
-            if (existing.shiftId) {
-                const parentShift = await prisma.scheduledShift.findFirst({
-                    where: { id: existing.shiftId, tenantId: ctx.tenantId }
-                });
-                if (!parentShift) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-            }
+            if (!existing || !existing.shiftId) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+            // TODO(R1-4): Class-B parent check — TenantScopedClient makes this automatic (TSC-0 D7). Delete this block when R1-4 lands.
+            const parentShift = await prisma.scheduledShift.findFirst({
+                where: { id: existing.shiftId, tenantId: ctx.tenantId },
+                select: { id: true },
+            });
+            if (!parentShift) return NextResponse.json({ error: 'Not found' }, { status: 404 });
         } else {
             const existing = await model.findFirst({ where: { id, tenantId: ctx.tenantId } });
             if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -724,15 +742,15 @@ export async function DELETE(
                 return NextResponse.json({ error: 'Not found' }, { status: 404 });
             }
         } else if (entity === 'shift-tasks' || entity === 'shift-attachments') {
-            // Verify via parent shift
+            // Verify via parent shift (TSC-4c: unconditional check)
             const existing = await model.findUnique({ where: { id } });
-            if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-            if (existing.shiftId) {
-                const parentShift = await prisma.scheduledShift.findFirst({
-                    where: { id: existing.shiftId, tenantId: ctx.tenantId }
-                });
-                if (!parentShift) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-            }
+            if (!existing || !existing.shiftId) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+            // TODO(R1-4): Class-B parent check — TenantScopedClient makes this automatic (TSC-0 D7). Delete this block when R1-4 lands.
+            const parentShift = await prisma.scheduledShift.findFirst({
+                where: { id: existing.shiftId, tenantId: ctx.tenantId },
+                select: { id: true },
+            });
+            if (!parentShift) return NextResponse.json({ error: 'Not found' }, { status: 404 });
         } else {
             const existing = await model.findFirst({ where: { id, tenantId: ctx.tenantId } });
             if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });

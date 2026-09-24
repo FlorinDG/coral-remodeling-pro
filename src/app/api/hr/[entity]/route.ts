@@ -115,17 +115,11 @@ export async function GET(
         where.userId = { in: accessibleIds };
     }
 
-    // For shift-tasks and shift-attachments, shiftId is required and parent shift must belong to tenant (TSC-4a)
+    // For shift-tasks and shift-attachments, scope by parent shift belonging to tenant (TSC-4b structural scoping)
     if (entity === 'shift-tasks' || entity === 'shift-attachments') {
+        where.shift = { tenantId: ctx.tenantId };
         const shiftId = url.searchParams.get('shiftId');
-        if (!shiftId) return NextResponse.json({ error: 'shiftId required' }, { status: 400 });
-        // TODO(R1-4): Class-B parent check — TenantScopedClient makes this automatic (TSC-0 D7). Delete this block when R1-4 lands.
-        const parent = await prisma.scheduledShift.findFirst({
-            where: { id: shiftId, tenantId: ctx.tenantId },
-            select: { id: true },
-        });
-        if (!parent) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-        where.shiftId = shiftId;
+        if (shiftId) where.shiftId = shiftId;
     }
 
     // For team-members, scope by teamId from query, and ALWAYS scope by tenant

@@ -796,7 +796,9 @@ model ScheduledShift {
   lastEditedBy String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
-  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant       Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tasks        ShiftTask[]
+  attachments  ShiftAttachment[]
 
   @@index([seriesId])
 }
@@ -900,6 +902,7 @@ model ShiftTask {
   subtasks    Json?     @default("[]")
   /// Free-text notes from the worker about their progress on this shift task.
   workerNotes String?
+  shift       ScheduledShift @relation(fields: [shiftId], references: [id], onDelete: Cascade)
 
   @@index([shiftId])
 }
@@ -911,7 +914,8 @@ model ShiftAttachment {
   url       String
   type      String
   size      Int?
-  createdAt DateTime @default(now())
+  createdAt DateTime       @default(now())
+  shift     ScheduledShift @relation(fields: [shiftId], references: [id], onDelete: Cascade)
 
   @@index([shiftId])
 }

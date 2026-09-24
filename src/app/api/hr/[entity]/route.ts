@@ -380,6 +380,7 @@ export async function POST(
 
     const body = await req.json();
     const data = sanitize(body);
+    const warnings: string[] = [];
 
     // Auto-inject tenantId (except entities scoped via parent: team-members, shift-tasks, shift-attachments)
     const noTenantEntities = ['team-members', 'shift-tasks', 'shift-attachments'];
@@ -444,6 +445,7 @@ export async function POST(
     }
 
     // ── PRE-CREATE Automations ───────────────────────────────────────
+    let parentShift: { id: string; projectId: string | null } | null = null;
     if (entity === 'clock-entries') {
         // TS-8: Stamp hourly cost from Employee profile at time of creation
         try {
@@ -456,21 +458,32 @@ export async function POST(
             }
         } catch (err) {
             console.error('Failed to stamp hourly cost:', err);
+            warnings.push('hourly_cost_not_stamped');
         }
 
-        // TS-3: Inherit projectId from ScheduledShift if clocked in via a shift
-        if (data.shiftId && !data.projectId) {
+        // HRA-1: Resolve parent shift within tenant (replaces unverified findUnique)
+        if (data.shiftId) {
             try {
-                const shift = await prisma.scheduledShift.findUnique({
-                    where: { id: data.shiftId as string },
-                    select: { projectId: true }
+                // TODO(R1-4): Class-B parent check — TenantScopedClient makes this automatic (TSC-0 D7). Delete this block when R1-4 lands.
+                parentShift = await prisma.scheduledShift.findFirst({
+                    where: { id: data.shiftId as string, tenantId: ctx.tenantId },
+                    select: { id: true, projectId: true },
                 });
-                if (shift?.projectId) {
-                    data.projectId = shift.projectId;
+                if (!parentShift) {
+                    // 🔴 NOT a 404. The entry is real work and is always recorded.
+                    warnings.push('shift_not_found');   // surfaced on the response
+                    delete data.shiftId;                // no linkage, no automation, no leak
                 }
             } catch (err) {
-                console.error('Failed to inherit projectId from shift:', err);
+                console.error('[HR API] Failed to resolve parent shift:', err);
+                warnings.push('shift_lookup_failed');
+                delete data.shiftId;
             }
+        }
+
+        // TS-3 / HRA-1: Inherit projectId from parentShift if not already set
+        if (parentShift?.projectId && !data.projectId) {
+            data.projectId = parentShift.projectId;
         }
     }
 
@@ -478,17 +491,27 @@ export async function POST(
         const record = await model.create({ data });
 
         // ── POST Automations ───────────────────────────────────────────
-        // Clock-in with shiftId → set shift status to 'in-progress'
-        if (entity === 'clock-entries' && (record as { shiftId?: string }).shiftId) {
+        // Clock-in with shiftId → set shift status to 'in-progress' (HRA-2)
+        if (entity === 'clock-entries' && parentShift && (record as { shiftId?: string }).shiftId) {
             try {
-                await prisma.scheduledShift.update({
-                    where: { id: (record as { shiftId: string }).shiftId },
+                const result = await prisma.scheduledShift.updateMany({
+                    where: { id: (record as { shiftId: string }).shiftId, tenantId: ctx.tenantId },
                     data: { status: 'in-progress' },
                 });
-            } catch { /* shift may not exist */ }
+                if (result.count === 0) {
+                    console.error(`[HR API] POST clock-entries: shift ${(record as { shiftId: string }).shiftId} not found for tenant ${ctx.tenantId}`);
+                    warnings.push('shift_status_not_updated');
+                }
+            } catch (err) {
+                console.error('[HR API] Failed to update shift status on clock-in:', err);
+                warnings.push('shift_status_not_updated');
+            }
         }
 
-        return NextResponse.json(record, { status: 201 });
+        return NextResponse.json(
+            warnings.length > 0 ? { ...(typeof record === 'object' && record !== null ? record : {}), warnings } : record,
+            { status: 201 }
+        );
     } catch (error: unknown) {
         console.error(`[HR API] POST ${entity} error:`, error);
         return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 });
@@ -573,6 +596,7 @@ export async function PATCH(
 
     const body = await req.json();
     const data = sanitize(body);
+    const warnings: string[] = [];
 
     try {
         let record;
@@ -670,14 +694,22 @@ export async function PATCH(
             }
         }
 
-        // Clock-out (clockOutTime set) → set shift status to 'completed'
-        if (entity === 'clock-entries' && data.clockOutTime && (record as { shiftId?: string }).shiftId) {
+        // Clock-out (clockOutTime set) → set shift status to 'completed' (HRA-3)
+        const patchShiftId = (record as { shiftId?: string })?.shiftId;
+        if (entity === 'clock-entries' && data.clockOutTime && patchShiftId) {
             try {
-                await prisma.scheduledShift.update({
-                    where: { id: (record as { shiftId: string }).shiftId },
+                const result = await prisma.scheduledShift.updateMany({
+                    where: { id: patchShiftId, tenantId: ctx.tenantId },
                     data: { status: 'completed' },
                 });
-            } catch { /* shift may not exist */ }
+                if (result.count === 0) {
+                    console.error(`[HR API] PATCH clock-entries: shift ${patchShiftId} not found for tenant ${ctx.tenantId}`);
+                    warnings.push('shift_status_not_updated');
+                }
+            } catch (err) {
+                console.error('[HR API] Failed to update shift status on clock-out:', err);
+                warnings.push('shift_status_not_updated');
+            }
         }
 
         // Shift task completed → check if all sibling tasks are done
@@ -694,10 +726,14 @@ export async function PATCH(
                         data: { status: 'completed' },
                     });
                 }
-            } catch { /* silent */ }
+            } catch (err) {
+                console.error('[HR API] Failed to update shift status when all tasks completed:', err);
+            }
         }
 
-        return NextResponse.json(record);
+        return NextResponse.json(
+            warnings.length > 0 ? { ...(typeof record === 'object' && record !== null ? record : {}), warnings } : record
+        );
     } catch (error: unknown) {
         console.error(`[HR API] PATCH ${entity} error:`, error);
         return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 });

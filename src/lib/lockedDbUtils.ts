@@ -5,8 +5,11 @@
  * No Prisma, no server dependencies. Safe to import from client components.
  */
 
-export type LockedDbKey = 'invoices' | 'clients' | 'suppliers' | 'expenses' | 'tickets' | 'quotations' | 'payments-in' | 'payments-out' | 'projects' | 'tasks' | 'articles' | 'crm' | 'bobex' | 'bestek' | 'journal-general' | 'hr';
+import type { SystemDatabaseRole } from '@/lib/kernel/system-databases';
+
+export type LockedDbKey = SystemDatabaseRole;
 export type LockedDbIds = Partial<Record<LockedDbKey, string>>;
+
 
 // Maps base locked DB name → the key used in Tenant.lockedDbIds JSON
 export const BASE_TO_KEY: Record<string, LockedDbKey> = {

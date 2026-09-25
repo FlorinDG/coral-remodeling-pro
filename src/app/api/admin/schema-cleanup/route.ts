@@ -15,7 +15,7 @@ import prisma from '@/lib/prisma';
 import { auth } from '@/auth';
 import { PLATFORM_ADMIN_ROLES } from '@/lib/roles';
 import { getBaseDbId, isSystemDatabase } from '@/lib/systemDatabases';
-import { provisionLockedDatabases, LOCKED_DB_BASES } from '@/lib/provisionTenantDbs';
+import { provisionLockedDatabases } from '@/lib/provisionTenantDbs';
 import { BASE_TO_KEY } from '@/lib/lockedDbUtils';
 
 export const dynamic = 'force-dynamic';
@@ -137,9 +137,8 @@ async function buildReport(): Promise<FullReport> {
         // but the proper scoped ID (db-payments-in-{suffix}) doesn't exist yet,
         // we'll need to provision it first during execute.
 
-        for (const base of LOCKED_DB_BASES) {
+        for (const [base, key] of Object.entries(BASE_TO_KEY)) {
             const scopedId = `${base}-${suffix}`;
-            const key = BASE_TO_KEY[base];
             const group = systemGroups.get(base);
 
             if (group && group.length > 0) {

@@ -1,7 +1,7 @@
 /**
  * provisionTenantDbs.ts — SERVER ONLY
  *
- * Creates the 6 locked GlobalDatabase rows for a new tenant and stores
+ * Provisions all 16 system GlobalDatabase rows for a tenant and stores
  * their IDs in Tenant.lockedDbIds. Safe to call multiple times (idempotent).
  *
  * DO NOT import this file from client components — it imports PrismaClient.
@@ -9,39 +9,20 @@
  */
 
 import { PrismaClient } from '@prisma/client';
-import { LockedDbKey, LockedDbIds, BASE_TO_KEY, getLockedDbId } from '@/lib/lockedDbUtils';
+import {
+    SYSTEM_DATABASE_ROLES,
+    SYSTEM_DATABASE_NAMES,
+} from '@/lib/kernel/system-databases';
+import type { LockedDbKey, LockedDbIds } from '@/lib/lockedDbUtils';
+import { getLockedDbId } from '@/lib/lockedDbUtils';
 
 export type { LockedDbKey, LockedDbIds };
 export { getLockedDbId };
 
-// The 8 locked databases every tenant must have
-export const LOCKED_DB_BASES = [
-    'db-invoices',
-    'db-clients',
-    'db-suppliers',
-    'db-expenses',
-    'db-tickets',
-    'db-quotations',
-    'db-payments-in',
-    'db-payments-out',
-] as const;
-
-// Maps base ID → display name
-const DB_NAMES: Record<string, string> = {
-    'db-invoices':     'Sales Invoices',
-    'db-clients':      'Contacts',
-    'db-suppliers':    'Suppliers',
-    'db-expenses':     'Purchase Invoices',
-    'db-tickets':      'Expense Tickets',
-    'db-quotations':   'Quotations',
-    'db-payments-in':  'Received Payments',
-    'db-payments-out': 'Paid Payments',
-};
-
 /**
- * Provisions the 6 locked GlobalDatabase rows for a tenant.
+ * Provisions the 16 locked GlobalDatabase rows for a tenant.
  * Uses a Prisma transaction client if provided (for signup atomicity).
- * Safe to call multiple times — skips already-existing rows.
+ * Safe to call multiple times — preserves existing bindings byte-for-byte.
  *
  * Returns the full LockedDbIds map.
  */
@@ -50,36 +31,34 @@ export async function provisionLockedDatabases(
     // Accept either the main prisma client or a transaction client
     db: Pick<PrismaClient, 'globalDatabase' | 'tenant'>
 ): Promise<LockedDbIds> {
-    const suffix = tenantId.slice(0, 8);
-    const ids: Partial<LockedDbIds> = {};
+    const tenant = await db.tenant.findUnique({
+        where: { id: tenantId },
+        select: { lockedDbIds: true },
+    });
+    const existing = (tenant?.lockedDbIds as Record<string, string> | null) || {};
+    const ids: Record<string, string> = { ...existing };
 
-    for (const base of LOCKED_DB_BASES) {
-        const scopedId = `${base}-${suffix}`;
-        const key = BASE_TO_KEY[base];
+    for (const role of SYSTEM_DATABASE_ROLES) {
+        if (existing[role]) {
+            ids[role] = existing[role];
+            continue;
+        }
 
-        // Idempotent upsert — create only if not already there
-        const existing = await db.globalDatabase.findUnique({
-            where: { id: scopedId },
+        const created = await db.globalDatabase.create({
+            data: {
+                tenantId,
+                name: SYSTEM_DATABASE_NAMES[role],
+                properties: [],
+                views: [],
+                activeFilters: [],
+                activeSorts: [],
+                isTemplate: false,
+                ownerId: 'system',
+            },
             select: { id: true },
         });
 
-        if (!existing) {
-            await db.globalDatabase.create({
-                data: {
-                    id: scopedId,
-                    tenantId,
-                    name: DB_NAMES[base] ?? base,
-                    properties: [],
-                    views: [],
-                    activeFilters: [],
-                    activeSorts: [],
-                    isTemplate: false,
-                    ownerId: 'system',
-                },
-            });
-        }
-
-        ids[key] = scopedId;
+        ids[role] = created.id;
     }
 
     const lockedDbIds = ids as LockedDbIds;

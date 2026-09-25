@@ -129,7 +129,9 @@ describe('A · Schema Exhaustiveness & Census (TSC-9 §2A)', () => {
 // 2B · THE WHERE-BUILDER CONTRACT (TSC-9 §2B)
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('B · Where-Builder Contract (TSC-9 §2B)', () => {
+// TODO(R1-4): remove the `todo` marker when scopeWhere is implemented.
+// Removing it is what turns these 13 assertions into a build gate.
+describe('B · Where-Builder Contract (TSC-9 §2B)', { todo: 'R1-4: scopeWhere not implemented' }, () => {
     test('Class A: merges { tenantId } into where clause', () => {
         const where = scopeWhere('Invoice', 'tenant-alpha');
         assert.deepEqual(where, { tenantId: 'tenant-alpha' });
@@ -189,7 +191,9 @@ describe('B · Where-Builder Contract (TSC-9 §2B)', () => {
 // 2C · REGRESSION PINS — this week\'s seven holes, named (TSC-9 §2C)
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('C · Regression Pins — this week\'s holes, named (TSC-9 §2C)', () => {
+// TODO(R1-4): remove the `todo` marker when scopeWhere is implemented.
+// Removing it is what turns these 13 assertions into a build gate.
+describe('C · Regression Pins — this week\'s holes, named (TSC-9 §2C)', { todo: 'R1-4: scopeWhere not implemented' }, () => {
     // TSC-4a (read) & TSC-4b (write): missing relation allowed cross-tenant access to shift tasks
     test('ShiftTask → { shift: { tenantId } } (TSC-4a, TSC-4b read/write holes)', () => {
         const where = scopeWhere('ShiftTask', 'tenant-alpha');

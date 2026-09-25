@@ -125,11 +125,11 @@ export default async function Layout({ children }: { children: React.ReactNode }
                 if (tenant.subscriptionStatus) subscriptionStatus = tenant.subscriptionStatus;
                 if (tenant.trialEndsAt)        trialEndsAt        = tenant.trialEndsAt.toISOString();
 
-                const persistedIds = tenant.lockedDbIds as Record<string, string> | null;
-                if (persistedIds && Object.keys(persistedIds).length > 0) {
-                    lockedDbIds = persistedIds;
-                } else {
+                try {
                     lockedDbIds = await provisionLockedDatabases(tenantId, prisma);
+                } catch (provErr) {
+                    console.error(`[admin/layout] Provisioning failed for ${tenantId}:`, provErr);
+                    lockedDbIds = (tenant.lockedDbIds as Record<string, string> | null) || {};
                 }
 
                 // JSON round-trip converts Prisma Date objects to ISO strings.

@@ -85,11 +85,11 @@ export default async function MobileLayout({ children }: { children: React.React
                 if (tenant.activeModules) activeModules = tenant.activeModules;
                 if (tenant.planType)      planType      = tenant.planType;
 
-                const persistedIds = tenant.lockedDbIds as Record<string, string> | null;
-                if (persistedIds && Object.keys(persistedIds).length > 0) {
-                    lockedDbIds = persistedIds;
-                } else {
+                try {
                     lockedDbIds = await provisionLockedDatabases(tenantId, prisma);
+                } catch (provErr) {
+                    console.error('[m/layout] Provisioning failed:', provErr);
+                    lockedDbIds = (tenant.lockedDbIds as Record<string, string> | null) || {};
                 }
 
                 fullTenant = JSON.parse(JSON.stringify(tenant));

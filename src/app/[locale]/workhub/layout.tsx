@@ -89,11 +89,11 @@ export default async function WorkHubLayout({ children }: { children: React.Reac
             fullTenant = JSON.parse(JSON.stringify(tenant));
         }
 
-        const persistedIds = tenant?.lockedDbIds as Record<string, string> | null;
-        if (persistedIds && Object.keys(persistedIds).length > 0) {
-            lockedDbIds = persistedIds;
-        } else {
+        try {
             lockedDbIds = await provisionLockedDatabases(tenantId, prisma);
+        } catch (provErr) {
+            console.error('[workhub layout] Provisioning failed:', provErr);
+            lockedDbIds = (tenant?.lockedDbIds as Record<string, string> | null) || {};
         }
 
         return (

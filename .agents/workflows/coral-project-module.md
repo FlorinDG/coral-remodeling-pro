@@ -25,6 +25,163 @@ A construction contractor lives in the project. One detail screen should answer,
 - 🟧 **Cockpit incomplete** — Florin: "the cockpit doesn't really look like this"; shows only task progress + budget-spent, missing margin/committed-cost/doc-status/crew.
 - 🟦 **No documents panel / full rollup** (`PROJ-DOC-ROLLUP`), no committed-cost layer, no crew-hours-vs-quoted.
 
+---
+
+# 🔴 PROJ-0 · WHAT IS A PROJECT — added by Planner 2026-09-24, ahead of everything below
+
+**Florin, 2026-09-24:** *"much, if not most, depends on projects module being airtight."* **Correct — and the reason it is not airtight is not in the UI.**
+
+## "Project" currently denotes FOUR things
+| Source | What it is | Who reads it |
+|---|---|---|
+| **`GlobalPage`** in `lockedDbIds['projects'] ?? 'db-1'` | the dynamic projects database | the list grid (`DatabaseClone`) |
+| **`InternalProject`** | Prisma model, ERP side | `/api/hr/erp-projects` |
+| **`HrProject`** | Prisma model | `ScheduledShift.projectId` name enrichment (`route.ts:345`) |
+| **`CMS_Project`** | public website portfolio | marketing site |
+
+Plus `ProjectUpdate` · `ProjectMedia` · `Document` · `Message`, which hang off `ClientPortal`, not off any of the above.
+
+## 🔴 The join is carried by a STRING PREFIX
+`/api/hr/erp-projects` (`route.ts:137-175`) is a **virtual entity that merges `GlobalPage` + `InternalProject` at read time**. `useScheduledShifts.ts:119` then stamps the name:
+```ts
+name: `[ERP] ${p.name}`        // written here …
+projectName.replace('[ERP] ', '')   // … stripped at route.ts:353
+```
+**Two representations of one concept, reconciled by a substring.** *(Defect shape #1, in its purest observed form.)*
+
+## 🔴 TEN `projectId` COLUMNS, ONE DECLARED RELATION
+```
+ProjectUpdate · Document · ProjectMedia · Message · Invoice
+TimeEntry · ClockEntry · ScheduledShift · ShiftTemplate · UserProjectAccess
+```
+**None declares `@relation`.** The only project relation in the schema is `CMS_ProjectImage → CMS_Project` — *the marketing site.*
+
+**This is the `TSC-4` Class-C shape at ten sites, on the module everything else depends on.** It means:
+- **The cockpit cannot prove its own arithmetic.** Revenue and cost are summed across quotes, invoices, shifts and clock entries — **every one of those joins on a `projectId` with no declared target.** A rollup over an unprovable join is a number that looks authoritative and is not.
+- **The tenant gate cannot reach through.** `where: { project: { tenantId } }` is inexpressible, exactly as it was for `ShiftTask`. Every project-scoped query must improvise, and `TSC-4` is the demonstration of where improvisation leads.
+
+## 🟨 `locked['projects'] || 'db-1'` is a fail-open magic default
+`route.ts:146`. A tenant with no configured projects database silently gets `db-1`. **`R1-2` shape: absence answered instead of questioned.**
+
+---
+
+# 🔴 ONE LEVEL DOWN (Planner 2026-09-24) — THE JOIN IS AN ID PUN
+
+## ✅ PLANNER CORRECTION FIRST
+The paragraph above originally read *"a `GlobalPage` cannot be the target of a Prisma relation."* **That is false.** `GlobalPage` is an ordinary model with a cuid `@id`. **It can be a relation target.** The real objections to that shape are different and are stated below. *(Asserted from intuition about the dynamic system rather than from the schema. Corrected on reading it.)*
+
+## WHAT ACCEPTING A QUOTE ACTUALLY DOES — `quote-service.ts:41-96`
+```ts
+const projectId = uuidv4();
+
+await prisma.globalPage.create({      // ① the dynamic project page
+  data: { id: projectId, databaseId: projectDbId,
+          properties: { title: `[EXEC] ${title}`, … } } });
+
+// 3. Create InternalProject (ERP/Scheduler shadow record)
+await prisma.internalProject.create({ // ② the Prisma project
+  data: { id: projectId,              // 🔴 THE SAME ID
+          projectCode: `PRJ-${n}`, … } });
+//        ^ comment in source: "Use same ID for consistency if possible, or link them"
+```
+
+**Two rows, two tables, one primary key.** The join between the dynamic project and the ERP project is **id equality** — never declared, never enforced, nowhere written down, and the comment beside it is a developer who had not decided *("…or link them")*.
+
+**So there are three join mechanisms in play for one concept:**
+| Mechanism | Where |
+|---|---|
+| **id punning** | `quote-service.ts:52 & 86` — GlobalPage.id === InternalProject.id |
+| **`[EXEC] ` title prefix** | written `quote-service.ts:57` |
+| **`[ERP] ` name prefix** | written `useScheduledShifts.ts:119`, stripped `route.ts:353` |
+
+## 🔴 `HrProject` HAS NO WRITER IN THE ERP AT ALL
+`grep` for `hrProject.create|update|upsert` in `src` → **nothing.** Every write reaches it through the generic `'projects' → 'hrProject'` mapping (`route.ts:33`), and the only callers are the **time-tracker's own hooks** (`useProjects.ts:40`, `useScheduledShifts.ts:261`). **`HrProject` is the parallel time-tracker app's private project list** *(`board-v2.md:748` — the half-migrated embedded app)*, not the ERP's.
+
+### And that produces a resolution split
+`ScheduledShift.projectId` can hold **either** an `HrProject.id` **or** a punned `GlobalPage`/`InternalProject` id, because the shift form offers `[...hrProjects, ...erpProjects]` merged.
+- **Client** resolves from the merged map → name shows ✅
+- **Server** (`route.ts:345`) queries **`hrProject` only** → ERP-born shifts get `projectName: undefined` ❌
+
+**Two resolvers, one question, different answers.** Anything server-rendered or exported (`timesheet-export/route.tsx:103`, `timesheet-reports/route.ts:125` — both `hrProject`-only) is **missing the project name for every ERP project.**
+
+## 🔴 THREE CREATION PATHS, THREE CONSISTENCY STATES
+| Path | Creates | Twin? |
+|---|---|---|
+| **Quote accepted** (`quote-service.ts`) | GlobalPage **+** InternalProject, **same id** | ✅ both |
+| **Manual ERP project** (`internal-projects.ts:28`) | InternalProject only | ❌ **no page** |
+| **Row added in the projects grid** | GlobalPage only | ❌ **no InternalProject** |
+| **Scheduler "new project"** (`useProjects.ts:40`) | HrProject only | ❌ unrelated to both |
+
+**This is the cost driver, and it is countable.** See the census below.
+
+---
+
+## THE OPTIONS, RESTATED WITH WHAT WE NOW KNOW
+
+### A · the project IS the `GlobalPage`
+`InternalProject`/`HrProject` die or become views.
+- 🟢 No hardcoded UI; custom properties for free; it is already the surface you work in.
+- 🔴 **`GlobalPage` is polymorphic** — one table holds every row of every user database. A FK to it enforces *"points at a page"*, **not *"points at a project"***. The type lives in `databaseId`, which is **user-configurable data**. The constraint you want is not expressible as a foreign key.
+- 🔴 **Cascade hazard:** `GlobalPage.database → GlobalDatabase onDelete: Cascade`. Deleting the projects database would cascade into **invoices**. Every project FK would need `onDelete: Restrict`, which is the opposite of `TSC-4`'s answer.
+
+### B′ · `InternalProject` becomes canonical *(new — and cheaper than it looks)*
+The dynamic page becomes the project's **property bag and document surface**; `InternalProject` is the identity.
+- 🟢 **The id pun has already done most of the migration.** Every quote-born project **already** has an `InternalProject` with the page's id.
+- 🟢 Already has `tenantId` (Class A, depth-0), already has `projectCode` as a human key, already unique per tenant.
+- 🟢 Ten FKs become declarable; `where: { project: { tenantId } }` becomes expressible; the cockpit's arithmetic becomes provable.
+- 🔴 Backfill needed only for the **non-twinned** rows — grid-created pages and scheduler-created `HrProject`s. **Count them before estimating.**
+
+### C · keep two, add a real relation
+- 🔴 **Blesses the shadow-record pattern.** Two representations survive, and every future feature must ask which one it means. *This is the defect, formalised.*
+
+---
+
+# 🛑 THE CENSUS THAT DECIDES IT — Florin, production branch, read-only
+```sql
+-- 1 · the three project populations
+SELECT 'GlobalPage in projects db' AS what, COUNT(*) FROM "GlobalPage" p
+  JOIN "GlobalDatabase" d ON d.id = p."databaseId"
+  WHERE p."databaseId" = COALESCE(
+        (SELECT "lockedDbIds"->>'projects' FROM "Tenant" LIMIT 1), 'db-1')
+UNION ALL
+SELECT 'InternalProject', COUNT(*) FROM "InternalProject"
+UNION ALL
+SELECT 'HrProject',       COUNT(*) FROM "HrProject";
+
+-- 2 · how well does the id pun actually hold?
+SELECT 'page WITH internal twin'    AS what, COUNT(*) FROM "GlobalPage" p
+  JOIN "InternalProject" i ON i.id = p.id
+UNION ALL
+SELECT 'InternalProject, NO page',  COUNT(*) FROM "InternalProject" i
+  LEFT JOIN "GlobalPage" p ON p.id = i.id WHERE p.id IS NULL;
+
+-- 3 · what do the shifts actually point at?
+SELECT CASE
+         WHEN h.id IS NOT NULL THEN 'HrProject'
+         WHEN i.id IS NOT NULL THEN 'InternalProject'
+         WHEN g.id IS NOT NULL THEN 'GlobalPage'
+         ELSE 'DANGLING' END AS target,
+       COUNT(*)
+FROM "ScheduledShift" s
+LEFT JOIN "HrProject"       h ON h.id = s."projectId"
+LEFT JOIN "InternalProject" i ON i.id = s."projectId"
+LEFT JOIN "GlobalPage"      g ON g.id = s."projectId"
+WHERE s."projectId" IS NOT NULL
+GROUP BY 1;
+```
+
+**Query 3 is the one that decides.** If `DANGLING` > 0, shifts point at projects that no longer exist. If the split is heavily `HrProject`, the scheduler is the de-facto project list and `B′` costs more than it looks. **Do not estimate `PROJ-0` before these numbers exist.**
+
+**The Planner's reading:** the `[ERP] ` prefix, the `[EXEC] ` prefix and the id pun are not three shortcuts that grew independently — **they are one missing relation, worked around three times.** Whichever shape wins, the test is: *afterwards, is there exactly one answer to "which project is this?", and can Prisma express it?*
+
+## SEQUENCE — unchanged by this, and confirmed by it
+```
+kernel  →  R2 core write path  →  GRID-REPLACE  →  PROJ-0 (identity)  →  PROJ-1…7
+```
+`PROJ-7`'s health columns ride `DatabaseClone`, so they cannot precede `GRID-REPLACE` *(`coral-r3-grid.md` — a leaf with dependents is done before its dependents)*. **`PROJ-0` sits between them: after the surface is settled, before anything aggregates across it.**
+
+---
+
 ## BUILD PLAN (ordered)
 - [ ] **PROJ-1 · ACCESS** 🟥 — verify the crash is gone (`ADMIN-QUERYCLIENT-PROVIDER`) and finish its tenant guarding (scoped query keys + clear-on-switch). Nothing else matters until the detail opens reliably.
 - [ ] **PROJ-2 · TASK-STATUS-CONSISTENCY** 🟧 — **CANONICAL RESOLVED (Planner verified in `DatabaseClone.tsx`, 2026-07-26): the tasks property is `prop-task-status` (name "Status") with options `t-todo` / `t-prog` ("Busy") / `t-done` ("Done").** The `opt-to-do` / `opt-in-prog` / `opt-done` / `opt-hold` set belongs to a DIFFERENT property, **`prop-execution-status`** ("Execution Status") — it is NOT the task status. ⚠️ Therefore: `ProjectDetailView` (L160-161, `t-done`/`t-prog`) is **CORRECT and must not be changed**; `ProjectCockpit` (L36/63/119, `opt-*`) is **the bug** — it reads execution-status option IDs against task records, so its counts/progress are always wrong. FIX: change ONLY `ProjectCockpit` to `t-*`, and read the option IDs from the `prop-task-status` schema rather than hardcoding. Do NOT "standardize" on `opt-*` — that would break the working component. Verify: task counts + progress match reality in both the cockpit and the detail, cross-checked against the tasks grid.

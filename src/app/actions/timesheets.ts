@@ -57,7 +57,6 @@ export async function getTimesheetData(targetUserId: string, startIso: string, e
         }
     });
 
-    // Wait, in Supabase it was: projects(name)
     // We'll need to fetch the project names. ScheduledShift has projectId.
     // If projectId points to GlobalPage, we need to fetch GlobalPages.
     const projectIds = Array.from(new Set(shiftsData.map(s => s.projectId).filter(Boolean))) as string[];
@@ -94,7 +93,6 @@ export async function getTimesheetData(targetUserId: string, startIso: string, e
     });
 
     // We map back to snake_case or camelCase as expected by the component.
-    // The component expects snake_case for Supabase compatibility, let's map it.
     return clockData.map(c => {
         const proj = shiftProjectMap.get(c.id);
         return {

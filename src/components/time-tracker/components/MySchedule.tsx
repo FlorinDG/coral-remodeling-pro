@@ -39,7 +39,7 @@ function ShiftCard({ shift, isNextShift, activeEntry, onClick }: ShiftCardProps)
   const pendingTasks = shiftTasks.filter(st => st.status !== 'completed');
   const completedTasks = shiftTasks.filter(st => st.status === 'completed');
 
-  const isClockedIn = activeEntry && shift?.clock_entry_id === activeEntry.id;
+  const isClockedIn = Boolean(activeEntry && activeEntry.shiftId === shift?.id);
   const shiftDate = parseISO(shift.shiftDate);
   const isPast = isBefore(startOfDay(shiftDate), startOfDay(new Date()));
 
@@ -366,7 +366,7 @@ export function MySchedule() {
               </DialogHeader>
               
               <div className="p-6 bg-neutral-50 dark:bg-neutral-900 flex flex-col items-center">
-                {activeEntry && selectedShift.clock_entry_id === activeEntry.id ? (
+                {activeEntry && activeEntry.shiftId === selectedShift.id ? (
                   <>
                     <div className="text-4xl font-mono font-bold text-[var(--brand-color,#d35400)] mb-4 tracking-wider">
                       {elapsedTime}
@@ -391,14 +391,14 @@ export function MySchedule() {
                       disabled={
                         isClockingIn || 
                         selectedShift.status === 'Completed' ||
-                        !!selectedShift.clock_entry_id ||
+                        (selectedShift.clockEntries?.some((e: any) => e.clockOutTime != null) ?? false) ||
                         !!activeEntry
                       }
                     >
                       {isClockingIn ? <Loader2 className="w-6 h-6 animate-spin mr-2" /> : <Play className="w-6 h-6 mr-2 fill-current" />}
                       {t('clock.clockIn', 'CLOCK IN')}
                     </Button>
-                    {(selectedShift.clock_entry_id || selectedShift.status === 'Completed') && (
+                    {((selectedShift.clockEntries?.some((e: any) => e.clockOutTime != null) ?? false) || selectedShift.status === 'Completed') && (
                       <p className="text-xs text-muted-foreground mt-3 font-medium uppercase tracking-wider">
                         Shift completed
                       </p>

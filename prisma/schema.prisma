@@ -777,6 +777,9 @@ model ClockEntry {
   costRatePrevious  Float?
   createdBy         String?
   tenant            Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  shift             ScheduledShift? @relation(fields: [shiftId], references: [id], onDelete: SetNull)
+
+  @@index([shiftId])
 }
 
 model ScheduledShift {
@@ -799,6 +802,7 @@ model ScheduledShift {
   tenant       Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   tasks        ShiftTask[]
   attachments  ShiftAttachment[]
+  clockEntries ClockEntry[]
 
   @@index([seriesId])
 }

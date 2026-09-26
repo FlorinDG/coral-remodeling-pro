@@ -37,12 +37,12 @@ function ClockButtonComponent() {
 
   // Track the active shift when clocked in
   useEffect(() => {
-    if (activeEntry && todayShift?.clock_entry_id === activeEntry.id) {
+    if (activeEntry && activeEntry.shiftId === todayShift?.id) {
       setActiveShiftId(todayShift.id);
     } else if (activeEntry && todayShift?.status === 'In Progress') {
       setActiveShiftId(todayShift.id);
     }
-  }, [activeEntry?.id, todayShift?.id, todayShift?.clock_entry_id, todayShift?.status]);
+  }, [activeEntry?.id, activeEntry?.shiftId, todayShift?.id, todayShift?.status]);
 
   // Restore timer from active entry - only once per entry
   useEffect(() => {

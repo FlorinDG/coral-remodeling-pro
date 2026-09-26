@@ -57,6 +57,7 @@ export interface ScheduledShift {
   // Enriched fields
   projectName?: string;
   userName?: string;
+  clockEntries?: any[];
 }
 
 /** Inject snake_case aliases into a shift for legacy components */
@@ -70,7 +71,6 @@ function addSnakeCase(s: ScheduledShift): ScheduledShift {
     shift_name: s.shiftName,
     project_id: s.projectId,
     created_at: s.createdAt,
-    clock_entry_id: null,
   };
 }
 

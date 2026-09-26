@@ -100,43 +100,59 @@ export function ShiftViewDialog({
   const { activeEntry, clockIn, clockOut } = useClockEntries();
   const { location, requestLocation } = useGeolocation();
 
-  // Check if shift has clock entry (hours attached)
-  const hasClockEntry = !!shift?.clock_entry_id;
+  // WORKHUB-CLOCKLINK: Check if shift has clock entry (hours attached)
+  const shiftEntries = (shift as any)?.clockEntries as any[] | undefined;
+  const hasClockEntry = Boolean(
+    (shiftEntries && shiftEntries.length > 0) ||
+    (activeEntry && activeEntry.shiftId === shift?.id)
+  );
 
-  // Fetch clock entry details
+  // Fetch or resolve clock entry details: prefer open entry, otherwise latest entry
   useEffect(() => {
-    const fetchClockEntry = async () => {
-      if (!shift?.clock_entry_id) {
+    const resolveClockEntry = async () => {
+      if (!shift?.id) {
         setClockEntry(null);
         return;
       }
 
-      setLoadingClock(true);
-      try {
-        const entries = await hrList<any>('clock-entries', { id: shift.clock_entry_id });
-        if (entries && entries.length > 0) {
-          const e = entries[0];
-          setClockEntry({
-            id: e.id,
-            clock_in_time: e.clockInTime,
-            clock_out_time: e.clockOutTime,
-            clock_in_latitude: e.clockInLatitude,
-            clock_in_longitude: e.clockInLongitude,
-            clock_out_latitude: e.clockOutLatitude,
-            clock_out_longitude: e.clockOutLongitude,
-            task_description: e.taskDescription,
-          });
+      // Check if entries were already enriched on shift
+      const entries = (shift as any)?.clockEntries as any[] | undefined;
+      let e = entries?.find((item: any) => !item.clockOutTime) || (entries && entries.length > 0 ? entries[entries.length - 1] : null);
+
+      if (!e) {
+        // Fallback: query clock-entries by shiftId
+        setLoadingClock(true);
+        try {
+          const fetched = await hrList<any>('clock-entries', { shiftId: shift.id });
+          if (fetched && fetched.length > 0) {
+            e = fetched.find((item: any) => !item.clockOutTime) || fetched[fetched.length - 1];
+          }
+        } catch (err) {
+          console.error('[ShiftViewDialog] Failed to fetch clock entry:', err);
         }
-      } catch (err) {
-        console.error('[ShiftViewDialog] Failed to fetch clock entry:', err);
+        setLoadingClock(false);
       }
-      setLoadingClock(false);
+
+      if (e) {
+        setClockEntry({
+          id: e.id,
+          clock_in_time: e.clockInTime,
+          clock_out_time: e.clockOutTime,
+          clock_in_latitude: e.clockInLatitude,
+          clock_in_longitude: e.clockInLongitude,
+          clock_out_latitude: e.clockOutLatitude,
+          clock_out_longitude: e.clockOutLongitude,
+          task_description: e.taskDescription,
+        });
+      } else {
+        setClockEntry(null);
+      }
     };
 
-    if (open && shift?.clock_entry_id) {
-      fetchClockEntry();
+    if (open && shift?.id) {
+      resolveClockEntry();
     }
-  }, [shift?.clock_entry_id, open]);
+  }, [shift?.id, (shift as any)?.clockEntries, open]);
 
   // Fetch attachments when dialog opens
   useEffect(() => {

@@ -356,6 +356,31 @@ export async function GET(
                     });
                 }
             }
+
+            // WORKHUB-CLOCKLINK: Enrich clock entries for shifts
+            if (entity === 'shifts') {
+                const shiftIds = records.map((r: any) => r.id).filter((id: string) => id && !id.startsWith('leave-'));
+                if (shiftIds.length > 0) {
+                    const entries = await prisma.clockEntry.findMany({
+                        where: { shiftId: { in: shiftIds } },
+                        orderBy: { clockInTime: 'asc' },
+                    });
+                    const entriesByShift = new Map<string, any[]>();
+                    entries.forEach(e => {
+                        if (e.shiftId) {
+                            const list = entriesByShift.get(e.shiftId) || [];
+                            list.push(e);
+                            entriesByShift.set(e.shiftId, list);
+                        }
+                    });
+                    records = records.map((r: any) => ({
+                        ...r,
+                        clockEntries: entriesByShift.get(r.id) || [],
+                    }));
+                } else {
+                    records = records.map((r: any) => ({ ...r, clockEntries: [] }));
+                }
+            }
         }
         
         return NextResponse.json(records);

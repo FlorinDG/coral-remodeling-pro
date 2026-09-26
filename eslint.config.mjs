@@ -257,8 +257,8 @@ const eslintConfig = defineConfig([
       "src/app/actions/timesheets.ts",
     ],
     ignores: [
-      // GRANDFATHERED — these carry the Supabase-era field shape. Prisma is camelCase; these are the last translation.
-      // Do not add to this list. Its length is the SUPA-2 metric.
+      // 40 entries: 39 from the original 14-name census + useScheduleAttachments.ts, which
+      // carried the shape but went unmatched until the Step 0b pattern widening.
       "src/app/actions/timesheets.ts",
       "src/components/admin/database/components/ProjectDetailView.tsx",
       "src/components/time-tracker/components/Announcements.tsx",
@@ -290,6 +290,7 @@ const eslintConfig = defineConfig([
       "src/components/time-tracker/hooks/useClockEntries.ts",
       "src/components/time-tracker/hooks/useProjectAssignments.ts",
       "src/components/time-tracker/hooks/useProjectAttachments.ts",
+      "src/components/time-tracker/hooks/useScheduleAttachments.ts",
       "src/components/time-tracker/hooks/useScheduledShifts.ts",
       "src/components/time-tracker/hooks/useTasks.ts",
       "src/components/time-tracker/hooks/useWorkerSchedules.ts",

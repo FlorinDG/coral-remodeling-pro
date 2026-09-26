@@ -70,7 +70,6 @@ export function Header() {
 
   const handleSignOut = async () => {
     await signOut();
-    window.location.href = basePath;
   };
 
   return (

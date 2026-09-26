@@ -103,20 +103,9 @@ describe('KERN-6 / Pass 3a — SYSTEM_DATABASES Table and Derived Lists', () => 
     });
 
     test('all four derived lists have length 16 (census: 16 / 16 / 16 / 16)', () => {
-        const baseToKeyLength = Object.keys(BASE_TO_KEY).length;
-        const systemPrefixesLength = SYSTEM_DB_PREFIXES.length;
-        const serverProvisionedLength = SERVER_PROVISIONED_BASES.size;
-        const dbIdModuleMapLength = DB_ID_MODULE_MAP.length;
-
-        assert.equal(baseToKeyLength, 16, `BASE_TO_KEY must have 16 entries (got ${baseToKeyLength})`);
-        assert.equal(systemPrefixesLength, 16, `SYSTEM_DB_PREFIXES must have 16 items (got ${systemPrefixesLength})`);
-        assert.equal(serverProvisionedLength, 16, `SERVER_PROVISIONED_BASES must have 16 items (got ${serverProvisionedLength})`);
-        assert.equal(dbIdModuleMapLength, 16, `DB_ID_MODULE_MAP must have 16 items (got ${dbIdModuleMapLength})`);
-
-        // Also assert .length property directly on all four
-        assert.equal((BASE_TO_KEY as any).length, 16, 'BASE_TO_KEY.length must be 16');
+        assert.equal(Object.keys(BASE_TO_KEY).length, 16, 'Object.keys(BASE_TO_KEY).length must be 16');
+        assert.equal(SERVER_PROVISIONED_BASES.size, 16, 'SERVER_PROVISIONED_BASES.size must be 16');
         assert.equal(SYSTEM_DB_PREFIXES.length, 16, 'SYSTEM_DB_PREFIXES.length must be 16');
-        assert.equal((SERVER_PROVISIONED_BASES as any).length, 16, 'SERVER_PROVISIONED_BASES.length must be 16');
         assert.equal(DB_ID_MODULE_MAP.length, 16, 'DB_ID_MODULE_MAP.length must be 16');
     });
 

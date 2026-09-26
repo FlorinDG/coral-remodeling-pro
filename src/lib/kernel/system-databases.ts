@@ -151,11 +151,6 @@ export const SYSTEM_DATABASE_NAMES: Record<SystemDatabaseRole, string> = Object.
 export const BASE_TO_KEY: Record<string, SystemDatabaseRole> = Object.fromEntries(
     SYSTEM_DATABASE_ROLES.map(role => [SYSTEM_DATABASES[role].legacyBase, role])
 );
-Object.defineProperty(BASE_TO_KEY, 'length', {
-    get: () => Object.keys(BASE_TO_KEY).length,
-    enumerable: false,
-    configurable: true,
-});
 
 // ── Derived List 3: Immutable Base Prefixes (SYSTEM_DB_PREFIXES) ─────────────
 // Gains db-journal-general and db-hr (14 → 16).
@@ -168,11 +163,6 @@ export const SYSTEM_DB_PREFIXES: readonly string[] = SYSTEM_DATABASE_ROLES.map(
 export const SERVER_PROVISIONED_BASES: Set<string> = new Set(
     SYSTEM_DATABASE_ROLES.map(role => SYSTEM_DATABASES[role].legacyBase)
 );
-Object.defineProperty(SERVER_PROVISIONED_BASES, 'length', {
-    get: () => SERVER_PROVISIONED_BASES.size,
-    enumerable: false,
-    configurable: true,
-});
 
 // ── Derived List 5: Module Entitlement Map (DB_ID_MODULE_MAP) ─────────────────
 // Explicit module gate (or null) for all 16 roles.

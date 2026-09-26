@@ -121,7 +121,52 @@ export const SYSTEM_DATABASES: Readonly<Record<SystemDatabaseRole, SystemDatabas
 
 **`R1-1b` and pass 3 are the same problem seen from two ends.** Pass 3c cannot delete the legacy alias while stored data still needs it to be read.
 
-## 🛑 MEASURE BEFORE SEQUENCING — Florin, production, read-only
+# ✅ MEASURED 2026-09-26 (Florin, production) — AND IT EXPLAINS `R1-1b`
+
+```
+resolves                    36
+LEGACY ALIAS (no such db)    3
+CROSS-TENANT TARGET          0     🟢
+```
+
+**`R1-1b` is 3 relation property definitions, not 9,226 pages.** Each holds a `config.relationDatabaseId` that is not a real database id — base ids written before the binding existed. **Three JSON edits, no migration.**
+
+🟢 **Zero cross-tenant relation targets.** No data-level isolation defect.
+
+## 🔴 WHY `R1-1b` IS STILL NEEDED — the binding is ONE-DIRECTIONAL
+
+| Direction | Answered by | Cost |
+|---|---|---|
+| **role → id** | `Tenant.lockedDbIds` | a read ✅ |
+| **id → role** | **NOTHING** | 🔴 **parse the id** |
+
+**Every reverse-lookup site has no storage to read, so it parses.** That is the root of all 74:
+```
+getBaseDbId(id)            → "which role is this id?"        → prefix match
+isSystemDatabase(id)       → "is this one of ours?"          → prefix match
+requiredModuleForDb(id)    → "what gates this?"              → prefix match  🛑 ENTITLEMENT
+resolve.ts:94              → "is this a role or an id?"      → BASE_TO_KEY lookup + 2 prefix searches
+```
+
+> ### `GlobalDatabase.logicalKey` IS the reverse binding.
+> **Add it and both directions are reads. That is what makes pass 3b deletion rather than rewriting.**
+
+- [ ] **`logicalKey` is `SystemDatabaseRole | null`** — null for custom databases. Additive, nullable first *(`pd.md` migration rule)*.
+- [ ] **Backfill from `Tenant.lockedDbIds`, which is authoritative** — 16 roles × 2 tenants. 🛑 **Never backfill by parsing the id**; that would bake the defect into the column meant to remove it.
+- [ ] **`@@unique([tenantId, logicalKey])`** where non-null — one database per role per tenant, enforced by Postgres rather than by convention.
+- [ ] 🟢 **Then `getBaseDbId` / `isSystemDatabase` / `requiredModuleForDb` are `SELECT logicalKey`** and the prefix matching goes.
+
+### Revised order — `R1-1b` moves EARLIER
+```
+3a one table  →  R1-1b logicalKey + backfill  →  3b ratchet + convert  →  3c delete
+                        ↑
+            without the reverse binding, 3b has nothing to convert TO
+```
+**`R1-1b` is not a precondition to be got out of the way — it is the storage pass 3b spends.**
+
+---
+
+## THE MEASUREMENT QUERY — corrected key
 ```sql
 -- which relation properties point at a legacy base id rather than a real database id?
 SELECT d.id AS database_id, d.name, p->>'id' AS prop_id, p->>'name' AS prop_name,

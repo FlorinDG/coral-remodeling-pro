@@ -6,30 +6,11 @@
  */
 
 import type { SystemDatabaseRole } from '@/lib/kernel/system-databases';
+import { BASE_TO_KEY } from '@/lib/kernel/system-databases';
 
 export type LockedDbKey = SystemDatabaseRole;
 export type LockedDbIds = Partial<Record<LockedDbKey, string>>;
-
-
-// Maps base locked DB name → the key used in Tenant.lockedDbIds JSON
-export const BASE_TO_KEY: Record<string, LockedDbKey> = {
-    'db-invoices':     'invoices',
-    'db-clients':      'clients',
-    'db-suppliers':    'suppliers',
-    'db-expenses':     'expenses',
-    'db-tickets':      'tickets',
-    'db-quotations':   'quotations',
-    'db-payments-in':  'payments-in',
-    'db-payments-out': 'payments-out',
-    'db-1':            'projects',
-    'db-tasks':        'tasks',
-    'db-articles':     'articles',
-    'db-crm':          'crm',
-    'db-bobex':        'bobex',
-    'db-bestek':       'bestek',
-    'db-journal-general': 'journal-general',
-    'db-hr':           'hr',
-};
+export { BASE_TO_KEY };
 
 /**
  * Resolve a base locked DB name (e.g. 'db-invoices') to the tenant-scoped actual ID.

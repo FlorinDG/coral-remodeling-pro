@@ -9,19 +9,8 @@ import { generateOGM } from '@/lib/ogm';
 import { isSystemDatabase } from '@/lib/systemDatabases';
 import { getLockedDbId } from '@/lib/lockedDbUtils';
 import { checkExportLock } from '@/lib/records/export-lock';
+import { DB_ID_MODULE_MAP } from '@/lib/kernel/system-databases';
 
-// Infer required module from locked DB ID prefix.
-// Works for both bare IDs ('db-invoices') and scoped IDs ('db-invoices-abc12345').
-const DB_ID_MODULE_MAP: Array<[string, string]> = [
-    ['db-invoices',     'INVOICING'],
-    ['db-expenses',     'INVOICING'],
-    ['db-tickets',      'INVOICING'],
-    ['db-quotations',   'CRM'],
-    ['db-clients',      'CRM'],
-    ['db-suppliers',    'INVOICING'],
-    ['db-payments-in',  'INVOICING'],
-    ['db-payments-out', 'INVOICING'],
-];
 
 function requiredModuleForDb(databaseId: string): string | null {
     for (const [prefix, module] of DB_ID_MODULE_MAP) {

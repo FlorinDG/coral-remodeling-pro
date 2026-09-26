@@ -69,12 +69,8 @@ function addSnakeCase(s: ScheduledShift): ScheduledShift {
     shift_end: s.shiftEnd,
     shift_name: s.shiftName,
     project_id: s.projectId,
-    created_by: s.createdBy,
-    last_edited_by: s.lastEditedBy,
     created_at: s.createdAt,
-    updated_at: s.updatedAt,
     clock_entry_id: null,
-    notion_page_id: null,
   };
 }
 

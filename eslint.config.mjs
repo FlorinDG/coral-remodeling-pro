@@ -284,6 +284,7 @@ const eslintConfig = defineConfig([
       "src/components/time-tracker/components/schedule/ScheduleMatrixView.tsx",
       "src/components/time-tracker/components/schedule/ScheduleTable.tsx",
       "src/components/time-tracker/components/schedule/ShiftViewDialog.tsx",
+      "src/components/time-tracker/contexts/AuthContext.tsx",
       "src/components/time-tracker/hooks/useAnnouncements.ts",
       "src/components/time-tracker/hooks/useApprovalRequests.ts",
       "src/components/time-tracker/hooks/useClockEntries.ts",
@@ -292,7 +293,9 @@ const eslintConfig = defineConfig([
       "src/components/time-tracker/hooks/useScheduledShifts.ts",
       "src/components/time-tracker/hooks/useTasks.ts",
       "src/components/time-tracker/hooks/useWorkerSchedules.ts",
+      "src/components/time-tracker/pages/Index.tsx",
       "src/components/time-tracker/pages/Performance.tsx",
+      "src/components/time-tracker/pages/Profile.tsx",
       "src/components/time-tracker/pages/Schedule.tsx",
       "src/components/time-tracker/pages/TimeOff.tsx",
     ],
@@ -300,15 +303,15 @@ const eslintConfig = defineConfig([
       "no-restricted-syntax": [
         "error",
         {
-          selector: "MemberExpression[property.name=/^(clock_in_time|clock_out_time|task_description|project_id|user_id|shift_date|shift_start|shift_end|full_name|first_name|last_name|created_at|updated_at|employee_id)$/], MemberExpression[property.value=/^(clock_in_time|clock_out_time|task_description|project_id|user_id|shift_date|shift_start|shift_end|full_name|first_name|last_name|created_at|updated_at|employee_id)$/]",
+          selector: "MemberExpression[property.name=/^[a-z][a-z0-9]*(_[a-z0-9]+)+$/], MemberExpression[property.value=/^[a-z][a-z0-9]*(_[a-z0-9]+)+$/]",
           message: "ARCHITECTURAL RULE (SUPA-2): Supabase snake_case field access is forbidden. Use Prisma camelCase property.",
         },
         {
-          selector: "Property[key.name=/^(clock_in_time|clock_out_time|task_description|project_id|user_id|shift_date|shift_start|shift_end|full_name|first_name|last_name|created_at|updated_at|employee_id)$/], Property[key.value=/^(clock_in_time|clock_out_time|task_description|project_id|user_id|shift_date|shift_start|shift_end|full_name|first_name|last_name|created_at|updated_at|employee_id)$/]",
+          selector: "Property[key.name=/^[a-z][a-z0-9]*(_[a-z0-9]+)+$/], Property[key.value=/^[a-z][a-z0-9]*(_[a-z0-9]+)+$/]",
           message: "ARCHITECTURAL RULE (SUPA-2): Supabase snake_case property literal is forbidden. Use Prisma camelCase property.",
         },
         {
-          selector: "TSPropertySignature[key.name=/^(clock_in_time|clock_out_time|task_description|project_id|user_id|shift_date|shift_start|shift_end|full_name|first_name|last_name|created_at|updated_at|employee_id)$/], TSPropertySignature[key.value=/^(clock_in_time|clock_out_time|task_description|project_id|user_id|shift_date|shift_start|shift_end|full_name|first_name|last_name|created_at|updated_at|employee_id)$/]",
+          selector: "TSPropertySignature[key.name=/^[a-z][a-z0-9]*(_[a-z0-9]+)+$/], TSPropertySignature[key.value=/^[a-z][a-z0-9]*(_[a-z0-9]+)+$/]",
           message: "ARCHITECTURAL RULE (SUPA-2): Supabase snake_case type signature is forbidden. Use Prisma camelCase property.",
         },
       ],

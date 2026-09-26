@@ -15,8 +15,8 @@ export interface WorkerSchedule {
 }
 
 export interface WorkerWithProfile {
-  user_id: string;
-  full_name: string;
+  userId: string;
+  name: string;
   schedules: WorkerSchedule[];
 }
 

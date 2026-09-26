@@ -9,13 +9,6 @@ export interface ScheduleAttachment {
   type: string;
   size: number | null;
   createdAt: string;
-  // Legacy aliases
-  shift_id?: string;
-  file_name?: string;
-  file_path?: string;
-  file_type?: string;
-  file_size?: number | null;
-  source_project_id?: string | null;
 }
 
 export function useScheduleAttachments(shiftId?: string | null) {

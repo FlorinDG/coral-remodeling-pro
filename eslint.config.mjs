@@ -247,6 +247,77 @@ const eslintConfig = defineConfig([
       ],
     },
   },
+  // SUPA-2: Ratchet against Supabase-era snake_case field shape in time-tracker
+  // Scope is restricted to src/components/time-tracker/** plus named outliers,
+  // because created_at / updated_at / project_id appear in external API / integration contexts.
+  {
+    files: [
+      "src/components/time-tracker/**/*.{ts,tsx}",
+      "src/components/admin/database/components/ProjectDetailView.tsx",
+      "src/app/actions/timesheets.ts",
+    ],
+    ignores: [
+      // GRANDFATHERED — these carry the Supabase-era field shape. Prisma is camelCase; these are the last translation.
+      // Do not add to this list. Its length is the SUPA-2 metric.
+      "src/app/actions/timesheets.ts",
+      "src/components/admin/database/components/ProjectDetailView.tsx",
+      "src/components/time-tracker/components/Announcements.tsx",
+      "src/components/time-tracker/components/ClockButton.tsx",
+      "src/components/time-tracker/components/DailySummary.tsx",
+      "src/components/time-tracker/components/Documents.tsx",
+      "src/components/time-tracker/components/Header.tsx",
+      "src/components/time-tracker/components/LateEntryCard.tsx",
+      "src/components/time-tracker/components/LateEntryForm.tsx",
+      "src/components/time-tracker/components/MySchedule.tsx",
+      "src/components/time-tracker/components/NotificationSettings.tsx",
+      "src/components/time-tracker/components/QuickLinks.tsx",
+      "src/components/time-tracker/components/ScheduleManager.tsx",
+      "src/components/time-tracker/components/TimesheetView.tsx",
+      "src/components/time-tracker/components/admin/AllSchedulesView.tsx",
+      "src/components/time-tracker/components/admin/ApprovalManager.tsx",
+      "src/components/time-tracker/components/admin/ScheduleManagement.tsx",
+      "src/components/time-tracker/components/admin/UserCard.tsx",
+      "src/components/time-tracker/components/admin/UserDetailView.tsx",
+      "src/components/time-tracker/components/admin/UserManager.tsx",
+      "src/components/time-tracker/components/schedule/CreateShiftForm.tsx",
+      "src/components/time-tracker/components/schedule/EditShiftDialog.tsx",
+      "src/components/time-tracker/components/schedule/ScheduleCalendar.tsx",
+      "src/components/time-tracker/components/schedule/ScheduleMatrixView.tsx",
+      "src/components/time-tracker/components/schedule/ScheduleTable.tsx",
+      "src/components/time-tracker/components/schedule/ShiftViewDialog.tsx",
+      "src/components/time-tracker/contexts/AuthContext.tsx",
+      "src/components/time-tracker/hooks/useAnnouncements.ts",
+      "src/components/time-tracker/hooks/useApprovalRequests.ts",
+      "src/components/time-tracker/hooks/useClockEntries.ts",
+      "src/components/time-tracker/hooks/useProjectAssignments.ts",
+      "src/components/time-tracker/hooks/useProjectAttachments.ts",
+      "src/components/time-tracker/hooks/useScheduledShifts.ts",
+      "src/components/time-tracker/hooks/useTasks.ts",
+      "src/components/time-tracker/hooks/useWorkerSchedules.ts",
+      "src/components/time-tracker/pages/Index.tsx",
+      "src/components/time-tracker/pages/Performance.tsx",
+      "src/components/time-tracker/pages/Profile.tsx",
+      "src/components/time-tracker/pages/Schedule.tsx",
+      "src/components/time-tracker/pages/TimeOff.tsx",
+    ],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "MemberExpression[property.name=/^(clock_in_time|clock_out_time|task_description|project_id|user_id|shift_date|shift_start|shift_end|full_name|first_name|last_name|created_at|updated_at|employee_id)$/], MemberExpression[property.value=/^(clock_in_time|clock_out_time|task_description|project_id|user_id|shift_date|shift_start|shift_end|full_name|first_name|last_name|created_at|updated_at|employee_id)$/]",
+          message: "ARCHITECTURAL RULE (SUPA-2): Supabase snake_case field access is forbidden. Use Prisma camelCase property.",
+        },
+        {
+          selector: "Property[key.name=/^(clock_in_time|clock_out_time|task_description|project_id|user_id|shift_date|shift_start|shift_end|full_name|first_name|last_name|created_at|updated_at|employee_id)$/], Property[key.value=/^(clock_in_time|clock_out_time|task_description|project_id|user_id|shift_date|shift_start|shift_end|full_name|first_name|last_name|created_at|updated_at|employee_id)$/]",
+          message: "ARCHITECTURAL RULE (SUPA-2): Supabase snake_case property literal is forbidden. Use Prisma camelCase property.",
+        },
+        {
+          selector: "TSPropertySignature[key.name=/^(clock_in_time|clock_out_time|task_description|project_id|user_id|shift_date|shift_start|shift_end|full_name|first_name|last_name|created_at|updated_at|employee_id)$/], TSPropertySignature[key.value=/^(clock_in_time|clock_out_time|task_description|project_id|user_id|shift_date|shift_start|shift_end|full_name|first_name|last_name|created_at|updated_at|employee_id)$/]",
+          message: "ARCHITECTURAL RULE (SUPA-2): Supabase snake_case type signature is forbidden. Use Prisma camelCase property.",
+        },
+      ],
+    },
+  },
 ]);
 
 export default eslintConfig;

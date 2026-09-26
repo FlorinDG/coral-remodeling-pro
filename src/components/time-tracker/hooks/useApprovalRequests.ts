@@ -5,20 +5,20 @@ import { hrList, hrUpdate } from '@/components/time-tracker/lib/hr-api';
 
 export interface ApprovalRequest {
   id: string;
-  request_type: string;
-  entity_id: string | null;
-  entity_type: string;
-  user_id: string;
-  requested_by: string;
+  requestType: string;
+  entityId: string | null;
+  entityType: string;
+  userId: string;
+  requestedBy: string;
   status: string;
-  request_data: unknown;
+  requestData: unknown;
   notes: string | null;
-  reviewed_by: string | null;
-  reviewed_at: string | null;
-  created_at: string;
-  updated_at: string;
-  user_profile?: { full_name: string } | null;
-  requester_profile?: { full_name: string } | null;
+  reviewedBy: string | null;
+  reviewedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  userProfile?: { name: string } | null;
+  requesterProfile?: { name: string } | null;
 }
 
 export function useApprovalRequests() {

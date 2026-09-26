@@ -21,8 +21,6 @@ export interface Task {
     properties?: Record<string, unknown>;
     /** User IDs the task is assigned to (GlobalPage.assignedTo) */
     assignedTo?: string[];
-    // Legacy alias for older consumers
-    project_id?: string | null;
 }
 
 /** Checklist item added by a worker within a shift assignment.
@@ -54,9 +52,6 @@ export interface ShiftTask {
     workerNotes: string | null;
     /** Hydrated task from db-tasks */
     task?: Task;
-    // Legacy aliases
-    shift_id?: string;
-    task_id?: string;
 }
 
 // ─── useTasks ─────────────────────────────────────────────────────────────────

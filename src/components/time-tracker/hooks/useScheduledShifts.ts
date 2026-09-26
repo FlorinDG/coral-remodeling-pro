@@ -50,20 +50,6 @@ export interface ScheduledShift {
   // Resolved locally
   project?: Project | null;
   profile?: { full_name: string } | null;
-  profiles?: { full_name: string } | null; // legacy alias
-  // snake_case aliases for legacy component compat
-  user_id?: string;
-  shift_date?: string;
-  shift_start?: string;
-  shift_end?: string;
-  shift_name?: string | null;
-  project_id?: string | null;
-  clock_entry_id?: string | null;
-  created_by?: string | null;
-  last_edited_by?: string | null;
-  created_at?: string;
-  updated_at?: string;
-  notion_page_id?: string | null;
   seriesId?: string | null;
   // Synthetic absence block fields
   isSynthetic?: boolean;

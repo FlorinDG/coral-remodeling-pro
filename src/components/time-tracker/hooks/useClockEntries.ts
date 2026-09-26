@@ -22,23 +22,7 @@ export interface ClockEntry {
   createdAt: string;
   updatedAt: string;
   noBreak?: boolean;
-  no_break?: boolean;
   photos?: string[];
-  // snake_case aliases for legacy components
-  user_id?: string;
-  clock_in_time?: string;
-  clock_out_time?: string | null;
-  clock_in_latitude?: number | null;
-  clock_in_longitude?: number | null;
-  clock_out_latitude?: number | null;
-  clock_out_longitude?: number | null;
-  task_description?: string | null;
-  requires_approval?: boolean;
-  approval_status?: string | null;
-  approved_by?: string | null;
-  approved_at?: string | null;
-  created_at?: string;
-  updated_at?: string;
 }
 
 function addSnake(e: ClockEntry): ClockEntry {

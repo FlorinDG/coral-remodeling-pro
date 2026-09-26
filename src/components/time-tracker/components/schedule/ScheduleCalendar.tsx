@@ -60,7 +60,7 @@ function ShiftCard({ shift, onClick }: { shift: ScheduledShift; onClick?: () => 
             {projectName}
           </p>
           <p className="font-medium text-xs text-muted-foreground whitespace-normal break-words mt-0.5">
-            {shift.profile?.full_name || 'Unassigned'}
+            {shift.userName || 'Unassigned'}
           </p>
           <p className="text-xs text-muted-foreground/80 whitespace-normal break-words mt-0.5">
             {shift.project?.address || 'No location'}
@@ -268,8 +268,8 @@ function DesktopCalendarView({ shifts, currentMonth, onShiftClick }: {
                   >
                     {isLeave ? '🌴 ' : ''}
                     <span className={cn("font-bold", isLeave && "uppercase tracking-wide")}>{title}</span>
-                    {(shift.profile?.full_name || shift.userName) && (
-                      <span className="opacity-75 truncate"> · {shift.profile?.full_name || shift.userName}</span>
+                    {shift.userName && (
+                      <span className="opacity-75 truncate"> · {shift.userName}</span>
                     )}
                   </div>
                 );

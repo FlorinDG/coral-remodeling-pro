@@ -49,7 +49,6 @@ export interface ScheduledShift {
   updatedAt: string;
   // Resolved locally
   project?: Project | null;
-  profile?: { full_name: string } | null;
   seriesId?: string | null;
   // Synthetic absence block fields
   isSynthetic?: boolean;
@@ -57,6 +56,7 @@ export interface ScheduledShift {
   sourceId?: string;
   // Enriched fields
   projectName?: string;
+  userName?: string;
 }
 
 /** Inject snake_case aliases into a shift for legacy components */
@@ -75,7 +75,6 @@ function addSnakeCase(s: ScheduledShift): ScheduledShift {
     updated_at: s.updatedAt,
     clock_entry_id: null,
     notion_page_id: null,
-    profile: s.profile || s.profiles || null,
   };
 }
 
@@ -128,7 +127,7 @@ export function useScheduledShifts() {
       const enriched = allValidShifts.map(s => addSnakeCase({
         ...s,
         project: s.projectId ? projectMap.get(s.projectId) || null : null,
-        profile: { full_name: (s as any).userName || employeeMap.get(s.userId || s.user_id || '') || 'Onbekend' },
+        userName: (s as any).userName || (s.userId ? employeeMap.get(s.userId) : undefined) || employeeMap.get((s as any).user_id || '') || 'Onbekend',
       }));
 
       setRawShifts(enriched);

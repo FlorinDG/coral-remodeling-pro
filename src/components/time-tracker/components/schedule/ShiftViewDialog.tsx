@@ -362,7 +362,7 @@ export function ShiftViewDialog({
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Employee</span>
-                  <span className="font-medium">{shift.profile?.full_name || 'Unknown'}</span>
+                  <span className="font-medium">{shift.userName || 'Unknown'}</span>
                 </div>
                 
                 <div className="flex items-center justify-between">

@@ -1,6 +1,4 @@
-// @ts-nocheck
 "use client";
-// @ts-nocheck — Legacy component, progressive migration to camelCase
 import { useEffect } from 'react';
 import { useRouter } from "@/i18n/routing";
 
@@ -35,9 +33,9 @@ export default function Profile() {
   const navigate = useRouter();
   const basePath = useAppBasePath();
   const { t, i18n } = useTranslation();
-  const { user, profile, loading, resetPassword } = useAuth();
+  const { user, loading, resetPassword } = useAuth();
   const { theme } = useTheme();
-  const { preferences, updateLanguage, updateTheme, updateTimezone, isUpdating } = useUserPreferences();
+  const { preferences, updateLanguage, updateTheme, updateTimezone, isLoading: isUpdating } = useUserPreferences();
   
   const [newEmail, setNewEmail] = useState('');
   const [supportSubject, setSupportSubject] = useState('');
@@ -137,7 +135,7 @@ export default function Profile() {
             <CardContent className="space-y-4">
               <div>
                 <Label>{t('profile.fullName')}</Label>
-                <p className="text-foreground">{profile?.full_name}</p>
+                <p className="text-foreground">{user.name || 'User'}</p>
               </div>
               <div>
                 <Label>{t('profile.email')}</Label>

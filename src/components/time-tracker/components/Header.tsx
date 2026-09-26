@@ -54,13 +54,13 @@ const NavLink = forwardRef<HTMLAnchorElement, NavLinkCompatProps>(
 import { useAppBasePath } from '@/components/time-tracker/hooks/useAppBasePath';
 
 export function Header() {
-  const { profile, signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const { i18n } = useTranslation();
   const basePath = useAppBasePath();
 
   const currentLanguage = languages.find(lang => lang.code === i18n.language) || languages[0];
 
-  const userName = profile?.full_name || 'User';
+  const userName = user?.name || 'User';
   const initials = userName
     .split(' ')
     .map((n) => n[0])

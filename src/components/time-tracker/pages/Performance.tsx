@@ -39,7 +39,7 @@ export default function Performance() {
   const router = useRouter();
   const navigate = useRouter();
   const basePath = useAppBasePath();
-  const { user, profile, loading } = useAuth();
+  const { user, loading } = useAuth();
   const { isAdmin, isManager } = useUserRoles();
   const { requests } = useTimeOffRequests();
   const { completedTasks, loading: tasksLoading } = useCompletedTasks();

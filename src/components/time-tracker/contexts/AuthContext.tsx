@@ -5,11 +5,12 @@ import { del } from 'idb-keyval';
 
 export interface User {
   id: string;
+  name?: string | null;
   email?: string;
   app_metadata: any;
   user_metadata: any;
   aud: string;
-  created_at: string;
+  createdAt?: string;
 }
 
 export interface Session {
@@ -21,16 +22,9 @@ export interface Session {
   user: User;
 }
 
-interface Profile {
-  id: string;
-  user_id: string;
-  full_name: string;
-}
-
 interface AuthContextType {
   user: User | null;
   session: Session | null;
-  profile: Profile | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
@@ -59,7 +53,6 @@ const notImplementedSignUp = async () => {
 const mockAuthContext: AuthContextType = {
   user: null,
   session: null,
-  profile: null,
   loading: true,
   signIn: notImplementedSignIn,
   signUp: notImplementedSignUp,
@@ -85,17 +78,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Bridge NextAuth session into legacy shape for the TimeTracker
     const bridgedUser: User = {
       id: nextSession.user.id,
+      name: nextSession.user.name || 'User',
       email: nextSession.user.email || undefined,
       app_metadata: {},
       user_metadata: { tenantId: (nextSession.user as any).tenantId },
       aud: 'authenticated',
-      created_at: new Date().toISOString(),
-    };
-
-    const bridgedProfile: Profile = {
-      id: nextSession.user.id,
-      user_id: nextSession.user.id,
-      full_name: nextSession.user.name || 'User',
+      createdAt: new Date().toISOString(),
     };
 
     const bridgedSession: Session = {
@@ -110,7 +98,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return {
       user: bridgedUser,
       session: bridgedSession,
-      profile: bridgedProfile,
       loading: false,
       signIn: notImplementedSignIn,
       signUp: notImplementedSignUp,

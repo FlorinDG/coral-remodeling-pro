@@ -168,7 +168,7 @@ export default function Schedule() {
             <DialogHeader className="pb-2">
               <div className="flex items-center justify-between">
                   <DialogTitle className="text-xl font-semibold">
-                    {selectedShift?.profile?.full_name || 'Shift Details'}
+                    {selectedShift?.userName || 'Shift Details'}
                   </DialogTitle>
                   {selectedShift && (
                     <span className={cn(
@@ -227,14 +227,14 @@ export default function Schedule() {
                 )}
 
                 {/* Worker */}
-                {selectedShift.profile?.full_name && (
+                {selectedShift.userName && (
                   <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
                     <div className="p-2 rounded-full bg-primary/10">
                       <User className="h-4 w-4 text-primary" />
                     </div>
                     <div className="flex-1">
                       <p className="text-xs text-muted-foreground">Worker</p>
-                      <p className="font-medium">{selectedShift.profile.full_name}</p>
+                      <p className="font-medium">{selectedShift.userName}</p>
                     </div>
                   </div>
                 )}

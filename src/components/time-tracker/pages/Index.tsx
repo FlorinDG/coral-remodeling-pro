@@ -22,7 +22,7 @@ interface IndexProps {
 
 export default function Index({ embedded = false }: IndexProps) {
   const router = useRouter();
-  const { user, profile, loading } = useAuth();
+  const { user, loading } = useAuth();
   const { isAdmin } = useUserRoles();
   const [siteVisitOpen, setSiteVisitOpen] = useState(false);
 
@@ -40,7 +40,7 @@ export default function Index({ embedded = false }: IndexProps) {
     return null;
   }
 
-  const firstName = profile?.full_name?.split(' ')[0] || 'there';
+  const firstName = user.name?.split(' ')[0] || 'there';
 
   return (
     <div className={embedded ? '' : 'min-h-screen bg-background'}>

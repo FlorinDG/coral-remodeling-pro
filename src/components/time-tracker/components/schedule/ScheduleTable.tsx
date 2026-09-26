@@ -132,7 +132,7 @@ export function ScheduleTable({ shifts, onDelete, onStatusChange, onShiftClick, 
                         {formatTime(shift.shift_start)} - {formatTime(shift.shift_end)}
                       </TableCell>
                       <TableCell>
-                        {shift.profile?.full_name || 'Unknown'}
+                        {shift.userName || 'Unknown'}
                       </TableCell>
                       <TableCell>
                         {shift.project ? (

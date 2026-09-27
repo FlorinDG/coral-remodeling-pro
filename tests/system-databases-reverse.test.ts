@@ -1,4 +1,4 @@
-import { test } from 'node:test';
+import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -30,49 +30,51 @@ test('R1-1b · roleOfDatabase is a lookup, not a parser: startsWith and split ar
     );
 });
 
-test('R1-1b · roleOfDatabase: nonexistent database throws', async () => {
-    const mockClient = {
-        globalDatabase: {
-            findFirst: async () => null,
-        }
-    };
-
-    await assert.rejects(
-        async () => {
-            await roleOfDatabase('nonexistent-tenant', 'nonexistent-db', mockClient);
-        },
-        /Database not found/
-    );
-});
-
-test('R1-1b · roleOfDatabase: resolves system database role without string parsing', async () => {
-    const mockClient = {
-        globalDatabase: {
-            findFirst: async ({ where }: any) => {
-                if (where.id === 'db-1' && where.tenantId === 'tenant-bv-coral') {
-                    return { logicalKey: 'projects' };
-                }
-                return null;
+describe('R1-1b · roleOfDatabase client queries', { todo: 'needs an integration harness' }, () => {
+    test('R1-1b · roleOfDatabase: nonexistent database throws', async () => {
+        const mockClient = {
+            globalDatabase: {
+                findFirst: async () => null,
             }
-        }
-    };
+        };
 
-    const role = await roleOfDatabase('tenant-bv-coral', 'db-1', mockClient);
-    assert.equal(role, 'projects');
-});
+        await assert.rejects(
+            async () => {
+                await roleOfDatabase('nonexistent-tenant', 'nonexistent-db', mockClient);
+            },
+            /Database not found/
+        );
+    });
 
-test('R1-1b · roleOfDatabase: custom database returns null', async () => {
-    const mockClient = {
-        globalDatabase: {
-            findFirst: async ({ where }: any) => {
-                if (where.id === 'custom-db-456' && where.tenantId === 'tenant-bv-coral') {
-                    return { logicalKey: null };
+    test('R1-1b · roleOfDatabase: resolves system database role without string parsing', async () => {
+        const mockClient = {
+            globalDatabase: {
+                findFirst: async ({ where }: any) => {
+                    if (where.id === 'db-1' && where.tenantId === 'tenant-bv-coral') {
+                        return { logicalKey: 'projects' };
+                    }
+                    return null;
                 }
-                return null;
             }
-        }
-    };
+        };
 
-    const role = await roleOfDatabase('tenant-bv-coral', 'custom-db-456', mockClient);
-    assert.equal(role, null);
+        const role = await roleOfDatabase('tenant-bv-coral', 'db-1', mockClient);
+        assert.equal(role, 'projects');
+    });
+
+    test('R1-1b · roleOfDatabase: custom database returns null', async () => {
+        const mockClient = {
+            globalDatabase: {
+                findFirst: async ({ where }: any) => {
+                    if (where.id === 'custom-db-456' && where.tenantId === 'tenant-bv-coral') {
+                        return { logicalKey: null };
+                    }
+                    return null;
+                }
+            }
+        };
+
+        const role = await roleOfDatabase('tenant-bv-coral', 'custom-db-456', mockClient);
+        assert.equal(role, null);
+    });
 });

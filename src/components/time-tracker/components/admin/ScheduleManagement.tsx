@@ -18,8 +18,8 @@ import { hrList } from '@/lib/hr-api';
 
 interface WorkerOption {
   id: string;
-  full_name: string;
-  hourly_rate?: number | null;
+  name: string;
+  hourlyRate?: number | null;
 }
 
 type ViewMode = 'table' | 'matrix';
@@ -38,8 +38,8 @@ export function ScheduleManagement() {
   const [workers, setWorkers] = useState<WorkerOption[]>([
     {
       id: 'unassigned',
-      full_name: 'Unassigned Shifts',
-      hourly_rate: 0,
+      name: 'Unassigned Shifts',
+      hourlyRate: 0,
     }
   ]);
   const [viewMode, setViewMode] = useState<ViewMode>('matrix');
@@ -71,15 +71,15 @@ export function ScheduleManagement() {
           .filter(e => e.schedule !== false && e.userId) // Only employees with linked user accounts
           .map(e => ({
             id: e.userId!, // Use User.id, not Employee.id
-            full_name: `${e.firstName} ${e.lastName}`,
-            hourly_rate: e.hourlyCost,
+            name: `${e.firstName} ${e.lastName}`,
+            hourlyRate: e.hourlyCost,
           }))
-          .sort((a, b) => a.full_name.localeCompare(b.full_name));
+          .sort((a, b) => a.name.localeCompare(b.name));
 
         const unassignedWorker = {
           id: 'unassigned',
-          full_name: 'Unassigned Shifts',
-          hourly_rate: 0,
+          name: 'Unassigned Shifts',
+          hourlyRate: 0,
         };
 
         setWorkers([unassignedWorker, ...activeWorkers]);
@@ -127,7 +127,7 @@ export function ScheduleManagement() {
 
   const handleShiftMove = async (shiftId: string, newUserId: string, newDate: string) => {
     try {
-      await updateShift(shiftId, { user_id: newUserId, shift_date: newDate });
+      await updateShift(shiftId, { userId: newUserId, shiftDate: newDate });
       toast.success('Shift rescheduled');
     } catch {
       toast.error('Failed to reschedule shift');
@@ -164,7 +164,7 @@ export function ScheduleManagement() {
     const sourceEndStr = sourceEnd.toISOString().split('T')[0];
 
     const sourceShifts = shifts.filter(s => {
-      const d = s.shiftDate || s.shift_date || '';
+      const d = s.shiftDate || '';
       return d >= sourceStartStr && d <= sourceEndStr;
     });
 
@@ -178,25 +178,25 @@ export function ScheduleManagement() {
 
     let created = 0;
     for (const shift of sourceShifts) {
-      const srcDate = new Date(shift.shiftDate || shift.shift_date || '');
+      const srcDate = new Date(shift.shiftDate || '');
       const newDate = new Date(srcDate);
       newDate.setDate(newDate.getDate() + dayOffset);
       const newDateStr = newDate.toISOString().split('T')[0];
 
       // Check if a shift already exists for this user on this date
       const alreadyExists = shifts.some(s => {
-        const uid = s.userId || s.user_id || '';
-        const sd = s.shiftDate || s.shift_date || '';
-        return uid === (shift.userId || shift.user_id) && sd === newDateStr;
+        const uid = s.userId || '';
+        const sd = s.shiftDate || '';
+        return uid === shift.userId && sd === newDateStr;
       });
       if (alreadyExists) continue;
 
       await createShift({
-        user_id: shift.userId || shift.user_id || '',
-        project_id: shift.projectId || shift.project_id || null,
-        shift_date: newDateStr,
-        shift_start: shift.shiftStart || shift.shift_start || '08:00',
-        shift_end: shift.shiftEnd || shift.shift_end || '17:00',
+        userId: shift.userId || '',
+        projectId: shift.projectId || null,
+        shiftDate: newDateStr,
+        shiftStart: shift.shiftStart || '08:00',
+        shiftEnd: shift.shiftEnd || '17:00',
         role: shift.role || null,
         notes: shift.notes || null,
       });
@@ -216,7 +216,7 @@ export function ScheduleManagement() {
     const endStr = endDate.toISOString().split('T')[0];
 
     return shifts.filter(s => {
-      const d = s.shiftDate || s.shift_date || '';
+      const d = s.shiftDate || '';
       return d >= startStr && d <= endStr;
     });
   }, [shifts, weekStart, weekCount]);

@@ -123,7 +123,6 @@ export function useTasks(projectId?: string | null) {
                 priority: data.priority || 'opt-low',
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
-                project_id: data.project_id || data.projectId || null,
             };
 
             // Optimistic update — add locally, then re-fetch for consistency

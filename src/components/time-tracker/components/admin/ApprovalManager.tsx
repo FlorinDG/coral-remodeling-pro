@@ -43,14 +43,14 @@ export function ApprovalManager() {
   // Fetch all pending time off requests from all users (admin view)
   const [timeOffRequests, setTimeOffRequests] = useState<Array<{
     id: string;
-    user_id: string;
-    request_type: string;
-    start_date: string;
-    end_date: string;
+    userId: string;
+    requestType: string;
+    startDate: string;
+    endDate: string;
     notes: string | null;
     status: string;
-    created_at: string;
-    user_profile?: { full_name: string } | null;
+    createdAt: string;
+    userProfile?: { name: string } | null;
   }>>([]);
   const [timeOffLoading, setTimeOffLoading] = useState(true);
 
@@ -69,16 +69,16 @@ export function ApprovalManager() {
           const profileMap = new Map(profiles?.map((p: any) => [p.userId, p]) || []);
           setTimeOffRequests(data.map((r: any) => ({
             id: r.id,
-            user_id: r.userId,
-            request_type: r.requestType,
-            start_date: r.startDate,
-            end_date: r.endDate,
+            userId: r.userId,
+            requestType: r.requestType,
+            startDate: r.startDate,
+            endDate: r.endDate,
             notes: r.notes,
             status: r.status,
-            created_at: r.createdAt,
-            user_profile: (() => {
+            createdAt: r.createdAt,
+            userProfile: (() => {
                 const emp = profileMap.get(r.userId) as any;
-                return emp ? { full_name: `${emp.firstName} ${emp.lastName}`.trim() } : null;
+                return emp ? { name: `${emp.firstName} ${emp.lastName}`.trim() } : null;
             })(),
           })));
         }
@@ -364,13 +364,13 @@ export function ApprovalManager() {
                             )}
                           </TableCell>
                           <TableCell className="font-medium">
-                            {request.user_profile?.full_name || 'Unknown'}
+                            {request.userProfile?.name || 'Unknown'}
                           </TableCell>
                           <TableCell>
-                            <Badge variant="outline">{request.request_type}</Badge>
+                            <Badge variant="outline">{request.requestType}</Badge>
                           </TableCell>
                           <TableCell>
-                            {format(parseISO(request.start_date), 'MMM d')} - {format(parseISO(request.end_date), 'MMM d, yyyy')}
+                            {format(parseISO(request.startDate), 'MMM d')} - {format(parseISO(request.endDate), 'MMM d, yyyy')}
                           </TableCell>
                           <TableCell className="text-muted-foreground max-w-[200px] truncate">
                             {request.notes || '-'}
@@ -482,7 +482,7 @@ export function ApprovalManager() {
                     </TableHeader>
                     <TableBody>
                       {requests.map(request => {
-                        const Icon = getRequestTypeIcon(request.request_type);
+                        const Icon = getRequestTypeIcon(request.requestType);
                         return (
                           <TableRow key={request.id}>
                             <TableCell>
@@ -496,17 +496,17 @@ export function ApprovalManager() {
                             <TableCell>
                               <div className="flex items-center gap-2">
                                 <Icon className="h-4 w-4 text-muted-foreground" />
-                                {getRequestTypeLabel(request.request_type)}
+                                {getRequestTypeLabel(request.requestType)}
                               </div>
                             </TableCell>
                             <TableCell className="font-medium">
-                              {request.user_profile?.full_name || 'Unknown'}
+                              {request.userProfile?.name || 'Unknown'}
                             </TableCell>
                             <TableCell>
-                              {request.requester_profile?.full_name || 'Unknown'}
+                              {request.requesterProfile?.name || 'Unknown'}
                             </TableCell>
                             <TableCell>
-                              {format(parseISO(request.created_at), 'MMM d, yyyy')}
+                              {format(parseISO(request.createdAt), 'MMM d, yyyy')}
                             </TableCell>
                             <TableCell>
                               {getStatusBadge(request.status)}

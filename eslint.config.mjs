@@ -257,7 +257,7 @@ const eslintConfig = defineConfig([
       "src/app/actions/timesheets.ts",
     ],
     ignores: [
-      // 39 entries: 38 from the original 14-name census + useScheduleAttachments.ts, which
+      // 37 entries: 36 from the original 14-name census + useScheduleAttachments.ts, which
       // carried the shape but went unmatched until the Step 0b pattern widening.
       "src/app/actions/timesheets.ts",
       "src/components/time-tracker/components/Announcements.tsx",
@@ -272,8 +272,6 @@ const eslintConfig = defineConfig([
       "src/components/time-tracker/components/ScheduleManager.tsx",
       "src/components/time-tracker/components/TimesheetView.tsx",
       "src/components/time-tracker/components/admin/AllSchedulesView.tsx",
-      "src/components/time-tracker/components/admin/ApprovalManager.tsx",
-      "src/components/time-tracker/components/admin/ScheduleManagement.tsx",
       "src/components/time-tracker/components/admin/UserCard.tsx",
       "src/components/time-tracker/components/admin/UserDetailView.tsx",
       "src/components/time-tracker/components/admin/UserManager.tsx",

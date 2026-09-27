@@ -46,7 +46,8 @@ import { listRecordFiles, uploadFileAction } from '@/app/actions/files';
 
 interface WorkerOption {
   id: string;
-  full_name: string;
+  name?: string;
+  full_name?: string;
 }
 
 interface ShiftTemplate {

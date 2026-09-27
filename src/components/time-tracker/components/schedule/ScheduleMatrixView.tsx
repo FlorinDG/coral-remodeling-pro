@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 
 interface ScheduleMatrixViewProps {
   shifts: ScheduledShift[];
-  workers: { id: string; full_name: string; hourly_rate?: number | null }[];
+  workers: { id: string; name?: string; full_name?: string; hourlyRate?: number | null; hourly_rate?: number | null }[];
   weekStart: Date;
   weekCount: 1 | 2;
   onPrevWeek: () => void;
@@ -88,7 +88,7 @@ export function ScheduleMatrixView({
   const filteredWorkers = useMemo(() => {
     if (!searchQuery.trim()) return workers;
     const q = searchQuery.toLowerCase();
-    return workers.filter(w => w.full_name?.toLowerCase().includes(q));
+    return workers.filter(w => (w.name || w.full_name || '').toLowerCase().includes(q));
   }, [workers, searchQuery]);
   
   const dates = useMemo(() => {
@@ -470,9 +470,9 @@ export function ScheduleMatrixView({
                       >
                         <div className="flex items-center justify-between gap-2">
                           <div>
-                            <div className="font-bold text-sm text-neutral-900 dark:text-white truncate max-w-[120px]">{worker.full_name}</div>
-                            {(worker.hourly_rate || 0) > 0 && (
-                              <div className="text-[10px] font-bold text-neutral-400">€{worker.hourly_rate}/hr</div>
+                            <div className="font-bold text-sm text-neutral-900 dark:text-white truncate max-w-[120px]">{worker.name || worker.full_name}</div>
+                            {((worker.hourlyRate ?? worker.hourly_rate) || 0) > 0 && (
+                              <div className="text-[10px] font-bold text-neutral-400">€{worker.hourlyRate ?? worker.hourly_rate}/hr</div>
                             )}
                           </div>
                           <div className={cn(

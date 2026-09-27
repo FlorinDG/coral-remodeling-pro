@@ -28,6 +28,7 @@ node --experimental-strip-types --import ./tests/register.mjs --test tests/invoi
 1. **These pin CURRENT behaviour, not desired behaviour.** A failure means something *changed*.
 2. **Never edit a test to make it pass.** Either the code regressed (fix the code), or the change was intentional — then update the test **in the same commit**, deliberately, so the diff shows the behaviour change.
 3. `tests/` is excluded from `tsconfig.json`, so these files do **not** gate the production build. They're a separate, fast check you run before promoting.
+4. **Do not import src/lib/data/** in a test — it reaches Prisma and CI has no database. Test the pure decision, or assert on source text.**
 
 ## Note on `--experimental-strip-types`
 

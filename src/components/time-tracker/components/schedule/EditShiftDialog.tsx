@@ -53,7 +53,8 @@ interface ProjectAttachment {
 
 interface WorkerOption {
   id: string;
-  full_name: string;
+  name?: string;
+  full_name?: string;
 }
 
 interface EditShiftDialogProps {
@@ -430,7 +431,7 @@ export function EditShiftDialog({
               <div>
                 <Label>Employee</Label>
                 <SearchableSelect
-                  options={workers.map(w => ({ value: w.id, label: w.full_name }))}
+                  options={workers.map(w => ({ value: w.id, label: w.name || w.full_name || '' }))}
                   value={userId}
                   onChange={setUserId}
                   placeholder="Select employee"

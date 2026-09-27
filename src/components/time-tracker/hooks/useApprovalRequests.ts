@@ -37,21 +37,25 @@ export function useApprovalRequests() {
 
       const mapped: ApprovalRequest[] = pending.map((p: any) => ({
         id: p.id,
-        request_type: p.requestType,
-        entity_id: p.requestData?.entityId || p.id,
-        entity_type: p.entityType,
-        user_id: p.userId,
-        requested_by: p.requestedBy,
+        requestType: p.requestType,
+        entityId: p.requestData?.entityId || p.id,
+        entityType: p.entityType,
+        userId: p.userId,
+        requestedBy: p.requestedBy,
         status: p.status,
-        request_data: p.requestData,
+        requestData: p.requestData,
         notes: p.notes || null,
-        reviewed_by: p.reviewedBy || null,
-        reviewed_at: p.reviewedAt || null,
-        created_at: p.createdAt,
-        updated_at: p.updatedAt,
-        user_profile: (() => {
+        reviewedBy: p.reviewedBy || null,
+        reviewedAt: p.reviewedAt || null,
+        createdAt: p.createdAt,
+        updatedAt: p.updatedAt,
+        userProfile: (() => {
             const emp = profileMap.get(p.userId) as any;
-            return emp ? { full_name: `${emp.firstName} ${emp.lastName}`.trim() } : null;
+            return emp ? { name: `${emp.firstName} ${emp.lastName}`.trim() } : null;
+        })(),
+        requesterProfile: (() => {
+            const emp = profileMap.get(p.requestedBy) as any;
+            return emp ? { name: `${emp.firstName} ${emp.lastName}`.trim() } : null;
         })(),
       }));
 

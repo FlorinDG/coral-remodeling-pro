@@ -60,18 +60,9 @@ export interface ScheduledShift {
   clockEntries?: any[];
 }
 
-/** Inject snake_case aliases into a shift for legacy components */
+/** Return shift as ScheduledShift */
 function addSnakeCase(s: ScheduledShift): ScheduledShift {
-  return {
-    ...s,
-    user_id: s.userId,
-    shift_date: s.shiftDate,
-    shift_start: s.shiftStart,
-    shift_end: s.shiftEnd,
-    shift_name: s.shiftName,
-    project_id: s.projectId,
-    created_at: s.createdAt,
-  };
+  return s;
 }
 
 export function useScheduledShifts() {

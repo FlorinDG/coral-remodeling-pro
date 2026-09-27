@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { verifyPortalAccess, setPortalSessionCookie } from "@/lib/portal-auth";
 
-export async function GET(request: Request, context: any) {
+async function handlePortalRequest(request: Request, context: any, explicitPassword?: string | null) {
     const { params } = context;
     const { slug } = await params;
 
@@ -18,11 +19,33 @@ export async function GET(request: Request, context: any) {
 
         if (!portal) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
+        // Authenticate request
+        const authResult = await verifyPortalAccess(request, {
+            preloadedPortal: portal,
+            explicitPassword
+        });
+
+        if (!authResult.success) {
+            // If explicit password was provided but invalid -> 401 Invalid password
+            if (authResult.status === 401 && !authResult.unverified) {
+                return NextResponse.json({ error: authResult.error }, { status: 401 });
+            }
+
+            // Unverified request on password-protected portal:
+            // Return ONLY the public metadata needed for the login screen.
+            // No tasks, quotes, invoices, budget, or linked project data.
+            return NextResponse.json({
+                slug: portal.slug,
+                clientName: portal.clientName,
+                projectTitle: portal.projectTitle,
+                hasPassword: true
+            });
+        }
+
         const isContractor = portal.audience === 'CONTRACTOR';
         const isCustomer = portal.audience === 'CUSTOMER';
 
         // 1. Fetch portal tasks from the generic tasks module
-        // We only fetch tasks explicitly shared with this portal
         const rawTasks = await prisma.globalPage.findMany({
             where: {
                 databaseId: 'db-tasks',
@@ -72,7 +95,6 @@ export async function GET(request: Request, context: any) {
 
             // 3. Fetch financial documents only for CUSTOMER
             if (isCustomer) {
-                // Fetch Quotes linked to project
                 const rawQuotes = await prisma.globalPage.findMany({
                     where: {
                         databaseId: 'db-quotations',
@@ -94,7 +116,6 @@ export async function GET(request: Request, context: any) {
                     };
                 });
 
-                // Fetch Invoices linked to project
                 const rawInvoices = await prisma.globalPage.findMany({
                     where: {
                         databaseId: 'db-invoices',
@@ -126,7 +147,7 @@ export async function GET(request: Request, context: any) {
             ? { ...safePortal, budget: undefined, paidAmount: undefined }
             : { ...safePortal, budget, paidAmount };
 
-        return NextResponse.json({
+        const response = NextResponse.json({
             ...finalPortal,
             tasks: mappedTasks,
             hasPassword: !!password,
@@ -134,8 +155,30 @@ export async function GET(request: Request, context: any) {
             quotes,
             invoices
         });
+
+        // Set scoped session cookie if portal has password
+        if (portal.password) {
+            setPortalSessionCookie(response, portal.id);
+        }
+
+        return response;
     } catch (error) {
         console.error("Portal fetch error:", error);
         return NextResponse.json({ error: "Failed to fetch" }, { status: 500 });
     }
+}
+
+export async function GET(request: Request, context: any) {
+    return handlePortalRequest(request, context);
+}
+
+export async function POST(request: Request, context: any) {
+    let explicitPassword: string | null = null;
+    try {
+        const body = await request.json();
+        explicitPassword = body.password || null;
+    } catch {
+        // Body may not be JSON
+    }
+    return handlePortalRequest(request, context, explicitPassword);
 }

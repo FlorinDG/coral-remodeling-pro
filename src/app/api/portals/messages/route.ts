@@ -1,18 +1,24 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { auth } from '@/auth';
+import { verifyPortalAccess } from '@/lib/portal-auth';
 
 export async function POST(request: Request) {
     try {
-        const session = await auth();
-        const tenantId = session?.user?.tenantId;
-        if (!tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         const body = await request.json();
         const { portalId, projectId, content, sender, fileUrl, replyToId } = body;
 
+        if (!portalId) {
+            return NextResponse.json({ error: 'Portal ID required' }, { status: 400 });
+        }
+
+        const authResult = await verifyPortalAccess(request, { portalId });
+        if (!authResult.success) {
+            return NextResponse.json({ error: authResult.error || 'Unauthorized' }, { status: authResult.status || 401 });
+        }
+
         const message = await prisma.message.create({
             data: {
-                portalId,
+                portalId: authResult.portal.id,
                 projectId,
                 content,
                 sender,

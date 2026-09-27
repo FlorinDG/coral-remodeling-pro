@@ -1,26 +1,23 @@
 import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
-import bcrypt from "bcryptjs";
+import { verifyPortalAccess, setPortalSessionCookie } from "@/lib/portal-auth";
 
 export async function POST(request: Request) {
     try {
         const { id, password } = await request.json();
-
-        const portal = await prisma.clientPortal.findUnique({
-            where: { id },
-            select: { password: true }
-        });
-
-        if (!portal || !portal.password) {
-            return NextResponse.json({ success: false, error: "No password set" }, { status: 400 });
+        if (!id) {
+            return NextResponse.json({ success: false, error: "Portal ID required" }, { status: 400 });
         }
 
-        const isValid = await bcrypt.compare(password, portal.password);
-
-        if (isValid) {
-            return NextResponse.json({ success: true });
+        const authResult = await verifyPortalAccess(request, { portalId: id, explicitPassword: password });
+        if (authResult.success) {
+            const response = NextResponse.json({ success: true });
+            setPortalSessionCookie(response, authResult.portal.id);
+            return response;
         } else {
-            return NextResponse.json({ success: false, error: "Invalid password" }, { status: 401 });
+            return NextResponse.json(
+                { success: false, error: authResult.error || "Invalid password" },
+                { status: authResult.status || 401 }
+            );
         }
     } catch (error) {
         return NextResponse.json({ error: "Verification failed" }, { status: 500 });

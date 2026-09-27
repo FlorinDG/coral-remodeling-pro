@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import bcrypt from 'bcryptjs';
 import { storage } from '@/lib/storage';
+import { verifyPortalAccess } from '@/lib/portal-auth';
 
 export async function POST(request: Request) {
     try {
@@ -15,25 +15,13 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
 
-        // Verify Portal
-        const portal = await prisma.clientPortal.findUnique({
-            where: { id: portalId },
-        });
-
-        if (!portal) {
-            return NextResponse.json({ error: 'Portal not found' }, { status: 404 });
+        // Verify Portal access via unified helper
+        const authResult = await verifyPortalAccess(request, { portalId, explicitPassword: password });
+        if (!authResult.success) {
+            return NextResponse.json({ error: authResult.error || 'Unauthorized' }, { status: authResult.status || 401 });
         }
 
-        if (portal.password) {
-            if (!password) {
-                return NextResponse.json({ error: 'Password required' }, { status: 401 });
-            }
-            const isValid = await bcrypt.compare(password, portal.password);
-            if (!isValid) {
-                return NextResponse.json({ error: 'Invalid password' }, { status: 401 });
-            }
-        }
-
+        const portal = authResult.portal;
         const uploadedDocs = [];
 
         for (const file of files) {

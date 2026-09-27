@@ -27,12 +27,11 @@ export default function PortalPage({ params: paramsPromise }: { params: Promise<
             }
             const data = await res.json();
             setPortal(data);
-            if (!data.hasPassword) {
+            // If portal has no password, or response contains full payload (authenticated via cookie)
+            if (!data.hasPassword || data.tasks !== undefined) {
                 setIsAuthenticated(true);
             } else {
-                // Check if already authenticated in session
-                const sessionAuth = sessionStorage.getItem(`portal_auth_${data.id}`);
-                if (sessionAuth) setIsAuthenticated(true);
+                setIsAuthenticated(false);
             }
 
             setLoading(false);
@@ -41,15 +40,16 @@ export default function PortalPage({ params: paramsPromise }: { params: Promise<
     }, [paramsPromise]);
 
     const handleLogin = async (password: string) => {
-        const res = await fetch('/api/portals/verify-password', {
+        setLoginError('');
+        const res = await fetch(`/api/portals/slug/${portal.slug}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: portal.id, password })
+            body: JSON.stringify({ password })
         });
-        const result = await res.json();
-        if (result.success) {
+        if (res.ok) {
+            const fullPortal = await res.json();
+            setPortal(fullPortal);
             setIsAuthenticated(true);
-            sessionStorage.setItem(`portal_auth_${portal.id}`, password);
         } else {
             setLoginError('Invalid password');
         }

@@ -37,11 +37,6 @@ export default function DocumentManager({ portalId, projectId, initialDocs, read
             if (projectId) {
                 fd.append('projectId', projectId);
             }
-            
-            const pwd = sessionStorage.getItem(`portal_auth_${portalId}`);
-            if (pwd && pwd !== 'true') {
-                fd.append('password', pwd);
-            }
 
             for (let i = 0; i < files.length; i++) {
                 fd.append('file', files[i]);

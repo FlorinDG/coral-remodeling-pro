@@ -39,11 +39,6 @@ export default function MediaManager({ portalId, projectId, initialMedia, readOn
                 fd.append('projectId', projectId);
             }
             
-            const pwd = sessionStorage.getItem(`portal_auth_${portalId}`);
-            if (pwd && pwd !== 'true') {
-                fd.append('password', pwd);
-            }
-            
             if (formData.caption) {
                 fd.append('caption', formData.caption);
             }

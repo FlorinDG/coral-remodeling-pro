@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { hrList, hrCreate, hrUpdate, hrDelete } from '@/components/time-tracker/lib/hr-api';
+import { hrList, hrCreate, hrUpdate, hrDelete } from '@/lib/hr-api';
 
 export interface WorkerSchedule {
   id: string;

@@ -11,7 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
-import { cn } from '@/components/time-tracker/lib/utils';
+import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import {
   Dialog,
@@ -40,7 +40,7 @@ import {
 } from '@/components/ui/popover';
 import { Project, NOTION_COLORS } from '@/components/time-tracker/hooks/useScheduledShifts';
 import { useTasks, Task } from '@/components/time-tracker/hooks/useTasks';
-import { hrList, hrCreate, hrDelete as hrDeleteEntity } from '@/components/time-tracker/lib/hr-api';
+import { hrList, hrCreate, hrDelete as hrDeleteEntity } from '@/lib/hr-api';
 import { toast } from 'sonner';
 import { listRecordFiles, uploadFileAction } from '@/app/actions/files';
 

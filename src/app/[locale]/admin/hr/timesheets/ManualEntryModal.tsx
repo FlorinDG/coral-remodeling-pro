@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { hrList, hrCreate } from '@/components/time-tracker/lib/hr-api';
+import { hrList, hrCreate } from '@/lib/hr-api';
 import { Loader2, Plus, Calendar, Clock, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';

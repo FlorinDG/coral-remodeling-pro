@@ -12,7 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Calendar } from '@/components/ui/calendar';
-import { cn } from '@/components/time-tracker/lib/utils';
+import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import {
   Dialog,
@@ -38,7 +38,7 @@ import {
 import { ScheduledShift, Project, NOTION_COLORS } from '@/components/time-tracker/hooks/useScheduledShifts';
 import { useScheduleAttachments, ProjectAttachment, ScheduleAttachment } from '@/components/time-tracker/hooks/useScheduleAttachments';
 import { ScopePicker, EditScope } from '@/components/ui/ScopePicker';
-import { hrList, hrCreate, hrUpdate, hrDelete } from '@/components/time-tracker/lib/hr-api';
+import { hrList, hrCreate, hrUpdate, hrDelete } from '@/lib/hr-api';
 import { toast } from 'sonner';
 import { listRecordFiles } from '@/app/actions/files';
 

@@ -121,7 +121,7 @@ export function UserDetailView({
     setSavingName(true);
     
     try {
-      const { hrUpdate } = await import('@/components/time-tracker/lib/hr-api');
+      const { hrUpdate } = await import('@/lib/hr-api');
       await hrUpdate('employees', currentUser.id, { firstName: editName.trim().split(' ')[0], lastName: editName.trim().split(' ').slice(1).join(' ') });
       toast.success('Name updated');
       const updated = { ...currentUser, full_name: editName.trim() };
@@ -145,7 +145,7 @@ export function UserDetailView({
     setSavingRate(true);
     
     try {
-      const { hrUpdate } = await import('@/components/time-tracker/lib/hr-api');
+      const { hrUpdate } = await import('@/lib/hr-api');
       await hrUpdate('employees', currentUser.id, { hourlyRate: rate });
       toast.success('Hourly rate updated');
       const updated = { ...currentUser, hourly_rate: rate };
@@ -161,7 +161,7 @@ export function UserDetailView({
 
   const handleToggleSchedule = async (checked: boolean) => {
     try {
-      const { hrUpdate } = await import('@/components/time-tracker/lib/hr-api');
+      const { hrUpdate } = await import('@/lib/hr-api');
       await hrUpdate('employees', currentUser.id, { schedule: checked });
       toast.success(checked ? 'Added to scheduler' : 'Removed from scheduler');
       const updated = { ...currentUser, schedule: checked };

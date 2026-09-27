@@ -1,7 +1,7 @@
 "use client";
 import { useState, useCallback, useEffect } from 'react';
 import { useUserRoles } from '@/components/time-tracker/hooks/useUserRoles';
-import { hrList, hrUpdate } from '@/components/time-tracker/lib/hr-api';
+import { hrList, hrUpdate } from '@/lib/hr-api';
 
 export interface ApprovalRequest {
   id: string;

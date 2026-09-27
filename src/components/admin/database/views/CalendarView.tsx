@@ -5,7 +5,7 @@ import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { useDatabaseStore } from '@/components/admin/database/store';
-import { cn } from '@/components/time-tracker/lib/utils';
+import { cn } from '@/lib/utils';
 import { Property } from '@/components/admin/database/types';
 import { useRouter } from 'next/navigation';
 

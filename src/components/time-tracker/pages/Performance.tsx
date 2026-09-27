@@ -25,7 +25,7 @@ import { Link } from "@/i18n/routing";
 import { useRouter } from "@/i18n/routing";
 
 import { format, startOfMonth, endOfMonth, parseISO, differenceInMinutes, subMonths } from 'date-fns';
-import { cn } from '@/components/time-tracker/lib/utils';
+import { cn } from '@/lib/utils';
 
 interface UserProfile {
   user_id: string;
@@ -73,7 +73,7 @@ export default function Performance() {
       
       setUsersLoading(true);
       try {
-        const { hrList } = await import('@/components/time-tracker/lib/hr-api');
+        const { hrList } = await import('@/lib/hr-api');
         const data = await hrList<any>('employees');
         if (data) {
           setAllUsers(data.map((u: any) => ({
@@ -102,7 +102,7 @@ export default function Performance() {
 
       try {
         const { getTimesheetData } = await import('@/app/actions/timesheets');
-        const { hrList } = await import('@/components/time-tracker/lib/hr-api');
+        const { hrList } = await import('@/lib/hr-api');
 
         // Fetch clock entries via server action
         const entriesResult = await getTimesheetData(targetUserId, startDate.toISOString(), endDate.toISOString());

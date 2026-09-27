@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { hrList } from '@/components/time-tracker/lib/hr-api';
+import { hrList } from '@/lib/hr-api';
 
 interface WorkerOption {
   id: string;

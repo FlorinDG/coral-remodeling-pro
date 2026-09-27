@@ -27,7 +27,7 @@ import { useAuth } from '@/components/time-tracker/contexts/AuthContext';
 import { useScheduledShifts, NOTION_COLORS } from '@/components/time-tracker/hooks/useScheduledShifts';
 import { useApprovalRequests } from '@/components/time-tracker/hooks/useApprovalRequests';
 import { useGeolocation } from '@/components/time-tracker/hooks/useGeolocation';
-import { hrCreate } from '@/components/time-tracker/lib/hr-api';
+import { hrCreate } from '@/lib/hr-api';
 import { toast } from 'sonner';
 import { format, parseISO, isBefore, startOfDay } from 'date-fns';
 

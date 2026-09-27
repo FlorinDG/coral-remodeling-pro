@@ -6,7 +6,7 @@ import { ChevronLeft, ChevronRight, Calendar, Flag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScheduledShift, NOTION_COLORS } from '@/components/time-tracker/hooks/useScheduledShifts';
-import { cn } from '@/components/time-tracker/lib/utils';
+import { cn } from '@/lib/utils';
 import { isBelgianHoliday, getHolidayMap, formatDateKey } from '@/components/time-tracker/lib/belgianHolidays';
 
 interface ScheduleCalendarProps {

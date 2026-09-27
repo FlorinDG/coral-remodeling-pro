@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, Suspense } from 'react';
-import { hrFetch, hrUpdate } from '@/components/time-tracker/lib/hr-api';
+import { hrFetch, hrUpdate } from '@/lib/hr-api';
 import { Loader2, FileText, Download, AlertCircle, Image as ImageIcon, Check, X, Clock, Hourglass, Plus, ChevronDown, ChevronRight } from 'lucide-react';
 import { formatISO, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
 import { Button } from '@/components/ui/button';

@@ -12,7 +12,7 @@ import { ScheduleCalendar } from '@/components/time-tracker/components/schedule/
 import { useScheduledShifts, ScheduledShift } from '@/components/time-tracker/hooks/useScheduledShifts';
 import { useAuth } from '@/components/time-tracker/contexts/AuthContext';
 import { useProjects } from '@/components/time-tracker/hooks/useProjects';
-import { hrCreate, hrUpdate } from '@/components/time-tracker/lib/hr-api';
+import { hrCreate, hrUpdate } from '@/lib/hr-api';
 import { uploadFileAction } from '@/app/actions/files';
 
 const hrApi = {
@@ -38,7 +38,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useApprovalRequests } from '@/components/time-tracker/hooks/useApprovalRequests';
 import { useAppBasePath } from '@/components/time-tracker/hooks/useAppBasePath';
-import { cn } from '@/components/time-tracker/lib/utils';
+import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { validateFile, validateFiles, getSafeFileType, generateSafeFilePath, ALLOWED_EXTENSIONS } from '@/components/time-tracker/lib/fileValidation';
 

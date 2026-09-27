@@ -2,7 +2,7 @@
 import { Link, usePathname } from "@/i18n/routing";
 
 import { forwardRef } from "react";
-import { cn } from "@/components/time-tracker/lib/utils";
+import { cn } from "@/lib/utils";
 
 interface NavLinkProps extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
   href: string;

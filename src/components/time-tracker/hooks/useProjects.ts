@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback } from 'react';
-import { hrList, hrCreate, hrUpdate, hrDelete } from '@/components/time-tracker/lib/hr-api';
+import { hrList, hrCreate, hrUpdate, hrDelete } from '@/lib/hr-api';
 import { toast } from 'sonner';
 
 export interface Project {

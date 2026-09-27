@@ -2,7 +2,7 @@
 
 import { useSession } from "next-auth/react";
 import { User, Mail, Shield, Clock, MapPin } from "lucide-react";
-import { ThemeProvider } from "@/components/time-tracker/contexts/ThemeContext";
+import { ThemeProvider } from "@/context/ThemeContext";
 
 export default function WorkerProfilePage() {
     const { data: session } = useSession();

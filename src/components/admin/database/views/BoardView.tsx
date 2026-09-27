@@ -5,7 +5,7 @@ import { useDatabaseStore } from '@/components/admin/database/store';
 import { Property, SelectOption } from '@/components/admin/database/types';
 import { GripVertical, User2, Calendar as CalendarIcon, MoreHorizontal } from 'lucide-react';
 import { format } from 'date-fns';
-import { cn } from '@/components/time-tracker/lib/utils';
+import { cn } from '@/lib/utils';
 
 interface BoardViewProps {
     databaseId: string;

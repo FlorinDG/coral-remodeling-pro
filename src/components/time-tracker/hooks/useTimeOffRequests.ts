@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from 'react';
-import { hrList, hrCreate } from '@/components/time-tracker/lib/hr-api';
+import { hrList, hrCreate } from '@/lib/hr-api';
 
 export interface TimeOffRequest {
   id: string;
@@ -47,7 +47,7 @@ export function useTimeOffRequests() {
 
   const cancelRequest = async (id: string) => {
     try {
-      const { hrUpdate: update } = await import('@/components/time-tracker/lib/hr-api');
+      const { hrUpdate: update } = await import('@/lib/hr-api');
       await update('time-off', id, { status: 'cancelled' });
       setRequests(prev => prev.map(r => r.id === id ? { ...r, status: 'cancelled' } : r));
       return { error: null };

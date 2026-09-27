@@ -6,7 +6,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { format, addDays, startOfWeek, nextMonday } from 'date-fns';
 import { nl, fr, enUS } from 'date-fns/locale';
 import { Calendar as CalendarIcon, Clock, Bell } from 'lucide-react';
-import { cn } from '@/components/time-tracker/lib/utils';
+import { cn } from '@/lib/utils';
 import { useParams } from 'next/navigation';
 import { t } from '@/lib/document-i18n';
 

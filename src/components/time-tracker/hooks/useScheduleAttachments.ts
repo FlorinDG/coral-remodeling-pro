@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { hrList, hrCreate, hrDelete } from '@/components/time-tracker/lib/hr-api';
+import { hrList, hrCreate, hrDelete } from '@/lib/hr-api';
 
 export interface ScheduleAttachment {
   id: string;

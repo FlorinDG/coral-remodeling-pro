@@ -5,7 +5,7 @@ import { useRouter, usePathname } from '@/i18n/routing';
 import { useSearchParams } from 'next/navigation';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-import { hrFetch } from '@/components/time-tracker/lib/hr-api';
+import { hrFetch } from '@/lib/hr-api';
 import { useTranslations } from 'next-intl';
 import { DateRangePicker } from '@/components/ui/DateRangePicker';
 

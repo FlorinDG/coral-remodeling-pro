@@ -37,7 +37,7 @@ import { useApprovalRequests } from '@/components/time-tracker/hooks/useApproval
 import { useClockEntries } from '@/components/time-tracker/hooks/useClockEntries';
 import { useTimer } from '@/components/time-tracker/hooks/useTimer';
 import { useGeolocation } from '@/components/time-tracker/hooks/useGeolocation';
-import { hrList } from '@/components/time-tracker/lib/hr-api';
+import { hrList } from '@/lib/hr-api';
 import { toast } from 'sonner';
 import { format, parseISO, differenceInMinutes, isToday } from 'date-fns';
 

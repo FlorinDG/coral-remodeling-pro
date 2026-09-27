@@ -18,7 +18,7 @@ import type { AppRole } from '@/components/time-tracker/hooks/useUserRoles';
 import { useTeams } from '@/components/time-tracker/hooks/useTeams';
 import { UserCard } from './UserCard';
 import { UserDetailView } from './UserDetailView';
-import { hrList, hrCreate } from '@/components/time-tracker/lib/hr-api';
+import { hrList, hrCreate } from '@/lib/hr-api';
 
 interface UserProfile {
   id: string;

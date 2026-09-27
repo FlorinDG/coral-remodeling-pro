@@ -8,7 +8,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths, startOfQuarter, endOfQuarter, startOfYear, endOfYear, isValid, parseISO } from 'date-fns';
 import { nl, fr, enUS } from 'date-fns/locale';
 import { useLocale, useTranslations } from 'next-intl';
-import { cn } from '@/components/time-tracker/lib/utils';
+import { cn } from '@/lib/utils';
 import { DateRange } from 'react-day-picker';
 
 export interface DateRangePickerProps {

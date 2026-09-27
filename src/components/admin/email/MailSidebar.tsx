@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useEmailStore, EmailFolder } from "./store";
-import { cn } from "@/components/time-tracker/lib/utils";
+import { cn } from "@/lib/utils";
 import { Inbox, Send, FileText, Star, Archive, Trash, Tag, Plus } from "lucide-react";
 import { AccountSettingsModal } from "./AccountSettingsModal";
 import SearchableSelect from '@/components/ui/SearchableSelect';

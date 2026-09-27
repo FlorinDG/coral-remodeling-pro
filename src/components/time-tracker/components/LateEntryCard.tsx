@@ -70,7 +70,7 @@ export function LateEntryCard() {
       if (!isAdmin) return;
       setUsersLoading(true);
       try {
-        const { hrList } = await import('@/components/time-tracker/lib/hr-api');
+        const { hrList } = await import('@/lib/hr-api');
         const data = await hrList<any>('employees');
         if (data) {
           setAllUsers(data.map((u: any) => ({

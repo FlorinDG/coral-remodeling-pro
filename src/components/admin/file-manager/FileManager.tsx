@@ -4,7 +4,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useFileManagerStore } from './store';
 import { FileContextType, FileNode } from './types';
 import { LayoutGrid, List, UploadCloud, Search, FileIcon, ImageIcon, FileText, ChevronRight, MoreVertical, Loader2, Download, PackageOpen, Receipt, FileSignature, Trash2 } from 'lucide-react';
-import { cn } from '@/components/time-tracker/lib/utils';
+import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import FileViewer from '@/components/files/FileViewer';
 

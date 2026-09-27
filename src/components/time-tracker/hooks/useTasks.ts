@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { hrList, hrCreate, hrUpdate, hrDelete } from '@/components/time-tracker/lib/hr-api';
+import { hrList, hrCreate, hrUpdate, hrDelete } from '@/lib/hr-api';
 import { createTaskPage } from '@/app/actions/tasks';
 
 // ─── Types ────────────────────────────────────────────────────────────────────

@@ -14,7 +14,7 @@ import { Link } from "@/i18n/routing";
 import { usePathname } from "@/i18n/routing";
 
 import { forwardRef } from "react";
-import { cn } from "@/components/time-tracker/lib/utils";
+import { cn } from "@/lib/utils";
 
 import { useTranslation } from 'react-i18next';
 import { languages } from '@/components/time-tracker/i18n';

@@ -26,7 +26,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useApprovalRequests, ApprovalRequest } from '@/components/time-tracker/hooks/useApprovalRequests';
 import { useTimeOffRequests } from '@/components/time-tracker/hooks/useTimeOffRequests';
-import { hrList, hrUpdate } from '@/components/time-tracker/lib/hr-api';
+import { hrList, hrUpdate } from '@/lib/hr-api';
 
 import { toast } from 'sonner';
 import { format, parseISO } from 'date-fns';

@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 
 import { useAuth } from '@/components/time-tracker/contexts/AuthContext';
 import { useUserRoles } from '@/components/time-tracker/hooks/useUserRoles';
-import { hrList } from '@/components/time-tracker/lib/hr-api';
+import { hrList } from '@/lib/hr-api';
 import SearchableSelect from '@/components/ui/SearchableSelect';
 import { useTimeOffRequests } from '@/components/time-tracker/hooks/useTimeOffRequests';
 import { Header } from '@/components/time-tracker/components/Header';

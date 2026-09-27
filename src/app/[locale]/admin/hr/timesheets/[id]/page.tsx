@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { hrList } from '@/components/time-tracker/lib/hr-api';
+import { hrList } from '@/lib/hr-api';
 import { Loader2, ArrowLeft, Printer, Download, Clock, Calendar, User, ClipboardList } from 'lucide-react';
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';

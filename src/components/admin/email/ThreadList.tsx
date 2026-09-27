@@ -2,7 +2,7 @@
 
 import { useEmailStore } from "./store";
 import { PenSquare, Search, Check, Clock, Archive, RefreshCw } from "lucide-react";
-import { cn } from "@/components/time-tracker/lib/utils";
+import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 
 function ThreadActions() {

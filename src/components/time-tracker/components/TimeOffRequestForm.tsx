@@ -25,9 +25,9 @@ import {
 } from '@/components/ui/popover';
 import { CalendarDays, CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
-import { cn } from '@/components/time-tracker/lib/utils';
+import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import { hrCreate } from '@/components/time-tracker/lib/hr-api';
+import { hrCreate } from '@/lib/hr-api';
 
 interface TimeOffRequestFormProps {
   open: boolean;

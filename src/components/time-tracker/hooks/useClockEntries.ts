@@ -2,7 +2,7 @@
 import { useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
-import { hrList, hrCreate, hrUpdate } from '@/components/time-tracker/lib/hr-api';
+import { hrList, hrCreate, hrUpdate } from '@/lib/hr-api';
 
 export interface ClockEntry {
   id: string;

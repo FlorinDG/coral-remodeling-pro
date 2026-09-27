@@ -13,10 +13,10 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/components/time-tracker/contexts/AuthContext';
-import { useTheme } from '@/components/time-tracker/contexts/ThemeContext';
+import { useTheme } from '@/context/ThemeContext';
 import { useUserPreferences } from '@/components/time-tracker/hooks/useUserPreferences';
 import { languages } from '@/components/time-tracker/i18n';
-import { toast } from '@/components/time-tracker/hooks/use-toast';
+import { toast } from '@/hooks/use-toast';
 
 import { translateToEnglish } from '@/components/time-tracker/lib/translateService';
 import { useAppBasePath } from '@/components/time-tracker/hooks/useAppBasePath';
@@ -72,7 +72,7 @@ export default function Profile() {
     
     setIsSubmitting(true);
     try {
-      const { hrCreate } = await import('@/components/time-tracker/lib/hr-api');
+      const { hrCreate } = await import('@/lib/hr-api');
       await hrCreate('approval-requests', {
         userId: user.id,
         requestedBy: user.id,
@@ -97,7 +97,7 @@ export default function Profile() {
     try {
       const translatedMessage = await translateToEnglish(supportMessage, i18n.language);
       
-      const { hrCreate } = await import('@/components/time-tracker/lib/hr-api');
+      const { hrCreate } = await import('@/lib/hr-api');
       await hrCreate('support-messages', {
         userId: user.id,
         subject: supportSubject,

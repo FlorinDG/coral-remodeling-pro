@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { hrList, hrCreate, hrUpdate, hrDelete } from '@/components/time-tracker/lib/hr-api';
+import { hrList, hrCreate, hrUpdate, hrDelete } from '@/lib/hr-api';
 import { useDatabaseStore } from '@/components/admin/database/store';
 import { useUserRoles } from '@/components/time-tracker/hooks/useUserRoles';
 

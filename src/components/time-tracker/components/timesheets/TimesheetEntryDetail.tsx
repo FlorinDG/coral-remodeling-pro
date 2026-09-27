@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { hrUpdate } from '@/components/time-tracker/lib/hr-api';
+import { hrUpdate } from '@/lib/hr-api';
 import { format, parseISO } from 'date-fns';
 import { nl, fr, enUS } from 'date-fns/locale';
 import { useLocale, useTranslations } from 'next-intl';

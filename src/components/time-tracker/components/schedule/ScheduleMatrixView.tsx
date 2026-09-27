@@ -6,7 +6,7 @@ import { ChevronLeft, ChevronRight, GripVertical, Plus, Copy, Printer, Clock, Se
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScheduledShift, NOTION_COLORS } from '@/components/time-tracker/hooks/useScheduledShifts';
-import { cn } from '@/components/time-tracker/lib/utils';
+import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
 interface ScheduleMatrixViewProps {

@@ -4,12 +4,37 @@
  *
  * Registered via tests/register.mjs, which is loaded with `node --import`.
  */
-import { pathToFileURL } from 'node:url';
+import { pathToFileURL, fileURLToPath } from 'node:url';
 import path from 'node:path';
 
 const SRC = path.resolve(import.meta.dirname, '..', 'src');
 
 export async function resolve(specifier, context, nextResolve) {
+    if (specifier.startsWith('next/') && !specifier.endsWith('.js')) {
+        return nextResolve(`${specifier}.js`, context);
+    }
+    if (specifier.startsWith('./') || specifier.startsWith('../')) {
+        const parentPath = context.parentURL && context.parentURL.startsWith('file:') ? fileURLToPath(context.parentURL) : '';
+        if (parentPath) {
+            const base = path.resolve(path.dirname(parentPath), specifier);
+            const candidates = [
+                base,
+                `${base}.ts`,
+                `${base}.tsx`,
+                `${base}.js`,
+                `${base}.mjs`,
+                path.join(base, 'index.ts'),
+                path.join(base, 'index.tsx'),
+                path.join(base, 'index.js'),
+            ];
+            const { existsSync, statSync } = await import('node:fs');
+            for (const c of candidates) {
+                if (existsSync(c) && statSync(c).isFile()) {
+                    return nextResolve(pathToFileURL(c).href, context);
+                }
+            }
+        }
+    }
     if (specifier.startsWith('@/')) {
         const rel = specifier.slice(2);
         const base = path.join(SRC, rel);

@@ -9,9 +9,7 @@ import { getNextDocumentNumber } from "@/app/actions/next-document-number";
 import { useTenant } from '@/context/TenantContext';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
 import dynamic from 'next/dynamic';
-import { useClockEntries } from '@/components/time-tracker/hooks/useClockEntries';
-import { useScheduledShifts } from '@/components/time-tracker/hooks/useScheduledShifts';
-import { computeWorkedDuration } from '@/lib/computeWorkedDuration';
+import { labourForProject } from '@/lib/data/project-labour';
 import {
     CheckCircle2, Circle, Clock, AlertTriangle, Pause, XCircle,
     CalendarDays, MapPin, TrendingUp, ListTodo, Plus,
@@ -246,29 +244,34 @@ export default function ProjectDetailView({ databaseId, pageId, locale, onClose 
         };
     }, [linkedQuotations]);
 
-    // ── Actual Labour from Clock Entries ──────────────────────────────────
-    const { entries: clockEntries } = useClockEntries();
-    const { shifts: allShifts } = useScheduledShifts();
+    // ── Actual Labour from Server Aggregate (WH-5a) ──────────────────────
+    const [actualLaborHours, setActualLaborHours] = useState<number>(0);
+    const [projectShifts, setProjectShifts] = useState<any[]>([]);
 
-    const projectShifts = useMemo(() => {
-        return allShifts.filter(s => s.projectId === pageId || s.project_id === pageId);
-    }, [allShifts, pageId]);
-
-    const projectClockEntries = useMemo(() => {
-        const shiftIds = new Set(projectShifts.map(s => s.id));
-        return clockEntries.filter(e => e.shiftId && shiftIds.has(e.shiftId));
-    }, [clockEntries, projectShifts]);
-
-    const actualLaborHours = useMemo(() => {
-        let total = 0;
-        projectClockEntries.forEach(entry => {
-            if (entry.clockOutTime) {
-                const duration = computeWorkedDuration(entry.clockInTime, entry.clockOutTime, entry.noBreak || false);
-                total += (duration.totalMinutes / 60);
-            }
-        });
-        return Math.round(total * 100) / 100;
-    }, [projectClockEntries]);
+    useEffect(() => {
+        let cancelled = false;
+        if (!pageId) {
+            setActualLaborHours(0);
+            setProjectShifts([]);
+            return;
+        }
+        labourForProject(pageId)
+            .then(summary => {
+                if (!cancelled) {
+                    setActualLaborHours(summary.hours);
+                    setProjectShifts(summary.shifts || []);
+                }
+            })
+            .catch(() => {
+                if (!cancelled) {
+                    setActualLaborHours(0);
+                    setProjectShifts([]);
+                }
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [pageId]);
 
     const actualLaborCost = useMemo(() => {
         return actualLaborHours * quotationFinancials.avgLabourRate;

@@ -13,7 +13,7 @@
  * For client-safe utilities, use @/lib/lockedDbUtils instead.
  */
 
-import { PrismaClient } from '@prisma/client';
+import type { PrismaClient } from '@prisma/client';
 import {
     SYSTEM_DATABASE_ROLES,
     SYSTEM_DATABASE_NAMES,
@@ -48,16 +48,43 @@ export async function provisionLockedDatabases(
     const existing = (tenant?.lockedDbIds as Record<string, string> | null) || {};
     const ids: Record<string, string> = { ...existing };
 
+    // Resolve existing bindings in ONE query to keep the healthy path cheap
+    const existingIds = Array.from(new Set(Object.values(existing).filter(Boolean)));
+    const existingRows = existingIds.length > 0
+        ? await db.globalDatabase.findMany({
+            where: {
+                id: { in: existingIds },
+                tenantId,
+            },
+            select: { id: true, logicalKey: true },
+        })
+        : [];
+    const rowById = new Map(existingRows.map(r => [r.id, r]));
+
     let created = 0;
+    let bindingsChanged = false;
+
     for (const role of SYSTEM_DATABASE_ROLES) {
-        if (existing[role]) {
-            ids[role] = existing[role];
+        const boundId = existing[role];
+        const existingRow = boundId ? rowById.get(boundId) : undefined;
+
+        if (existingRow) {
+            ids[role] = boundId;
+            // Backfill logicalKey on a resolving row that lacks it
+            if (!existingRow.logicalKey) {
+                await db.globalDatabase.update({
+                    where: { id: existingRow.id },
+                    data: { logicalKey: role },
+                });
+                existingRow.logicalKey = role;
+            }
             continue;
         }
 
         const createdRow = await db.globalDatabase.create({
             data: {
                 tenantId,
+                logicalKey: role,
                 name: SYSTEM_DATABASE_NAMES[role],
                 properties: [],
                 views: [],
@@ -71,12 +98,19 @@ export async function provisionLockedDatabases(
 
         ids[role] = createdRow.id;
         created++;
+
+        if (boundId) {
+            bindingsChanged = true;
+            console.warn(
+                `[provisionLockedDatabases] Repaired dangling binding for role "${role}" on tenant "${tenantId}": old id "${boundId}" did not resolve to a database row; provisioned replacement "${createdRow.id}"`
+            );
+        }
     }
 
     const lockedDbIds = ids as LockedDbIds;
 
-    // Persist the map on the tenant row ONLY if new databases were created
-    if (created > 0) {
+    // Persist the map on the tenant row ONLY if new databases were created or bindings were repaired
+    if (created > 0 || bindingsChanged) {
         await db.tenant.update({
             where: { id: tenantId },
             data: { lockedDbIds },

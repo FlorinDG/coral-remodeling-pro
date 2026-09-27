@@ -707,6 +707,7 @@ model Supplier {
 model GlobalDatabase {
   id            String       @id @default(cuid())
   tenantId      String
+  logicalKey    String?
   name          String
   description   String?
   icon          String?
@@ -723,6 +724,7 @@ model GlobalDatabase {
   tenant        Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   pages         GlobalPage[]
 
+  @@unique([tenantId, logicalKey])
   @@index([tenantId])
 }
 

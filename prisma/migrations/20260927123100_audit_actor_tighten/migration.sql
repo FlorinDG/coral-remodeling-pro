@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "AuditLog" ALTER COLUMN "actorKind" SET NOT NULL;
+ALTER TABLE "AuditLog" ALTER COLUMN "actorLabel" SET NOT NULL;

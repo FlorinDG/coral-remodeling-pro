@@ -13,6 +13,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
+import { buildAuditLogOperation } from '@/lib/audit';
 import crypto from 'crypto';
 import { Resend } from 'resend';
 import React from 'react';
@@ -645,35 +646,35 @@ export async function PATCH(
                 }
             }
 
-            // Audit log generation
-            const auditPayload: any = {
-                tenantId: ctx.tenantId,
-                actorUserId: ctx.userId,
-                entityType: 'clockEntry',
-                entityId: id,
-                action: 'update',
-                before: existingEntry,
-                after: { ...existingEntry, ...data },
-                reason: data.editedAfterApproval ? 'edited-after-approval' : null,
-            };
-
             // Force source = 'Aangepast' if not just approving/unapproving
             const isJustApproval = Object.keys(data).every(k => ['approvalStatus', 'approvedBy', 'approvedAt', 'editedAfterApproval'].includes(k));
             if (!isJustApproval) {
                 data.source = 'Aangepast';
-                auditPayload.after.source = 'Aangepast';
             }
 
+            let auditAction = 'update';
             if (data.approvalStatus && data.approvalStatus !== existingEntry.approvalStatus) {
-                auditPayload.action = data.approvalStatus === 'approved' ? 'approve' : 'unapprove';
+                auditAction = data.approvalStatus === 'approved' ? 'approve' : 'unapprove';
             } else if (!existingEntry.clockOutTime && data.clockOutTime) {
-                auditPayload.action = 'forceClockOut';
+                auditAction = 'forceClockOut';
             }
+
+            const auditOp = await buildAuditLogOperation(prisma, {
+                tenantId: ctx.tenantId,
+                userId: ctx.userId,
+            }, {
+                entityType: 'clockEntry',
+                entityId: id,
+                action: auditAction,
+                before: existingEntry,
+                after: { ...existingEntry, ...data, ...(data.source ? { source: data.source } : {}) },
+                reason: data.editedAfterApproval ? 'edited-after-approval' : null,
+            });
 
             // Execute in transaction
             const [updated] = await prisma.$transaction([
                 prisma.clockEntry.update({ where: { id }, data }),
-                prisma.auditLog.create({ data: auditPayload })
+                auditOp
             ]);
             record = updated;
         } else {

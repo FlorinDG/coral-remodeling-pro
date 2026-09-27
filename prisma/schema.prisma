@@ -1047,18 +1047,29 @@ model RateChangeAudit {
   @@index([targetWorkerId])
 }
 
+enum ActorKind {
+  USER
+  SYSTEM
+  PORTAL
+  OPERATOR
+}
+
 model AuditLog {
-  id           String   @id @default(cuid())
+  id           String     @id @default(cuid())
   tenantId     String
-  actorUserId  String
-  entityType   String   // 'clockEntry' | 'article' | 'expense' | 'globalPage' …
+  actorKind    ActorKind
+  actorUserId  String?
+  actorRef     String?
+  actorLabel   String
+  onBehalfOfId String?
+  entityType   String     // 'clockEntry' | 'article' | 'expense' | 'globalPage' …
   entityId     String
-  action       String   // 'update' | 'forceClockOut' | 'approve' | 'unapprove' | 'delete' | 'restampRate'
-  field        String?  // null for whole-record actions
+  action       String     // 'update' | 'forceClockOut' | 'approve' | 'unapprove' | 'delete' | 'restampRate'
+  field        String?    // null for whole-record actions
   before       Json?
   after        Json?
-  reason       String?  // e.g. 'edited-after-approval'
-  createdAt    DateTime @default(now())
+  reason       String?    // e.g. 'edited-after-approval'
+  createdAt    DateTime   @default(now())
 
   @@index([tenantId, entityType, entityId])
   @@index([tenantId, createdAt])

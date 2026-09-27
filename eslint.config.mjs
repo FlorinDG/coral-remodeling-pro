@@ -315,6 +315,65 @@ const eslintConfig = defineConfig([
       ],
     },
   },
+  // KERN-7: The parse ratchet — a database id is never parsed. Read the binding.
+  {
+    files: ["src/**/*.{ts,tsx}"],
+    ignores: [
+      // Exempt the kernel and the accessor, which are allowed to know (implementation, not violations)
+      "src/lib/kernel/**",
+      "src/lib/data/system-databases.ts",
+      "src/lib/systemDatabases.ts",
+
+      // These parse database ids. The binding is the truth — logicalKey reverse, lockedDbIds forward.
+      // Do not add to this list. Its length is the KERN-7 metric, and it only falls.
+      // 28 grandfathered files:
+      "src/app/*locale*/admin/database/*databaseId*/*pageId*/page.tsx",
+      "src/app/*locale*/admin/settings/databases/*id*/page.tsx",
+      "src/app/actions/global-databases.ts",
+      "src/app/actions/internal-projects.ts",
+      "src/app/actions/pages.ts",
+      "src/app/api/admin/schema-cleanup/route.ts",
+      "src/app/api/scan/route.ts",
+      "src/components/admin/database/DatabaseClone.tsx",
+      "src/components/admin/database/NotionGrid.tsx",
+      "src/components/admin/database/components/ColumnHeader.tsx",
+      "src/components/admin/database/components/DatabaseFooter.tsx",
+      "src/components/admin/database/components/PageFinancialAnalysis.tsx",
+      "src/components/admin/database/components/PageModal.tsx",
+      "src/components/admin/database/components/ProjectDetailView.tsx",
+      "src/components/admin/database/components/RecordDetailPage.tsx",
+      "src/components/admin/database/hooks/useGridColumns.tsx",
+      "src/components/admin/database/store.ts",
+      "src/components/admin/invoices/InvoiceTotalCell.tsx",
+      "src/components/admin/invoices/SaveToLibraryModal.tsx",
+      "src/components/admin/quotations/SaveToLibraryModal.tsx",
+      "src/components/time-tracker/components/TimesheetView.tsx",
+      "src/components/time-tracker/components/schedule/CreateShiftForm.tsx",
+      "src/components/time-tracker/components/schedule/EditShiftDialog.tsx",
+      "src/lib/databaseRoute.ts",
+      "src/lib/invoices/due-date.ts",
+      "src/lib/lockedDbUtils.ts",
+      "src/lib/relations/resolve.ts",
+      "src/lib/services/quote-service.ts",
+    ],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "CallExpression[callee.property.name='startsWith'][arguments.0.value=/^db-/], CallExpression[callee.property.name='startsWith'][arguments.0.quasis.0.value.raw=/^db-/]",
+          message: "ARCHITECTURAL RULE (KERN-7): a database id is never parsed. Read the binding — scope.systemDatabase(role) forward, roleOfDatabase(tenantId, id) reverse.",
+        },
+        {
+          selector: "CallExpression[callee.name='getBaseDbId'], CallExpression[callee.property.name='getBaseDbId']",
+          message: "ARCHITECTURAL RULE (KERN-7): a database id is never parsed. Read the binding — scope.systemDatabase(role) forward, roleOfDatabase(tenantId, id) reverse.",
+        },
+        {
+          selector: "CallExpression[callee.name='isSystemDatabase'], CallExpression[callee.property.name='isSystemDatabase']",
+          message: "ARCHITECTURAL RULE (KERN-7): a database id is never parsed. Read the binding — scope.systemDatabase(role) forward, roleOfDatabase(tenantId, id) reverse.",
+        },
+      ],
+    },
+  },
 ]);
 
 export default eslintConfig;

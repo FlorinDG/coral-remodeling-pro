@@ -447,6 +447,13 @@ Missing from any one = invisible gap in enforcement.
    - **3b. LOOPHOLE CLOSED (2026-07-27): the gate is on the OPERATION, not the word "migration".** No agent runs ANY schema-mutating Prisma command against ANY database — `db push`, `migrate dev`, `migrate deploy`, `migrate reset`, `--force-reset`, `--accept-data-loss`. `db push` bypassed this gate once already (the new `ClockEntry` columns went live with no migration file, leaving prod schema and repo history out of sync). Agents emit **reviewable SQL / a migration file**; Florin runs it.
    - **3c. `--accept-data-loss` is a STOP sign, never a convenience flag.** Prisma only demands it when the diff is **destructive**. "It's safe, the fields are additive" and "pass `--accept-data-loss`" cannot both be true — if the flag is needed, something is being dropped/re-typed and must be inspected before anything runs. Additive columns need no flag.
 4. **Multi-tenant safety.** Any data migration is idempotent, dry-run on ONE tenant, verified, then rolled out — never a blind all-tenant transform. No cross-tenant bleed.
+5c. **THE PLANNER'S SANDBOX IS NOT CI.** Observed twice on 2026-09-27, both times wrong.
+   - The Planner's shell runs a Prisma client **generated for `darwin-arm64`** (Florin's machine) on a **`linux-arm64`** host. **Any test that loads Prisma fails there at module scope** with `PrismaClientInitializationError`, and is green in CI, where `prisma generate` runs on the correct platform.
+   - `tsc --noEmit` **OOMs** in that sandbox without the repo's `--max-old-space-size=4096`, so the Planner frequently cannot run the step CI fails on.
+   - 🛑 **Never name the failing CI step from a local run.** Ask for the CI log. A local failure is evidence about the sandbox until the log says otherwise.
+   - 🛑 **Never report a local exit code as CI's.** And read the exit code of the command, not of a pipe — `node ./node_modules/eslint/bin/eslint.js src --quiet; echo $?`.
+   - **What the sandbox IS good for:** reading code, grepping, counting, and running pure tests that import nothing from `src/lib/data/**`.
+
 5a. **A COMPONENT MUST NOT DECIDE ITS OWN PRIVILEGE.** *(Florin, 2026-09-26: "they must not make that decision, they need to ask the appropriate instance to make it.")*
    Observed: the superadmin bypass is re-implemented independently in `middleware.ts`, `lib/moduleGuard.ts` and `app/actions/pages.ts` — **three copies of a privilege escalation**, none aware of the others, each free to drift.
    - 🛑 **No module, route, action or component evaluates a role, a plan, or a bypass for itself.** It asks the instance whose job that is and acts on the answer.

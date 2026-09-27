@@ -97,6 +97,25 @@ test('R1-1c · source code invariant: provisionTenantDbs writes logicalKey at bi
     );
 });
 
+test('KERN-7a · architectural rule invariant: KERN-7 ratchet exists in eslint.config.mjs and is error, not warn', () => {
+    const configPath = path.resolve(import.meta.dirname, '../eslint.config.mjs');
+    const configSource = fs.readFileSync(configPath, 'utf-8');
+
+    assert.ok(
+        configSource.includes('ARCHITECTURAL RULE (KERN-7)'),
+        'Rule definition missing: KERN-7 architectural rule must be declared in eslint.config.mjs'
+    );
+    assert.ok(
+        configSource.includes('"error"') || configSource.includes("'error'"),
+        'Severity check: rule must be configured'
+    );
+
+    // Verify it is error and not warn in the KERN-7 block
+    const kern7BlockMatch = configSource.match(/\/\/ KERN-7:[\s\S]*?rules:\s*\{[\s\S]*?"no-restricted-syntax":\s*\[\s*"([^"]+)"/);
+    assert.ok(kern7BlockMatch, 'KERN-7 block with no-restricted-syntax rule must exist');
+    assert.equal(kern7BlockMatch[1], 'error', 'KERN-7 ratchet severity must be "error", not "warn"');
+});
+
 describe('R1-1c · provisionLockedDatabases mock behavior tests', () => {
     function createMockDb(initial: {
         tenant?: { id: string; lockedDbIds: Record<string, string> | null };

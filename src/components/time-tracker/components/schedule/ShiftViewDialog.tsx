@@ -1,6 +1,4 @@
-// @ts-nocheck
 "use client";
-// @ts-nocheck — Legacy component, progressive migration to camelCase
 import { useState, useEffect } from 'react';
 import { Loader2, Clock, MapPin, FileText, Paperclip, ListTodo, Pencil, Image, Download, Check, AlertCircle, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -195,11 +193,13 @@ export function ShiftViewDialog({
 
   // Check if shift is for today and can be clocked in
   const canClockIn = shift && 
+    // @ts-expect-error SUPA-2: snake_case read (Supabase-era shape)
     isToday(parseISO(shift.shift_date)) && 
     !hasClockEntry && 
     !activeEntry &&
     shift.status !== 'Completed';
 
+  // @ts-expect-error SUPA-2: snake_case read (Supabase-era shape)
   const isClockedIntoThisShift = activeEntry && activeEntry.shift_id === shift?.id;
   const canClockOut = isClockedIntoThisShift;
 
@@ -208,6 +208,7 @@ export function ShiftViewDialog({
 
   useEffect(() => {
     if (isClockedIntoThisShift && activeEntry) {
+      // @ts-expect-error SUPA-2: snake_case read (Supabase-era shape)
       const clockInTime = new Date(activeEntry.clock_in_time);
       setStartTime(clockInTime);
       if (!isRunning) {
@@ -383,6 +384,7 @@ export function ShiftViewDialog({
                 
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Date</span>
+                  {/* @ts-expect-error SUPA-2: snake_case read (Supabase-era shape) */}
                   <span className="font-medium">{format(parseISO(shift.shift_date), 'EEEE, MMMM d, yyyy')}</span>
                 </div>
                 
@@ -552,7 +554,9 @@ export function ShiftViewDialog({
               ) : (
                 <div className="space-y-2">
                   {attachments.map(attachment => {
+                    // @ts-expect-error SUPA-2-SEMANTIC: file_path → ShiftAttachment.url
                     const Icon = getFileIcon(attachment.file_type);
+                    // @ts-expect-error SUPA-2-SEMANTIC: file_path → ShiftAttachment.url
                     const isImage = attachment.file_type.startsWith('image/');
                     
                     return (
@@ -562,7 +566,9 @@ export function ShiftViewDialog({
                       >
                         {isImage ? (
                           <AttachmentImage
+                            // @ts-expect-error SUPA-2-SEMANTIC: file_path → ShiftAttachment.url
                             filePath={attachment.file_path}
+                            // @ts-expect-error SUPA-2-SEMANTIC: file_path → ShiftAttachment.url
                             alt={attachment.file_name}
                             className="h-10 w-10 rounded object-cover"
                             fallback={
@@ -577,17 +583,22 @@ export function ShiftViewDialog({
                           </div>
                         )}
                         <div className="flex-1 min-w-0">
+                          {/* @ts-expect-error SUPA-2-SEMANTIC: file_path → ShiftAttachment.url */}
                           <p className="text-sm font-medium truncate">{attachment.file_name}</p>
                           <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            {/* @ts-expect-error SUPA-2-SEMANTIC: file_path → ShiftAttachment.url */}
                             {attachment.file_size && (
+                              // @ts-expect-error SUPA-2-SEMANTIC: file_path → ShiftAttachment.url
                               <span>{formatFileSize(attachment.file_size)}</span>
                             )}
+                            {/* @ts-expect-error SUPA-2-SEMANTIC: file_path → ShiftAttachment.url */}
                             {attachment.source_project_id && (
                               <Badge variant="outline" className="text-xs">From Project</Badge>
                             )}
                           </div>
                         </div>
                         <AttachmentLink
+                          // @ts-expect-error SUPA-2-SEMANTIC: file_path → ShiftAttachment.url
                           filePath={attachment.file_path}
                           className="inline-flex items-center justify-center h-8 w-8 rounded-md hover:bg-accent hover:text-accent-foreground"
                         >

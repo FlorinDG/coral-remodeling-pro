@@ -1,6 +1,4 @@
-// @ts-nocheck
 "use client";
-// @ts-nocheck — Legacy component, progressive migration to camelCase
 import { useState, useEffect, useRef, memo } from 'react';
 import { Play, Square, MapPin, Loader2, Calendar, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -47,6 +45,7 @@ function ClockButtonComponent() {
   // Restore timer from active entry - only once per entry
   useEffect(() => {
     if (activeEntry && initializedEntryRef.current !== activeEntry.id) {
+      // @ts-expect-error SUPA-2: snake_case read (Supabase-era shape)
       const clockInTime = new Date(activeEntry.clock_in_time);
       setStartTime(clockInTime);
       if (!isRunning) {
@@ -269,6 +268,7 @@ function ClockButtonComponent() {
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-foreground">{t('clock.todaysShift')}</p>
                 <p className="text-sm text-muted-foreground">
+                  {/* @ts-expect-error SUPA-2: snake_case read (Supabase-era shape) */}
                   {formatTime(todayShift.shift_start)} - {formatTime(todayShift.shift_end)}
                 </p>
                 {todayShift.project?.name && (
@@ -301,6 +301,7 @@ function ClockButtonComponent() {
           )}
         </div>
 
+        {/* @ts-expect-error SUPA-2: snake_case read (Supabase-era shape) */}
         {isClockedIn && activeEntry?.clock_in_latitude && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground animate-fade-in">
             <MapPin className="w-4 h-4" />

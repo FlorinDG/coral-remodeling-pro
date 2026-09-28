@@ -45,8 +45,7 @@ function ClockButtonComponent() {
   // Restore timer from active entry - only once per entry
   useEffect(() => {
     if (activeEntry && initializedEntryRef.current !== activeEntry.id) {
-      // @ts-expect-error SUPA-2: snake_case read (Supabase-era shape)
-      const clockInTime = new Date(activeEntry.clock_in_time);
+      const clockInTime = new Date(activeEntry.clockInTime);
       setStartTime(clockInTime);
       if (!isRunning) {
         startTimer(clockInTime);
@@ -268,8 +267,7 @@ function ClockButtonComponent() {
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-foreground">{t('clock.todaysShift')}</p>
                 <p className="text-sm text-muted-foreground">
-                  {/* @ts-expect-error SUPA-2: snake_case read (Supabase-era shape) */}
-                  {formatTime(todayShift.shift_start)} - {formatTime(todayShift.shift_end)}
+                  {formatTime(todayShift.shiftStart)} - {formatTime(todayShift.shiftEnd)}
                 </p>
                 {todayShift.project?.name && (
                   <p className="text-xs text-muted-foreground truncate">
@@ -301,8 +299,7 @@ function ClockButtonComponent() {
           )}
         </div>
 
-        {/* @ts-expect-error SUPA-2: snake_case read (Supabase-era shape) */}
-        {isClockedIn && activeEntry?.clock_in_latitude && (
+        {isClockedIn && activeEntry?.clockInLatitude && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground animate-fade-in">
             <MapPin className="w-4 h-4" />
             <span>{t('clock.locationRecorded')}</span>

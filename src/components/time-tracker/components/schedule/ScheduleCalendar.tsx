@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScheduledShift, NOTION_COLORS } from '@/components/time-tracker/hooks/useScheduledShifts';
 import { cn } from '@/lib/utils';
 import { isBelgianHoliday, getHolidayMap, formatDateKey } from '@/components/time-tracker/lib/belgianHolidays';
+import { formatTime } from '@/lib/format/date';
 
 interface ScheduleCalendarProps {
   shifts: ScheduledShift[];
@@ -17,14 +18,6 @@ const FULL_DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 
 
 function getNotionColor(colorName: string) {
   return NOTION_COLORS.find(c => c.name === colorName) || NOTION_COLORS[6]; // Default to blue
-}
-
-function formatTime(time: string) {
-  const [hours, minutes] = time.split(':');
-  const h = parseInt(hours);
-  const suffix = h >= 12 ? 'PM' : 'AM';
-  const displayHour = h % 12 || 12;
-  return `${displayHour}:${minutes} ${suffix}`;
 }
 
 function getStatusColor(status: string) {

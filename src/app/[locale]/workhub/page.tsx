@@ -17,7 +17,7 @@ const queryClient = new QueryClient();
 export default function WorkHubHomePage() {
     return (
         <div className="time-tracker-theme">
-            <div className="max-w-4xl mx-auto px-4 py-4">
+            <div className="max-w-4xl mx-auto px-0 md:px-4 py-0 md:py-4">
                 <Index embedded={true} />
             </div>
         </div>

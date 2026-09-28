@@ -132,7 +132,10 @@
     "more": "plus",
     "allTasksCompleted": "Toutes les tâches terminées!",
     "noShiftsScheduled": "Aucun quart prévu",
-    "noShiftsScheduledPeriod": "Aucun quart prévu pour cette période."
+    "noShiftsScheduledPeriod": "Aucun quart prévu pour cette période.",
+    "clockIntoShift": "Pointer pour le quart",
+    "clockInWithoutShift": "Pointer sans quart de travail",
+    "shiftFallback": "Quart"
   },
   "timeOff": {
     "title": "Congés",

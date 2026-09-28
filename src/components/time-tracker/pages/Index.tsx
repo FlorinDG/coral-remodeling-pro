@@ -1,11 +1,7 @@
 "use client";
-import { useEffect, useState } from 'react';
-import { useRouter } from "@/i18n/routing";
-
-import { Loader2 } from 'lucide-react';
+import { useState } from 'react';
 import { Header } from '@/components/time-tracker/components/Header';
 import { ClockButton } from '@/components/time-tracker/components/ClockButton';
-import { QuickLinks } from '@/components/time-tracker/components/QuickLinks';
 import { MySchedule } from '@/components/time-tracker/components/MySchedule';
 import { Announcements } from '@/components/time-tracker/components/Announcements';
 import { Documents } from '@/components/time-tracker/components/Documents';
@@ -21,17 +17,19 @@ interface IndexProps {
 }
 
 export default function Index({ embedded = false }: IndexProps) {
-  const router = useRouter();
   const { user, loading } = useAuth();
   const { isAdmin } = useUserRoles();
   const [siteVisitOpen, setSiteVisitOpen] = useState(false);
 
-  // Native push notifications callout removed per user request.
-
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className={embedded ? 'py-4 space-y-4 animate-pulse' : 'min-h-screen bg-background container mx-auto px-4 py-8 space-y-4 animate-pulse'}>
+        <div className="h-7 w-44 bg-muted rounded-lg mb-6" />
+        <div className="space-y-3">
+          <div className="h-20 bg-muted/60 rounded-xl" />
+          <div className="h-20 bg-muted/60 rounded-xl" />
+          <div className="h-20 bg-muted/60 rounded-xl" />
+        </div>
       </div>
     );
   }
@@ -40,31 +38,19 @@ export default function Index({ embedded = false }: IndexProps) {
     return null;
   }
 
-  const firstName = user.name?.split(' ')[0] || 'there';
-
   return (
     <div className={embedded ? '' : 'min-h-screen bg-background'}>
       {!embedded && <Header />}
 
-      <main className={embedded ? 'py-2 md:py-4' : 'container mx-auto px-4 py-6 md:py-12'}>
-        {/* Hero Section with Clock Button */}
-        <section className="text-center mb-8 md:mb-16 lg:mb-20">
-          <div className="max-w-2xl mx-auto mb-6 md:mb-10">
-            <h1 className="text-2xl md:text-3xl lg:text-5xl font-bold text-foreground mb-2 md:mb-4 animate-fade-in">
-              Welcome back, <span className="text-primary">{firstName}</span>
-            </h1>
+      <main className={embedded ? 'py-2 md:py-4 pb-36 md:pb-28' : 'container mx-auto px-4 py-6 md:py-12 pb-36 md:pb-28'}>
+        {isAdmin && (
+          <div className="flex justify-end mb-4 px-4 md:px-0">
+            <Button variant="outline" size="sm" className="rounded-full text-xs" onClick={() => setSiteVisitOpen(true)}>
+              <MapPin className="w-3.5 h-3.5 mr-1.5" />
+              Record Site Visit
+            </Button>
           </div>
-
-          <div className="animate-fade-in flex flex-col items-center justify-center gap-4" style={{ animationDelay: '200ms' }}>
-            <ClockButton />
-            {isAdmin && (
-              <Button variant="outline" className="rounded-full" onClick={() => setSiteVisitOpen(true)}>
-                <MapPin className="w-4 h-4 mr-2" />
-                Record Site Visit
-              </Button>
-            )}
-          </div>
-        </section>
+        )}
 
         {isAdmin && (
           <SiteVisitModal 
@@ -73,25 +59,28 @@ export default function Index({ embedded = false }: IndexProps) {
           />
         )}
 
-        {/* Scheduled Shifts */}
-        <div className="mb-8 md:mb-12 animate-fade-in" style={{ animationDelay: '300ms' }}>
+        {/* Scheduled Shifts — the primary content */}
+        <div className="mb-8 md:mb-12 animate-fade-in">
           <MySchedule />
         </div>
 
-        {/* Quick Links Section */}
-        <QuickLinks />
-
         {/* Announcements Section */}
-        <div className="mt-8 md:mt-12 animate-fade-in" style={{ animationDelay: '400ms' }}>
+        <div className="mt-8 md:mt-12 animate-fade-in">
           <Announcements />
         </div>
 
         {/* Documents Section */}
-        <div className="mt-8 md:mt-12 animate-fade-in" style={{ animationDelay: '500ms' }}>
+        <div className="mt-8 md:mt-12 animate-fade-in">
           <Documents />
         </div>
-
       </main>
+
+      {/* Clock Button — Fixed directly above bottom nav, visible on all scroll positions */}
+      <div className="fixed bottom-[calc(4rem+env(safe-area-inset-bottom,0px))] md:bottom-6 left-0 right-0 z-40 p-4 pointer-events-none flex justify-center">
+        <div className="w-full max-w-sm pointer-events-auto">
+          <ClockButton />
+        </div>
+      </div>
 
       {/* Footer — standalone mode only */}
       {!embedded && (

@@ -132,7 +132,10 @@
     "more": "mai mult",
     "allTasksCompleted": "Toate sarcinile finalizate!",
     "noShiftsScheduled": "Nicio tură programată",
-    "noShiftsScheduledPeriod": "Nicio tură programată în această perioadă."
+    "noShiftsScheduledPeriod": "Nicio tură programată în această perioadă.",
+    "clockIntoShift": "Pontează în tură",
+    "clockInWithoutShift": "Pontare fără tură",
+    "shiftFallback": "Tură"
   },
   "timeOff": {
     "title": "Concediu",

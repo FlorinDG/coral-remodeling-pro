@@ -4,7 +4,6 @@ import { Calendar, Clock, MapPin, Briefcase, Loader2, CheckSquare, Play, User } 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useScheduledShifts } from '@/components/time-tracker/hooks/useScheduledShifts';
 import { useShiftTasks } from '@/components/time-tracker/hooks/useTasks';
@@ -16,6 +15,7 @@ import { useAuth } from '@/components/time-tracker/contexts/AuthContext';
 import { format, parseISO, isToday, addDays, subDays, isBefore, isAfter, startOfDay } from 'date-fns';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
+import { formatTime } from '@/lib/format/date';
 
 interface ShiftCardProps {
   shift: any;
@@ -28,11 +28,6 @@ interface ShiftCardProps {
 function ShiftCard({ shift, isNextShift, activeEntry, onClick }: ShiftCardProps) {
   const { t } = useTranslation();
   const { shiftTasks, loading: tasksLoading } = useShiftTasks(shift.id);
-  
-  const formatTime = (time: string) => {
-    const [hours, minutes] = time.split(':');
-    return `${hours}:${minutes}`;
-  };
 
   const pendingTasks = shiftTasks.filter(st => st.status !== 'completed');
   const completedTasks = shiftTasks.filter(st => st.status === 'completed');
@@ -41,54 +36,69 @@ function ShiftCard({ shift, isNextShift, activeEntry, onClick }: ShiftCardProps)
   const shiftDate = parseISO(shift.shiftDate);
   const isPast = isBefore(startOfDay(shiftDate), startOfDay(new Date()));
 
+  // 3-step fallback chain: Project name -> description (shiftName / notes) -> localized 'shift'
+  const projectName = (shift.project?.name || shift.projectName || '').replace(/^\[ERP\]\s*/i, '').trim();
+  const description = (shift.shiftName || '').trim() || (shift.notes || '').trim();
+  const fallback = t('schedule.shiftFallback');
+  const primaryTitle = projectName || description || fallback;
+
+  const address = shift.project?.address?.trim() || shift.projectAddress?.trim();
+
   return (
     <Card 
-      className={`rounded-none border-x-0 border-t-0 border-b md:rounded-xl md:border-x md:border-t cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors ${isClockedIn ? 'ring-2 ring-[var(--brand-color,#d35400)]' : ''} ${isNextShift ? 'border-primary' : ''} ${isPast ? 'opacity-60' : ''}`}
+      className={`rounded-none border-x-0 border-t-0 border-b md:rounded-xl md:border-x md:border-t cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors ${isClockedIn ? 'ring-2 ring-[var(--tawny)]' : ''} ${isNextShift ? 'border-primary' : ''} ${isPast ? 'opacity-60' : ''}`}
       onClick={onClick}
     >
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-4">
-          <div className="space-y-2 flex-1">
-            {/* Date */}
-            <div className="flex items-center gap-3 text-sm">
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-              <span className="font-medium">
-                {isToday(shiftDate) 
-                  ? t('schedule.today') 
-                  : format(shiftDate, 'EEE, d MMM')}
-              </span>
-              {isNextShift && !isToday(shiftDate) && (
-                <Badge variant="outline" className="text-xs">{t('schedule.next')}</Badge>
-              )}
+          <div className="space-y-1.5 flex-1">
+            {/* Primary line: Project Name */}
+            <div className="flex items-start justify-between gap-2">
+              <h3 className="text-base font-semibold text-foreground leading-snug">
+                {shift.status === 'leave' ? '🌴 ' : ''}
+                {primaryTitle}
+              </h3>
               {isClockedIn && (
-                <Badge className="bg-primary text-primary-foreground animate-pulse text-xs">
-                  <Clock className="h-3 w-3 mr-1" />
+                <Badge className="bg-primary text-primary-foreground animate-pulse text-sm font-normal py-0.5 px-2 shrink-0">
+                  <Clock className="h-3.5 w-3.5 mr-1" />
                   {t('schedule.active')}
                 </Badge>
               )}
             </div>
 
-            {/* Title */}
-            <div className="flex items-center gap-3 text-lg font-bold mt-1">
-              {shift.status === 'leave' ? '🌴 ' : ''}
-              <span>{shift.shiftName || shift.projectName || (shift.project?.name || '').replace(/^\[ERP\]\s*/i, '') || (shift.status === 'leave' ? 'Leave' : 'Shift')}</span>
-            </div>
-
-            {/* Time */}
-            <div className="flex items-center gap-3 text-sm mt-2">
-              <Clock className="h-4 w-4 text-muted-foreground" />
-              <span>
-                {formatTime(shift.shiftStart)} - {formatTime(shift.shiftEnd)}
-              </span>
-            </div>
-
-            {/* Location */}
-            {shift.project?.address && (
-              <div className="flex items-start gap-3 text-sm mt-2">
-                <MapPin className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-                <span className="leading-tight">{shift.project.address}</span>
-              </div>
+            {/* Second line: Tappable address link to native map */}
+            {address && (
+              <a
+                href={`https://maps.google.com/?q=${encodeURIComponent(address)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground hover:underline transition-colors mt-1"
+              >
+                <MapPin className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <span className="truncate">{address}</span>
+              </a>
             )}
+
+            {/* Third line: Time and Date */}
+            <div className="flex items-center justify-between text-sm text-muted-foreground mt-2">
+              <div className="flex items-center gap-2">
+                <Clock className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <span className="font-medium text-foreground">
+                  {formatTime(shift.shiftStart)} – {formatTime(shift.shiftEnd)}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="font-medium">
+                  {isToday(shiftDate) 
+                    ? t('schedule.today') 
+                    : format(shiftDate, 'EEE, d MMM')}
+                </span>
+                {isNextShift && !isToday(shiftDate) && (
+                  <Badge variant="outline" className="text-sm font-normal py-0 px-2">{t('schedule.next')}</Badge>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -108,12 +118,12 @@ function ShiftCard({ shift, isNextShift, activeEntry, onClick }: ShiftCardProps)
               <div className="space-y-1">
                 {pendingTasks.slice(0, 2).map((st) => (
                   <div key={st.id} className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-secondary" />
+                    <div className="w-2 h-2 rounded-full bg-secondary shrink-0" />
                     <span className="text-sm truncate">{st.task?.title}</span>
                   </div>
                 ))}
                 {pendingTasks.length > 2 && (
-                  <Badge variant="secondary" className="text-xs">
+                  <Badge variant="secondary" className="text-sm">
                     +{pendingTasks.length - 2} {t('schedule.more')}
                   </Badge>
                 )}
@@ -143,7 +153,6 @@ export function MySchedule() {
   const [showGeofenceWarning, setShowGeofenceWarning] = useState<{distance: number, site: string, location: any, shiftId: string} | null>(null);
   const [selectedShift, setSelectedShift] = useState<any>(null);
   const [elapsedTime, setElapsedTime] = useState('00:00:00');
-  const scrollRef = useRef<HTMLDivElement>(null);
   const nextShiftRef = useRef<HTMLDivElement>(null);
 
   // Date range: 1 week behind to 2 weeks ahead
@@ -279,32 +288,33 @@ export function MySchedule() {
 
   if (loading) {
     return (
-      <Card>
-        <CardContent className="flex items-center justify-center py-8">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </CardContent>
-      </Card>
+      <div className="space-y-3 p-4 animate-pulse">
+        <div className="h-6 w-40 bg-muted rounded mb-2" />
+        <div className="h-24 bg-muted/60 rounded-none md:rounded-xl" />
+        <div className="h-24 bg-muted/60 rounded-none md:rounded-xl" />
+        <div className="h-24 bg-muted/60 rounded-none md:rounded-xl" />
+      </div>
     );
   }
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
+    <Card className="border-0 shadow-none rounded-none bg-transparent md:border md:shadow-sm md:rounded-xl md:bg-card">
+      <CardHeader className="px-4 py-3 md:p-6 md:pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="text-lg md:text-xl font-bold flex items-center gap-2">
             <Calendar className="h-5 w-5" />
             {isManager 
               ? 'Workforce/Team Schedule' 
               : t('schedule.mySchedule')}
           </CardTitle>
           {activeEntry && (
-            <Badge className="bg-primary text-primary-foreground animate-pulse">
-              <Clock className="h-3 w-3 mr-1" />
+            <Badge className="bg-primary text-primary-foreground animate-pulse text-sm">
+              <Clock className="h-3.5 w-3.5 mr-1" />
               {t('clock.clockedIn', 'Clocked In')}
             </Badge>
           )}
         </div>
-        <CardDescription>
+        <CardDescription className="text-sm">
           {filteredShifts.length > 0 
             ? `${filteredShifts.length} shifts • 1 week ago to 2 weeks ahead`
             : t('schedule.noShiftsScheduled')}
@@ -312,28 +322,26 @@ export function MySchedule() {
       </CardHeader>
       <CardContent className="p-0">
         {filteredShifts.length === 0 ? (
-          <p className="text-center text-muted-foreground py-8 px-4">
+          <p className="text-center text-muted-foreground py-8 px-4 text-sm">
             {t('schedule.noShiftsScheduledPeriod')}
           </p>
         ) : (
-          <ScrollArea className="h-[500px]" ref={scrollRef}>
-            <div className="space-y-0 md:space-y-3 p-0 md:p-4">
-              {filteredShifts.map((shift, index) => (
-                <div 
-                  key={shift.id} 
-                  ref={index === nextShiftIndex ? nextShiftRef : undefined}
-                >
-                  <ShiftCard
-                    shift={shift}
-                    profile={user}
-                    isNextShift={shift.id === nextShift?.id}
-                    activeEntry={activeEntry}
-                    onClick={() => setSelectedShift(shift)}
-                  />
-                </div>
-              ))}
-            </div>
-          </ScrollArea>
+          <div className="space-y-0 md:space-y-3 p-0 md:p-4">
+            {filteredShifts.map((shift, index) => (
+              <div 
+                key={shift.id} 
+                ref={index === nextShiftIndex ? nextShiftRef : undefined}
+              >
+                <ShiftCard
+                  shift={shift}
+                  profile={user}
+                  isNextShift={shift.id === nextShift?.id}
+                  activeEntry={activeEntry}
+                  onClick={() => setSelectedShift(shift)}
+                />
+              </div>
+            ))}
+          </div>
         )}
       </CardContent>
 

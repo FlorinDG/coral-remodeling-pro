@@ -26,15 +26,15 @@ interface NavItem {
 
 const PRIMARY_ITEMS: NavItem[] = [
     { id: 'home',     label: 'Dashboard',         href: '/workhub',           icon: <LayoutDashboard className="w-5 h-5" />, mobileLabel: 'Home' },
-    { id: 'leave',    label: 'Leave',             href: '/workhub/leave',     icon: <CalendarOff className="w-5 h-5" />,     mobileLabel: 'Leave' },
+    { id: 'leave',    label: 'Time Off',          href: '/workhub/leave',     icon: <CalendarOff className="w-5 h-5" />,     mobileLabel: 'Time Off' },
     { id: 'tasks',    label: 'My Tasks',          href: '/workhub/tasks',     icon: <CheckSquare className="w-5 h-5" />,     mobileLabel: 'Tasks' },
-    { id: 'files',    label: 'Documents',         href: '/workhub/files',     icon: <FileText className="w-5 h-5" />,        mobileLabel: 'Files' },
 ];
 
 const SECONDARY_ITEMS: NavItem[] = [
     { id: 'timesheets', label: 'Timesheets',       href: '/workhub/timesheets', icon: <Clock className="w-5 h-5" />,          mobileLabel: 'Timesheets' },
-    { id: 'projects',  label: 'Projects',          href: '/workhub/projects',  icon: <FolderOpen className="w-5 h-5" />,      mobileLabel: 'Projects' },
-    { id: 'wiki',      label: 'Company Wiki',      href: '/workhub/wiki',      icon: <BookOpen className="w-5 h-5" />,        mobileLabel: 'Wiki' },
+    { id: 'files',     label: 'Documents',         href: '/workhub/files',      icon: <FileText className="w-5 h-5" />,        mobileLabel: 'Files' },
+    { id: 'projects',  label: 'Projects',          href: '/workhub/projects',   icon: <FolderOpen className="w-5 h-5" />,      mobileLabel: 'Projects' },
+    { id: 'wiki',      label: 'Company Wiki',      href: '/workhub/wiki',       icon: <BookOpen className="w-5 h-5" />,        mobileLabel: 'Wiki' },
 ];
 
 // Bottom Nav logic moved inside component to handle state/filtering
@@ -52,7 +52,7 @@ export default function WorkHubShell({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     tenant?: any;
 }) {
-    const { data: session } = useSession();
+    const { data: session, status } = useSession();
     const pathname = usePathname();
     const [menuOpen, setMenuOpen] = useState(false);
     const [brandColor, setBrandColor] = useState('#d35400');
@@ -65,23 +65,21 @@ export default function WorkHubShell({
         }
     }, [tenant]);
 
-    const userName = session?.user?.name || 'User';
-    const firstName = userName.split(' ')[0];
+    const isSessionLoading = status === 'loading';
+    const userName = session?.user?.name || '';
+    const firstName = userName ? userName.split(' ')[0] : '';
     const userRole = session?.user?.role as any;
     const isWorkforce = userRole === ROLES.TENANT_ENTERPRISE_WORKFORCE || userRole === 'TENANT_PRO_WORKFORCE' || userRole === 'crew';
 
-    const filteredPrimaryItems = PRIMARY_ITEMS.filter(item => {
-        if (isWorkforce && item.id === 'files') return false;
-        return true;
-    });
+    const filteredPrimaryItems = PRIMARY_ITEMS;
 
     const filteredSecondaryItems = SECONDARY_ITEMS.filter(item => {
-        if (isWorkforce && ['projects', 'team', 'wiki'].includes(item.id)) return false;
+        if (isWorkforce && ['projects', 'team', 'wiki', 'files'].includes(item.id)) return false;
         return true;
     });
 
     const mobileTabs = [
-        ...filteredPrimaryItems.slice(0, 4),
+        ...filteredPrimaryItems,
         { id: 'menu', label: 'Menu', href: '#', icon: <Menu className="w-5 h-5" />, mobileLabel: 'Menu' }
     ];
 
@@ -107,20 +105,28 @@ export default function WorkHubShell({
                 <div className="flex items-center justify-between h-14 px-4 w-full px-4 w-full">
                     <div className="flex items-center gap-2">
                         <h1 className="text-sm font-black tracking-tight" style={{ color: brandColor }}>WorkHub</h1>
-                        <span className="text-xs font-bold text-neutral-350 dark:text-neutral-700">•</span>
-                        <span className="text-xs font-bold text-neutral-550 dark:text-neutral-450 truncate max-w-[140px]" title={userName}>{userName}</span>
+                        {isSessionLoading ? (
+                            <div className="w-16 h-3.5 bg-neutral-200 dark:bg-neutral-800 rounded animate-pulse" />
+                        ) : userName ? (
+                            <>
+                                <span className="text-xs font-bold text-neutral-350 dark:text-neutral-700">•</span>
+                                <span className="text-xs font-bold text-neutral-550 dark:text-neutral-450 truncate max-w-[140px]" title={userName}>{userName}</span>
+                            </>
+                        ) : null}
                     </div>
 
                     <div className="flex items-center gap-2">
                         <ThemeToggle />
 
                         {/* Desktop: User avatar */}
-                        <div className="hidden md:flex items-center gap-2 pl-2 border-l border-neutral-200 dark:border-white/10 ml-2">
-                            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center text-white text-xs font-bold">
-                                {firstName[0]}
+                        {firstName && (
+                            <div className="hidden md:flex items-center gap-2 pl-2 border-l border-neutral-200 dark:border-white/10 ml-2">
+                                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center text-white text-xs font-bold">
+                                    {firstName[0]}
+                                </div>
+                                <span className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">{firstName}</span>
                             </div>
-                            <span className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">{firstName}</span>
-                        </div>
+                        )}
                     </div>
                 </div>
 
@@ -166,33 +172,35 @@ export default function WorkHubShell({
                                 </Link>
                             ))}
 
-                             <div className="border-t border-neutral-200 dark:border-white/10 mt-3 pt-3">
-                                 <div className="flex items-center gap-3 px-4 py-3">
-                                     <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center text-white text-sm font-bold">
-                                         {firstName[0]}
-                                     </div>
-                                     <div>
-                                         <p className="text-sm font-bold">{userName}</p>
-                                         <p className="text-[10px] text-neutral-400 uppercase tracking-wider">Workforce</p>
-                                     </div>
-                                 </div>
-                                 <Link
+                            <div className="border-t border-neutral-200 dark:border-white/10 mt-3 pt-3">
+                                {userName && (
+                                    <div className="flex items-center gap-3 px-4 py-3">
+                                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center text-white text-sm font-bold">
+                                            {firstName ? firstName[0] : ''}
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-bold">{userName}</p>
+                                            <p className="text-[10px] text-neutral-400 uppercase tracking-wider">Workforce</p>
+                                        </div>
+                                    </div>
+                                )}
+                                <Link
                                     href="/workhub/profile"
                                     onClick={() => setMenuOpen(false)}
-                                     className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors"
-                                 >
-                                     <User className="w-5 h-5 text-neutral-500" /> My Profile
-                                 </Link>
-                                 <button
-                                     onClick={async () => {
-                                         try { await del('coral-database-storage-v4'); localStorage.removeItem('coral-schema-version'); } catch {}
-                                         signOut({ callbackUrl: "/login" });
-                                     }}
-                                     className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
-                                 >
-                                     <LogOut className="w-5 h-5" /> Sign Out
-                                 </button>
-                             </div>
+                                    className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors"
+                                >
+                                    <User className="w-5 h-5 text-neutral-500" /> My Profile
+                                </Link>
+                                <button
+                                    onClick={async () => {
+                                        try { await del('coral-database-storage-v4'); localStorage.removeItem('coral-schema-version'); } catch {}
+                                        signOut({ callbackUrl: "/login" });
+                                    }}
+                                    className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                                >
+                                    <LogOut className="w-5 h-5" /> Sign Out
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -39,14 +39,7 @@ import { useAppBasePath } from '@/components/time-tracker/hooks/useAppBasePath';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { validateFile, validateFiles, getSafeFileType, generateSafeFilePath, ALLOWED_EXTENSIONS } from '@/components/time-tracker/lib/fileValidation';
-
-function formatTime(time: string) {
-  const [hours, minutes] = time.split(':');
-  const h = parseInt(hours);
-  const suffix = h >= 12 ? 'PM' : 'AM';
-  const displayHour = h % 12 || 12;
-  return `${displayHour}:${minutes} ${suffix}`;
-}
+import { formatTime } from '@/lib/format/date';
 
 function getStatusColor(status: string) {
   switch (status) {

@@ -4,17 +4,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useWorkerSchedules } from '@/components/time-tracker/hooks/useWorkerSchedules';
+import { formatTime } from '@/lib/format/date';
 
 export function AllSchedulesView() {
   const { allWorkers, loading: schedulesLoading, DAY_NAMES } = useWorkerSchedules();
-
-  const formatTime = (time: string) => {
-    const [hours, minutes] = time.split(':');
-    const hour = parseInt(hours, 10);
-    const ampm = hour >= 12 ? 'PM' : 'AM';
-    const displayHour = hour % 12 || 12;
-    return `${displayHour}:${minutes} ${ampm}`;
-  };
 
   if (schedulesLoading) {
     return (

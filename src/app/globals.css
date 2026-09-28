@@ -4,6 +4,12 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
+  --tawny:         #d75d00;
+  --eerie-black:   #13140d;
+  --persian-green: #339989;
+  --baby-powder:   #f1f5f2;
+  --eggshell:      #faf3dd;
+
   --background: 240 10% 3.9%;
   --foreground: 0 0% 98%;
   --card: 240 10% 3.9%;

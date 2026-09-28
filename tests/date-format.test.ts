@@ -5,6 +5,7 @@ import {
     formatDate,
     formatDateTime,
     formatDateLong,
+    formatTime,
     resolveLocale,
     DEFAULT_LOCALE,
 } from '../src/lib/format/date.ts';
@@ -55,4 +56,25 @@ test('LOC-1: formatDateLong formats month name', () => {
     assert.match(formattedNl, /18/);
     assert.match(formattedNl, /2026/);
     assert.match(formattedNl, /september/i);
+});
+
+test('WH-UI-1: formatTime returns 24h format and never AM/PM', () => {
+    assert.equal(formatTime('13:00'), '13:00');
+    assert.equal(formatTime('13:00:00'), '13:00');
+    assert.equal(formatTime('00:00'), '00:00');
+    assert.equal(formatTime('12:00'), '12:00');
+    assert.equal(formatTime('9:05'), '09:05');
+    assert.equal(formatTime(new Date(2026, 8, 28, 9, 5)), '09:05');
+    assert.equal(formatTime(new Date(2026, 8, 28, 13, 0)), '13:00');
+    assert.equal(formatTime(null), '');
+    assert.equal(formatTime(undefined), '');
+    assert.equal(formatTime(''), '');
+
+    // Assert NEVER AM/PM in any output
+    const allHours = Array.from({ length: 24 }, (_, i) => `${String(i).padStart(2, '0')}:30`);
+    for (const h of allHours) {
+        const result = formatTime(h);
+        assert.doesNotMatch(result, /AM|PM/i, `formatTime(${h}) must not contain AM/PM`);
+        assert.match(result, /^\d{2}:\d{2}$/, `formatTime(${h}) must match HH:mm`);
+    }
 });

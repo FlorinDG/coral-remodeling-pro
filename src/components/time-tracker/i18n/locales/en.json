@@ -132,7 +132,10 @@
     "more": "more",
     "allTasksCompleted": "All tasks completed!",
     "noShiftsScheduled": "No shifts scheduled",
-    "noShiftsScheduledPeriod": "No shifts scheduled in this period."
+    "noShiftsScheduledPeriod": "No shifts scheduled in this period.",
+    "clockIntoShift": "Clock into Shift",
+    "clockInWithoutShift": "Clock in without shift",
+    "shiftFallback": "Shift"
   },
   "timeOff": {
     "title": "Time Off",

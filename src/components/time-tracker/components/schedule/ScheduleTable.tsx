@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { formatTime } from '@/lib/format/date';
 import { ScheduledShift, NOTION_COLORS } from '@/components/time-tracker/hooks/useScheduledShifts';
 import { cn } from '@/lib/utils';
 
@@ -31,14 +32,6 @@ interface ScheduleTableProps {
 
 function getNotionColor(colorName: string) {
   return NOTION_COLORS.find(c => c.name === colorName) || NOTION_COLORS[6];
-}
-
-function formatTime(time: string) {
-  const [hours, minutes] = time.split(':');
-  const h = parseInt(hours);
-  const suffix = h >= 12 ? 'PM' : 'AM';
-  const displayHour = h % 12 || 12;
-  return `${displayHour}:${minutes} ${suffix}`;
 }
 
 function formatDate(dateStr: string) {

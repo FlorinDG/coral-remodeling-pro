@@ -132,7 +132,10 @@
     "more": "еще",
     "allTasksCompleted": "Все задачи выполнены!",
     "noShiftsScheduled": "Нет запланированных смен",
-    "noShiftsScheduledPeriod": "В этот период нет запланированных смен."
+    "noShiftsScheduledPeriod": "В этот период нет запланированных смен.",
+    "clockIntoShift": "Отметить приход на смену",
+    "clockInWithoutShift": "Отметить приход без смены",
+    "shiftFallback": "Смена"
   },
   "timeOff": {
     "title": "Отпуск",

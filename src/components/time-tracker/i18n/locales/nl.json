@@ -132,7 +132,10 @@
     "more": "meer",
     "allTasksCompleted": "Alle taken voltooid!",
     "noShiftsScheduled": "Geen diensten gepland",
-    "noShiftsScheduledPeriod": "Geen diensten gepland in deze periode."
+    "noShiftsScheduledPeriod": "Geen diensten gepland in deze periode.",
+    "clockIntoShift": "Inklokken op dienst",
+    "clockInWithoutShift": "Inklokken zonder dienst",
+    "shiftFallback": "Dienst"
   },
   "timeOff": {
     "title": "Verlof",

@@ -10,6 +10,7 @@ import { useAuth } from '@/components/time-tracker/contexts/AuthContext';
 import { useScheduledShifts, ScheduledShift } from '@/components/time-tracker/hooks/useScheduledShifts';
 import { useShiftTasks } from '@/components/time-tracker/hooks/useTasks';
 import { format, isToday, isTomorrow, parseISO, differenceInHours, differenceInMinutes } from 'date-fns';
+import { formatTime } from '@/lib/format/date';
 
 function openMapsApp(address: string) {
   const encodedAddress = encodeURIComponent(address);
@@ -34,14 +35,6 @@ function formatShiftDuration(start: string, end: string): string {
   const mins = totalMinutes % 60;
   if (mins === 0) return `${hours}h`;
   return `${hours}h ${mins}m`;
-}
-
-function formatTime12(time: string): string {
-  const [hours, minutes] = time.split(':');
-  const h = parseInt(hours);
-  const suffix = h >= 12 ? 'PM' : 'AM';
-  const displayHour = h % 12 || 12;
-  return `${displayHour}:${minutes} ${suffix}`;
 }
 
 import { useAppBasePath } from '@/components/time-tracker/hooks/useAppBasePath';
@@ -88,7 +81,7 @@ export function DailySummary() {
               <p className="font-semibold text-foreground">No shift scheduled today</p>
               <p className="text-sm text-muted-foreground">
                 {tomorrowShift
-                  ? `Next shift: Tomorrow at ${formatTime12(tomorrowShift.shiftStart)}`
+                  ? `Next shift: Tomorrow at ${formatTime(tomorrowShift.shiftStart)}`
                   : 'Check your schedule for upcoming shifts'}
               </p>
             </div>
@@ -156,7 +149,7 @@ export function DailySummary() {
             <div className="flex-1">
               <p className="text-sm text-muted-foreground">Shift</p>
               <p className="font-semibold text-foreground">
-                {formatTime12(todayShift.shiftStart)} – {formatTime12(todayShift.shiftEnd)}
+                {formatTime(todayShift.shiftStart)} – {formatTime(todayShift.shiftEnd)}
               </p>
             </div>
             <span className="text-sm font-medium text-muted-foreground bg-muted px-3 py-1 rounded-full">
@@ -264,7 +257,7 @@ export function DailySummary() {
           <div className="border-t border-border px-6 py-3 flex items-center justify-between bg-muted/20">
             <div className="text-xs text-muted-foreground">
               <span className="font-semibold text-foreground">Tomorrow:</span>{' '}
-              {formatTime12(tomorrowShift.shiftStart)} – {formatTime12(tomorrowShift.shiftEnd)}
+              {formatTime(tomorrowShift.shiftStart)} – {formatTime(tomorrowShift.shiftEnd)}
               {tomorrowShift.project?.name && ` · ${tomorrowShift.project.name}`}
             </div>
             <Link

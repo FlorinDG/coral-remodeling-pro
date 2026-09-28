@@ -139,3 +139,32 @@ export function formatMonthYear(d: Date | string | number | null | undefined, lo
         year: 'numeric',
     }).format(date);
 }
+
+/**
+ * 'HH:mm' (24h, locale-aware). Accepts 'HH:mm', 'HH:mm:ss', a Date, or an ISO string.
+ * Never outputs AM/PM.
+ *
+ * Examples:
+ *   formatTime('13:00') => '13:00'
+ *   formatTime('00:00') => '00:00'
+ *   formatTime('12:00') => '12:00'
+ *   formatTime(new Date(2026, 8, 28, 9, 5)) => '09:05'
+ */
+export function formatTime(t: string | Date | null | undefined, locale?: string | null): string {
+    if (!t) return '';
+    if (typeof t === 'string') {
+        const trimmed = t.trim();
+        if (!trimmed) return '';
+        // Fast-path: 'HH:mm' or 'HH:mm:ss'
+        const match = /^(\d{1,2}):(\d{2})(?::\d{2})?$/.exec(trimmed);
+        if (match) {
+            const h = String(parseInt(match[1], 10)).padStart(2, '0');
+            return `${h}:${match[2]}`;
+        }
+    }
+    const date = parseDateInput(t);
+    if (!date) return '';
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
+}

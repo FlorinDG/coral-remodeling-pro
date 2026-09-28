@@ -54,16 +54,6 @@ export async function sendQuotationToClient(
             pdf: pdfBuffer,
         });
 
-        // Write receiptUrl to record through server door (DOC-ARCH-1c)
-        const currentProps = (page.properties ?? {}) as Record<string, any>;
-        const updateRes = await updatePageServerFirst(quoteId, {
-            ...currentProps,
-            receiptUrl: archiveResult.key,
-        });
-        if (!updateRes.success) {
-            throw new Error(`[sendQuotationToClient] Opslaan van receiptUrl mislukt: ${updateRes.error}`);
-        }
-
         const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.coral-group.be';
         const magicLinkUrl = `${appUrl}/${lang}/quote/${quoteId}`;
         const finalSubject = subjectOverride || `${t('subject_quote', lang)}: ${projectName} — ${company}`;
@@ -125,12 +115,24 @@ export async function sendQuotationToClient(
             throw new Error(error.message);
         }
 
+        // ── SEND-2: Persist status & receiptUrl in one server write AFTER successful transmission ──
+        const currentProps = (page.properties ?? {}) as Record<string, any>;
+        const updateRes = await updatePageServerFirst(quoteId, {
+            ...currentProps,
+            receiptUrl: archiveResult.key,
+            status: 'opt-sent',
+        });
+        if (!updateRes.success) {
+            throw new Error(`[sendQuotationToClient] Opslaan van status en receiptUrl mislukt: ${updateRes.error}`);
+        }
+
         return { 
             success: true, 
             messageId: data?.id,
             attachments: emailAttachments.map(a => a.filename),
             archiveKey: archiveResult.key,
             archiveFilename: archiveResult.filename,
+            page: updateRes.page,
         };
 
     } catch (err: any) {

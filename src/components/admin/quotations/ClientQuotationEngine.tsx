@@ -576,11 +576,31 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
             );
 
             if (response.success) {
-                // Auto-transition to "sent" status and persist receiptUrl atomically (D1)
-                updatePageProperties(quotationsDbId, id, {
-                    status: 'opt-sent',
-                    ...(response.archiveKey ? { receiptUrl: response.archiveKey } : {})
-                });
+                // SEND-2: Refresh record from server response without calling client-side updatePageProperties (avoids OCC conflict)
+                const serverPage = response.page;
+                useDatabaseStore.setState(state => ({
+                    databases: state.databases.map(db => {
+                        if (db.id !== quotationsDbId) return db;
+                        return {
+                            ...db,
+                            pages: db.pages.map(p => {
+                                if (p.id !== id) return p;
+                                return {
+                                    ...p,
+                                    properties: {
+                                        ...p.properties,
+                                        ...(serverPage?.properties || {}),
+                                        status: 'opt-sent',
+                                        ...(response.archiveKey ? { receiptUrl: response.archiveKey } : {})
+                                    },
+                                    updatedAt: serverPage?.updatedAt || new Date().toISOString(),
+                                    baseUpdatedAt: serverPage?.updatedAt || p.baseUpdatedAt,
+                                };
+                            }),
+                            updatedAt: new Date().toISOString()
+                        };
+                    })
+                }));
                 let successMsg = 'Offerte is succesvol verzonden!';
                 if (response.archiveFilename) {
                     successMsg += ` (Gearchiveerd als ${response.archiveFilename})`;

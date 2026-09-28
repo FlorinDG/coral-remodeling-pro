@@ -168,7 +168,7 @@ export default function ProjectDetailView({ databaseId, pageId, locale, onClose 
 
     // ── Supplier Data Resolution ──────────────────────────────────────────
     const suppliers = useMemo(() => {
-        const suppliersDb = allDatabases.find(d => d.id === 'db-suppliers' || d.id.startsWith('db-suppliers'));
+        const suppliersDb = allDatabases.find(d => d.logicalKey === 'suppliers' || d.id === 'db-suppliers');
         if (!suppliersDb) return [];
         return suppliersDb.pages.map(p => ({
             value: p.id,
@@ -194,7 +194,7 @@ export default function ProjectDetailView({ databaseId, pageId, locale, onClose 
     const linkedQuotations = useMemo(() => {
         if (linkedQuoteIds.length === 0) return [];
         return allDatabases
-            .filter(d => d.id === quotationsDbId || d.id.startsWith('db-quotations'))
+            .filter(d => d.logicalKey === 'quotations' || d.id === quotationsDbId || d.id === 'db-quotations')
             .flatMap(d => d.pages)
             .filter(p => linkedQuoteIds.includes(p.id));
     }, [allDatabases, linkedQuoteIds, quotationsDbId]);

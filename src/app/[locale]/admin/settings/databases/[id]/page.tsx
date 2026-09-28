@@ -12,7 +12,7 @@ import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import FormulaEditorModal from '@/components/admin/database/components/FormulaEditorModal';
-import { isSystemDatabase } from '@/lib/systemDatabases';
+import { BASE_TO_KEY, SYSTEM_DATABASES } from '@/lib/kernel/system-databases';
 import SearchableSelect from '@/components/ui/SearchableSelect';
 import { useSession } from 'next-auth/react';
 import { useTenant } from '@/context/TenantContext';
@@ -118,7 +118,7 @@ export default function DatabaseConfigurator() {
     const [formulaEditingProp, setFormulaEditingProp] = useState<any>(null);
 
     // System database schemas are immutable for all users (core platform functionality).
-    const isSchemaLocked = isSystemDatabase(databaseId);
+    const isSchemaLocked = Boolean(database?.logicalKey || (databaseId in BASE_TO_KEY) || (databaseId in SYSTEM_DATABASES));
     const isStoreUngated = useDatabaseStore(state => state.isSchemaUngated(databaseId));
     const isUngated = isStoreUngated || isSuperadmin;
 

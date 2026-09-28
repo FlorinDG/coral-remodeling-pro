@@ -93,7 +93,8 @@ export default function DatabaseFooter({
     const summaries = useMemo(() => {
         const result: Record<string, string> = {};
 
-        const calcPages = (databaseId === 'db-invoices' || databaseId?.startsWith('db-invoices-'))
+        const isInvoiceDb = database?.logicalKey === 'invoices' || databaseId === 'db-invoices';
+        const calcPages = isInvoiceDb
             ? pages.filter(p => {
                 const docType = String(p.properties['docType'] || 'opt-invoice');
                 const status = String(p.properties['status'] || 'opt-credited'); // Note: 'opt-credited' is the status for credited invoices

@@ -8,6 +8,7 @@ import { Database, Page, Property, PropertyValue, PropertyType, PropertyConfig, 
 import { saveGlobalDatabase, saveGlobalPage, saveGlobalPagesBatch, deleteGlobalDatabase, deleteGlobalPage, getDatabasePages } from '@/app/actions/global-databases';
 import { generateOGM } from '@/lib/ogm';
 import { toast } from 'sonner';
+import { type SystemDatabaseRole, SYSTEM_DATABASES, BASE_TO_KEY } from '@/lib/kernel/system-databases';
 
 export function extractPageTitle(properties: Record<string, any> | undefined): string {
     if (!properties) return 'Untitled';
@@ -25,10 +26,24 @@ const syncDb = (db: Database | undefined) => {
 
 /**
  * Helper to check if a database ID matches a "base" ID (e.g. 'db-invoices').
- * Handles both bare IDs and scoped IDs (e.g. 'db-invoices-abc12345').
+ * Handles both bare IDs and scoped IDs via role and logicalKey.
  */
 const isBaseDb = (id: string, base: string) => {
-    return id === base || id.startsWith(base + '-');
+    if (id === base) return true;
+    const baseRole: SystemDatabaseRole | null = base in SYSTEM_DATABASES
+        ? (base as SystemDatabaseRole)
+        : (base in BASE_TO_KEY ? BASE_TO_KEY[base] : null);
+    if (!baseRole) return false;
+    const idRole: SystemDatabaseRole | null = id in SYSTEM_DATABASES
+        ? (id as SystemDatabaseRole)
+        : (id in BASE_TO_KEY ? BASE_TO_KEY[id] : null);
+    if (idRole === baseRole) return true;
+    const dbs = useDatabaseStore.getState?.()?.databases;
+    if (dbs) {
+        const db = dbs.find(d => d.id === id);
+        if (db?.logicalKey === baseRole) return true;
+    }
+    return false;
 };
 
 /**
@@ -980,10 +995,11 @@ export const useDatabaseStore = create<DatabaseState>()(
 
             getDatabase: (id) => {
                 const exact = get().databases.find(db => db.id === id);
-                // Fallback: if lockedDbIds is empty (tenant read failed), resolveDbId
-                // returns the bare base ID (e.g. 'db-invoices'). The store has the
-                // tenant-scoped ID (e.g. 'db-invoices-cmneyas2'). Match by prefix.
-                const db = exact || get().databases.find(db => db.id.startsWith(id + '-'));
+                if (exact) return exact;
+                const role: SystemDatabaseRole | null = id in SYSTEM_DATABASES
+                    ? (id as SystemDatabaseRole)
+                    : (id in BASE_TO_KEY ? BASE_TO_KEY[id] : null);
+                const db = role ? get().databases.find(d => d.logicalKey === role) : undefined;
                 if (db && !get().loadedDatabaseIds.includes(db.id) && process.env.NODE_ENV === 'development') {
                     console.warn(`[useDatabaseStore] getDatabase('${id}') accessed for unloaded database '${db.id}'. Use usePagesOf('${id}') instead to ensure pages are requested and not-loaded is not mistaken for empty.`);
                 }
@@ -2303,8 +2319,11 @@ export function usePagesOf(databaseIdOrIds: string | string[] | undefined | null
         return rawIds.map(id => {
             const exact = databases.find(d => d.id === id);
             if (exact) return exact.id;
-            const prefixMatch = databases.find(d => d.id.startsWith(id + '-'));
-            return prefixMatch ? prefixMatch.id : id;
+            const role: SystemDatabaseRole | null = id in SYSTEM_DATABASES
+                ? (id as SystemDatabaseRole)
+                : (id in BASE_TO_KEY ? BASE_TO_KEY[id] : null);
+            const roleMatch = role ? databases.find(d => d.logicalKey === role) : undefined;
+            return roleMatch ? roleMatch.id : id;
         });
     }, [rawIds, databases]);
 
@@ -2366,6 +2385,7 @@ export interface UseLabelsOfResult {
 export function useLabelsOf(databaseIdOrIds?: string | string[] | null): UseLabelsOfResult {
     const pageIndex = useDatabaseStore(s => s.pageIndex);
     const getPageLabel = useDatabaseStore(s => s.getPageLabel);
+    const databases = useDatabaseStore(s => s.databases);
 
     const ids = useMemo(() => {
         if (!databaseIdOrIds) return null;
@@ -2375,8 +2395,17 @@ export function useLabelsOf(databaseIdOrIds?: string | string[] | null): UseLabe
     const entries = useMemo(() => {
         const all = Object.values(pageIndex);
         if (!ids || ids.length === 0) return all;
-        return all.filter(entry => ids.some(targetId => entry.databaseId === targetId || entry.databaseId.startsWith(targetId + '-')));
-    }, [pageIndex, ids]);
+        const resolvedTargetIds = new Set(ids.map(targetId => {
+            const exact = databases.find(d => d.id === targetId);
+            if (exact) return exact.id;
+            const role: SystemDatabaseRole | null = targetId in SYSTEM_DATABASES
+                ? (targetId as SystemDatabaseRole)
+                : (targetId in BASE_TO_KEY ? BASE_TO_KEY[targetId] : null);
+            const roleMatch = role ? databases.find(d => d.logicalKey === role) : undefined;
+            return roleMatch ? roleMatch.id : targetId;
+        }));
+        return all.filter(entry => resolvedTargetIds.has(entry.databaseId) || ids.includes(entry.databaseId));
+    }, [pageIndex, ids, databases]);
 
     return {
         entries,

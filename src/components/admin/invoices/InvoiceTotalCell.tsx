@@ -13,7 +13,7 @@ interface InvoiceTotalCellProps {
 
 export default function InvoiceTotalCell({ invoiceId, fallbackTotal, fallbackVat }: InvoiceTotalCellProps) {
     const invoice = useDatabaseStore(state => {
-        const db = state.databases.find(d => d.id === 'db-invoices' || d.id.startsWith('db-invoices-'));
+        const db = state.databases.find(d => d.logicalKey === 'invoices' || d.id === 'db-invoices');
         return db?.pages.find(p => p.id === invoiceId) || null;
     });
 

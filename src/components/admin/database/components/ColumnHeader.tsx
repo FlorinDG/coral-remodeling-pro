@@ -3,7 +3,7 @@ import { Property, PropertyType } from '../types';
 import { useDatabaseStore } from '../store';
 import { Settings2, Trash2, Edit3, Type, Hash, List, CheckSquare, Calendar, Link, Euro, Percent } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { isSystemDatabase } from '@/lib/systemDatabases';
+import { BASE_TO_KEY, SYSTEM_DATABASES } from '@/lib/kernel/system-databases';
 
 const typeIcons: Record<string, React.ElementType> = {
     text: Type,
@@ -47,7 +47,7 @@ export default function ColumnHeader({ databaseId, viewId, property, index = 0, 
     const t = useTranslations('Admin');
     // System database schemas are immutable for all users (core platform functionality).
     // Only user-created databases allow schema edits through the UI.
-    const canEditSchema = !isSystemDatabase(databaseId);
+    const canEditSchema = !database?.logicalKey && !(databaseId in BASE_TO_KEY) && !(databaseId in SYSTEM_DATABASES);
 
     const [isOpen, setIsOpen] = useState(false);
     const [isEditing, setIsEditing] = useState(false);

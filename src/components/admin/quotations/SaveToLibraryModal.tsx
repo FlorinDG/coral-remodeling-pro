@@ -29,7 +29,7 @@ export default function SaveToLibraryModal({ isOpen, onClose, block, onSaveSucce
         // QUOTE-7: db-articles is a SYSTEM db with canonical prop ids — use them directly
         // instead of substring name matching (which caused 'lever' in discount aliases
         // to match 'Leverancier'/supplier, corrupting data).
-        const isSystemArticleDb = articleDb.id === 'db-articles' || articleDb.id.startsWith('db-articles-');
+        const isSystemArticleDb = articleDb.logicalKey === 'articles' || articleDb.id === 'db-articles';
         const map = isSystemArticleDb
             ? {
                 title: 'title',

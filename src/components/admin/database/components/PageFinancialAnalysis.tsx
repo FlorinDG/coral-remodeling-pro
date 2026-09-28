@@ -6,7 +6,8 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend, ResponsiveContainer
 import { TrendingUp } from 'lucide-react';
 
 export default function PageFinancialAnalysis({ databaseId, pageId, costs: passedCosts, quotationTotal, invoicedTotal }: { databaseId: string, pageId: string, costs?: number, quotationTotal?: number, invoicedTotal?: number }) {
-    const page = useDatabaseStore(state => state.databases.find(db => db.id === databaseId)?.pages.find(p => p.id === pageId));
+    const db = useDatabaseStore(state => state.databases.find(d => d.id === databaseId));
+    const page = db?.pages.find(p => p.id === pageId);
 
     if (!page) return null;
 
@@ -23,7 +24,7 @@ export default function PageFinancialAnalysis({ databaseId, pageId, costs: passe
 
     const remaining = Math.max(0, effectiveBudget - costs);
     const deficit = Math.max(0, costs - effectiveBudget);
-    const isQuotation = databaseId === 'db-quotations' || databaseId.startsWith('db-quotations');
+    const isQuotation = db?.logicalKey === 'quotations' || databaseId === 'db-quotations';
 
     const data = isQuotation ? [
         {

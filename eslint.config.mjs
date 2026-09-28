@@ -324,26 +324,7 @@ const eslintConfig = defineConfig([
       "src/lib/data/system-databases.ts",
       "src/lib/systemDatabases.ts",
 
-      // These parse database ids. The binding is the truth — logicalKey reverse, lockedDbIds forward.
-      // Do not add to this list. Its length is the KERN-7 metric, and it only falls.
-      // 17 grandfathered files:
-      "src/app/*locale*/admin/settings/databases/*id*/page.tsx",
-      "src/app/actions/internal-projects.ts",
-      "src/components/admin/database/components/ColumnHeader.tsx",
-      "src/components/admin/database/components/DatabaseFooter.tsx",
-      "src/components/admin/database/components/PageFinancialAnalysis.tsx",
-      "src/components/admin/database/components/ProjectDetailView.tsx",
-      "src/components/admin/database/store.ts",
-      "src/components/admin/invoices/InvoiceTotalCell.tsx",
-      "src/components/admin/invoices/SaveToLibraryModal.tsx",
-      "src/components/admin/quotations/SaveToLibraryModal.tsx",
-      "src/components/time-tracker/components/TimesheetView.tsx",
-      "src/components/time-tracker/components/schedule/CreateShiftForm.tsx",
-      "src/components/time-tracker/components/schedule/EditShiftDialog.tsx",
-      "src/lib/invoices/due-date.ts",
-      "src/lib/lockedDbUtils.ts",
-      "src/lib/relations/resolve.ts",
-      "src/lib/services/quote-service.ts",
+      // Grandfathered list is now 0. KERN-7 complete: an id is never parsed. The binding is always read.
     ],
     rules: {
       "no-restricted-syntax": [

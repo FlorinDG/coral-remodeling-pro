@@ -55,7 +55,7 @@ export function DailySummary() {
   const todayShift = useMemo(() => {
     if (!user?.id || !shifts.length) return null;
     const today = format(new Date(), 'yyyy-MM-dd');
-    return shifts.find(s => s.user_id === user.id && s.shift_date === today) || null;
+    return shifts.find(s => s.userId === user.id && s.shiftDate === today) || null;
   }, [shifts, user?.id]);
 
   // Get tasks for today's shift
@@ -69,7 +69,7 @@ export function DailySummary() {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     const tomorrowStr = format(tomorrow, 'yyyy-MM-dd');
-    return shifts.find(s => s.user_id === user.id && s.shift_date === tomorrowStr) || null;
+    return shifts.find(s => s.userId === user.id && s.shiftDate === tomorrowStr) || null;
   }, [shifts, user?.id]);
 
   if (loading) return null;
@@ -88,8 +88,7 @@ export function DailySummary() {
               <p className="font-semibold text-foreground">No shift scheduled today</p>
               <p className="text-sm text-muted-foreground">
                 {tomorrowShift
-                  // @ts-expect-error SUPA-2: snake_case read (Supabase-era shape)
-                  ? `Next shift: Tomorrow at ${formatTime12(tomorrowShift.shift_start)}`
+                  ? `Next shift: Tomorrow at ${formatTime12(tomorrowShift.shiftStart)}`
                   : 'Check your schedule for upcoming shifts'}
               </p>
             </div>
@@ -106,8 +105,7 @@ export function DailySummary() {
     );
   }
 
-  // @ts-expect-error SUPA-2: snake_case read (Supabase-era shape)
-  const duration = formatShiftDuration(todayShift.shift_start, todayShift.shift_end);
+  const duration = formatShiftDuration(todayShift.shiftStart, todayShift.shiftEnd);
   const hasProject = !!todayShift.project;
   const hasAddress = !!todayShift.project?.address;
   const hasTasks = shiftTasks.length > 0;
@@ -158,8 +156,7 @@ export function DailySummary() {
             <div className="flex-1">
               <p className="text-sm text-muted-foreground">Shift</p>
               <p className="font-semibold text-foreground">
-                {/* @ts-expect-error SUPA-2: snake_case read (Supabase-era shape) */}
-                {formatTime12(todayShift.shift_start)} – {formatTime12(todayShift.shift_end)}
+                {formatTime12(todayShift.shiftStart)} – {formatTime12(todayShift.shiftEnd)}
               </p>
             </div>
             <span className="text-sm font-medium text-muted-foreground bg-muted px-3 py-1 rounded-full">
@@ -175,8 +172,7 @@ export function DailySummary() {
               </div>
               <div className="flex-1">
                 <p className="text-sm text-muted-foreground">Project</p>
-                {/* @ts-expect-error TD: pre-existing type debt, unrelated to the shape */}
-                <p className="font-semibold text-foreground">{todayShift.project.name}</p>
+                <p className="font-semibold text-foreground">{todayShift.project?.name}</p>
               </div>
             </div>
           )}
@@ -268,8 +264,7 @@ export function DailySummary() {
           <div className="border-t border-border px-6 py-3 flex items-center justify-between bg-muted/20">
             <div className="text-xs text-muted-foreground">
               <span className="font-semibold text-foreground">Tomorrow:</span>{' '}
-              {/* @ts-expect-error SUPA-2: snake_case read (Supabase-era shape) */}
-              {formatTime12(tomorrowShift.shift_start)} – {formatTime12(tomorrowShift.shift_end)}
+              {formatTime12(tomorrowShift.shiftStart)} – {formatTime12(tomorrowShift.shiftEnd)}
               {tomorrowShift.project?.name && ` · ${tomorrowShift.project.name}`}
             </div>
             <Link

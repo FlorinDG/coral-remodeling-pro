@@ -25,7 +25,6 @@ import DatabaseFooter from './components/DatabaseFooter';
 import AddColumnFlyout from './components/AddColumnFlyout';
 import { Property, Page } from './types';
 import { toast } from 'sonner';
-import { isSystemDatabase } from '@/lib/systemDatabases';
 import { useGridColumns } from './hooks/useGridColumns';
 
 import { useVatLookup } from './hooks/useVatLookup';
@@ -128,7 +127,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
     const { activeModules, planType, isPro, isEnterprise } = useTenant();
     const hasCRM = activeModules.includes('CRM');
     const isFree = planType === 'FREE';
-    const isBestek = databaseId === 'db-bestek' || databaseId.startsWith('db-bestek-');
+    const isBestek = database?.logicalKey === 'bestek';
     const isBestekReadOnly = isBestek && !isEnterprise;
 
     const [isReady, setIsReady] = useState(false);
@@ -282,6 +281,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
     const columns = useGridColumns({
         databaseId,
         databaseIdRef,
+        logicalKey: database?.logicalKey,
         activeViewId,
         orderedVisibleProperties,
         viewStateMap,
@@ -897,7 +897,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                                 })}
 
                                 {/* Add Column button (Pro/Enterprise, user-created DBs only) */}
-                                {(isPro || isEnterprise) && !isSystemDatabase(databaseIdRef) && !isAccountant && (
+                                {(isPro || isEnterprise) && !database?.logicalKey && !isAccountant && (
                                     <AddColumnButton databaseId={databaseIdRef} />
                                 )}
                             </div>

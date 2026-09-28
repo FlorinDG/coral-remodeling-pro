@@ -21,11 +21,13 @@ import { metaDateColumn } from '../columns/MetaDateColumn';
 import { checkboxColumnCustom } from '../columns/CheckboxColumn';
 import { locationColumn } from '../columns/LocationColumn';
 import type { Property, ViewPropertyState } from '../types';
+import type { SystemDatabaseRole } from '@/lib/kernel/system-databases';
 import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
 
 interface UseGridColumnsParams {
     databaseId: string;
     databaseIdRef: string;
+    logicalKey?: SystemDatabaseRole | null;
     activeViewId: string | undefined;
     orderedVisibleProperties: Property[];
     viewStateMap: Map<string, ViewPropertyState>;
@@ -90,6 +92,7 @@ const CheckboxGripCell = ({ rowData, setSelectedRowIds }: { rowData: any; setSel
 export function useGridColumns({
     databaseIdRef,
     databaseId,
+    logicalKey,
     activeViewId,
     orderedVisibleProperties,
     viewStateMap,
@@ -124,18 +127,16 @@ export function useGridColumns({
 
                 // Because TitleColumn operates on the full row data, we handle it separately
                 if (prop.id === 'title') {
-                    const isFinancialDb =
-                        databaseIdRef === 'db-quotations' || databaseIdRef.startsWith('db-quotations-') ||
-                        databaseIdRef === 'db-invoices'   || databaseIdRef.startsWith('db-invoices-');
+                    const isFinancialDb = logicalKey === 'quotations' || logicalKey === 'invoices';
 
                     return {
                         ...titleColumn(
                             prop.id,
                             // Single OPEN action: financial DBs → engine, non-financial/all others → side-peek modal directly
                             (row) => {
-                                if (databaseIdRef === 'db-quotations' || databaseIdRef.startsWith('db-quotations-')) {
+                                if (logicalKey === 'quotations') {
                                     router.push(`/admin/quotations/${row.id}`);
-                                } else if (databaseIdRef === 'db-invoices' || databaseIdRef.startsWith('db-invoices-')) {
+                                } else if (logicalKey === 'invoices') {
                                     router.push(`/admin/financials/income/invoices/${row.id}`);
                                 } else {
                                     setActivePageId(row.id);

@@ -652,6 +652,11 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
 
     const updatePageProperty = useDatabaseStore(state => state.updatePageProperty);
     const database = useDatabaseStore(state => state.getDatabase(databaseId));
+    const role = database?.logicalKey;
+    const isProject = role === 'projects';
+    const isExpense = role === 'expenses';
+    const isQuotation = role === 'quotations';
+    const isInvoice = role === 'invoices';
     const updatePropertyOrder = useDatabaseStore(state => state.updatePropertyOrder);
     const isPagesLoaded = useDatabaseStore(state => state.loadedDatabaseIds.includes(databaseId));
     const isPagesLoading = useDatabaseStore(state => state.loadingDatabaseIds.includes(databaseId));
@@ -825,13 +830,13 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                 </div>
 
                 {/* Page Content */}
-                {databaseId === 'db-1' || databaseId.startsWith('db-1') ? (
+                {isProject ? (
                     <div className="flex-1 overflow-y-auto">
                         <ErrorBoundary componentName="ProjectDetailView">
                             <ProjectDetailView databaseId={databaseId} pageId={pageId} locale="nl" />
                         </ErrorBoundary>
                     </div>
-                ) : databaseId === 'db-expenses' || databaseId.startsWith('db-expenses') ? (
+                ) : isExpense ? (
                     <div className="flex-1 overflow-y-auto">
                         <ErrorBoundary componentName="PurchaseInvoiceEngine">
                             <PurchaseInvoiceEngine pageId={pageId} onClose={onClose} />
@@ -862,7 +867,7 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                         {/* LEFT HALF: Properties + Content */}
                         <div className="flex-1 min-w-0 flex flex-col">
                             {/* Quotations: Bespoke Summary */}
-                            {(databaseId === 'db-quotations' || databaseId.startsWith('db-quotations')) && (
+                            {isQuotation && (
                                 <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl p-5 shadow-sm mb-8">
                                     <div className="flex items-center gap-2 mb-4 font-bold text-[11px] uppercase tracking-widest text-neutral-600 dark:text-neutral-400">
                                         <TrendingUp className="w-4 h-4 text-emerald-500" /> Quotation Summary
@@ -1293,7 +1298,7 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
 
                     <ErrorBoundary componentName="RecordDetails">
                         {/* Attached Document Preview for Invoices */}
-                        {databaseId.startsWith('db-invoices') && page.properties.receiptUrl && typeof page.properties.receiptUrl === 'string' && (
+                        {isInvoice && page.properties.receiptUrl && typeof page.properties.receiptUrl === 'string' && (
                             <div className="mt-6 mb-8 px-6 md:px-0">
                                 <div className="flex items-center justify-between mb-3">
                                     <h4 className="text-xs font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider">Document Preview</h4>
@@ -1320,9 +1325,9 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
 
                         {/* Content / Invoice Preview */}
                         <div className="mt-8 mb-12 px-6 md:px-0">
-                            {databaseId === 'db-expenses' ? (
+                            {isExpense ? (
                                 <PurchaseInvoiceSheet databaseId={databaseId} pageId={pageId} />
-                            ) : (databaseId === 'db-quotations' || databaseId.startsWith('db-quotations')) ? (
+                            ) : isQuotation ? (
                                 <div className="p-12 text-center border-2 border-dashed border-neutral-200 dark:border-white/10 rounded-2xl bg-neutral-50/50 dark:bg-white/5">
                                     <h3 className="text-sm font-bold text-neutral-800 dark:text-neutral-200 mb-2">Quotation Editor</h3>
                                     <p className="text-xs text-neutral-500 dark:text-neutral-400 max-w-sm mx-auto mb-6 leading-relaxed">
@@ -1347,7 +1352,7 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
 
                 {/* RIGHT HALF: Connected Records & Journal */}
                 <div className="lg:w-[400px] xl:w-[450px] shrink-0 flex flex-col gap-8">
-                    {(databaseId === 'db-1' || databaseId.startsWith('db-1')) && (
+                    {isProject && (
                         <ScheduledLabourCard pageId={pageId} />
                     )}
                     {/* Connected Records Section */}

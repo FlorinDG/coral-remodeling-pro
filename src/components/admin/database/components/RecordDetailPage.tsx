@@ -16,7 +16,7 @@ import {
 
 import { Link } from '@/i18n/routing';
 import { Lock } from 'lucide-react';
-import { getBaseDbId } from '@/lib/systemDatabases';
+import { BASE_TO_KEY } from '@/lib/kernel/system-databases';
 
 const JournalCard       = dynamic(() => import('@/components/admin/database/components/JournalCard'),       { ssr: false });
 const FileManagerCard = dynamic(() => import('@/components/admin/file-manager/FileManagerCard'), { ssr: false });
@@ -36,14 +36,14 @@ export default function RecordDetailPage({ databaseId, pageId, locale }: RecordD
     const router = useRouter();
     const { resolveDbId, planType, isEnterprise } = useTenant();
 
-    // Resolve tenant-scoped DB ID (handles bare 'db-x' and 'db-x-tenantSuffix')
-    const isBestek = databaseId === 'db-bestek' || databaseId.startsWith('db-bestek-');
-    const isBestekReadOnly = isBestek && !isEnterprise;
     const resolvedDbId = resolveDbId(databaseId);
 
     const database = useDatabaseStore(state =>
         state.databases.find(db => db.id === resolvedDbId)
     );
+    const role = database?.logicalKey || (databaseId in BASE_TO_KEY ? BASE_TO_KEY[databaseId] : null);
+    const isBestek = role === 'bestek';
+    const isBestekReadOnly = isBestek && !isEnterprise;
     const page = useDatabaseStore(state =>
         state.databases.find(db => db.id === resolvedDbId)?.pages.find(p => p.id === pageId)
     );
@@ -54,15 +54,14 @@ export default function RecordDetailPage({ databaseId, pageId, locale }: RecordD
     const storeHasHydrated = useDatabaseStore((s) => (s as any)._hasHydrated ?? s.databases.length > 0);
 
     // Map database to contextType
-    const baseDbId = getBaseDbId(databaseId);
     let fileContextType: 'project' | 'task' | 'client' | 'global' | 'invoice' | 'quotation' | 'contract' = 'project';
-    if (baseDbId === 'db-crm') {
+    if (role === 'crm') {
         fileContextType = 'client';
-    } else if (baseDbId === 'db-tasks') {
+    } else if (role === 'tasks') {
         fileContextType = 'task';
-    } else if (baseDbId === 'db-quotations') {
+    } else if (role === 'quotations') {
         fileContextType = 'quotation';
-    } else if (baseDbId === 'db-invoices') {
+    } else if (role === 'invoices') {
         fileContextType = 'invoice';
     }
 
@@ -126,12 +125,12 @@ export default function RecordDetailPage({ databaseId, pageId, locale }: RecordD
     }
 
     const title = String(page.properties?.['title'] || page.properties?.['name'] || '');
-    const isProjectDb = baseDbId === 'db-1';
+    const isProjectDb = role === 'projects';
 
     let displayName = database.name;
-    if (baseDbId === 'db-bobex') {
+    if (role === 'bobex') {
         displayName = 'Bobex Pipeline';
-    } else if (baseDbId === 'db-crm') {
+    } else if (role === 'crm') {
         displayName = 'Main Pipeline';
     }
 

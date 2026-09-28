@@ -11,7 +11,8 @@ import PageModal from '@/components/admin/database/components/PageModal';
 import { useTenant } from '@/context/TenantContext';
 import { useSession } from 'next-auth/react';
 import { Property, DatabaseView } from './types';
-import { isSystemDatabase, SERVER_PROVISIONED_BASES } from '@/lib/systemDatabases';
+import { SERVER_PROVISIONED_BASES } from '@/lib/systemDatabases';
+import { BASE_TO_KEY } from '@/lib/kernel/system-databases';
 import { t } from '@/lib/document-i18n';
 import { useLocale } from 'next-intl';
 import { getGlobalDatabases } from '@/app/actions/global-databases';
@@ -73,14 +74,15 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
   const hasCRM = activeModules.includes('CRM');
   const hasDatabases = activeModules.includes('DATABASES');
 
-  const isImmutableContactDB = databaseId === 'db-clients' || databaseId === 'db-suppliers';
-  const isLockedSchemaDB = isSystemDatabase(databaseId);
+  const role = database?.logicalKey || (databaseId in BASE_TO_KEY ? BASE_TO_KEY[databaseId] : null);
+  const isImmutableContactDB = role === 'clients' || role === 'suppliers';
+  const isLockedSchemaDB = role != null;
   const isStoreUngated = useDatabaseStore(state => state.isSchemaUngated(databaseId));
   const isSuperAdmin = (session?.user?.role as string) === 'SUPERADMIN' || (session?.user?.role as string) === 'PLATFORM_ADMIN';
   const isUngated = isStoreUngated || isSuperAdmin;
 
     const handleOpenEditor = (pageId: string) => {
-    if (databaseId === 'db-quotations' || databaseId.startsWith('db-quotations-')) {
+    if (role === 'quotations') {
       router.push(`/${locale}/admin/quotations/${pageId}`);
     } else {
       router.push(`/${locale}/admin/database/${databaseId}/${pageId}`);
@@ -1204,7 +1206,7 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
         className={`flex-1 min-w-0 min-h-0 w-full h-full relative ${projectIdParam || openParam ? 'pointer-events-none' : ''}`}
         inert={projectIdParam || openParam ? true : undefined}
       >
-        {activeView.type === 'table' && <NotionGridDynamic databaseId={database.id} viewId={activeView.id} renderTabs={headerTabs} lockedSchema={isLockedSchemaDB && !isUngated && !hasDatabases} preventDelete={databaseId === 'db-invoices' || databaseId.startsWith('db-invoices-') ? (row: Record<string, unknown>) => { const s = String((row?.properties as Record<string, unknown>)?.status || row?.status || 'opt-draft'); return s !== 'opt-draft'; } : undefined} hideFooterNew={!!hideFooterNew} hardFilter={defaultFilter} onOpenRecord={onOpenRecord} />}
+        {activeView.type === 'table' && <NotionGridDynamic databaseId={database.id} viewId={activeView.id} renderTabs={headerTabs} lockedSchema={isLockedSchemaDB && !isUngated && !hasDatabases} preventDelete={role === 'invoices' ? (row: Record<string, unknown>) => { const s = String((row?.properties as Record<string, unknown>)?.status || row?.status || 'opt-draft'); return s !== 'opt-draft'; } : undefined} hideFooterNew={!!hideFooterNew} hardFilter={defaultFilter} onOpenRecord={onOpenRecord} />}
         {activeView.type === 'board' && <KanbanViewDynamic databaseId={database.id} viewId={activeView.id} renderTabs={headerTabs} hardFilter={defaultFilter} onOpenRecord={onOpenRecord} onOpenEditor={handleOpenEditor} />}
         {activeView.type === 'calendar' && <CalendarViewDynamic databaseId={database.id} viewId={activeView.id} renderTabs={headerTabs} />}
         {activeView.type === 'timeline' && <TimelineViewDynamic databaseId={database.id} viewId={activeView.id} renderTabs={headerTabs} />}

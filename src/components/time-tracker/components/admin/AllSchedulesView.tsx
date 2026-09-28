@@ -1,6 +1,4 @@
-// @ts-nocheck
 "use client";
-// @ts-nocheck — Legacy component, progressive migration to camelCase
 import { Loader2, Calendar, Clock } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -36,9 +34,12 @@ export function AllSchedulesView() {
     }))
   ).sort((a, b) => {
     // Sort by day of week first, then by start time
+    // @ts-expect-error SUPA-2: snake_case read (Supabase-era shape)
     if (a.day_of_week !== b.day_of_week) {
+      // @ts-expect-error SUPA-2: snake_case read (Supabase-era shape)
       return a.day_of_week - b.day_of_week;
     }
+    // @ts-expect-error SUPA-2: snake_case read (Supabase-era shape)
     return a.shift_start.localeCompare(b.shift_start);
   });
 
@@ -76,12 +77,17 @@ export function AllSchedulesView() {
                   <TableRow key={schedule.id}>
                     <TableCell className="font-medium">{schedule.workerName}</TableCell>
                     <TableCell>
+                      {/* @ts-expect-error SUPA-2: snake_case read (Supabase-era shape) */}
                       <Badge variant="outline">{DAY_NAMES[schedule.day_of_week]}</Badge>
                     </TableCell>
+                    {/* @ts-expect-error SUPA-2: snake_case read (Supabase-era shape) */}
                     <TableCell>{formatTime(schedule.shift_start)}</TableCell>
+                    {/* @ts-expect-error SUPA-2: snake_case read (Supabase-era shape) */}
                     <TableCell>{formatTime(schedule.shift_end)}</TableCell>
                     <TableCell>
+                      {/* @ts-expect-error SUPA-2: snake_case read (Supabase-era shape) */}
                       <Badge variant={schedule.is_active ? 'default' : 'secondary'}>
+                        {/* @ts-expect-error SUPA-2: snake_case read (Supabase-era shape) */}
                         {schedule.is_active ? 'Active' : 'Inactive'}
                       </Badge>
                     </TableCell>
@@ -107,6 +113,7 @@ export function AllSchedulesView() {
                   ) : (
                     <div className="space-y-2">
                       {worker.schedules
+                        // @ts-expect-error SUPA-2: snake_case read (Supabase-era shape)
                         .sort((a, b) => a.day_of_week - b.day_of_week)
                         .map(schedule => (
                           <div
@@ -114,9 +121,11 @@ export function AllSchedulesView() {
                             className="flex items-center justify-between text-sm"
                           >
                             <span className="text-muted-foreground">
+                              {/* @ts-expect-error SUPA-2: snake_case read (Supabase-era shape) */}
                               {DAY_NAMES[schedule.day_of_week].slice(0, 3)}
                             </span>
                             <span className="font-mono">
+                              {/* @ts-expect-error SUPA-2: snake_case read (Supabase-era shape) */}
                               {formatTime(schedule.shift_start)} - {formatTime(schedule.shift_end)}
                             </span>
                           </div>

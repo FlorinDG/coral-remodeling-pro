@@ -1,6 +1,4 @@
-// @ts-nocheck
 "use client";
-// @ts-nocheck — Legacy component, progressive migration to camelCase
 import { useState, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, Calendar, Flag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -71,6 +69,7 @@ function ShiftCard({ shift, onClick }: { shift: ScheduledShift; onClick?: () => 
         </span>
       </div>
       <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
+        {/* @ts-expect-error SUPA-2: snake_case read (Supabase-era shape) */}
         <span className="font-medium">{formatTime(shift.shift_start)} - {formatTime(shift.shift_end)}</span>
         {shift.role && <span className="text-primary font-bold">{shift.role}</span>}
       </div>

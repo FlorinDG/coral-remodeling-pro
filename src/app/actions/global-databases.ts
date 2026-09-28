@@ -74,12 +74,12 @@ export async function getGlobalDatabases(): Promise<Database[]> {
             }));
 
             // Scope db-1 (projects) for workforce
-            if ((db.id === 'db-1' || db.id.startsWith('db-1')) && allowedProjectIds !== null) {
+            if ((db.logicalKey === 'projects' || db.id === 'db-1') && allowedProjectIds !== null) {
                 mappedPages = mappedPages.filter(p => allowedProjectIds!.includes(p.id));
             }
 
             // Auto-sync employees into db-hr as virtual pages
-            if (db.id === 'db-hr') {
+            if (db.logicalKey === 'hr' || db.id === 'db-hr') {
                 const virtualPages = users.map(u => ({
                     id: u.id,
                     databaseId: db.id,
@@ -188,7 +188,7 @@ export async function getDatabasePages(databaseId: string): Promise<Page[]> {
     // Security: verify database ownership before querying its pages
     const parentDb = await prisma.globalDatabase.findUnique({
         where: { id: databaseId },
-        select: { tenantId: true }
+        select: { tenantId: true, logicalKey: true }
     });
 
     if (!parentDb || parentDb.tenantId !== tenantId) {
@@ -232,12 +232,12 @@ export async function getDatabasePages(databaseId: string): Promise<Page[]> {
         }));
 
         // Scope db-1 (projects) for workforce
-        if ((databaseId === 'db-1' || databaseId.startsWith('db-1')) && allowedProjectIds !== null) {
+        if ((parentDb?.logicalKey === 'projects' || databaseId === 'db-1') && allowedProjectIds !== null) {
             mappedPages = mappedPages.filter(p => allowedProjectIds!.includes(p.id));
         }
 
         // Auto-sync employees into db-hr as virtual pages
-        if (databaseId === 'db-hr') {
+        if (parentDb?.logicalKey === 'hr' || databaseId === 'db-hr') {
             const HR_EMPLOYEE_ROLES = [
                 'APP_MANAGER', 'TENANT_ADMIN', 'TENANT_FREE', 'TENANT_PRO_OWNER',
                 'TENANT_PRO_EMPLOYEE', 'TENANT_ENTERPRISE_OWNER', 'TENANT_ENTERPRISE_MANAGER',
@@ -323,10 +323,16 @@ export async function getGlobalPageIndex(): Promise<PageIndexEntry[]> {
             select: { id: true, name: true, email: true, updatedAt: true }
         });
 
+        const hrDb = await prisma.globalDatabase.findFirst({
+            where: { tenantId, logicalKey: 'hr' },
+            select: { id: true }
+        });
+        const hrDatabaseId = hrDb?.id || 'db-hr';
+
         users.forEach(u => {
             indexEntries.push({
                 id: u.id,
-                databaseId: 'db-hr',
+                databaseId: hrDatabaseId,
                 title: u.name || u.email || 'Untitled',
                 updatedAt: u.updatedAt.toISOString(),
             });

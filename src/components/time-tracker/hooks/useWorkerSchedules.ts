@@ -55,7 +55,10 @@ export function useWorkerSchedules() {
     return employees.map(emp => {
       const userSchedules = schedules.filter(s => s.userId === emp.id);
       return {
+        id: emp.id,
         user_id: emp.id,
+        userId: emp.id,
+        name: `${emp.firstName} ${emp.lastName}`,
         full_name: `${emp.firstName} ${emp.lastName}`,
         schedules: userSchedules,
       };
@@ -97,6 +100,19 @@ export function useWorkerSchedules() {
     }
   }, []);
 
+  const upsertSchedule = useCallback(async (userId: string, dayOfWeek: number, shiftStart: string, shiftEnd: string) => {
+    const existing = schedules.find(s => s.userId === userId && s.dayOfWeek === dayOfWeek);
+    if (existing) {
+      return updateSchedule(existing.id, { shiftStart, shiftEnd, isActive: true });
+    } else {
+      return createSchedule({ userId, dayOfWeek, shiftStart, shiftEnd });
+    }
+  }, [schedules, updateSchedule, createSchedule]);
+
+  const toggleScheduleActive = useCallback(async (id: string, isActive: boolean) => {
+    return updateSchedule(id, { isActive });
+  }, [updateSchedule]);
+
   return {
     schedules,
     allWorkers,
@@ -106,6 +122,8 @@ export function useWorkerSchedules() {
     createSchedule,
     updateSchedule,
     deleteSchedule,
+    upsertSchedule,
+    toggleScheduleActive,
     refetch: fetchSchedules,
   };
 }

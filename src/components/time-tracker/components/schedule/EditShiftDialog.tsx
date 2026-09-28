@@ -1,7 +1,7 @@
 // @ts-nocheck
 "use client";
 // @ts-nocheck — Legacy component, progressive migration to camelCase
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Loader2, Trash2, Paperclip, Upload, FolderOpen, X, FileText, Image, Download, ListTodo, Plus, Check, Trash, Calendar as CalendarIcon, Repeat } from 'lucide-react';
 import { useTasks, useShiftTasks, Task } from '@/components/time-tracker/hooks/useTasks';
 import { AttachmentLink, AttachmentImage } from '@/components/ui/attachment-link';
@@ -152,6 +152,7 @@ export function EditShiftDialog({
   const [projectAttachments, setProjectAttachments] = useState<ProjectAttachment[]>([]);
   const [attachmentPopoverOpen, setAttachmentPopoverOpen] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Tasks
   const { tasks: projectTasks, loading: tasksLoading, createTask } = useTasks(projectId || shift?.project_id || null);
@@ -773,6 +774,7 @@ export function EditShiftDialog({
               <div className="flex gap-2">
                 <div className="relative">
                   <input
+                    ref={fileInputRef}
                     type="file"
                     multiple
                     onChange={handleFileUpload}

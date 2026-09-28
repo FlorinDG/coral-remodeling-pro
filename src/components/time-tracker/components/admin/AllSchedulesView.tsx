@@ -99,7 +99,7 @@ export function AllSchedulesView() {
             {allWorkers.map(worker => (
               <Card key={worker.user_id} className="bg-muted/20">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base">{employeeMap[worker.user_id] || worker.user_id}</CardTitle>
+                  <CardTitle className="text-base">{worker.full_name || worker.user_id}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   {worker.schedules.length === 0 ? (

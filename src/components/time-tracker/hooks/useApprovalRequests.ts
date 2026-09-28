@@ -71,7 +71,14 @@ export function useApprovalRequests() {
     fetchRequests();
   }, [fetchRequests]);
 
-  const createRequest = useCallback(async () => {
+  const createRequest = useCallback(async (
+    requestType?: string,
+    entityId?: string,
+    entityType?: string,
+    requestedBy?: string,
+    details?: any,
+    reason?: string
+  ) => {
     // Scaffold no-op
     return { data: null, error: null };
   }, []);

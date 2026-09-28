@@ -23,6 +23,8 @@ export function usePushNotifications() {
   return {
     isSubscribed,
     isSupported,
+    permission: 'default',
+    error: null,
     subscribe,
     unsubscribe,
     loading: false,

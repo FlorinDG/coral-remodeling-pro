@@ -11,6 +11,15 @@ export interface ScheduleAttachment {
   createdAt: string;
 }
 
+export interface ProjectAttachment {
+  id: string;
+  project_id: string;
+  file_name: string;
+  file_path: string;
+  file_type: string;
+  file_size: number | null;
+}
+
 export function useScheduleAttachments(shiftId?: string | null) {
   const [attachments, setAttachments] = useState<ScheduleAttachment[]>([]);
   const [loading, setLoading] = useState(false);

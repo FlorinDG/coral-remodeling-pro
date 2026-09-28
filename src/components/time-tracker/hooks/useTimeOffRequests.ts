@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { hrList, hrCreate } from '@/lib/hr-api';
 
 export interface TimeOffRequest {
@@ -20,14 +20,21 @@ export function useTimeOffRequests() {
   const [requests, setRequests] = useState<TimeOffRequest[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    hrList<TimeOffRequest>('time-off')
-      .then(data => {
-        setRequests(data);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
+  const fetchRequests = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await hrList<TimeOffRequest>('time-off');
+      setRequests(data);
+    } catch (err) {
+      console.error('[useTimeOffRequests] fetch error:', err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchRequests();
+  }, [fetchRequests]);
 
   const createRequest = async (data: {
     requestType: string;
@@ -56,10 +63,16 @@ export function useTimeOffRequests() {
     }
   };
 
+  const deleteRequest = async (id: string) => {
+    return cancelRequest(id);
+  };
+
   return {
     requests,
     loading,
     createRequest,
     cancelRequest,
+    deleteRequest,
+    refetch: fetchRequests,
   };
 }

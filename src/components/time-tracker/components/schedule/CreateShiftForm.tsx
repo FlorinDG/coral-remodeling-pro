@@ -471,7 +471,7 @@ export function CreateShiftForm({
 
         for (const shift of shiftsToCreate) {
           const result = await onCreateShift(shift);
-          const shiftId = result?.data?.id || (result && typeof result === 'object' && 'id' in result ? (result as any).id : null);
+          const shiftId = (result as any)?.data?.id || (result && typeof result === 'object' && 'id' in result ? (result as any).id : null);
           if (pendingAttachments.length > 0 && shiftId) await uploadAttachmentsForShift(shiftId);
           if (selectedTasks.length > 0 && shiftId) await assignTasksToShift(shiftId);
         }
@@ -526,7 +526,7 @@ export function CreateShiftForm({
 
         for (const shift of shiftsToCreate) {
           const result = await onCreateShift(shift);
-          const shiftId = result?.data?.id || (result && typeof result === 'object' && 'id' in result ? (result as any).id : null);
+          const shiftId = (result as any)?.data?.id || (result && typeof result === 'object' && 'id' in result ? (result as any).id : null);
           if (pendingAttachments.length > 0 && shiftId && scheduleType !== 'leave') {
             await uploadAttachmentsForShift(shiftId);
           }

@@ -189,7 +189,7 @@ export default function Schedule() {
                   <div className="flex-1">
                     <p className="text-xs text-muted-foreground">Date</p>
                     <p className="font-medium">
-                      {new Date(selectedShift.shift_date + 'T00:00:00').toLocaleDateString('en-US', {
+                      {new Date(selectedShift.shiftDate + 'T00:00:00').toLocaleDateString('en-US', {
                         weekday: 'long',
                         month: 'long',
                         day: 'numeric'
@@ -206,8 +206,7 @@ export default function Schedule() {
                   <div className="flex-1">
                     <p className="text-xs text-muted-foreground">Time</p>
                     <p className="font-medium">
-                      {/* @ts-expect-error SUPA-2: snake_case read (Supabase-era shape) */}
-                      {formatTime(selectedShift.shift_start)} - {formatTime(selectedShift.shift_end)}
+                      {formatTime(selectedShift.shiftStart)} - {formatTime(selectedShift.shiftEnd)}
                     </p>
                   </div>
                 </div>
@@ -286,9 +285,9 @@ export default function Schedule() {
                     className="w-full"
                     onClick={() => {
                       resetManualForm();
-                      setManualClockIn(selectedShift.shift_start || '09:00');
-                      setManualClockOut(selectedShift.shift_end || '17:00');
-                      setSelectedProjectId(selectedShift.project_id || '');
+                      setManualClockIn(selectedShift.shiftStart || '09:00');
+                      setManualClockOut(selectedShift.shiftEnd || '17:00');
+                      setSelectedProjectId(selectedShift.projectId || '');
                       setManualOpen(true);
                     }}
                   >
@@ -315,7 +314,7 @@ export default function Schedule() {
                 <div>
                   <Label className="text-xs text-muted-foreground">Date</Label>
                   <div className="font-medium mt-1">
-                    {new Date(selectedShift.shift_date + 'T00:00:00').toLocaleDateString('en-US', {
+                    {new Date(selectedShift.shiftDate + 'T00:00:00').toLocaleDateString('en-US', {
                       weekday: 'long',
                       month: 'long',
                       day: 'numeric'
@@ -456,8 +455,8 @@ export default function Schedule() {
                       if (!selectedShift || !user) return;
                       setSubmitting(true);
                       try {
-                        const clockInTime = new Date(`${selectedShift.shift_date}T${manualClockIn}`);
-                        const clockOutTime = new Date(`${selectedShift.shift_date}T${manualClockOut}`);
+                        const clockInTime = new Date(`${selectedShift.shiftDate}T${manualClockIn}`);
+                        const clockOutTime = new Date(`${selectedShift.shiftDate}T${manualClockOut}`);
                         
                         // Create clock entry with task description containing notes and break info
                         const taskDescription = [
@@ -466,7 +465,7 @@ export default function Schedule() {
                         ].filter(Boolean).join('\n');
 
                         const clockEntry = await hrApi.create('clock-entries', {
-                          userId: selectedShift.user_id,
+                          userId: selectedShift.userId,
                           shiftId: selectedShift.id,
                           clockInTime: clockInTime.toISOString(),
                           clockOutTime: clockOutTime.toISOString(),
@@ -510,9 +509,9 @@ export default function Schedule() {
                           'manual_hours',
                           clockEntry.id,
                           'clock_entry',
-                          selectedShift.user_id,
+                          selectedShift.userId,
                           { 
-                            date: selectedShift.shift_date, 
+                            date: selectedShift.shiftDate, 
                             clock_in: manualClockIn, 
                             clock_out: manualClockOut,
                             had_break: hadBreak,

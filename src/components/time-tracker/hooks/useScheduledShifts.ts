@@ -58,11 +58,47 @@ export interface ScheduledShift {
   projectName?: string;
   userName?: string;
   clockEntries?: any[];
+
+  // --- DECLARED BRIDGE (INC-1 / TD-5) ---
+  // Legacy snake_case aliases.
+  // EXIT CONDITION (TD-5): Removed ONLY when the last reader is converted in TD-4.
+  user_id?: string;
+  shift_date?: string;
+  shift_start?: string;
+  shift_end?: string;
+  shift_name?: string | null;
+  project_id?: string | null;
+  clock_entry_id?: string | null;
+  created_by?: string | null;
+  last_edited_by?: string | null;
+  created_at?: string;
+  updated_at?: string;
+  notion_page_id?: string | null;
 }
 
-/** Return shift as ScheduledShift */
+/**
+ * DECLARED BRIDGE — INC-1 (2026-09-28)
+ * Restores snake_case aliases for legacy shift readers across the 12 shift-consuming files
+ * currently carrying @ts-nocheck.
+ * 
+ * EXIT CONDITION (TD-5):
+ * This bridge is removed ONLY when the last reader is converted to camelCase in TD-4,
+ * verified via `grep "SUPA-2: .*shift_" src/` returning 0 hits.
+ */
 function addSnakeCase(s: ScheduledShift): ScheduledShift {
-  return s;
+  return {
+    ...s,
+    user_id: s.userId,
+    shift_date: s.shiftDate,
+    shift_start: s.shiftStart,
+    shift_end: s.shiftEnd,
+    shift_name: s.shiftName,
+    project_id: s.projectId,
+    created_at: s.createdAt,
+    created_by: s.createdBy,
+    last_edited_by: s.lastEditedBy,
+    updated_at: s.updatedAt,
+  };
 }
 
 export function useScheduledShifts() {

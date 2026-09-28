@@ -326,7 +326,7 @@ const eslintConfig = defineConfig([
 
       // These parse database ids. The binding is the truth — logicalKey reverse, lockedDbIds forward.
       // Do not add to this list. Its length is the KERN-7 metric, and it only falls.
-      // 28 grandfathered files:
+      // 27 grandfathered files:
       "src/app/*locale*/admin/database/*databaseId*/*pageId*/page.tsx",
       "src/app/*locale*/admin/settings/databases/*id*/page.tsx",
       "src/app/actions/global-databases.ts",
@@ -350,7 +350,6 @@ const eslintConfig = defineConfig([
       "src/components/time-tracker/components/TimesheetView.tsx",
       "src/components/time-tracker/components/schedule/CreateShiftForm.tsx",
       "src/components/time-tracker/components/schedule/EditShiftDialog.tsx",
-      "src/lib/databaseRoute.ts",
       "src/lib/invoices/due-date.ts",
       "src/lib/lockedDbUtils.ts",
       "src/lib/relations/resolve.ts",

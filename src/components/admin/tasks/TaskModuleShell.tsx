@@ -479,9 +479,9 @@ export default function TaskModuleShell() {
                             onUpdate={handleUpdate}
                             onDelete={handleDelete}
                             onOpenFullPage={(pageId) => {
-                                const route = getDatabaseRoute(db.id, pageId);
+                                const route = getDatabaseRoute(db || 'tasks', pageId);
                                 if (!route) {
-                                    toast.error(`Kan record niet openen: onbekende database (${db.id})`);
+                                    toast.error(`Kan record niet openen: onbekende database (${db?.name || 'tasks'})`);
                                     return;
                                 }
                                 router.push(route);

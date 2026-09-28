@@ -111,9 +111,9 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
         updatePageProperty(databaseId, pageId, prop.id, [...currentRelations, newPage.id]);
 
         // Navigate to the new page
-        const route = getDatabaseRoute(resolvedTargetDbId, newPage.id);
+        const route = getDatabaseRoute(targetDb, newPage.id);
         if (!route) {
-            toast.error(`Kan record niet openen: onbekende database (${resolvedTargetDbId})`);
+            toast.error(`Kan record niet openen: onbekende database (${targetDb?.name || resolvedTargetDbId})`);
             return;
         }
         router.push(`/${locale}${route}`);
@@ -552,8 +552,8 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
                                         >
                                             <button
                                                 onClick={() => {
-                                                    const route = getDatabaseRoute(lp.db.id, lp.page.id);
-                                                    if (!route) { toast.error(`Kan record niet openen: onbekende database (${lp.db.id})`); return; }
+                                                    const route = getDatabaseRoute(lp.db, lp.page.id);
+                                                    if (!route) { toast.error(`Kan record niet openen: onbekende database (${lp.db.name})`); return; }
                                                     router.push(`/${locale}${route}`);
                                                 }}
                                                 className="flex-1 flex items-center gap-2 min-w-0 text-left"
@@ -569,8 +569,8 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
                                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <button
                                                     onClick={() => {
-                                                        const route = getDatabaseRoute(lp.db.id, lp.page.id);
-                                                        if (!route) { toast.error(`Kan record niet openen: onbekende database (${lp.db.id})`); return; }
+                                                        const route = getDatabaseRoute(lp.db, lp.page.id);
+                                                        if (!route) { toast.error(`Kan record niet openen: onbekende database (${lp.db.name})`); return; }
                                                         router.push(`/${locale}${route}`);
                                                     }}
                                                     className="p-1 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-white/5 rounded-lg transition-colors"
@@ -615,8 +615,8 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
                             >
                                 <button
                                     onClick={() => {
-                                        const route = getDatabaseRoute(bl.db.id, bl.page.id);
-                                        if (!route) { toast.error(`Kan record niet openen: onbekende database (${bl.db.id})`); return; }
+                                        const route = getDatabaseRoute(bl.db, bl.page.id);
+                                        if (!route) { toast.error(`Kan record niet openen: onbekende database (${bl.db.name})`); return; }
                                         router.push(`/${locale}${route}`);
                                     }}
                                     className="flex-1 flex items-center gap-2 min-w-0 text-left"
@@ -631,8 +631,8 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
                                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                     <button
                                         onClick={() => {
-                                            const route = getDatabaseRoute(bl.db.id, bl.page.id);
-                                            if (!route) { toast.error(`Kan record niet openen: onbekende database (${bl.db.id})`); return; }
+                                            const route = getDatabaseRoute(bl.db, bl.page.id);
+                                            if (!route) { toast.error(`Kan record niet openen: onbekende database (${bl.db.name})`); return; }
                                             router.push(`/${locale}${route}`);
                                         }}
                                         className="p-1 text-neutral-400 hover:text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950/20 rounded-lg transition-colors"

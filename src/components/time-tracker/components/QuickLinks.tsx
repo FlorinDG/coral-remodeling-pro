@@ -1,4 +1,3 @@
-// @ts-nocheck
 "use client";
 import {
   Briefcase,
@@ -66,6 +65,7 @@ export function QuickLinks() {
     return !link.adminOnly || isAdmin;
   });
 
+  // @ts-expect-error TD: pre-existing type debt, unrelated to the shape
   const getLinkUrl = (linkObj) => {
     if (isWorkhub) {
       if (linkObj.id === 'timeoff') return '/workhub/leave';

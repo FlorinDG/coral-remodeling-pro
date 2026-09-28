@@ -1,6 +1,4 @@
-// @ts-nocheck
 "use client";
-// @ts-nocheck — Legacy component, progressive migration to camelCase
 import { useState, useRef, useEffect } from 'react';
 import { Loader2, Clock, MapPin, CalendarDays, FileUp, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -125,6 +123,7 @@ export function LateEntryCard() {
         clockInTime: `${date}T${clockIn}`,
         clockOutTime: `${date}T${clockOut}`,
         includeLocation,
+        // @ts-expect-error TD: pre-existing type debt, unrelated to the shape
         location,
         taskDescription,
         projectId,

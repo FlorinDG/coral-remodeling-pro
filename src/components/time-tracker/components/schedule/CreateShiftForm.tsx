@@ -232,9 +232,9 @@ export function CreateShiftForm({
       }
       try {
         const files = await listRecordFiles('project', projectId);
-        // @ts-expect-error SUPA-2-SEMANTIC: file_path → ShiftAttachment.url
         setProjectAttachments(files.map(f => ({
           id: f.id,
+          project_id: projectId,
           file_name: f.name,
           file_path: f.url,
           file_size: f.size,

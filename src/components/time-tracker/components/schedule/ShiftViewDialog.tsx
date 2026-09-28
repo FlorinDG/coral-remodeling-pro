@@ -193,14 +193,12 @@ export function ShiftViewDialog({
 
   // Check if shift is for today and can be clocked in
   const canClockIn = shift && 
-    // @ts-expect-error SUPA-2: snake_case read (Supabase-era shape)
-    isToday(parseISO(shift.shift_date)) && 
+    isToday(parseISO(shift.shiftDate)) && 
     !hasClockEntry && 
     !activeEntry &&
     shift.status !== 'Completed';
 
-  // @ts-expect-error SUPA-2: snake_case read (Supabase-era shape)
-  const isClockedIntoThisShift = activeEntry && activeEntry.shift_id === shift?.id;
+  const isClockedIntoThisShift = activeEntry && activeEntry.shiftId === shift?.id;
   const canClockOut = isClockedIntoThisShift;
 
   // Use the same timer hook as ClockButton
@@ -208,8 +206,7 @@ export function ShiftViewDialog({
 
   useEffect(() => {
     if (isClockedIntoThisShift && activeEntry) {
-      // @ts-expect-error SUPA-2: snake_case read (Supabase-era shape)
-      const clockInTime = new Date(activeEntry.clock_in_time);
+      const clockInTime = new Date(activeEntry.clockInTime);
       setStartTime(clockInTime);
       if (!isRunning) {
         startTimer(clockInTime);
@@ -384,13 +381,12 @@ export function ShiftViewDialog({
                 
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Date</span>
-                  {/* @ts-expect-error SUPA-2: snake_case read (Supabase-era shape) */}
-                  <span className="font-medium">{format(parseISO(shift.shift_date), 'EEEE, MMMM d, yyyy')}</span>
+                  <span className="font-medium">{format(parseISO(shift.shiftDate), 'EEEE, MMMM d, yyyy')}</span>
                 </div>
                 
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Scheduled Time</span>
-                  <span className="font-medium">{shift.shift_start} - {shift.shift_end}</span>
+                  <span className="font-medium">{shift.shiftStart} - {shift.shiftEnd}</span>
                 </div>
                 
                 {project && (
@@ -554,10 +550,13 @@ export function ShiftViewDialog({
               ) : (
                 <div className="space-y-2">
                   {attachments.map(attachment => {
-                    // @ts-expect-error SUPA-2-SEMANTIC: file_path → ShiftAttachment.url
-                    const Icon = getFileIcon(attachment.file_type);
-                    // @ts-expect-error SUPA-2-SEMANTIC: file_path → ShiftAttachment.url
-                    const isImage = attachment.file_type.startsWith('image/');
+                    const fileType = attachment.type || attachment.file_type || '';
+                    const Icon = getFileIcon(fileType);
+                    const isImage = fileType.startsWith('image/');
+                    const fileName = attachment.name || attachment.file_name || '';
+                    const filePath = attachment.url || attachment.file_path || '';
+                    const fileSize = attachment.size || attachment.file_size;
+                    const fromProject = Boolean(attachment.sourceProjectId || attachment.source_project_id);
                     
                     return (
                       <div
@@ -566,10 +565,8 @@ export function ShiftViewDialog({
                       >
                         {isImage ? (
                           <AttachmentImage
-                            // @ts-expect-error SUPA-2-SEMANTIC: file_path → ShiftAttachment.url
-                            filePath={attachment.file_path}
-                            // @ts-expect-error SUPA-2-SEMANTIC: file_path → ShiftAttachment.url
-                            alt={attachment.file_name}
+                            filePath={filePath}
+                            alt={fileName}
                             className="h-10 w-10 rounded object-cover"
                             fallback={
                               <div className="h-10 w-10 rounded bg-muted flex items-center justify-center">
@@ -583,23 +580,18 @@ export function ShiftViewDialog({
                           </div>
                         )}
                         <div className="flex-1 min-w-0">
-                          {/* @ts-expect-error SUPA-2-SEMANTIC: file_path → ShiftAttachment.url */}
-                          <p className="text-sm font-medium truncate">{attachment.file_name}</p>
+                          <p className="text-sm font-medium truncate">{fileName}</p>
                           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            {/* @ts-expect-error SUPA-2-SEMANTIC: file_path → ShiftAttachment.url */}
-                            {attachment.file_size && (
-                              // @ts-expect-error SUPA-2-SEMANTIC: file_path → ShiftAttachment.url
-                              <span>{formatFileSize(attachment.file_size)}</span>
+                            {fileSize && (
+                              <span>{formatFileSize(fileSize)}</span>
                             )}
-                            {/* @ts-expect-error SUPA-2-SEMANTIC: file_path → ShiftAttachment.url */}
-                            {attachment.source_project_id && (
+                            {fromProject && (
                               <Badge variant="outline" className="text-xs">From Project</Badge>
                             )}
                           </div>
                         </div>
                         <AttachmentLink
-                          // @ts-expect-error SUPA-2-SEMANTIC: file_path → ShiftAttachment.url
-                          filePath={attachment.file_path}
+                          filePath={filePath}
                           className="inline-flex items-center justify-center h-8 w-8 rounded-md hover:bg-accent hover:text-accent-foreground"
                         >
                           <Download className="h-4 w-4" />

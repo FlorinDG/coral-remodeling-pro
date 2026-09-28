@@ -1,6 +1,4 @@
-// @ts-nocheck
 "use client";
-// @ts-nocheck — Legacy component, progressive migration to camelCase
 import { useState } from 'react';
 import { Calendar, Clock, Loader2, Plus, Trash2, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -187,6 +185,7 @@ function WorkerScheduleCard({
     <div className="border rounded-lg p-4 space-y-3">
       <div className="flex items-center gap-2">
         <User className="h-5 w-5 text-muted-foreground" />
+        {/* @ts-expect-error SUPA-2: snake_case read (Supabase-era shape) */}
         <h3 className="font-semibold">{worker.full_name}</h3>
       </div>
       {worker.schedules.length === 0 ? (
@@ -200,20 +199,25 @@ function WorkerScheduleCard({
             >
               <div className="flex items-center gap-4">
                 <span className="font-medium w-24">
+                  {/* @ts-expect-error SUPA-2: snake_case read (Supabase-era shape) */}
                   {DAY_NAMES[schedule.day_of_week]}
                 </span>
                 <div className="flex items-center gap-1 text-sm text-muted-foreground">
                   <Clock className="h-3 w-3" />
+                  {/* @ts-expect-error SUPA-2: snake_case read (Supabase-era shape) */}
                   {schedule.shift_start.slice(0, 5)} - {schedule.shift_end.slice(0, 5)}
                 </div>
               </div>
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2">
                   <Switch
+                    // @ts-expect-error SUPA-2: snake_case read (Supabase-era shape)
                     checked={schedule.is_active}
+                    // @ts-expect-error SUPA-2: snake_case read (Supabase-era shape)
                     onCheckedChange={() => onToggleActive(schedule.id, schedule.is_active)}
                   />
                   <span className="text-xs text-muted-foreground">
+                    {/* @ts-expect-error SUPA-2: snake_case read (Supabase-era shape) */}
                     {schedule.is_active ? 'Active' : 'Paused'}
                   </span>
                 </div>

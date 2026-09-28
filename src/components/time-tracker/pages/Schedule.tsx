@@ -1,6 +1,4 @@
-// @ts-nocheck
 "use client";
-// @ts-nocheck — Legacy component, progressive migration to camelCase
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from "@/i18n/routing";
 
@@ -208,6 +206,7 @@ export default function Schedule() {
                   <div className="flex-1">
                     <p className="text-xs text-muted-foreground">Time</p>
                     <p className="font-medium">
+                      {/* @ts-expect-error SUPA-2: snake_case read (Supabase-era shape) */}
                       {formatTime(selectedShift.shift_start)} - {formatTime(selectedShift.shift_end)}
                     </p>
                   </div>

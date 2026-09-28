@@ -1,4 +1,3 @@
-// @ts-nocheck
 "use client";
 import { useMemo } from 'react';
 import {
@@ -89,6 +88,7 @@ export function DailySummary() {
               <p className="font-semibold text-foreground">No shift scheduled today</p>
               <p className="text-sm text-muted-foreground">
                 {tomorrowShift
+                  // @ts-expect-error SUPA-2: snake_case read (Supabase-era shape)
                   ? `Next shift: Tomorrow at ${formatTime12(tomorrowShift.shift_start)}`
                   : 'Check your schedule for upcoming shifts'}
               </p>
@@ -106,6 +106,7 @@ export function DailySummary() {
     );
   }
 
+  // @ts-expect-error SUPA-2: snake_case read (Supabase-era shape)
   const duration = formatShiftDuration(todayShift.shift_start, todayShift.shift_end);
   const hasProject = !!todayShift.project;
   const hasAddress = !!todayShift.project?.address;
@@ -157,6 +158,7 @@ export function DailySummary() {
             <div className="flex-1">
               <p className="text-sm text-muted-foreground">Shift</p>
               <p className="font-semibold text-foreground">
+                {/* @ts-expect-error SUPA-2: snake_case read (Supabase-era shape) */}
                 {formatTime12(todayShift.shift_start)} – {formatTime12(todayShift.shift_end)}
               </p>
             </div>
@@ -173,6 +175,7 @@ export function DailySummary() {
               </div>
               <div className="flex-1">
                 <p className="text-sm text-muted-foreground">Project</p>
+                {/* @ts-expect-error TD: pre-existing type debt, unrelated to the shape */}
                 <p className="font-semibold text-foreground">{todayShift.project.name}</p>
               </div>
             </div>
@@ -265,6 +268,7 @@ export function DailySummary() {
           <div className="border-t border-border px-6 py-3 flex items-center justify-between bg-muted/20">
             <div className="text-xs text-muted-foreground">
               <span className="font-semibold text-foreground">Tomorrow:</span>{' '}
+              {/* @ts-expect-error SUPA-2: snake_case read (Supabase-era shape) */}
               {formatTime12(tomorrowShift.shift_start)} – {formatTime12(tomorrowShift.shift_end)}
               {tomorrowShift.project?.name && ` · ${tomorrowShift.project.name}`}
             </div>

@@ -13,7 +13,7 @@ export async function POST(req: Request) {
         const tenantId = (session!.user as any).tenantId;
 
         const body = await req.json();
-        const { invoiceId, blocks, client, invoiceTitle, betreft, invoiceDate, dueDate, isCreditNote, parentInvoiceId, structuredComm } = body;
+        const { invoiceId, blocks, client, invoiceTitle, betreft, invoiceDate, dueDate, isCreditNote, parentInvoiceId, parentInvoiceNumber: bodyParentInvoiceNumber, structuredComm } = body;
 
         // 1. Fetch Tenant (Sender) details
         const tenant = await prisma.tenant.findUnique({
@@ -31,11 +31,19 @@ export async function POST(req: Request) {
         }
 
         // Fetch original invoice number if Credit Note
-        let parentInvoiceNumber = undefined;
+        let parentInvoiceNumber = bodyParentInvoiceNumber || undefined;
         const resolvedParentInvoiceId = Array.isArray(parentInvoiceId) ? parentInvoiceId[0] : parentInvoiceId;
-        if (isCreditNote && resolvedParentInvoiceId) {
+        if (isCreditNote && !parentInvoiceNumber && resolvedParentInvoiceId) {
             const parent = await prisma.invoice.findUnique({ where: { id: resolvedParentInvoiceId } });
-            if (parent) parentInvoiceNumber = parent.invoiceNumber;
+            if (parent?.invoiceNumber) {
+                parentInvoiceNumber = parent.invoiceNumber;
+            } else {
+                const parentPage = await prisma.globalPage.findUnique({ where: { id: resolvedParentInvoiceId } });
+                if (parentPage) {
+                    const props = (parentPage.properties as Record<string, any>) || {};
+                    parentInvoiceNumber = props.title || props.invoiceNumber || props.invoice_number;
+                }
+            }
         }
 
         const payloadParams = {

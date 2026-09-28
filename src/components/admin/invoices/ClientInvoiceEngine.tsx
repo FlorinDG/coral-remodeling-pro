@@ -1111,6 +1111,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                     structuredComm: invoice?.properties?.['structuredComm'] as string | undefined,
                     isCreditNote,
                     parentInvoiceId,
+                    parentInvoiceNumber: parentInvoiceTitle ? String(parentInvoiceTitle) : undefined,
                     peppolScheme: peppolResolvedScheme,
                     client: {
                         firstName: selectedClient.firstName,
@@ -1208,6 +1209,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                     structuredComm: invoice?.properties?.['structuredComm'] as string | undefined,
                     isCreditNote,
                     parentInvoiceId,
+                    parentInvoiceNumber: parentInvoiceTitle ? String(parentInvoiceTitle) : undefined,
                     peppolScheme: peppolResolvedScheme,
                     client: {
                         firstName: selectedClient.firstName,

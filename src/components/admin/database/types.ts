@@ -1,4 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import type { SystemDatabaseRole } from '@/lib/kernel/system-databases';
+
 export type PropertyType =
     | 'text'
     | 'number'
@@ -218,6 +220,7 @@ export interface Database {
     description: string | null;
     icon?: string | null;
     coverImage?: string | null;
+    logicalKey?: SystemDatabaseRole | null;
     properties: Property[];
     pages: Page[]; // In a real DB, pages would be a separate table queried by databaseId
     views: DatabaseView[]; // Saved views for this database

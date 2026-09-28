@@ -2,6 +2,7 @@
 
 import prisma from '@/lib/prisma';
 import { Database, Page, Property, DatabaseView, Block, PageIndexEntry } from '@/components/admin/database/types';
+import type { SystemDatabaseRole } from '@/lib/kernel/system-databases';
 import { revalidatePath } from 'next/cache';
 
 import { auth } from '@/auth';
@@ -114,6 +115,7 @@ export async function getGlobalDatabases(): Promise<Database[]> {
             description: db.description || null,
             icon: db.icon || null,
             coverImage: db.coverImage || null,
+            logicalKey: (db.logicalKey as SystemDatabaseRole) || null,
             isTemplate: db.isTemplate,
             folderId: db.folderId || undefined,
             properties: (db.properties as unknown as Property[]) || [],
@@ -153,6 +155,7 @@ export async function getGlobalDatabaseSchemas(): Promise<Database[]> {
             description: db.description || null,
             icon: db.icon || null,
             coverImage: db.coverImage || null,
+            logicalKey: (db.logicalKey as SystemDatabaseRole) || null,
             isTemplate: db.isTemplate,
             folderId: db.folderId || undefined,
             properties: (db.properties as unknown as Property[]) || [],

@@ -8,6 +8,7 @@ export interface Task {
     id: string;
     /** GlobalPage ID of the linked project in db-tasks (prop-task-project relation) */
     projectId: string | null;
+    project?: { id?: string; name: string } | null;
     title: string;
     description: string | null;
     /** ERP task status option ID, e.g. 'opt-todo', 'opt-in-prog', 'opt-done'.

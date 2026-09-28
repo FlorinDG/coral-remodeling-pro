@@ -417,13 +417,11 @@ export default function Performance() {
                       <TableCell className="font-medium">{st.task?.title}</TableCell>
                       <TableCell>
                         <Badge variant="outline">
-                          {/* @ts-expect-error TD: pre-existing type debt, unrelated to the shape */}
                           {st.task?.project?.name}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-muted-foreground">
-                        {/* @ts-expect-error SUPA-2: snake_case read (Supabase-era shape) */}
-                        {st.completed_at ? format(parseISO(st.completed_at), 'MMM d, yyyy') : '-'}
+                        {st.completedAt ? format(parseISO(st.completedAt), 'MMM d, yyyy') : '-'}
                       </TableCell>
                     </TableRow>
                   ))}

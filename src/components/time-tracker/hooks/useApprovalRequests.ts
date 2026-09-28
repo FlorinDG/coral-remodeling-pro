@@ -1,7 +1,7 @@
 "use client";
 import { useState, useCallback, useEffect } from 'react';
 import { useUserRoles } from '@/components/time-tracker/hooks/useUserRoles';
-import { hrList, hrUpdate } from '@/lib/hr-api';
+import { hrList, hrCreate, hrUpdate } from '@/lib/hr-api';
 
 export interface ApprovalRequest {
   id: string;
@@ -79,9 +79,24 @@ export function useApprovalRequests() {
     details?: any,
     reason?: string
   ) => {
-    // Scaffold no-op
-    return { data: null, error: null };
-  }, []);
+    try {
+      const payload = {
+        requestType: requestType || 'general',
+        entityType: entityType || 'general',
+        userId: requestedBy || userId,
+        requestedBy: requestedBy || userId,
+        requestData: { ...(details || {}), entityId },
+        notes: reason || null,
+        status: 'pending',
+      };
+      const result = await hrCreate<any>('approval-requests', payload);
+      await fetchRequests();
+      return { data: result, error: null };
+    } catch (err: any) {
+      console.error('[ApprovalRequests] error creating request', err);
+      return { data: null, error: err };
+    }
+  }, [userId, fetchRequests]);
 
   const approveRequest = useCallback(async (requestId: string) => {
     if (!isAdmin) return { error: new Error('Not authorized') };

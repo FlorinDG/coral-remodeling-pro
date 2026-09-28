@@ -26,6 +26,7 @@ const resend = new Resend(process.env.RESEND_API_KEY || 're_dummy_fallback');
 const ENTITY_MAP: Record<string, string> = {
     'clock-entries':    'clockEntry',
     'shifts':           'scheduledShift',
+    'scheduled-shifts': 'scheduledShift',
     'shift-templates':  'shiftTemplate',
     'teams':            'hrTeam',
     'team-members':     'hrTeamMember',
@@ -427,7 +428,7 @@ export async function POST(
     }
 
     // Auto-inject userId if not provided (only for entities that have userId)
-    const entitiesWithUserId = ['clock-entries', 'shifts', 'shift-templates', 'worker-schedules', 'time-off'];
+    const entitiesWithUserId = ['clock-entries', 'shifts', 'scheduled-shifts', 'shift-templates', 'worker-schedules', 'time-off'];
     if (!data.userId && entitiesWithUserId.includes(entity)) {
         data.userId = ctx.userId;
     }
@@ -682,41 +683,66 @@ export async function PATCH(
         }
 
         // ── PATCH Automations ──────────────────────────────────────────
-        // Approval of manual hours -> creates actual ClockEntry
-        if (entity === 'approval-requests' && data.status === 'approved') {
+        // Approval / rejection of clock entry requests (late_entry, manual_hours)
+        if (entity === 'approval-requests' && (data.status === 'approved' || data.status === 'rejected')) {
             try {
                 const approval = record as any;
-                if (approval.entityType === 'clock_entry' && approval.requestType === 'manual_hours') {
-                    const reqData = approval.requestData as any || {};
-                    const entry = await prisma.clockEntry.create({
-                        data: {
-                            tenantId: approval.tenantId,
-                            userId: approval.userId,
-                            clockInTime: new Date(reqData.clockInTime),
-                            clockOutTime: new Date(reqData.clockOutTime),
-                            taskDescription: reqData.taskDescription || '',
-                            
-                            approvalStatus: 'approved',
-                            approvedBy: approval.reviewedBy || ctx.userId,
-                            approvedAt: approval.reviewedAt ? new Date(approval.reviewedAt) : new Date()
-                        }
-                    });
-                    if (reqData.projectId) {
-                        await prisma.scheduledShift.create({
+                if (approval.entityType === 'clock_entry') {
+                    const reqData = (approval.requestData as any) || {};
+                    const existingClockEntryId = reqData.id || reqData.clockEntryId || reqData.entityId;
+
+                    if (existingClockEntryId) {
+                        // Clock entry was created at submit time (late_entry) — update approval status
+                        await prisma.clockEntry.updateMany({
+                            where: { id: existingClockEntryId, tenantId: ctx.tenantId },
+                            data: {
+                                requiresApproval: false,
+                                approvalStatus: data.status,
+                                approvedBy: approval.reviewedBy || ctx.userId,
+                                approvedAt: approval.reviewedAt ? new Date(approval.reviewedAt) : new Date(),
+                            }
+                        });
+                    } else if (data.status === 'approved' && approval.requestType === 'manual_hours') {
+                        // Legacy manual hours without pre-existing clock entry
+                        const entry = await prisma.clockEntry.create({
                             data: {
                                 tenantId: approval.tenantId,
                                 userId: approval.userId,
-                                projectId: reqData.projectId,
-                                id: entry.id,
-                                shiftStart: new Date(reqData.clockInTime).toISOString(), shiftDate: new Date(reqData.clockInTime).toISOString(),
-                                shiftEnd: new Date(reqData.clockOutTime).toISOString(),
-                                status: 'completed',
+                                clockInTime: new Date(reqData.clockInTime),
+                                clockOutTime: new Date(reqData.clockOutTime),
+                                taskDescription: reqData.taskDescription || '',
+                                requiresApproval: false,
+                                approvalStatus: 'approved',
+                                approvedBy: approval.reviewedBy || ctx.userId,
+                                approvedAt: approval.reviewedAt ? new Date(approval.reviewedAt) : new Date(),
+                                projectId: reqData.projectId || null,
                             }
                         });
+                        if (reqData.projectId) {
+                            const shiftDate = new Date(reqData.clockInTime).toISOString().split('T')[0];
+                            const shiftStart = new Date(reqData.clockInTime).toISOString().split('T')[1].slice(0, 5);
+                            const shiftEnd = new Date(reqData.clockOutTime).toISOString().split('T')[1].slice(0, 5);
+                            const shift = await prisma.scheduledShift.create({
+                                data: {
+                                    tenantId: approval.tenantId,
+                                    userId: approval.userId,
+                                    projectId: reqData.projectId,
+                                    shiftDate,
+                                    shiftStart,
+                                    shiftEnd,
+                                    status: 'completed',
+                                    createdBy: approval.reviewedBy || ctx.userId,
+                                }
+                            });
+                            await prisma.clockEntry.update({
+                                where: { id: entry.id },
+                                data: { shiftId: shift.id }
+                            });
+                        }
                     }
                 }
             } catch (err) {
-                console.error("Failed to process approved manual hours request:", err);
+                console.error("Failed to process approval request status change:", err);
             }
         }
 

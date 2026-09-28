@@ -237,6 +237,26 @@ export async function submitLateEntry(params: {
     const { targetUserId, clockInTime, clockOutTime, includeLocation, location, taskDescription, projectId, taskId, filesData } = params;
 
     try {
+        let shiftId: string | null = null;
+        if (projectId) {
+            const shiftDate = new Date(clockInTime).toISOString().split('T')[0];
+            const shiftStart = new Date(clockInTime).toISOString().split('T')[1].slice(0, 5);
+            const shiftEnd = new Date(clockOutTime).toISOString().split('T')[1].slice(0, 5);
+            const shift = await prisma.scheduledShift.create({
+                data: {
+                    tenantId,
+                    userId: targetUserId,
+                    projectId,
+                    shiftDate,
+                    shiftStart,
+                    shiftEnd,
+                    status: 'completed',
+                    createdBy: session.user.id,
+                }
+            });
+            shiftId = shift.id;
+        }
+
         const clockEntry = await prisma.clockEntry.create({
             data: {
                 tenantId,
@@ -244,13 +264,15 @@ export async function submitLateEntry(params: {
                 clockInTime: new Date(clockInTime),
                 clockOutTime: new Date(clockOutTime),
                 taskDescription,
+                projectId: projectId || null,
+                shiftId: shiftId,
                 requiresApproval: true,
                 approvalStatus: 'pending',
+                source: 'late_entry',
                 clockInLatitude: location?.lat || null,
                 clockInLongitude: location?.lng || null,
                 clockOutLatitude: location?.lat || null,
                 clockOutLongitude: location?.lng || null,
-                shiftId: projectId, // Use projectId temporarily or ignore if manual doesn't link to shift
                 photos: filesData || null
             }
         });
@@ -261,9 +283,12 @@ export async function submitLateEntry(params: {
                 userId: targetUserId,
                 requestedBy: session.user.id,
                 entityType: 'clock_entry',
-                requestType: 'manual_hours',
+                requestType: 'late_entry',
                 requestData: {
                     id: clockEntry.id,
+                    clockEntryId: clockEntry.id,
+                    entityId: clockEntry.id,
+                    shiftId,
                     clockInTime,
                     clockOutTime,
                     taskDescription,

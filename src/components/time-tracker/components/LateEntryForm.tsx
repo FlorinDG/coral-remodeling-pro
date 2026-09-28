@@ -69,7 +69,22 @@ export function LateEntryForm({ open, onClose }: LateEntryFormProps) {
     setLoading(true);
 
     try {
-      // Create clock entry via HR API
+      // 1. If project selected, create completed shift first so clock entry links to it
+      let shiftId: string | null = null;
+      if (projectId) {
+        const shift = await hrCreate<any>('shifts', {
+          userId: user.id,
+          projectId: projectId,
+          shiftDate: date,
+          shiftStart: clockIn,
+          shiftEnd: clockOut,
+          status: 'Completed',
+          createdBy: user.id,
+        });
+        shiftId = shift?.id || null;
+      }
+
+      // 2. Create clock entry via HR API with pending approval and relational link to shift
       const clockInTime = new Date(`${date}T${clockIn}`);
       const clockOutTime = new Date(`${date}T${clockOut}`);
 
@@ -82,26 +97,17 @@ export function LateEntryForm({ open, onClose }: LateEntryFormProps) {
         clockOutLatitude: includeLocation ? location?.latitude : null,
         clockOutLongitude: includeLocation ? location?.longitude : null,
         taskDescription: taskDescription || null,
+        projectId: projectId || null,
+        shiftId: shiftId,
+        requiresApproval: true,
+        approvalStatus: 'pending',
+        source: 'late_entry',
       });
 
       if (!clockEntry?.id) throw new Error('Failed to create clock entry');
 
-      // If project selected, create a completed shift linked to clock entry
-      if (projectId) {
-        await hrCreate('scheduled-shifts', {
-          userId: user.id,
-          projectId: projectId,
-          shiftDate: date,
-          shiftStart: clockIn,
-          shiftEnd: clockOut,
-          status: 'Completed',
-          clockEntryId: clockEntry.id,
-          createdBy: user.id,
-        });
-      }
-
-      // Create approval request
-      await createRequest(
+      // 3. Create approval request
+      const approvalResult = await createRequest(
         'late_entry',
         clockEntry.id,
         'clock_entry',
@@ -112,9 +118,15 @@ export function LateEntryForm({ open, onClose }: LateEntryFormProps) {
           clock_out: clockOut,
           project_id: projectId || null,
           task_description: taskDescription || null,
+          clockEntryId: clockEntry.id,
+          shiftId: shiftId,
         },
         'Late timesheet entry submission'
       );
+
+      if (approvalResult?.error) {
+        throw new Error(approvalResult.error.message || 'Failed to create approval request');
+      }
 
       toast.success('Late entry submitted for approval');
       onClose();

@@ -326,12 +326,11 @@ const eslintConfig = defineConfig([
 
       // These parse database ids. The binding is the truth — logicalKey reverse, lockedDbIds forward.
       // Do not add to this list. Its length is the KERN-7 metric, and it only falls.
-      // 27 grandfathered files:
+      // 26 grandfathered files:
       "src/app/*locale*/admin/database/*databaseId*/*pageId*/page.tsx",
       "src/app/*locale*/admin/settings/databases/*id*/page.tsx",
       "src/app/actions/global-databases.ts",
       "src/app/actions/internal-projects.ts",
-      "src/app/actions/pages.ts",
       "src/app/api/admin/schema-cleanup/route.ts",
       "src/app/api/scan/route.ts",
       "src/components/admin/database/DatabaseClone.tsx",

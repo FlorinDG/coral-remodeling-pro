@@ -6,18 +6,9 @@ import { v4 as uuidv4 } from 'uuid';
 import { Prisma } from '@prisma/client';
 import { Page, PropertyValue } from '@/components/admin/database/types';
 import { generateOGM } from '@/lib/ogm';
-import { isSystemDatabase } from '@/lib/systemDatabases';
-import { getLockedDbId } from '@/lib/lockedDbUtils';
 import { checkExportLock } from '@/lib/records/export-lock';
-import { DB_ID_MODULE_MAP } from '@/lib/kernel/system-databases';
-
-
-function requiredModuleForDb(databaseId: string): string | null {
-    for (const [prefix, module] of DB_ID_MODULE_MAP) {
-        if (databaseId === prefix || databaseId.startsWith(prefix + '-')) return module;
-    }
-    return null; // Non-locked DBs (projects, articles, etc.) — no module gate
-}
+import { SYSTEM_DATABASES, BASE_TO_KEY, SystemDatabaseRole } from '@/lib/kernel/system-databases';
+import { systemDatabaseId } from '@/lib/data/system-databases';
 
 /**
  * Server-first page creation.
@@ -33,16 +24,54 @@ export async function createPageServerFirst(
     const tenantId = session?.user?.tenantId;
     if (!tenantId) return { success: false, error: 'Not authenticated' };
 
+    // Resolve role and canonical databaseId
+    let role: SystemDatabaseRole | null = null;
+    let resolvedDbId = databaseId;
+
+    if (databaseId in SYSTEM_DATABASES) {
+        role = databaseId as SystemDatabaseRole;
+    } else if (databaseId in BASE_TO_KEY) {
+        role = BASE_TO_KEY[databaseId];
+    } else {
+        const existingDb = await prisma.globalDatabase.findFirst({
+            where: { id: databaseId, tenantId },
+            select: { id: true, logicalKey: true },
+        });
+        if (existingDb) {
+            resolvedDbId = existingDb.id;
+            role = (existingDb.logicalKey as SystemDatabaseRole) || null;
+        } else {
+            const tenant = await prisma.tenant.findUnique({
+                where: { id: tenantId },
+                select: { lockedDbIds: true }
+            });
+            const locked = (tenant?.lockedDbIds as Record<string, string> | null) || {};
+            const entry = Object.entries(locked).find(([, id]) => id === databaseId);
+            if (entry) {
+                role = entry[0] as SystemDatabaseRole;
+                resolvedDbId = entry[1];
+            }
+        }
+    }
+
+    if (role && resolvedDbId === databaseId) {
+        try {
+            resolvedDbId = await systemDatabaseId(tenantId, role);
+        } catch {
+            // Keep resolvedDbId as databaseId if not bound
+        }
+    }
+
     // Module-level authorization — enforced server-side regardless of UI state.
-    // A FREE tenant calling this directly for a INVOICING/CRM database gets denied.
-    const requiredModule = requiredModuleForDb(databaseId);
+    // A FREE tenant calling this directly for an INVOICING/CRM database gets denied.
+    const requiredModule = role ? SYSTEM_DATABASES[role]?.module : null;
     if (requiredModule) {
         const tenant = await prisma.tenant.findUnique({
             where: { id: tenantId },
             select: { activeModules: true, planType: true },
         });
-        const role = session?.user?.role;
-        const isSuperadmin = role ? ['SUPERADMIN', 'PLATFORM_ADMIN'].includes(role) : false;
+        const sessionRole = session?.user?.role;
+        const isSuperadmin = sessionRole ? ['SUPERADMIN', 'PLATFORM_ADMIN'].includes(sessionRole) : false;
         if (!isSuperadmin && !tenant?.activeModules.includes(requiredModule)) {
             return {
                 success: false,
@@ -52,18 +81,6 @@ export async function createPageServerFirst(
     }
 
     try {
-        // SCHEMA-1a: For system databases, resolve to the tenant's canonical ID
-        // to prevent duplicate DB creation with mismatched IDs.
-        let resolvedDbId = databaseId;
-        if (isSystemDatabase(databaseId)) {
-            const tenant = await prisma.tenant.findUnique({
-                where: { id: tenantId },
-                select: { lockedDbIds: true },
-            });
-            const lockedDbIds = (tenant?.lockedDbIds as Record<string, string>) || {};
-            resolvedDbId = getLockedDbId(databaseId, lockedDbIds);
-        }
-
         // Ensure parent DB exists — upsert a stub if it's a first-session locked DB
         const existingDb = await prisma.globalDatabase.findUnique({
             where: { id: resolvedDbId },
@@ -80,6 +97,7 @@ export async function createPageServerFirst(
                 data: {
                     id: resolvedDbId,
                     tenantId,
+                    logicalKey: role,
                     name: resolvedDbId,
                     properties: [],
                     views: [],
@@ -97,7 +115,7 @@ export async function createPageServerFirst(
         const pageId = customId || uuidv4();
 
         // --- OGM Generation for Invoices ---
-        if (databaseId.startsWith('db-invoices') && !properties['structuredComm']) {
+        if (role === 'invoices' && !properties['structuredComm']) {
             properties['structuredComm'] = generateOGM(properties['title'] as string);
         }
 
@@ -135,7 +153,7 @@ export async function createPageServerFirst(
         };
 
         // --- Matching Logic for Incoming Payments ---
-        if (databaseId.startsWith('db-payments-in')) {
+        if (role === 'payments-in') {
             await handlePaymentMatching(tenantId, page);
         }
 
@@ -163,7 +181,7 @@ export async function updatePageServerFirst(
         // Auth: confirm the page's DB belongs to this tenant
         const existing = await prisma.globalPage.findUnique({
             where: { id: pageId },
-            include: { database: { select: { tenantId: true, properties: true } } }
+            include: { database: { select: { tenantId: true, properties: true, logicalKey: true } } }
         });
 
         if (!existing) return { success: false, error: 'Page not found' };
@@ -206,10 +224,12 @@ export async function updatePageServerFirst(
             }
         });
 
+        const role = (existing.database.logicalKey as SystemDatabaseRole) || null;
+
         // Automation Trigger: If Quote status changed to ACCEPTED, create Project
         const oldStatus = (existing.properties as Record<string, unknown>)?.status;
         const newStatus = (properties as Record<string, unknown>)?.status;
-        const isQuoteDb = existing.databaseId.startsWith('db-quotations');
+        const isQuoteDb = role === 'quotations';
 
         if (isQuoteDb && oldStatus !== newStatus && (newStatus === 'opt-accepted' || newStatus === 'ACCEPTED')) {
             try {
@@ -234,7 +254,7 @@ export async function updatePageServerFirst(
         };
 
         // --- Matching Logic for Incoming Payments ---
-        if (existing.databaseId.startsWith('db-payments-in')) {
+        if (role === 'payments-in') {
             await handlePaymentMatching(tenantId, page);
         }
 
@@ -265,8 +285,7 @@ async function handlePaymentMatching(tenantId: string, paymentPage: Page) {
 
         const allInvoices = await prisma.globalPage.findMany({
             where: {
-                database: { tenantId },
-                databaseId: { startsWith: 'db-invoices' },
+                database: { tenantId, logicalKey: 'invoices' },
             }
         });
 
@@ -330,8 +349,7 @@ async function recalculateInvoiceStatus(tenantId: string, invoiceId: string) {
     // Find all payments for this invoice
     const allPaymentsIn = await prisma.globalPage.findMany({
         where: {
-            database: { tenantId },
-            databaseId: { startsWith: 'db-payments-in' },
+            database: { tenantId, logicalKey: 'payments-in' },
         }
     });
 

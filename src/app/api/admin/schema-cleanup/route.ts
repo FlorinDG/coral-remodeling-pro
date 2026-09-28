@@ -14,9 +14,8 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { auth } from '@/auth';
 import { PLATFORM_ADMIN_ROLES } from '@/lib/roles';
-import { getBaseDbId, isSystemDatabase } from '@/lib/systemDatabases';
 import { provisionLockedDatabases } from '@/lib/provisionTenantDbs';
-import { BASE_TO_KEY } from '@/lib/lockedDbUtils';
+import { SYSTEM_DATABASES, SYSTEM_DATABASE_ROLES, SystemDatabaseRole, BASE_TO_KEY } from '@/lib/kernel/system-databases';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,6 +23,7 @@ export const dynamic = 'force-dynamic';
 const GARBAGE_NAMES = ['New Workspace', 'New Database'];
 
 interface DuplicateGroup {
+    role: SystemDatabaseRole;
     basePrefix: string;
     canonical: { id: string; name: string; pageCount: number };
     duplicates: { id: string; name: string; pageCount: number; pagesToMigrate: number }[];
@@ -93,6 +93,7 @@ async function buildReport(): Promise<FullReport> {
             where: { tenantId: tenant.id },
             select: {
                 id: true,
+                logicalKey: true,
                 name: true,
                 _count: { select: { pages: true } },
             },
@@ -116,16 +117,16 @@ async function buildReport(): Promise<FullReport> {
 
         // ── 1. Classify databases ──
 
-        // Group system DBs by base prefix
-        const systemGroups = new Map<string, typeof dbs>();
+        // Group system DBs by role
+        const systemGroups = new Map<SystemDatabaseRole, typeof dbs>();
         const garbageCandidates: typeof dbs = [];
 
         for (const db of dbs) {
-            if (isSystemDatabase(db.id)) {
-                const base = getBaseDbId(db.id);
-                const group = systemGroups.get(base) || [];
+            const role = (db.logicalKey as SystemDatabaseRole) || (db.id in BASE_TO_KEY ? BASE_TO_KEY[db.id] : null);
+            if (role) {
+                const group = systemGroups.get(role) || [];
                 group.push(db);
-                systemGroups.set(base, group);
+                systemGroups.set(role, group);
             } else if (GARBAGE_NAMES.includes(db.name)) {
                 garbageCandidates.push(db);
             }
@@ -133,39 +134,25 @@ async function buildReport(): Promise<FullReport> {
         }
 
         // ── 2. Check for missing canonicals that need provisioning ──
-        // If a provisioned base (e.g. db-payments-in) exists as a duplicate
-        // but the proper scoped ID (db-payments-in-{suffix}) doesn't exist yet,
-        // we'll need to provision it first during execute.
-
-        for (const [base, key] of Object.entries(BASE_TO_KEY)) {
-            const scopedId = `${base}-${suffix}`;
-            const group = systemGroups.get(base);
-
+        for (const role of SYSTEM_DATABASE_ROLES) {
+            const group = systemGroups.get(role);
             if (group && group.length > 0) {
-                // There's at least one DB for this base — check if the canonical scoped ID exists
-                const hasCanonical = group.some(db => db.id === scopedId) || lockedDbIds[key] === scopedId;
-                if (!hasCanonical && !group.some(db => db.id === lockedDbIds[key])) {
-                    // Neither the scoped ID nor the locked ID exists in the group
-                    // We'll need to provision it during execute
-                    tenantReport.provisionedMissing.push(scopedId);
+                const canonicalId = lockedDbIds[role];
+                const hasCanonical = canonicalId && group.some(db => db.id === canonicalId);
+                if (!hasCanonical) {
+                    tenantReport.provisionedMissing.push(role);
                 }
             }
         }
 
         // ── 3. Detect duplicate system DB groups ──
 
-        for (const [base, group] of systemGroups.entries()) {
+        for (const [role, group] of systemGroups.entries()) {
             if (group.length <= 1) continue; // no duplicate
 
             // Pick canonical: prefer the one in lockedDbIds
-            const lockedId = Object.values(lockedDbIds).find(v => getBaseDbId(v) === base);
-            let canonical = group.find(db => db.id === lockedId);
-
-            if (!canonical) {
-                // Prefer the properly-suffixed one (e.g. db-invoices-cmneyas2)
-                const scopedId = `${base}-${suffix}`;
-                canonical = group.find(db => db.id === scopedId);
-            }
+            const lockedId = lockedDbIds[role];
+            let canonical = lockedId ? group.find(db => db.id === lockedId) : undefined;
 
             if (!canonical) {
                 // Fallback: the one with the most pages
@@ -176,7 +163,8 @@ async function buildReport(): Promise<FullReport> {
             const totalMigrating = duplicates.reduce((sum, db) => sum + db._count.pages, 0);
 
             tenantReport.duplicateGroups.push({
-                basePrefix: base,
+                role,
+                basePrefix: SYSTEM_DATABASES[role].legacyBase,
                 canonical: {
                     id: canonical!.id,
                     name: canonical!.name,
@@ -200,12 +188,12 @@ async function buildReport(): Promise<FullReport> {
         // ── 4. Detect lockedDbIds that need fixing ──
 
         for (const [key, value] of Object.entries(lockedDbIds)) {
-            const base = getBaseDbId(value);
-            const group = systemGroups.get(base);
+            const role = key as SystemDatabaseRole;
+            const group = systemGroups.get(role);
             if (!group) continue;
 
-            // Find the canonical for this base
-            const dupGroup = tenantReport.duplicateGroups.find(g => g.basePrefix === base);
+            // Find the canonical for this role
+            const dupGroup = tenantReport.duplicateGroups.find(g => g.role === role);
             if (dupGroup && value !== dupGroup.canonical.id) {
                 tenantReport.lockedDbIdsFixes.push({
                     key,

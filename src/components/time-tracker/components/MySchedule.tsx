@@ -1,6 +1,4 @@
-// @ts-nocheck
 "use client";
-// @ts-nocheck — Legacy component, progressive migration to camelCase
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { Calendar, Clock, MapPin, Briefcase, Loader2, CheckSquare, Play, User } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -189,6 +187,7 @@ export function MySchedule() {
     }
 
     const interval = setInterval(() => {
+      // @ts-expect-error SUPA-2: snake_case read (Supabase-era shape)
       const start = new Date(activeEntry.clock_in_time).getTime();
       const now = new Date().getTime();
       const diff = now - start;

@@ -41,12 +41,7 @@ import { useTasks, Task } from '@/components/time-tracker/hooks/useTasks';
 import { hrList, hrCreate, hrDelete as hrDeleteEntity } from '@/lib/hr-api';
 import { toast } from 'sonner';
 import { listRecordFiles, uploadFileAction } from '@/app/actions/files';
-
-interface WorkerOption {
-  id: string;
-  name?: string;
-  full_name?: string;
-}
+import { WorkerOption } from '@/components/time-tracker/types/timesheet';
 
 interface ShiftTemplate {
   id: string;
@@ -153,6 +148,7 @@ export function CreateShiftForm({
   const [templates, setTemplates] = useState<ShiftTemplate[]>([]);
   const [activeTab, setActiveTab] = useState('details');
   const dialogContentRef = useRef<HTMLDivElement>(null);
+  const controlledDialogContentRef = useRef<HTMLDivElement>(null);
 
   // Shift form state
   const [userIds, setUserIds] = useState<string[]>([]);
@@ -804,7 +800,7 @@ export function CreateShiftForm({
                             {userIds.length === 0
                               ? "Select employees"
                               : userIds.length === 1
-                                ? workers.find(w => w.id === userIds[0])?.full_name
+                                ? workers.find(w => w.id === userIds[0])?.name
                                 : `${userIds.length} employees selected`}
                           </Button>
                         </PopoverTrigger>
@@ -824,7 +820,7 @@ export function CreateShiftForm({
                                   }}
                                 />
                                 <Label htmlFor={`worker-${worker.id}`} className="font-normal cursor-pointer leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                                  {worker.full_name}
+                                  {worker.name}
                                 </Label>
                               </div>
                             ))}
@@ -844,8 +840,6 @@ export function CreateShiftForm({
                           value={projectId}
                           onChange={setProjectId}
                           placeholder="Search projects..."
-                          usePortal={true}
-                          portalContainer={dialogContentRef.current}
                         />
                       </div>
                     )}
@@ -1339,7 +1333,7 @@ export function CreateShiftForm({
       {/* Controlled mode - dialog without trigger */}
       {isControlled && (
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogContent ref={dialogContentRef} className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogContent ref={controlledDialogContentRef} className="max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Schedule New Shift</DialogTitle>
             </DialogHeader>
@@ -1435,7 +1429,7 @@ export function CreateShiftForm({
                           {userIds.length === 0
                             ? "Select employees"
                             : userIds.length === 1
-                              ? workers.find(w => w.id === userIds[0])?.full_name
+                              ? workers.find(w => w.id === userIds[0])?.name
                               : `${userIds.length} employees selected`}
                         </Button>
                       </PopoverTrigger>
@@ -1455,7 +1449,7 @@ export function CreateShiftForm({
                                 }}
                               />
                               <Label htmlFor={`worker-controlled-${worker.id}`} className="font-normal cursor-pointer leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                                {worker.full_name}
+                                {worker.name}
                               </Label>
                             </div>
                           ))}

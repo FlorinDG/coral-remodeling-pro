@@ -245,6 +245,10 @@ export default function SearchableSelect({
                 );
 
                 if (usePortal) {
+                    const target = portalContainer
+                        ?? (containerRef.current?.closest('[role="dialog"]') as HTMLElement | null)
+                        ?? document.body;
+
                     return pos && typeof document !== 'undefined' && createPortal(
                         <div
                             ref={dropdownRef}
@@ -260,7 +264,7 @@ export default function SearchableSelect({
                         >
                             {dropdownContent}
                         </div>,
-                        portalContainer || document.body
+                        target
                     );
                 }
 

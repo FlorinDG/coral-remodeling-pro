@@ -40,3 +40,10 @@ export interface TimeOffRequest {
   reason: string;
   type: 'vacation' | 'sick' | 'personal' | 'other';
 }
+
+/** A person who may be assigned to a shift. Derived from Employee + its User link. */
+export interface WorkerOption {
+  id: string;            // User.id — NOT Employee.id
+  name: string;          // REQUIRED. The only name.
+  hourlyRate?: number | null;
+}

@@ -15,12 +15,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { hrList } from '@/lib/hr-api';
-
-interface WorkerOption {
-  id: string;
-  name: string;
-  hourlyRate?: number | null;
-}
+import { WorkerOption } from '@/components/time-tracker/types/timesheet';
 
 type ViewMode = 'table' | 'matrix';
 

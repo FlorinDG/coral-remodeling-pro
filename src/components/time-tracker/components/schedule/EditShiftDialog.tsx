@@ -40,6 +40,7 @@ import { ScopePicker, EditScope } from '@/components/ui/ScopePicker';
 import { hrList, hrCreate, hrUpdate, hrDelete } from '@/lib/hr-api';
 import { toast } from 'sonner';
 import { listRecordFiles } from '@/app/actions/files';
+import { WorkerOption } from '@/components/time-tracker/types/timesheet';
 
 interface ProjectAttachment {
   id: string;
@@ -48,12 +49,6 @@ interface ProjectAttachment {
   file_path: string;
   file_type: string;
   file_size: number | null;
-}
-
-interface WorkerOption {
-  id: string;
-  name?: string;
-  full_name?: string;
 }
 
 interface EditShiftDialogProps {
@@ -437,7 +432,7 @@ export function EditShiftDialog({
               <div>
                 <Label>Employee</Label>
                 <SearchableSelect
-                  options={workers.map(w => ({ value: w.id, label: w.name || w.full_name || '' }))}
+                  options={workers.map(w => ({ value: w.id, label: w.name }))}
                   value={userId}
                   onChange={setUserId}
                   placeholder="Select employee"

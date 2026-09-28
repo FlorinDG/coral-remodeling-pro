@@ -78,7 +78,7 @@ function ShiftCard({ shift, isNextShift, activeEntry, onClick }: ShiftCardProps)
             <div className="flex items-center gap-3 text-sm mt-2">
               <Clock className="h-4 w-4 text-muted-foreground" />
               <span>
-                {formatTime(shift.shift_start)} - {formatTime(shift.shift_end)}
+                {formatTime(shift.shiftStart)} - {formatTime(shift.shiftEnd)}
               </span>
             </div>
 
@@ -187,8 +187,7 @@ export function MySchedule() {
     }
 
     const interval = setInterval(() => {
-      // @ts-expect-error SUPA-2: snake_case read (Supabase-era shape)
-      const start = new Date(activeEntry.clock_in_time).getTime();
+      const start = new Date(activeEntry.clockInTime).getTime();
       const now = new Date().getTime();
       const diff = now - start;
 
@@ -353,7 +352,7 @@ export function MySchedule() {
                 <div className="flex flex-col gap-2 mt-4 text-sm">
                   <div className="flex items-center gap-3">
                     <Clock className="w-4 h-4 text-muted-foreground" />
-                    <span>{selectedShift.shift_start} - {selectedShift.shift_end}</span>
+                    <span>{selectedShift.shiftStart} - {selectedShift.shiftEnd}</span>
                   </div>
                   {selectedShift.project && (
                     <div className="flex items-start gap-3">

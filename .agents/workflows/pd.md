@@ -454,6 +454,35 @@ Missing from any one = invisible gap in enforcement.
    - 🛑 **Never report a local exit code as CI's.** And read the exit code of the command, not of a pipe — `node ./node_modules/eslint/bin/eslint.js src --quiet; echo $?`.
    - **What the sandbox IS good for:** reading code, grepping, counting, and running pure tests that import nothing from `src/lib/data/**`.
 
+4w. **THE PRE-HANDOVER CHECK.** *(Florin, 2026-09-28: "when we put something behind, we both expect it to be nailed in place for good.")*
+   **Every directive answers these five BEFORE it is handed over — not after someone asks.**
+   1. **Where is this concept defined, and HOW MANY TIMES?** *(`WorkerOption` was declared three times; the fix froze it in a leaf.)*
+   2. **Am I fixing the instance or the shape?** *(`SEND-1` was fixed for invoices, not quotes, and broke again a fortnight later on a quote.)*
+   3. **Which layer owns this?** Walk it down — kernel · core · seraph · module. **A fix in the wrong layer is a fix that has to be made again.**
+   4. **How many sites share this shape, and how many are correct today?** *(56 `SearchableSelect` callers, 1 correct. A fix making it 2 is not a fix.)*
+   5. **Does this make the wrong state UNREPRESENTABLE, or merely absent today?** *(Optional `name?` + `full_name?` made a blank label legal. Required `name` makes it impossible.)*
+   🛑 **A directive that cannot answer all five is not ready.** The cost of skipping it is not a slower fix — it is the same defect returning under a different name, which is the whole reason this process is slow on purpose.
+
+4z. **WHAT "CANONICAL" MEANS.** *(Florin, 2026-09-28, correcting the Planner: "canonical does not mean reduced to one concept, but once every concept defined, frozen, immutable.")*
+   - **Canonical = each concept is DEFINED PRECISELY, then FROZEN.** It does **not** mean collapsing everything that shares a word into a single model.
+   - 🛑 **The test for defect shape #1 is "one CONCEPT, two representations" — not "two things that sound alike."** `User` and `Employee` are two concepts; `HrProject` and the project page were one.
+   - **A projection is not a duplicate.** A read-model view joining two defined concepts is legitimate; what is forbidden is the same fact stored, decided or named twice.
+   - 🔴 **The Planner applied the collapse reading as a blanket rule and proposed deleting one of `User` / `Employee` / the `db-hr` projection.** Wrong: all three are legitimate once defined.
+
+4y. **THE IDENTITY MODEL** *(Florin, 2026-09-28)*
+   - **A USER is anyone who logs into the ERP.** That is the whole definition.
+   - **Users carry role categories on two axes:**
+     - **FUNCTIONAL** — what kind of account: superadmin · tenant admin · ERP operator · tenant employee.
+     - **OPERATIONAL / HIERARCHICAL** — the tenant's own structure: director · HR · team leader · workforce · and whatever a tenant needs. **Tenant-specific.**
+   - **The operational role governs module and functionality access inside the tenant** — e.g. workforce reaches WorkHub and nothing else.
+   - 🔴 **Separating the WorkHub as a surface does not separate the crew from the company.** Crew members remain part of the tenant's structure; the surface is narrow, the membership is not.
+
+4x. **HOURS ARE THE FACT; THE PROJECT IS AN ATTRIBUTE THAT MAY CHANGE.** *(Florin, 2026-09-28: "late entries and any other kind of clocked hours must be able to accept being connected / assigned into a project at any given moment. do not make assumptions, leave it open with the possibility to set at any moment.")*
+   - **Recorded hours exist independently of any project.** Attribution is a **later, repeatable act**, never a precondition for recording.
+   - 🛑 **No code may assume `projectId` is set at creation, or fixed once set.** Unattributed hours are a normal, transient state — **not an error and not an orphan.**
+   - **There must be a surface for assigning and re-assigning** hours to a project at any time, including retrospectively.
+   - **Every re-assignment is logged** *(`AuditLog`, per 5a's one-authority rule)* — hours moving between projects moves money between jobs.
+
 5a. **A COMPONENT MUST NOT DECIDE ITS OWN PRIVILEGE.** *(Florin, 2026-09-26: "they must not make that decision, they need to ask the appropriate instance to make it.")*
    Observed: the superadmin bypass is re-implemented independently in `middleware.ts`, `lib/moduleGuard.ts` and `app/actions/pages.ts` — **three copies of a privilege escalation**, none aware of the others, each free to drift.
    - 🛑 **No module, route, action or component evaluates a role, a plan, or a bypass for itself.** It asks the instance whose job that is and acts on the answer.

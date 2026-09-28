@@ -1,6 +1,4 @@
-// @ts-nocheck
 "use client";
-// @ts-nocheck — Legacy component, progressive migration to camelCase
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Loader2, Trash2, Paperclip, Upload, FolderOpen, X, FileText, Image, Download, ListTodo, Plus, Check, Trash, Calendar as CalendarIcon, Repeat } from 'lucide-react';
 import { useTasks, useShiftTasks, Task } from '@/components/time-tracker/hooks/useTasks';
@@ -36,6 +34,7 @@ import {
   TabsTrigger,
 } from '@/components/ui/tabs';
 import { ScheduledShift, Project, NOTION_COLORS } from '@/components/time-tracker/hooks/useScheduledShifts';
+// @ts-expect-error TD: pre-existing type debt, unrelated to the shape
 import { useScheduleAttachments, ProjectAttachment, ScheduleAttachment } from '@/components/time-tracker/hooks/useScheduleAttachments';
 import { ScopePicker, EditScope } from '@/components/ui/ScopePicker';
 import { hrList, hrCreate, hrUpdate, hrDelete } from '@/lib/hr-api';
@@ -165,10 +164,14 @@ export function EditShiftDialog({
   // Populate form when shift changes
   useEffect(() => {
     if (shift) {
+      // @ts-expect-error SUPA-2: snake_case read (Supabase-era shape)
       setUserId(shift.user_id);
       setProjectId(shift.project_id || '');
+      // @ts-expect-error SUPA-2: snake_case read (Supabase-era shape)
       setShiftDate(shift.shift_date);
+      // @ts-expect-error SUPA-2: snake_case read (Supabase-era shape)
       setShiftStart(shift.shift_start);
+      // @ts-expect-error SUPA-2: snake_case read (Supabase-era shape)
       setShiftEnd(shift.shift_end);
       setRole(shift.role || '');
       setNotes(shift.notes || '');
@@ -229,6 +232,7 @@ export function EditShiftDialog({
 
   const handleAddFromProject = async (attachment: ProjectAttachment) => {
     // Check if already added
+    // @ts-expect-error SUPA-2-SEMANTIC: file_path → ShiftAttachment.url
     if (attachments.some(a => a.file_path === attachment.file_path)) {
       toast.error('File already attached');
       return;
@@ -304,6 +308,7 @@ export function EditShiftDialog({
   };
 
   const availableTasks = projectTasks.filter(
+    // @ts-expect-error SUPA-2: snake_case read (Supabase-era shape)
     task => task.status !== 'completed' && !shiftTasks.some(st => st.task_id === task.id)
   );
 
@@ -813,6 +818,7 @@ export function EditShiftDialog({
                           <div className="space-y-1">
                             {projectAttachments.map(pa => {
                               const Icon = getFileIcon(pa.file_type);
+                              // @ts-expect-error SUPA-2-SEMANTIC: file_path → ShiftAttachment.url
                               const alreadyAdded = attachments.some(a => a.file_path === pa.file_path);
                               return (
                                 <button
@@ -852,7 +858,9 @@ export function EditShiftDialog({
             ) : (
               <div className="space-y-2">
                 {attachments.map(attachment => {
+                  // @ts-expect-error SUPA-2-SEMANTIC: file_path → ShiftAttachment.url
                   const Icon = getFileIcon(attachment.file_type);
+                  // @ts-expect-error SUPA-2-SEMANTIC: file_path → ShiftAttachment.url
                   const isImage = attachment.file_type.startsWith('image/');
                   
                   return (
@@ -862,7 +870,9 @@ export function EditShiftDialog({
                     >
                       {isImage ? (
                         <AttachmentImage
+                          // @ts-expect-error SUPA-2-SEMANTIC: file_path → ShiftAttachment.url
                           filePath={attachment.file_path}
+                          // @ts-expect-error SUPA-2-SEMANTIC: file_path → ShiftAttachment.url
                           alt={attachment.file_name}
                           className="h-10 w-10 rounded object-cover"
                           fallback={
@@ -877,11 +887,15 @@ export function EditShiftDialog({
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
+                        {/* @ts-expect-error SUPA-2-SEMANTIC: file_path → ShiftAttachment.url */}
                         <p className="text-sm font-medium truncate">{attachment.file_name}</p>
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          {/* @ts-expect-error SUPA-2-SEMANTIC: file_path → ShiftAttachment.url */}
                           {attachment.file_size && (
+                            // @ts-expect-error SUPA-2-SEMANTIC: file_path → ShiftAttachment.url
                             <span>{formatFileSize(attachment.file_size)}</span>
                           )}
+                          {/* @ts-expect-error SUPA-2-SEMANTIC: file_path → ShiftAttachment.url */}
                           {attachment.source_project_id && (
                             <Badge variant="outline" className="text-xs">From Project</Badge>
                           )}
@@ -889,6 +903,7 @@ export function EditShiftDialog({
                       </div>
                       <div className="flex items-center gap-1">
                         <AttachmentLink
+                          // @ts-expect-error SUPA-2-SEMANTIC: file_path → ShiftAttachment.url
                           filePath={attachment.file_path}
                           className="inline-flex items-center justify-center h-8 w-8 rounded-md hover:bg-accent hover:text-accent-foreground"
                         >

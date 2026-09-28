@@ -123,8 +123,7 @@ export function LateEntryCard() {
         clockInTime: `${date}T${clockIn}`,
         clockOutTime: `${date}T${clockOut}`,
         includeLocation,
-        // @ts-expect-error TD: pre-existing type debt, unrelated to the shape
-        location,
+        location: location ? { lat: location.latitude, lng: location.longitude, address: '' } : undefined,
         taskDescription,
         projectId,
         taskId,

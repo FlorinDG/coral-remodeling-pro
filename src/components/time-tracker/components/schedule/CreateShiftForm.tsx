@@ -1,6 +1,4 @@
-// @ts-nocheck
 "use client";
-// @ts-nocheck — Legacy component, progressive migration to camelCase
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { Plus, Loader2, Repeat, Save, FileText, Paperclip, X, Upload, FolderOpen, CheckSquare, Circle, CheckCircle2, Calendar as CalendarIcon } from 'lucide-react';
 import SearchableSelect from '@/components/ui/SearchableSelect';
@@ -238,6 +236,7 @@ export function CreateShiftForm({
       }
       try {
         const files = await listRecordFiles('project', projectId);
+        // @ts-expect-error SUPA-2-SEMANTIC: file_path → ShiftAttachment.url
         setProjectAttachments(files.map(f => ({
           id: f.id,
           file_name: f.name,

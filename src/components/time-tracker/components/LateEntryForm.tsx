@@ -1,6 +1,4 @@
-// @ts-nocheck
 "use client";
-// @ts-nocheck — Legacy component, progressive migration to camelCase
 import { useState } from 'react';
 import { Loader2, Clock, MapPin, CalendarDays } from 'lucide-react';
 import { Button } from '@/components/ui/button';

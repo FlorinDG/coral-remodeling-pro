@@ -1,4 +1,3 @@
-// @ts-nocheck
 "use client";
 import { useState, useEffect, useCallback } from 'react';
 import { getHrAnnouncements, markHrAnnouncementRead } from '@/app/actions/hr-announcements';

@@ -1,6 +1,4 @@
-// @ts-nocheck
 "use client";
-// @ts-nocheck — Legacy component, progressive migration to camelCase
 import { useState, useEffect } from 'react';
 
 import { useAuth } from '@/components/time-tracker/contexts/AuthContext';

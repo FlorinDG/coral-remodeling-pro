@@ -30,17 +30,14 @@ export function AllSchedulesView() {
   const allSchedules = allWorkers.flatMap(worker =>
     worker.schedules.map(schedule => ({
       ...schedule,
-      workerName: worker.full_name,
+      workerName: worker.name,
     }))
   ).sort((a, b) => {
     // Sort by day of week first, then by start time
-    // @ts-expect-error SUPA-2: snake_case read (Supabase-era shape)
-    if (a.day_of_week !== b.day_of_week) {
-      // @ts-expect-error SUPA-2: snake_case read (Supabase-era shape)
-      return a.day_of_week - b.day_of_week;
+    if (a.dayOfWeek !== b.dayOfWeek) {
+      return a.dayOfWeek - b.dayOfWeek;
     }
-    // @ts-expect-error SUPA-2: snake_case read (Supabase-era shape)
-    return a.shift_start.localeCompare(b.shift_start);
+    return a.shiftStart.localeCompare(b.shiftStart);
   });
 
   return (
@@ -77,18 +74,13 @@ export function AllSchedulesView() {
                   <TableRow key={schedule.id}>
                     <TableCell className="font-medium">{schedule.workerName}</TableCell>
                     <TableCell>
-                      {/* @ts-expect-error SUPA-2: snake_case read (Supabase-era shape) */}
-                      <Badge variant="outline">{DAY_NAMES[schedule.day_of_week]}</Badge>
+                      <Badge variant="outline">{DAY_NAMES[schedule.dayOfWeek]}</Badge>
                     </TableCell>
-                    {/* @ts-expect-error SUPA-2: snake_case read (Supabase-era shape) */}
-                    <TableCell>{formatTime(schedule.shift_start)}</TableCell>
-                    {/* @ts-expect-error SUPA-2: snake_case read (Supabase-era shape) */}
-                    <TableCell>{formatTime(schedule.shift_end)}</TableCell>
+                    <TableCell>{formatTime(schedule.shiftStart)}</TableCell>
+                    <TableCell>{formatTime(schedule.shiftEnd)}</TableCell>
                     <TableCell>
-                      {/* @ts-expect-error SUPA-2: snake_case read (Supabase-era shape) */}
-                      <Badge variant={schedule.is_active ? 'default' : 'secondary'}>
-                        {/* @ts-expect-error SUPA-2: snake_case read (Supabase-era shape) */}
-                        {schedule.is_active ? 'Active' : 'Inactive'}
+                      <Badge variant={schedule.isActive ? 'default' : 'secondary'}>
+                        {schedule.isActive ? 'Active' : 'Inactive'}
                       </Badge>
                     </TableCell>
                   </TableRow>
@@ -103,9 +95,9 @@ export function AllSchedulesView() {
           <h3 className="text-lg font-semibold text-foreground mb-4">Summary by Worker</h3>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {allWorkers.map(worker => (
-              <Card key={worker.user_id} className="bg-muted/20">
+              <Card key={worker.userId} className="bg-muted/20">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base">{worker.full_name || worker.user_id}</CardTitle>
+                  <CardTitle className="text-base">{worker.name || worker.userId}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   {worker.schedules.length === 0 ? (
@@ -113,20 +105,17 @@ export function AllSchedulesView() {
                   ) : (
                     <div className="space-y-2">
                       {worker.schedules
-                        // @ts-expect-error SUPA-2: snake_case read (Supabase-era shape)
-                        .sort((a, b) => a.day_of_week - b.day_of_week)
+                        .sort((a, b) => a.dayOfWeek - b.dayOfWeek)
                         .map(schedule => (
                           <div
                             key={schedule.id}
                             className="flex items-center justify-between text-sm"
                           >
                             <span className="text-muted-foreground">
-                              {/* @ts-expect-error SUPA-2: snake_case read (Supabase-era shape) */}
-                              {DAY_NAMES[schedule.day_of_week].slice(0, 3)}
+                              {DAY_NAMES[schedule.dayOfWeek].slice(0, 3)}
                             </span>
                             <span className="font-mono">
-                              {/* @ts-expect-error SUPA-2: snake_case read (Supabase-era shape) */}
-                              {formatTime(schedule.shift_start)} - {formatTime(schedule.shift_end)}
+                              {formatTime(schedule.shiftStart)} - {formatTime(schedule.shiftEnd)}
                             </span>
                           </div>
                         ))}

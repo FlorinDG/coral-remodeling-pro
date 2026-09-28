@@ -4,8 +4,7 @@ import OpenAI from 'openai';
 import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
 import { v4 as uuidv4 } from 'uuid';
-import { isSystemDatabase } from '@/lib/systemDatabases';
-import { getLockedDbId } from '@/lib/lockedDbUtils';
+import { type SystemDatabaseRole, SYSTEM_DATABASES, BASE_TO_KEY } from '@/lib/kernel/system-databases';
 import { checkDuplicateExpense } from '@/lib/expense-dedup';
 
 export const runtime = 'nodejs';
@@ -301,16 +300,30 @@ export async function POST(req: Request) {
         if (!file && !existingPageId) {
             return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
         }
-        const isInvoice = targetDb === 'db-expenses' || targetDb.startsWith('db-expenses');
+        let role: SystemDatabaseRole | null = targetDb in SYSTEM_DATABASES
+            ? (targetDb as SystemDatabaseRole)
+            : (targetDb in BASE_TO_KEY ? BASE_TO_KEY[targetDb] : null);
+
+        if (!role) {
+            const db = await prisma.globalDatabase.findFirst({
+                where: { id: targetDb, tenantId },
+                select: { logicalKey: true },
+            });
+            if (db?.logicalKey) {
+                role = db.logicalKey as SystemDatabaseRole;
+            }
+        }
+
+        const isInvoice = role === 'expenses';
 
         // SCHEMA-1a: Resolve system DB to the tenant's canonical scoped ID
-        if (isSystemDatabase(targetDb)) {
+        if (role) {
             const tenantData = await prisma.tenant.findUnique({
                 where: { id: tenantId },
                 select: { lockedDbIds: true },
             });
             const lockedDbIds = (tenantData?.lockedDbIds as Record<string, string>) || {};
-            targetDb = getLockedDbId(targetDb, lockedDbIds);
+            targetDb = lockedDbIds[role] || targetDb;
         }
 
         if (!file) {

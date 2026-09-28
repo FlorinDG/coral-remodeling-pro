@@ -135,7 +135,11 @@
     "noShiftsScheduledPeriod": "Aucun quart prévu pour cette période.",
     "clockIntoShift": "Pointer pour le quart",
     "clockInWithoutShift": "Pointer sans quart de travail",
-    "shiftFallback": "Quart"
+    "shiftFallback": "Quart",
+    "worked": "Travaillé",
+    "photos": "Photos",
+    "files": "Fichiers",
+    "shiftCompleted": "Quart terminé"
   },
   "timeOff": {
     "title": "Congés",

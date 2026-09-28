@@ -135,7 +135,11 @@
     "noShiftsScheduledPeriod": "No shifts scheduled in this period.",
     "clockIntoShift": "Clock into Shift",
     "clockInWithoutShift": "Clock in without shift",
-    "shiftFallback": "Shift"
+    "shiftFallback": "Shift",
+    "worked": "Worked",
+    "photos": "Photos",
+    "files": "Files",
+    "shiftCompleted": "Shift completed"
   },
   "timeOff": {
     "title": "Time Off",

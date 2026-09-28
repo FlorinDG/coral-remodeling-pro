@@ -1,6 +1,6 @@
 "use client";
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { Calendar, Clock, MapPin, Briefcase, Loader2, CheckSquare, Play, User } from 'lucide-react';
+import { Calendar, Clock, MapPin, Briefcase, Loader2, CheckSquare, Play, User, Phone, ExternalLink, FileText, Image as ImageIcon, ChevronRight } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,7 @@ import { format, parseISO, isToday, addDays, subDays, isBefore, isAfter, startOf
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { formatTime } from '@/lib/format/date';
+import { shiftBrief, type ShiftBriefResult } from '@/lib/data/shift-brief';
 
 interface ShiftCardProps {
   shift: any;
@@ -152,8 +153,32 @@ export function MySchedule() {
   const [isClockingOut, setIsClockingOut] = useState(false);
   const [showGeofenceWarning, setShowGeofenceWarning] = useState<{distance: number, site: string, location: any, shiftId: string} | null>(null);
   const [selectedShift, setSelectedShift] = useState<any>(null);
+  const [brief, setBrief] = useState<ShiftBriefResult | null>(null);
+  const [briefLoading, setBriefLoading] = useState(false);
   const [elapsedTime, setElapsedTime] = useState('00:00:00');
   const nextShiftRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!selectedShift?.id) {
+      setBrief(null);
+      return;
+    }
+    let active = true;
+    setBriefLoading(true);
+    shiftBrief(selectedShift.id)
+      .then((data) => {
+        if (active) setBrief(data);
+      })
+      .catch((err) => {
+        console.error('[shiftBrief] Failed to load shift brief:', err);
+      })
+      .finally(() => {
+        if (active) setBriefLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [selectedShift?.id]);
 
   // Date range: 1 week behind to 2 weeks ahead
   const today = startOfDay(new Date());
@@ -345,75 +370,182 @@ export function MySchedule() {
         )}
       </CardContent>
 
-      {/* Shift Detail Dialog (WF-6) */}
-      <Dialog open={!!selectedShift} onOpenChange={() => setSelectedShift(null)}>
-        <DialogContent className="sm:max-w-[425px] p-0 overflow-hidden">
-          {selectedShift && (
-            <>
-              <DialogHeader className="p-6 pb-2 border-b">
-                <DialogTitle className="flex items-center gap-2">
-                  <Calendar className="w-5 h-5 text-muted-foreground" />
-                  {isToday(parseISO(selectedShift.shiftDate)) 
-                    ? t('schedule.today') 
-                    : format(parseISO(selectedShift.shiftDate), 'EEE, d MMM yyyy')}
-                </DialogTitle>
-                <div className="flex flex-col gap-2 mt-4 text-sm">
-                  <div className="flex items-center gap-3">
-                    <Clock className="w-4 h-4 text-muted-foreground" />
-                    <span>{selectedShift.shiftStart} - {selectedShift.shiftEnd}</span>
+      {/* Shift Detail Dialog / Shift Brief Modal (WH-UI-1 §8.2) */}
+      <Dialog open={!!selectedShift} onOpenChange={(open) => { if (!open) setSelectedShift(null); }}>
+        <DialogContent className="sm:max-w-[480px] p-0 overflow-hidden font-content">
+          {selectedShift && (() => {
+            const shiftDateObj = parseISO(selectedShift.shiftDate);
+            const scheduledDateStr = isToday(shiftDateObj) 
+              ? t('schedule.today') 
+              : format(shiftDateObj, 'EEE, d MMM yyyy');
+            const scheduledTimeStr = `${formatTime(selectedShift.shiftStart)} – ${formatTime(selectedShift.shiftEnd)}`;
+
+            const projectName = (selectedShift.project?.name || selectedShift.projectName || '').replace(/^\[ERP\]\s*/i, '').trim();
+            const description = (selectedShift.shiftName || '').trim() || (selectedShift.notes || '').trim();
+            const displayTitle = brief?.title || projectName || description || t('schedule.shiftFallback');
+
+            const addressText = brief?.address || selectedShift.project?.address?.trim() || selectedShift.projectAddress?.trim() || null;
+            const mapUrl = brief?.mapUrl || (addressText ? `https://maps.google.com/?q=${encodeURIComponent(addressText)}` : null);
+
+            return (
+              <>
+                <DialogHeader className="p-5 pb-3 border-b border-neutral-100 dark:border-white/10 text-left">
+                  <DialogTitle className="text-lg font-semibold text-foreground leading-snug">
+                    {displayTitle}
+                  </DialogTitle>
+                  <div className="flex items-center gap-2 mt-1.5 text-sm text-muted-foreground font-medium">
+                    <Calendar className="w-4 h-4 text-muted-foreground shrink-0" />
+                    <span>{scheduledDateStr}</span>
+                    <span>·</span>
+                    <Clock className="w-4 h-4 text-muted-foreground shrink-0" />
+                    <span>{scheduledTimeStr}</span>
                   </div>
-                  {selectedShift.project && (
-                    <div className="flex items-start gap-3">
-                      <MapPin className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
-                      <span>{(selectedShift.project.address || selectedShift.project.name || '').replace(/^\[ERP\]\s*/i, '')}</span>
+                </DialogHeader>
+
+                <div className="p-4 space-y-3 max-h-[60vh] overflow-y-auto">
+                  {/* Address row (maps.google.com/?q=...) */}
+                  {addressText && mapUrl && (
+                    <a
+                      href={mapUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-between p-3.5 bg-neutral-50 hover:bg-neutral-100 dark:bg-neutral-900/60 dark:hover:bg-neutral-900 rounded-xl transition-colors border border-neutral-100 dark:border-white/5 text-foreground group"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <MapPin className="w-5 h-5 text-[var(--persian-green)] shrink-0" />
+                        <span className="text-base text-foreground font-medium truncate">{addressText}</span>
+                      </div>
+                      <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-foreground shrink-0 ml-2" />
+                    </a>
+                  )}
+
+                  {/* Phone row (tel:...) */}
+                  {brief?.contactPhone && (
+                    <a
+                      href={`tel:${brief.contactPhone}`}
+                      className="flex items-center justify-between p-3.5 bg-neutral-50 hover:bg-neutral-100 dark:bg-neutral-900/60 dark:hover:bg-neutral-900 rounded-xl transition-colors border border-neutral-100 dark:border-white/5 text-foreground group"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <Phone className="w-5 h-5 text-[var(--persian-green)] shrink-0" />
+                        <span className="text-base text-foreground font-medium truncate">
+                          {brief.contactName ? `${brief.contactName} · ` : ''}{brief.contactPhone}
+                        </span>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground shrink-0 ml-2" />
+                    </a>
+                  )}
+
+                  {/* Worked duration (only when clock entry exists) */}
+                  {brief?.worked && (
+                    <div className="flex items-center justify-between p-3.5 bg-neutral-50 dark:bg-neutral-900/60 rounded-xl border border-neutral-100 dark:border-white/5">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <Clock className="w-5 h-5 text-[var(--persian-green)] shrink-0" />
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium text-muted-foreground">{t('schedule.worked')}</span>
+                          <span className="text-base font-semibold text-foreground">
+                            {formatTime(brief.worked.in)} – {brief.worked.out ? formatTime(brief.worked.out) : '…'} · {Math.floor(brief.worked.minutes / 60)}h {brief.worked.minutes % 60}m
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Photos */}
+                  {brief?.photos && brief.photos.length > 0 && (
+                    <div className="p-3.5 bg-neutral-50 dark:bg-neutral-900/60 rounded-xl border border-neutral-100 dark:border-white/5 space-y-2">
+                      <span className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
+                        <ImageIcon className="w-4 h-4" />
+                        {t('schedule.photos')}
+                      </span>
+                      <div className="flex gap-2.5 overflow-x-auto pb-1">
+                        {brief.photos.map((photo, i) => (
+                          <a
+                            key={i}
+                            href={photo.key}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="shrink-0 w-16 h-16 rounded-lg overflow-hidden border border-neutral-200 dark:border-white/10 hover:opacity-80 transition-opacity"
+                          >
+                            <img src={photo.key} alt={photo.name} className="w-full h-full object-cover" />
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Files */}
+                  {brief?.files && brief.files.length > 0 && (
+                    <div className="p-3.5 bg-neutral-50 dark:bg-neutral-900/60 rounded-xl border border-neutral-100 dark:border-white/5 space-y-2">
+                      <span className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
+                        <FileText className="w-4 h-4" />
+                        {t('schedule.files')}
+                      </span>
+                      <div className="space-y-1.5">
+                        {brief.files.map((file) => (
+                          <a
+                            key={file.id}
+                            href={file.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center justify-between p-2.5 hover:bg-neutral-200/50 dark:hover:bg-neutral-800 rounded-lg text-sm text-foreground transition-colors group"
+                          >
+                            <span className="truncate font-medium">{file.name}</span>
+                            <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-foreground shrink-0 ml-2" />
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {briefLoading && !brief && (
+                    <div className="flex items-center justify-center p-6">
+                      <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
                     </div>
                   )}
                 </div>
-              </DialogHeader>
-              
-              <div className="p-6 bg-neutral-50 dark:bg-neutral-900 flex flex-col items-center">
-                {activeEntry && activeEntry.shiftId === selectedShift.id ? (
-                  <>
-                    <div className="text-4xl font-mono font-bold text-[var(--brand-color,#d35400)] mb-4 tracking-wider">
-                      {elapsedTime}
-                    </div>
-                    <Button 
-                      className="w-full h-16 text-lg font-bold bg-[var(--brand-color,#d35400)] hover:brightness-110 text-white shadow-md transition-all active:scale-95"
-                      onClick={handleClockOut}
-                      disabled={isClockingOut}
-                    >
-                      {isClockingOut ? <Loader2 className="w-6 h-6 animate-spin mr-2" /> : <Play className="w-6 h-6 mr-2 fill-current rotate-90" />}
-                      {t('clock.clockOut', 'CLOCK OUT')}
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <div className="text-4xl font-mono font-bold text-neutral-400 mb-4 tracking-wider">
-                      00:00:00
-                    </div>
-                    <Button 
-                      className="w-full h-16 text-lg font-bold bg-[var(--brand-color,#d35400)] hover:brightness-110 text-white shadow-md transition-all active:scale-95"
-                      onClick={() => handleClockIn(selectedShift.id)}
-                      disabled={
-                        isClockingIn || 
-                        selectedShift.status === 'Completed' ||
-                        (selectedShift.clockEntries?.some((e: any) => e.clockOutTime != null) ?? false) ||
-                        !!activeEntry
-                      }
-                    >
-                      {isClockingIn ? <Loader2 className="w-6 h-6 animate-spin mr-2" /> : <Play className="w-6 h-6 mr-2 fill-current" />}
-                      {t('clock.clockIn', 'CLOCK IN')}
-                    </Button>
-                    {((selectedShift.clockEntries?.some((e: any) => e.clockOutTime != null) ?? false) || selectedShift.status === 'Completed') && (
-                      <p className="text-xs text-muted-foreground mt-3 font-medium uppercase tracking-wider">
-                        Shift completed
-                      </p>
-                    )}
-                  </>
-                )}
-              </div>
-            </>
-          )}
+
+                {/* Clock Action Surface */}
+                <div className="p-4 border-t border-neutral-100 dark:border-white/10 bg-neutral-50/50 dark:bg-neutral-900/50 flex flex-col items-center">
+                  {activeEntry && activeEntry.shiftId === selectedShift.id ? (
+                    <>
+                      <div className="text-3xl font-mono font-bold text-[var(--tawny)] mb-3 tracking-wider">
+                        {elapsedTime}
+                      </div>
+                      <Button
+                        className="w-full h-14 text-base font-bold bg-[var(--tawny)] hover:brightness-110 text-white shadow-md transition-all active:scale-[0.98] rounded-xl"
+                        onClick={handleClockOut}
+                        disabled={isClockingOut}
+                      >
+                        {isClockingOut ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Play className="w-5 h-5 mr-2 fill-current rotate-90" />}
+                        {t('clock.clockOut', 'CLOCK OUT')}
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button
+                        className="w-full h-14 text-base font-bold bg-[var(--persian-green)] hover:brightness-110 text-white shadow-md transition-all active:scale-[0.98] rounded-xl"
+                        onClick={() => handleClockIn(selectedShift.id)}
+                        disabled={
+                          isClockingIn ||
+                          selectedShift.status === 'Completed' ||
+                          (selectedShift.clockEntries?.some((e: any) => e.clockOutTime != null) ?? false) ||
+                          !!activeEntry
+                        }
+                      >
+                        {isClockingIn ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Play className="w-5 h-5 mr-2 fill-current" />}
+                        {t('schedule.clockIntoShift')}
+                      </Button>
+                      {((selectedShift.clockEntries?.some((e: any) => e.clockOutTime != null) ?? false) || selectedShift.status === 'Completed') && (
+                        <p className="text-sm text-muted-foreground mt-2 font-medium">
+                          {t('schedule.shiftCompleted', 'Shift completed')}
+                        </p>
+                      )}
+                    </>
+                  )}
+                </div>
+              </>
+            );
+          })()}
         </DialogContent>
       </Dialog>
       <GeofenceWarningDialog

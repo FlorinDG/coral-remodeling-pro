@@ -169,3 +169,123 @@ This is an **agenda list**: one row per commitment, primary identity first, loca
 - 🛑 **No English literals.** Every visible string is a key, in five locales.
 - 🛑 **No `text-xs` on primary crew content.**
 - 🛑 **No colour literal in the new component.** Palette tokens only.
+
+---
+
+# 7 · 🔴 LEGIBILITY — the cause is a font, not a class *(added after Florin tested on a phone)*
+
+**Two causes, both measured.**
+
+## a · A display font is doing body work
+```css
+/* globals.css:89 */   body { font-family: var(--font-oxanium), sans-serif; }
+
+/* globals.css:97 — someone already decided this */
+/* Content font — legible IBM Plex Sans for data-heavy areas */
+input, textarea, select, table, td, th,
+.font-content { font-family: var(--font-content), 'IBM Plex Sans', system-ui, sans-serif; }
+```
+**Oxanium is a squarish display face with a small x-height** — nominal 14px reads like 12px of a text face. **IBM Plex Sans is loaded, assigned, and used NOWHERE outside that rule.** `.font-content` appears **0 times** in the workhub — the most data-heavy, most-outdoors, most legibility-critical surface in the product.
+
+- [ ] **Apply `.font-content` to the WorkHub shell**, so every crew surface inherits the text face. 🟢 **The decision, the font and the class all already exist** — this applies them where they were meant to go.
+- [ ] 🛑 **Do not change the global `body` font.** That is a whole-product change and `DS-1`'s call, not this pass's.
+- [ ] **Oxanium stays for headings and brand** — that is what a display face is for.
+
+## b · The module is built at 12–14px
+```
+text-xs   119        text-sm   169        text-base + text-lg   21
+```
+- [ ] **Base for crew-facing content is `1rem` (16px). Nothing below `0.875rem`, anywhere.**
+- [ ] 🔴 **`text-xs` is deleted from the WorkHub surfaces.** Badges and timestamps may use `text-sm`; nothing else steps down.
+- [ ] **Verify on a real phone in daylight, not a desktop viewport at 390px.** *(Florin: "incredibly small and hard to read.")*
+
+---
+
+# 8 · THE SHIFT BRIEF — the detail modal, specified
+
+**Tapping a shift opens a 50-line inline dialog in `MySchedule.tsx:348-400`**: date, time, address, clock button.
+**`ShiftViewDialog.tsx` — 626 lines with clocked times, GPS and attachments — is imported by NOTHING.**
+
+## 8.0 · 🔴 DECIDED: DELETE `ShiftViewDialog.tsx`
+**Not harvested. Deleted.** Its clock-entry rendering is gated behind `clock_entry_id`, which was **permanently null** until `WORKHUB-CLOCKLINK` *(`useScheduledShifts.ts:76` hardcoded it)*. **That code has never executed once.** It is not proven work to reuse — it is unverified code written against a shape we are removing, carrying `@ts-expect-error`s.
+
+- [ ] **Delete the file.** Report the resulting `@ts-expect-error` count and note that `WH-7` drops from three files to two.
+- [ ] **Read it once before deleting**, for anything genuinely worth copying. **Report what you took, if anything.**
+
+## 8.1 · ONE SERVER ACCESSOR — not four client fetches
+The brief needs a join: shift → project page → **client page** (for the phone) → plus clock entries and attachments. **Done client-side that is 3+ round trips every time a crew member taps a row, on site, on a bad connection.**
+
+```ts
+// src/lib/data/shift-brief.ts   — the WH-5a pattern
+export async function shiftBrief(scope, shiftId): Promise<{
+    title:       string;              // 3-step fallback, already resolved
+    address:     string | null;       // project Location.address
+    mapUrl:      string | null;       // built server-side from the address
+    contactName: string | null;       // project → Klant → Naam
+    contactPhone:string | null;       // project → Klant → Telefoon
+    scheduled:   { start: string; end: string; date: string };
+    worked:      { in: string; out: string | null; minutes: number } | null;
+    photos:      { key: string; name: string; type: string }[];
+    files:       { id: string; name: string; url: string; type: string }[];
+}>;
+```
+- [ ] **Tenancy from the scope. `shiftId` verified against it before anything is read.** *(`TSC-0 D3` — the tenant is never a parameter.)*
+- [ ] **The three-step title fallback resolves HERE**, once, not in the component.
+- [ ] **`worked` comes from `ScheduledShift.clockEntries`** *(the relation `WORKHUB-CLOCKLINK` declared)*. Open entry first (`clockOutTime == null`), else the latest. **`minutes` uses `computeWorkedDuration`** — the kernel function, break rule included. 🛑 **Do not recompute duration in the UI.**
+- [ ] **`photos` from the clock entry's `photos` JSON** — `{key,name,type,size}`, verified present in production.
+- [ ] **`files` from `ScheduledShift.attachments`** *(`ShiftAttachment`, relation declared in `TSC-4`)*.
+
+## 8.2 · THE MODAL
+```
+┌─────────────────────────────────────────┐
+│ Herman Van Beek — Kitchen remodelling   │  title (3-step fallback)
+│ Tue 22 Sep · 09:00 – 17:00              │  scheduled
+├─────────────────────────────────────────┤
+│ 📍 Kerkstraat 14, 2000 Antwerpen     →  │  tap → map app
+│ 📞 Herman Van Beek · +32 …           →  │  tap → dial
+├─────────────────────────────────────────┤
+│ Worked  08:57 – 17:03 · 7h 36m          │  only when a clock entry exists
+├─────────────────────────────────────────┤
+│ Photos   [img] [img]                    │  tap → full screen
+│ Files    Bestek.pdf · Plan.pdf          │  tap → open
+├─────────────────────────────────────────┤
+│        [ CLOCK IN TO SHIFT ]            │  --persian-green, localized
+└─────────────────────────────────────────┘
+```
+- [ ] **Address → `https://maps.google.com/?q=<encoded>`.** **Phone → `tel:<number>`.** Both native on iOS and Android.
+- [ ] **Every absent field omits its whole row.** 🛑 **No empty pin, no "—", no "N/A".** A brief with three facts shows three rows.
+- [ ] **`worked` appears only when there is a clock entry.** The break deduction is visible in the figure, not explained.
+- [ ] **The clock button carries the same two states as §6** — green with a shift, tawny without — **and the same localized keys**.
+- [ ] **All text `.font-content`, base `1rem`** *(§7)*. 🛑 **No `text-xs` in this modal.**
+- [ ] 🔴 **Every string is an i18n key, in all five locales.** Labels *Worked* · *Photos* · *Files* included.
+
+## 8.3 · WHAT THIS MODAL IS NOT
+- 🛑 **No editing.** It is a brief, not a form. Editing is the scheduler's job on a desktop.
+- 🛑 **No project reassignment here.** That is `HRS-2` and it needs its own surface.
+- 🛑 **No ERP vocabulary.** No database ids, no `[ERP]` prefix, no project *page* id shown. **A worker sees a job name.**
+
+---
+
+# VERIFY — on a phone, not a desktop viewport
+1. **Home:** the schedule fills the width, full-bleed on mobile, **no nested scrollbar**, no outer card.
+2. **No "Today's Shift" block.** No Quick Access section.
+3. **The clock button is fixed above the nav and visible at every scroll position.** The last shift entry is not hidden behind it.
+3b. **`--persian-green` with `schedule.clockIntoShift` when a shift is available; `--tawny` with `schedule.clockInWithoutShift` when not.** Verify the rendered hex is `#339989` / `#d75d00` — not `emerald-600`, not `#d35400`.
+3c. **The no-shift path still creates an ad-hoc shift** *(`WH-13`: load-bearing, must not regress)*.
+3d. **The shift entry shows the title and a tappable address.** Tapping opens the native map app on a real phone — **not a browser tab**.
+4. **Tapping a shift opens the brief.** Address dials the map, phone dials the phone, photos open, files open.
+5. **A shift with no clock entry shows no Worked row.** A shift with no project shows the description, else the localized word.
+6. **Every time on every workhub screen is 24-hour.** 🔴 `grep -rn "ampm\|hour12" src/components/time-tracker` returns nothing.
+7. **The nav does not change shape** between loading and loaded.
+8. **Legibility: read it outdoors.** Base 1rem, `.font-content` applied, **`text-xs` absent from crew surfaces**.
+9. **All five locales** — `ro` and `ru` overflow nothing.
+10. `npm run test:compile` exit 0 · `test:lint` exit 0 · suite exit 0, **including the new `formatTime` assertions**.
+11. **Report:** `@ts-expect-error` count after deleting `ShiftViewDialog`, and the round-trip count when opening the modal — **it must be one.**
+
+## PROHIBITIONS
+- 🛑 **No restyle beyond this.** `WH-7` rebuilds the shift-editor files; visual work on them now is done twice.
+- 🛑 **No negative margins to escape the page padding.** Fix the wrapper.
+- 🛑 **No English literals.** Every visible string is a key, in five locales.
+- 🛑 **No `text-xs` on primary crew content.**
+- 🛑 **No colour literal in the new component.** Palette tokens only.
+- 🛑 **Do not change the global `body` font.** `DS-1`.

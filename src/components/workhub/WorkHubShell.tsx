@@ -97,7 +97,7 @@ export default function WorkHubShell({
 
     return (
         <div
-            className="min-h-screen w-full bg-neutral-50 dark:bg-black text-neutral-900 dark:text-white flex flex-col"
+            className="min-h-screen w-full bg-neutral-50 dark:bg-black text-neutral-900 dark:text-white flex flex-col font-content"
             style={{ '--brand-color': brandColor } as React.CSSProperties}
         >
             {/* ── Top Bar ── */}

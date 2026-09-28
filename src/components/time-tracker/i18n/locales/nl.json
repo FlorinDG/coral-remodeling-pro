@@ -135,7 +135,11 @@
     "noShiftsScheduledPeriod": "Geen diensten gepland in deze periode.",
     "clockIntoShift": "Inklokken op dienst",
     "clockInWithoutShift": "Inklokken zonder dienst",
-    "shiftFallback": "Dienst"
+    "shiftFallback": "Dienst",
+    "worked": "Gewerkt",
+    "photos": "Foto's",
+    "files": "Bestanden",
+    "shiftCompleted": "Dienst voltooid"
   },
   "timeOff": {
     "title": "Verlof",

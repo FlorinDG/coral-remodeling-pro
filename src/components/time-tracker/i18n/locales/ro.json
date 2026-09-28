@@ -135,7 +135,11 @@
     "noShiftsScheduledPeriod": "Nicio tură programată în această perioadă.",
     "clockIntoShift": "Pontează în tură",
     "clockInWithoutShift": "Pontare fără tură",
-    "shiftFallback": "Tură"
+    "shiftFallback": "Tură",
+    "worked": "Lucrat",
+    "photos": "Fotografii",
+    "files": "Fișiere",
+    "shiftCompleted": "Tură finalizată"
   },
   "timeOff": {
     "title": "Concediu",

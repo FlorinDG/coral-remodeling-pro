@@ -135,7 +135,11 @@
     "noShiftsScheduledPeriod": "В этот период нет запланированных смен.",
     "clockIntoShift": "Отметить приход на смену",
     "clockInWithoutShift": "Отметить приход без смены",
-    "shiftFallback": "Смена"
+    "shiftFallback": "Смена",
+    "worked": "Отработано",
+    "photos": "Фотографии",
+    "files": "Файлы",
+    "shiftCompleted": "Смена завершена"
   },
   "timeOff": {
     "title": "Отпуск",

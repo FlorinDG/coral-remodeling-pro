@@ -185,8 +185,7 @@ function WorkerScheduleCard({
     <div className="border rounded-lg p-4 space-y-3">
       <div className="flex items-center gap-2">
         <User className="h-5 w-5 text-muted-foreground" />
-        {/* @ts-expect-error SUPA-2: snake_case read (Supabase-era shape) */}
-        <h3 className="font-semibold">{worker.full_name}</h3>
+        <h3 className="font-semibold">{worker.name}</h3>
       </div>
       {worker.schedules.length === 0 ? (
         <p className="text-sm text-muted-foreground pl-7">No schedules assigned</p>
@@ -199,26 +198,21 @@ function WorkerScheduleCard({
             >
               <div className="flex items-center gap-4">
                 <span className="font-medium w-24">
-                  {/* @ts-expect-error SUPA-2: snake_case read (Supabase-era shape) */}
-                  {DAY_NAMES[schedule.day_of_week]}
+                  {DAY_NAMES[schedule.dayOfWeek]}
                 </span>
                 <div className="flex items-center gap-1 text-sm text-muted-foreground">
                   <Clock className="h-3 w-3" />
-                  {/* @ts-expect-error SUPA-2: snake_case read (Supabase-era shape) */}
-                  {schedule.shift_start.slice(0, 5)} - {schedule.shift_end.slice(0, 5)}
+                  {schedule.shiftStart.slice(0, 5)} - {schedule.shiftEnd.slice(0, 5)}
                 </div>
               </div>
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2">
                   <Switch
-                    // @ts-expect-error SUPA-2: snake_case read (Supabase-era shape)
-                    checked={schedule.is_active}
-                    // @ts-expect-error SUPA-2: snake_case read (Supabase-era shape)
-                    onCheckedChange={() => onToggleActive(schedule.id, schedule.is_active)}
+                    checked={schedule.isActive}
+                    onCheckedChange={() => onToggleActive(schedule.id, schedule.isActive)}
                   />
                   <span className="text-xs text-muted-foreground">
-                    {/* @ts-expect-error SUPA-2: snake_case read (Supabase-era shape) */}
-                    {schedule.is_active ? 'Active' : 'Paused'}
+                    {schedule.isActive ? 'Active' : 'Paused'}
                   </span>
                 </div>
                 <Button

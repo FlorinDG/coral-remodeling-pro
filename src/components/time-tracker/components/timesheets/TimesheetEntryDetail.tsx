@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { hrUpdate } from '@/lib/hr-api';
+import { hrUpdate, hrList } from '@/lib/hr-api';
 import { format, parseISO } from 'date-fns';
 import { nl, fr, enUS } from 'date-fns/locale';
 import { useLocale, useTranslations } from 'next-intl';
-import { Loader2, MapPin, Clock, Edit2, ShieldAlert, X, FileText, Paperclip } from 'lucide-react';
+import { Loader2, MapPin, Clock, Edit2, ShieldAlert, X, FileText } from 'lucide-react';
 import { resolveFileUrl } from '@/lib/files';
+import SearchableSelect from '@/components/ui/SearchableSelect';
 
 interface TimesheetEntryDetailProps {
     entry: any;
@@ -23,6 +24,8 @@ export function TimesheetEntryDetail({ entry, onUpdate, unlockTokenValid }: Time
     const [clockInTime, setClockInTime] = useState(entry.clockInTime ? format(parseISO(entry.clockInTime), 'HH:mm') : '');
     const [clockOutTime, setClockOutTime] = useState(entry.clockOutTime ? format(parseISO(entry.clockOutTime), 'HH:mm') : '');
     const [projectId, setProjectId] = useState(entry.projectId || '');
+    const [billable, setBillable] = useState(entry.billable !== false);
+    const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
     const [error, setError] = useState('');
     const [auditLogs, setAuditLogs] = useState<any[]>([]);
     const [shiftAttachments, setShiftAttachments] = useState<any[]>([]);
@@ -31,9 +34,20 @@ export function TimesheetEntryDetail({ entry, onUpdate, unlockTokenValid }: Time
         setClockInTime(entry.clockInTime ? format(parseISO(entry.clockInTime), 'HH:mm') : '');
         setClockOutTime(entry.clockOutTime ? format(parseISO(entry.clockOutTime), 'HH:mm') : '');
         setProjectId(entry.projectId || '');
+        setBillable(entry.billable !== false);
         setEditing(false);
         setError('');
-    }, [entry.id, entry.clockInTime, entry.clockOutTime, entry.projectId]);
+    }, [entry.id, entry.clockInTime, entry.clockOutTime, entry.projectId, entry.billable]);
+
+    useEffect(() => {
+        let active = true;
+        hrList<{ id: string; name: string }>('erp-projects')
+            .then(data => {
+                if (active && Array.isArray(data)) setProjects(data);
+            })
+            .catch(err => console.error("Failed to load projects", err));
+        return () => { active = false; };
+    }, []);
 
     useEffect(() => {
         const fetchAudit = async () => {
@@ -41,7 +55,7 @@ export function TimesheetEntryDetail({ entry, onUpdate, unlockTokenValid }: Time
                 const res = await fetch(`/api/hr/audit-logs?entityId=${entry.id}&entityType=clockEntry`);
                 if (res.ok) {
                     const data = await res.json();
-                    setAuditLogs(data);
+                    setAuditLogs(Array.isArray(data) ? data : []);
                 }
             } catch (err) {
                 console.error("Failed to load audit logs", err);
@@ -78,6 +92,15 @@ export function TimesheetEntryDetail({ entry, onUpdate, unlockTokenValid }: Time
 
     const showUnlockWarning = isApproved && !unlockTokenValid && editing;
 
+    const handleCancel = () => {
+        setClockInTime(entry.clockInTime ? format(parseISO(entry.clockInTime), 'HH:mm') : '');
+        setClockOutTime(entry.clockOutTime ? format(parseISO(entry.clockOutTime), 'HH:mm') : '');
+        setProjectId(entry.projectId || '');
+        setBillable(entry.billable !== false);
+        setError('');
+        setEditing(false);
+    };
+
     const handleSave = async () => {
         const dateBaseIn = entry.clockInTime ? format(parseISO(entry.clockInTime), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd');
         const dateBaseOut = entry.clockOutTime ? format(parseISO(entry.clockOutTime), 'yyyy-MM-dd') : dateBaseIn;
@@ -92,6 +115,7 @@ export function TimesheetEntryDetail({ entry, onUpdate, unlockTokenValid }: Time
                 clockInTime: combinedIn?.toISOString(),
                 clockOutTime: combinedOut?.toISOString(),
                 projectId: projectId || null,
+                billable: Boolean(billable),
             });
             onUpdate(updated);
             setEditing(false);
@@ -101,6 +125,62 @@ export function TimesheetEntryDetail({ entry, onUpdate, unlockTokenValid }: Time
             setLoading(false);
         }
     };
+
+    const getSourceLabel = (src: string | undefined | null) => {
+        switch (src) {
+            case 'clocked':
+                return t('sourceClocked', { fallback: 'Geklokt' });
+            case 'late_entry':
+                return t('sourceLateEntry', { fallback: 'Nageleverd' });
+            case 'Aangepast':
+            case 'adjusted':
+                return t('sourceAdjusted', { fallback: 'Aangepast' });
+            case 'admin_entry':
+                return t('sourceAdminEntry', { fallback: 'Beheerdersinvoer' });
+            case 'manual':
+                return t('sourceManual', { fallback: 'Handmatig' });
+            default:
+                return src || t('sourceClocked', { fallback: 'Geklokt' });
+        }
+    };
+
+    const getSourceExplanation = (src: string | undefined | null) => {
+        switch (src) {
+            case 'clocked':
+                return t('sourceExplanationClocked', { fallback: 'Live via mobiele app geregistreerd' });
+            case 'late_entry':
+                return t('sourceExplanationLateEntry', { fallback: 'Naderhand ingediend door medewerker' });
+            case 'Aangepast':
+            case 'adjusted':
+                return t('sourceExplanationAdjusted', { fallback: 'Gewijzigd door beheerder na registratie' });
+            case 'admin_entry':
+                return t('sourceExplanationAdminEntry', { fallback: 'Handmatig ingevoerd door beheerder' });
+            case 'manual':
+                return t('sourceExplanationManual', { fallback: 'Handmatig ingevoerd' });
+            default:
+                return t('sourceExplanationClocked', { fallback: 'Live via mobiele app geregistreerd' });
+        }
+    };
+
+    const getActionLabel = (act: string | undefined | null) => {
+        switch (act) {
+            case 'update':
+                return t('actionUpdate', { fallback: 'Bewerkt' });
+            case 'approve':
+                return t('actionApprove', { fallback: 'Goedgekeurd' });
+            case 'unapprove':
+                return t('actionUnapprove', { fallback: 'Goedkeuring ingetrokken' });
+            case 'forceClockOut':
+                return t('actionForceClockOut', { fallback: 'Klok geforceerd stopgezet' });
+            default:
+                return act || t('actionUpdate', { fallback: 'Bewerkt' });
+        }
+    };
+
+    const currentProjectName = projects.find(p => p.id === (editing ? projectId : entry.projectId))?.name 
+        || entry.projectName 
+        || entry.project?.name 
+        || (entry.projectId ? t('unknownProject', { fallback: 'Onbekend project' }) : t('unassigned', { fallback: 'Niet toegewezen' }));
 
     return (
         <div className="bg-neutral-50 dark:bg-white/5 border border-border p-4 rounded-xl m-2 space-y-4 shadow-inner">
@@ -132,8 +212,9 @@ export function TimesheetEntryDetail({ entry, onUpdate, unlockTokenValid }: Time
                                 <Button size="sm" disabled={loading || !canEdit} onClick={handleSave}>
                                     {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : t('save', { fallback: 'Save' })}
                                 </Button>
-                                <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>
-                                    <X className="w-3 h-3" />
+                                <Button size="sm" variant="ghost" onClick={handleCancel} title={t('cancel', { fallback: 'Annuleren' })} className="text-xs gap-1">
+                                    <X className="w-3.5 h-3.5" />
+                                    <span>{t('cancel', { fallback: 'Annuleren' })}</span>
                                 </Button>
                             </div>
                         </div>
@@ -185,21 +266,70 @@ export function TimesheetEntryDetail({ entry, onUpdate, unlockTokenValid }: Time
                     <h4 className="text-xs font-semibold uppercase text-muted-foreground">{t('attribution', { fallback: 'Attribution' })}</h4>
                     
                     {editing ? (
-                        <div className="text-sm space-y-1">
-                            <span className="font-medium text-neutral-500 block">{t('project', { fallback: 'Project' })}:</span>
-                            <input type="text" value={projectId} onChange={(e) => setProjectId(e.target.value)} disabled={!canEdit} className="border rounded px-2 py-1 text-xs w-full" placeholder="Project ID" />
+                        <div className="space-y-2 text-sm">
+                            <div className="space-y-1">
+                                <span className="font-medium text-neutral-500 block text-xs">{t('project', { fallback: 'Project' })}:</span>
+                                <SearchableSelect
+                                    options={[
+                                        { value: '', label: `— ${t('noProject', { fallback: 'Geen project' })} —` },
+                                        ...projects.map(p => ({ value: p.id, label: p.name }))
+                                    ]}
+                                    value={projectId}
+                                    onChange={(val) => setProjectId(val)}
+                                    placeholder={t('selectProject', { fallback: 'Selecteer project' })}
+                                    disabled={!canEdit}
+                                    className="w-full text-xs"
+                                />
+                            </div>
+
+                            <div className="space-y-1 pt-1">
+                                <span className="font-medium text-neutral-500 block text-xs">{t('billable', { fallback: 'Facturabel' })}:</span>
+                                <button
+                                    type="button"
+                                    onClick={() => canEdit && setBillable(!billable)}
+                                    disabled={!canEdit}
+                                    className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+                                        billable
+                                            ? 'bg-orange-50 border-orange-200 text-orange-800 dark:bg-orange-950/40 dark:border-orange-800 dark:text-orange-300'
+                                            : 'bg-neutral-100 border-neutral-200 text-neutral-600 dark:bg-neutral-800 dark:border-neutral-700 dark:text-neutral-400'
+                                    } ${!canEdit ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:border-orange-400'}`}
+                                >
+                                    <span className={`w-2 h-2 rounded-full ${billable ? 'bg-orange-600 dark:bg-orange-400' : 'bg-neutral-400'}`} />
+                                    <span>{billable ? t('billableYes', { fallback: 'Factureerbaar' }) : t('billableNo', { fallback: 'Niet factureerbaar (intern)' })}</span>
+                                </button>
+                            </div>
                         </div>
                     ) : (
-                        <div className="text-sm">
-                            <span className="font-medium text-neutral-500">{t('project', { fallback: 'Project' })}:</span> {entry.projectId || t('unassigned', { fallback: 'Niet toegewezen' })}
-                        </div>
+                        <>
+                            <div className="text-sm">
+                                <span className="font-medium text-neutral-500">{t('project', { fallback: 'Project' })}:</span>{' '}
+                                <span className="font-semibold text-neutral-800 dark:text-neutral-200">{currentProjectName}</span>
+                            </div>
+                            
+                            <div className="text-sm">
+                                <span className="font-medium text-neutral-500">{t('billable', { fallback: 'Facturabel' })}:</span>{' '}
+                                <span className="font-medium text-neutral-800 dark:text-neutral-200">
+                                    {entry.billable !== false ? t('billableYes', { fallback: 'Factureerbaar' }) : t('billableNo', { fallback: 'Niet factureerbaar (intern)' })}
+                                </span>
+                            </div>
+                        </>
                     )}
                     
-                    <div className="text-sm">
-                        <span className="font-medium text-neutral-500">{t('billable', { fallback: 'Billable' })}:</span> {entry.billable ? t('yes', { fallback: 'Yes' }) : t('no', { fallback: 'No' })}
-                    </div>
-                    <div className="text-sm">
-                        <span className="font-medium text-neutral-500">{t('source', { fallback: 'Source' })}:</span> {entry.source}
+                    <div className="text-sm pt-1">
+                        <span className="font-medium text-neutral-500 block mb-0.5">{t('source', { fallback: 'Bron' })}:</span>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-neutral-200 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200">
+                                {getSourceLabel(entry.source)}
+                            </span>
+                            {auditLogs.length > 0 && (
+                                <span className="text-[11px] text-orange-600 dark:text-orange-400 font-medium">
+                                    ({auditLogs.length} {auditLogs.length === 1 ? t('change', { fallback: 'wijziging' }) : t('changes', { fallback: 'wijzigingen' })})
+                                </span>
+                            )}
+                        </div>
+                        <p className="text-[11px] text-neutral-500 mt-1 leading-snug">
+                            {getSourceExplanation(entry.source)}
+                        </p>
                     </div>
                 </div>
 
@@ -207,7 +337,8 @@ export function TimesheetEntryDetail({ entry, onUpdate, unlockTokenValid }: Time
                 <div className="space-y-2">
                     <h4 className="text-xs font-semibold uppercase text-muted-foreground">{t('approval', { fallback: 'Approval' })}</h4>
                     <div className="text-sm">
-                        <span className="font-medium text-neutral-500">{t('status', { fallback: 'Status' })}:</span> {entry.approvalStatus || 'Pending'}
+                        <span className="font-medium text-neutral-500">{t('status', { fallback: 'Status' })}:</span>{' '}
+                        <span className="font-semibold">{entry.approvalStatus || 'Pending'}</span>
                     </div>
                     {entry.editedAfterApproval && (
                         <div className="mt-1 inline-flex items-center gap-1 bg-amber-100 text-amber-800 text-xs px-2 py-1 rounded-md">
@@ -219,13 +350,22 @@ export function TimesheetEntryDetail({ entry, onUpdate, unlockTokenValid }: Time
                     {auditLogs.length > 0 && (
                         <div className="mt-4 border-t border-border pt-4">
                             <h4 className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 mb-2">{t('auditTrail', { fallback: 'Audit Trail' })}</h4>
-                            <div className="space-y-3">
+                            <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
                                 {auditLogs.map((log) => (
-                                    <div key={log.id} className="text-xs">
-                                        <div className="font-semibold text-neutral-700 dark:text-neutral-300">
-                                            {format(new Date(log.createdAt), 'dd MMM HH:mm')} — {log.action}
+                                    <div key={log.id} className="text-xs bg-white dark:bg-neutral-900/60 p-2 rounded border border-neutral-200 dark:border-white/10 space-y-1">
+                                        <div className="flex items-center justify-between font-semibold text-neutral-800 dark:text-neutral-200">
+                                            <span>{log.actorLabel || log.actorKind || 'Systeem'}</span>
+                                            <span className="text-[10px] text-neutral-400 font-normal">
+                                                {format(new Date(log.createdAt), 'dd MMM HH:mm', { locale: dateFnsLocale })}
+                                            </span>
                                         </div>
-                                        {log.reason && <div className="text-neutral-500 italic">{t('reason', { fallback: 'Reason' })}: {log.reason}</div>}
+                                        <div className="text-neutral-600 dark:text-neutral-400 flex items-center gap-1">
+                                            <span className="font-medium uppercase text-[10px] tracking-wider text-orange-600 dark:text-orange-400">
+                                                {getActionLabel(log.action)}
+                                            </span>
+                                            {log.field && <span className="text-[11px]">({log.field})</span>}
+                                        </div>
+                                        {log.reason && <div className="text-neutral-500 italic text-[11px]">{t('reason', { fallback: 'Reason' })}: {log.reason}</div>}
                                     </div>
                                 ))}
                             </div>

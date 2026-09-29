@@ -39,6 +39,7 @@ const ENTITY_MAP: Record<string, string> = {
     'shift-attachments': 'shiftAttachment',
     'approval-requests': 'hrApprovalRequest',
     'support-messages':  'hrSupportMessage',
+    'audit-logs':        'auditLog',
 };
 
 // Roles that count as "employees" in HR context (queryable via /api/hr/employees)
@@ -133,6 +134,14 @@ export async function GET(
         } else {
             where.team = { tenantId: ctx.tenantId };
         }
+    }
+
+    // For audit-logs, scope by entityId and entityType if provided
+    if (entity === 'audit-logs') {
+        const entityId = url.searchParams.get('entityId');
+        if (entityId) where.entityId = entityId;
+        const entityType = url.searchParams.get('entityType');
+        if (entityType) where.entityType = entityType;
     }
 
     // ── VIRTUAL ENTITIES: ERP Projects & Tasks ───────────────────────────
@@ -402,6 +411,10 @@ export async function POST(
 
     const { entity } = await params;
 
+    if (entity === 'audit-logs') {
+        return NextResponse.json({ error: 'Audit logs are immutable' }, { status: 403 });
+    }
+
     const model = getModel(entity);
     if (!model) return NextResponse.json({ error: `Unknown entity: ${entity}` }, { status: 400 });
 
@@ -580,6 +593,11 @@ export async function PATCH(
     if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { entity } = await params;
+
+    if (entity === 'audit-logs') {
+        return NextResponse.json({ error: 'Audit logs are immutable' }, { status: 403 });
+    }
+
     const model = getModel(entity);
     if (!model) return NextResponse.json({ error: `Unknown entity: ${entity}` }, { status: 400 });
 
@@ -809,6 +827,11 @@ export async function DELETE(
     if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { entity } = await params;
+
+    if (entity === 'audit-logs') {
+        return NextResponse.json({ error: 'Audit logs are immutable' }, { status: 403 });
+    }
+
     const model = getModel(entity);
     if (!model) return NextResponse.json({ error: `Unknown entity: ${entity}` }, { status: 400 });
 

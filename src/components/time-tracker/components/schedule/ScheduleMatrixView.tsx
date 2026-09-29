@@ -10,7 +10,7 @@ import { formatTime } from '@/lib/format/date';
 
 interface ScheduleMatrixViewProps {
   shifts: ScheduledShift[];
-  workers: { id: string; name?: string; full_name?: string; hourlyRate?: number | null; hourly_rate?: number | null }[];
+  workers: { id: string; name?: string; hourlyRate?: number | null }[];
   weekStart: Date;
   weekCount: 1 | 2;
   onPrevWeek: () => void;
@@ -80,7 +80,7 @@ export function ScheduleMatrixView({
   const filteredWorkers = useMemo(() => {
     if (!searchQuery.trim()) return workers;
     const q = searchQuery.toLowerCase();
-    return workers.filter(w => (w.name || w.full_name || '').toLowerCase().includes(q));
+    return workers.filter(w => (w.name || '').toLowerCase().includes(q));
   }, [workers, searchQuery]);
   
   const dates = useMemo(() => {
@@ -104,8 +104,8 @@ export function ScheduleMatrixView({
     });
 
     shifts.forEach(shift => {
-      const uid = shift.userId || shift.user_id || '';
-      const sd = shift.shiftDate || shift.shift_date || '';
+      const uid = shift.userId || '';
+      const sd = shift.shiftDate || '';
       if (!map[uid]) {
         map[uid] = {};
       }
@@ -122,7 +122,7 @@ export function ScheduleMatrixView({
   const workerRates = useMemo(() => {
     const rates: Record<string, number> = {};
     workers.forEach(worker => {
-      rates[worker.id] = worker.hourly_rate || 0;
+      rates[worker.id] = worker.hourlyRate || 0;
     });
     return rates;
   }, [workers]);
@@ -138,12 +138,12 @@ export function ScheduleMatrixView({
       let headcount = 0;
       
       shifts.forEach(shift => {
-        const sd = shift.shiftDate || shift.shift_date || '';
-        const uid = shift.userId || shift.user_id || '';
+        const sd = shift.shiftDate || '';
+        const uid = shift.userId || '';
         const matchesSearch = filteredWorkers.some(w => w.id === uid);
         if (sd === dateStr && matchesSearch) {
-          const ss = shift.shiftStart || shift.shift_start || '08:00';
-          const se = shift.shiftEnd || shift.shift_end || '17:00';
+          const ss = shift.shiftStart || '08:00';
+          const se = shift.shiftEnd || '17:00';
           const hours = calculateShiftHours(ss, se);
           totalHours += hours;
           totalCost += hours * (workerRates[uid] || 0);
@@ -163,10 +163,10 @@ export function ScheduleMatrixView({
     workers.forEach(w => {
       let total = 0;
       shifts.forEach(shift => {
-        const uid = shift.userId || shift.user_id || '';
+        const uid = shift.userId || '';
         if (uid === w.id) {
-          const ss = shift.shiftStart || shift.shift_start || '08:00';
-          const se = shift.shiftEnd || shift.shift_end || '17:00';
+          const ss = shift.shiftStart || '08:00';
+          const se = shift.shiftEnd || '17:00';
           total += calculateShiftHours(ss, se);
         }
       });
@@ -462,9 +462,9 @@ export function ScheduleMatrixView({
                       >
                         <div className="flex items-center justify-between gap-2">
                           <div>
-                            <div className="font-bold text-sm text-neutral-900 dark:text-white truncate max-w-[120px]">{worker.name || worker.full_name}</div>
-                            {((worker.hourlyRate ?? worker.hourly_rate) || 0) > 0 && (
-                              <div className="text-[10px] font-bold text-neutral-400">€{worker.hourlyRate ?? worker.hourly_rate}/hr</div>
+                            <div className="font-bold text-sm text-neutral-900 dark:text-white truncate max-w-[120px]">{worker.name}</div>
+                            {((worker.hourlyRate) || 0) > 0 && (
+                              <div className="text-[10px] font-bold text-neutral-400">€{worker.hourlyRate}/hr</div>
                             )}
                           </div>
                           <div className={cn(
@@ -500,8 +500,8 @@ export function ScheduleMatrixView({
                               {dayShifts.map(shift => {
                                 const projectColor = shift.project?.color ? getNotionColor(shift.project.color) : null;
                                 const isDragging = draggedShiftId === shift.id;
-                                const ss = shift.shiftStart || shift.shift_start || '08:00';
-                                const se = shift.shiftEnd || shift.shift_end || '17:00';
+                                const ss = shift.shiftStart || '08:00';
+                                const se = shift.shiftEnd || '17:00';
                                 const hours = calculateShiftHours(ss, se);
                                 const status = shift.status || 'Scheduled';
                                 

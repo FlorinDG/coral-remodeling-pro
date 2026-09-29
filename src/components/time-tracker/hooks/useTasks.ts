@@ -92,7 +92,6 @@ export function useTasks(projectId?: string | null) {
                 updatedAt: (t as any).createdAt || '',
                 properties: t.properties,
                 assignedTo: t.assignedTo,
-                project_id: t.projectId,
             }));
 
             setTasks(filtered);
@@ -107,17 +106,17 @@ export function useTasks(projectId?: string | null) {
         fetchTasks();
     }, [fetchTasks]);
 
-    const createTask = useCallback(async (data: Partial<Task> & { project_id?: string }) => {
+    const createTask = useCallback(async (data: Partial<Task>) => {
         try {
             const page = await createTaskPage({
                 title: data.title || 'Untitled Task',
                 priority: data.priority || undefined,
-                projectId: data.project_id || data.projectId || undefined,
+                projectId: data.projectId || undefined,
             });
 
             const newTask: Task = {
                 id: page.id,
-                projectId: data.project_id || data.projectId || null,
+                projectId: data.projectId || null,
                 title: data.title || 'Untitled Task',
                 description: null,
                 status: 'opt-todo',
@@ -171,8 +170,6 @@ export function useShiftTasks(shiftId?: string | null) {
 
             const enriched = data.map(st => ({
                 ...st,
-                shift_id: st.shiftId,
-                task_id: st.taskId,
                 subtasks: st.subtasks || [],
                 workerNotes: st.workerNotes || null,
                 task: taskMap.has(st.taskId) ? {

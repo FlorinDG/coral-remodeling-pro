@@ -266,7 +266,6 @@ const eslintConfig = defineConfig([
       "src/components/time-tracker/components/schedule/ScheduleMatrixView.tsx",
       "src/components/time-tracker/hooks/useScheduleAttachments.ts",
       "src/components/time-tracker/hooks/useScheduledShifts.ts",
-      "src/components/time-tracker/pages/Performance.tsx",
     ],
     rules: {
       "no-restricted-syntax": [

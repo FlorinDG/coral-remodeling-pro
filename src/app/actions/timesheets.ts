@@ -97,6 +97,11 @@ export async function getTimesheetData(targetUserId: string, startIso: string, e
         const proj = shiftProjectMap.get(c.id);
         return {
             id: c.id,
+            clockInTime: c.clockInTime.toISOString(),
+            clockOutTime: c.clockOutTime ? c.clockOutTime.toISOString() : null,
+            taskDescription: c.taskDescription,
+            projectId: proj?.project_id || null,
+            projectName: proj?.project_name || null,
             clock_in_time: c.clockInTime.toISOString(),
             clock_out_time: c.clockOutTime ? c.clockOutTime.toISOString() : null,
             task_description: c.taskDescription,

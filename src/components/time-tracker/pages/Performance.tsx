@@ -26,9 +26,10 @@ import { format, startOfMonth, endOfMonth, parseISO, differenceInMinutes, subMon
 import { cn } from '@/lib/utils';
 
 interface UserProfile {
-  user_id: string;
-  full_name: string;
-  hourly_rate: number | null;
+  id?: string;
+  userId: string;
+  name: string;
+  hourlyRate: number | null;
 }
 
 import { useAppBasePath } from '@/components/time-tracker/hooks/useAppBasePath';
@@ -76,10 +77,10 @@ export default function Performance() {
         if (data) {
           setAllUsers(data.map((u: any) => ({
             id: u.id,
-            user_id: u.userId,
-            full_name: `${u.firstName} ${u.lastName}`.trim(),
-            hourly_rate: u.hourlyRate || 0
-          })).sort((a: any, b: any) => a.full_name.localeCompare(b.full_name)));
+            userId: u.userId,
+            name: `${u.firstName} ${u.lastName}`.trim(),
+            hourlyRate: u.hourlyRate || 0
+          })).sort((a: any, b: any) => a.name.localeCompare(b.name)));
         }
       } catch (err) {
         console.error('Failed to fetch users', err);
@@ -114,15 +115,15 @@ export default function Performance() {
 
         // Calculate unique days present
         const uniqueDays = new Set(
-          entriesResult.map(entry => format(parseISO(entry.clock_in_time), 'yyyy-MM-dd'))
+          entriesResult.map(entry => format(parseISO(entry.clockInTime), 'yyyy-MM-dd'))
         );
         const daysPresent = uniqueDays.size;
 
         // Calculate total hours
         let totalMins = 0;
         entriesResult.forEach(entry => {
-          if (entry.clock_out_time) {
-            totalMins += differenceInMinutes(parseISO(entry.clock_out_time), parseISO(entry.clock_in_time));
+          if (entry.clockOutTime) {
+            totalMins += differenceInMinutes(parseISO(entry.clockOutTime), parseISO(entry.clockInTime));
           }
         });
         const hoursWorked = Math.round(totalMins / 60 * 10) / 10;
@@ -231,8 +232,8 @@ export default function Performance() {
                           <SelectItem value="loading" disabled>Loading users...</SelectItem>
                         ) : (
                           allUsers.map((u) => (
-                            <SelectItem key={u.user_id} value={u.user_id}>
-                              {u.full_name}
+                            <SelectItem key={u.userId} value={u.userId}>
+                              {u.name}
                             </SelectItem>
                           ))
                         )}
@@ -305,7 +306,7 @@ export default function Performance() {
 
                   {selectedUserId && selectedUserId !== user?.id && (
                     <Badge variant="secondary" className="ml-auto">
-                      Viewing: {allUsers.find(u => u.user_id === selectedUserId)?.full_name}
+                      Viewing: {allUsers.find(u => u.userId === selectedUserId)?.name}
                     </Badge>
                   )}
                 </div>

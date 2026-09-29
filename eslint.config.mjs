@@ -282,7 +282,6 @@ const eslintConfig = defineConfig([
       "src/components/time-tracker/pages/Performance.tsx",
       "src/components/time-tracker/pages/Profile.tsx",
       "src/components/time-tracker/pages/Schedule.tsx",
-      "src/components/time-tracker/pages/TimeOff.tsx",
     ],
     rules: {
       "no-restricted-syntax": [

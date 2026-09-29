@@ -18,6 +18,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { nl } from 'date-fns/locale';
 import { format } from 'date-fns';
 import { isSelfApproved } from '@/lib/provenance';
+import { describeError } from '@/lib/describe-error';
 
 interface Employee {
     id: string;
@@ -173,7 +174,7 @@ function TimesheetsContent() {
             setSummary(data.summary);
         } catch (err: any) {
             console.error('Failed to fetch timesheets:', err);
-            setError(err.message || 'Failed to load timesheets.');
+            setError(`Failed to load timesheets. — ${describeError(err)}`);
         } finally {
             setLoading(false);
         }
@@ -198,7 +199,7 @@ function TimesheetsContent() {
             setEntries(prev => prev.map(e => e.id === id ? { ...e, ...updated, approvalStatus: status } : e));
         } catch (err: any) {
             console.error('Failed to update status:', err);
-            alert(err.message || 'Failed to update status');
+            alert(`Failed to update status — ${describeError(err)}`);
         }
     };
 

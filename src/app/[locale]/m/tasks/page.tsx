@@ -32,6 +32,7 @@ import { parseRecurrenceRule, getNextDueDate } from '@/components/admin/tasks/Re
 import FileViewer from '@/components/files/FileViewer';
 import { useUserPreferences } from '@/hooks/useUserPreferences';
 import { DEFAULT_TASK_SETTINGS, TaskSettingsPreferences } from './settings/page';
+import { describeError } from '@/lib/describe-error';
 
 
 export interface TaskAttachment {
@@ -407,7 +408,7 @@ export default function MobileTasksPage() {
                 }
             } catch (e: any) {
                 console.error('File upload error', e);
-                alert(`Upload error: ${e?.message || 'Failed'}`);
+                alert(`Upload error: Failed — ${describeError(e)}`);
             }
         }
         setIsUploadingAttachment(false);
@@ -473,7 +474,7 @@ export default function MobileTasksPage() {
             }
         } catch (e: any) {
             console.error(e);
-            alert(e?.message || 'Error sending digest');
+            alert(`Error sending digest — ${describeError(e)}`);
         } finally {
             setIsSendingDigest(false);
         }

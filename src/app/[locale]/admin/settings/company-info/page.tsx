@@ -11,6 +11,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { useSession } from 'next-auth/react';
 import { useTenant } from '@/context/TenantContext';
 import { useRouter } from 'next/navigation';
+import { describeError } from '@/lib/describe-error';
 
 // ── Peppol Connection Banner ──────────────────────────────────────────────────
 function PeppolBanner({ onFetchRegistry, fetchingRegistry, t }: {
@@ -325,7 +326,8 @@ export default function CompanyInfoSettings() {
                 throw new Error(data.error || 'Failed to activate Peppol');
             }
         } catch (e: any) {
-            toast.error(e.message || 'Failed to activate Peppol', { id: 'peppol-activate' });
+            console.error('[company-info] Peppol activation failed:', e);
+            toast.error(`Failed to activate Peppol — ${describeError(e)}`, { id: 'peppol-activate' });
         }
     };
 

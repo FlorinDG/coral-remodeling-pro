@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useUserPreferences } from '@/hooks/useUserPreferences';
 import { sendTaskDigestAction } from '@/app/actions/tasks';
+import { describeError } from '@/lib/describe-error';
 
 export interface TaskSettingsPreferences {
     defaultView: 'today' | 'all' | 'flagged';
@@ -62,7 +63,8 @@ export default function TaskSettingsPage() {
                 toast.error('Failed to send digest email');
             }
         } catch (e: any) {
-            toast.error(e?.message || 'Error sending digest');
+            console.error('[m/tasks/settings] Failed to send digest:', e);
+            toast.error(`Error sending digest — ${describeError(e)}`);
         } finally {
             setIsSendingDigest(false);
         }

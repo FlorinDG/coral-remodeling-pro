@@ -18,6 +18,7 @@ import {
     impersonateTenant,
     getTenantPeppolHealth,
 } from "@/app/actions/superadmin";
+import { describeError } from "@/lib/describe-error";
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -99,7 +100,8 @@ function PeppolHealthPanel({ tenantId }: { tenantId: string }) {
             const data = await getTenantPeppolHealth(tenantId);
             setHealth(data);
         } catch (e: any) {
-            setError(e.message || "Failed to retrieve health status");
+            console.error('[TenantsGrid] checkHealth failed:', e);
+            setError(`Failed to retrieve health status — ${describeError(e)}`);
         } finally {
             setLoading(false);
         }
@@ -453,8 +455,8 @@ export default function TenantsGrid({ initialTenants }: { initialTenants: Tenant
                                                                         setOpenMenu(null);
                                                                         window.location.href = '/en/admin/dashboard';
                                                                     } catch (e) {
-                                                                        const error = e as Error;
-                                                                        alert(error.message || 'Failed to enter workspace');
+                                                                        console.error('[TenantsGrid] Impersonate tenant failed:', e);
+                                                                        alert(`Failed to enter workspace — ${describeError(e)}`);
                                                                     }
                                                                 }}
                                                                 className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-500/10 transition-colors font-bold"

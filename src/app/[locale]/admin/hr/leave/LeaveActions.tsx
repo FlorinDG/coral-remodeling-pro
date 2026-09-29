@@ -4,6 +4,7 @@ import { useState } from "react";
 import { CheckCircle2, XCircle, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { describeError } from "@/lib/describe-error";
 
 export default function LeaveActions({ requestId }: { requestId: string }) {
     const router = useRouter();
@@ -27,7 +28,8 @@ export default function LeaveActions({ requestId }: { requestId: string }) {
             toast.success(`Leave request ${status}`);
             router.refresh(); // Re-fetch server data
         } catch (err: any) {
-            toast.error(err.message || `Failed to ${action} request`);
+            console.error('[LeaveActions] Action failed:', err);
+            toast.error(`Failed to ${action} request — ${describeError(err)}`);
         } finally {
             setLoading(null);
         }

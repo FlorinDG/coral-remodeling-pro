@@ -257,8 +257,9 @@ const eslintConfig = defineConfig([
       "src/app/actions/timesheets.ts",
     ],
     ignores: [
-      // 37 entries: 36 from the original 14-name census + useScheduleAttachments.ts, which
-      // carried the shape but went unmatched until the Step 0b pattern widening.
+      // Grandfathered allowlist: 5 files remaining.
+      // - CreateShiftForm.tsx and EditShiftDialog.tsx are rebuilt in WH-7.
+      // - timesheets.ts, useScheduleAttachments.ts, useScheduledShifts.ts are INC-1 bridges.
       "src/app/actions/timesheets.ts",
       "src/components/time-tracker/components/schedule/CreateShiftForm.tsx",
       "src/components/time-tracker/components/schedule/EditShiftDialog.tsx",

@@ -32,12 +32,16 @@ export async function getHrDocuments() {
         id: d.id,
         title: d.title,
         description: d.description,
-        file_url: d.fileUrl,
+        fileUrl: d.fileUrl,
         content: d.content,
-        requires_signature: d.requiresSignature,
+        requiresSignature: d.requiresSignature,
         deadline: d.deadline ? d.deadline.toISOString() : null,
-        created_at: d.createdAt.toISOString(),
+        createdAt: d.createdAt.toISOString(),
         acknowledged: ackMap.has(d.id),
+        acknowledgedAt: ackMap.get(d.id) || null,
+        file_url: d.fileUrl,
+        requires_signature: d.requiresSignature,
+        created_at: d.createdAt.toISOString(),
         acknowledged_at: ackMap.get(d.id) || null
     }));
 }

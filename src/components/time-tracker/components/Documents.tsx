@@ -21,13 +21,13 @@ interface Document {
   id: string;
   title: string;
   description: string | null;
-  file_url: string | null;
+  fileUrl: string | null;
   content: string | null;
-  requires_signature: boolean;
+  requiresSignature: boolean;
   deadline: string | null;
-  created_at: string;
+  createdAt: string;
   acknowledged: boolean;
-  acknowledged_at: string | null;
+  acknowledgedAt: string | null;
 }
 
 // ── Signature Pad ────────────────────────────────────────────────────
@@ -178,7 +178,7 @@ export function Documents() {
   const handleAcknowledge = async () => {
     if (!selectedDoc) return;
 
-    if (selectedDoc.requires_signature && !signatureData) {
+    if (selectedDoc.requiresSignature && !signatureData) {
       toast.error('Please provide your signature');
       return;
     }
@@ -265,7 +265,7 @@ export function Documents() {
               <div className="flex-1 min-w-0">
                 <h3 className="text-base font-medium text-muted-foreground truncate">{doc.title}</h3>
                 <p className="text-sm text-muted-foreground mt-0.5">
-                  Acknowledged {doc.acknowledged_at ? format(parseISO(doc.acknowledged_at), 'MMM d, yyyy') : ''}
+                  Acknowledged {doc.acknowledgedAt ? format(parseISO(doc.acknowledgedAt), 'MMM d, yyyy') : ''}
                 </p>
               </div>
               <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
@@ -297,9 +297,9 @@ export function Documents() {
               )}
 
               {/* File download link */}
-              {selectedDoc.file_url && (
+              {selectedDoc.fileUrl && (
                 <a
-                  href={selectedDoc.file_url}
+                  href={selectedDoc.fileUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-3 p-3 rounded-xl bg-primary/5 hover:bg-primary/10 transition-colors group"
@@ -318,8 +318,8 @@ export function Documents() {
                   <div>
                     <p className="text-sm font-semibold text-secondary">Acknowledged</p>
                     <p className="text-sm text-muted-foreground">
-                      {selectedDoc.acknowledged_at
-                        ? format(parseISO(selectedDoc.acknowledged_at), 'd MMMM yyyy HH:mm')
+                      {selectedDoc.acknowledgedAt
+                        ? format(parseISO(selectedDoc.acknowledgedAt), 'd MMMM yyyy HH:mm')
                         : ''}
                     </p>
                   </div>
@@ -327,7 +327,7 @@ export function Documents() {
               ) : (
                 <>
                   {/* Signature pad (if required) */}
-                  {selectedDoc.requires_signature && (
+                  {selectedDoc.requiresSignature && (
                     <SignaturePad
                       onSign={setSignatureData}
                       onClear={() => setSignatureData(null)}
@@ -337,7 +337,7 @@ export function Documents() {
                   {/* Acknowledge button */}
                   <Button
                     onClick={handleAcknowledge}
-                    disabled={acknowledging || (selectedDoc.requires_signature && !signatureData)}
+                    disabled={acknowledging || (selectedDoc.requiresSignature && !signatureData)}
                     className="w-full"
                     size="lg"
                   >
@@ -349,7 +349,7 @@ export function Documents() {
                     ) : (
                       <>
                         <Check className="w-4 h-4 mr-2" />
-                        {selectedDoc.requires_signature ? 'Sign & Acknowledge' : 'Acknowledge'}
+                        {selectedDoc.requiresSignature ? 'Sign & Acknowledge' : 'Acknowledge'}
                       </>
                     )}
                   </Button>

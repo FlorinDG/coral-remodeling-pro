@@ -260,7 +260,6 @@ const eslintConfig = defineConfig([
       // 37 entries: 36 from the original 14-name census + useScheduleAttachments.ts, which
       // carried the shape but went unmatched until the Step 0b pattern widening.
       "src/app/actions/timesheets.ts",
-      "src/components/time-tracker/components/Documents.tsx",
       "src/components/time-tracker/components/TimesheetView.tsx",
       "src/components/time-tracker/components/admin/UserDetailView.tsx",
       "src/components/time-tracker/components/schedule/CreateShiftForm.tsx",

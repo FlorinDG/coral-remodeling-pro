@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { hrList, hrCreate, hrUpdate, hrDelete } from '@/lib/hr-api';
+import { describeError } from '@/lib/describe-error';
 
 export interface WorkerSchedule {
   id: string;
@@ -40,7 +41,7 @@ export function useWorkerSchedules() {
       setEmployees(employeeData.filter(e => e.schedule !== false));
     } catch (err: any) {
       console.error('[useWorkerSchedules] error:', err);
-      setError(err.message || 'Failed to fetch schedules or employees');
+      setError(`Failed to fetch schedules or employees — ${describeError(err)}`);
     } finally {
       setLoading(false);
     }

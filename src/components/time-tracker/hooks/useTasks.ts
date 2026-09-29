@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { hrList, hrCreate, hrUpdate, hrDelete } from '@/lib/hr-api';
 import { createTaskPage } from '@/app/actions/tasks';
+import { describeError } from '@/lib/describe-error';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -132,7 +133,7 @@ export function useTasks(projectId?: string | null) {
             return { data: newTask, error: null };
         } catch (err: any) {
             console.error('[useTasks] Failed to create task:', err);
-            return { data: null, error: err?.message || 'Failed to create task' };
+            return { data: null, error: `Failed to create task — ${describeError(err)}` };
         }
     }, [fetchTasks]);
 
@@ -187,7 +188,7 @@ export function useShiftTasks(shiftId?: string | null) {
             setShiftTasks(enriched);
         } catch (err: any) {
             console.error('[useShiftTasks] Failed to fetch shift tasks:', err);
-            setError(err.message || 'Failed to fetch shift tasks or ERP tasks');
+            setError(`Failed to fetch shift tasks or ERP tasks — ${describeError(err)}`);
         } finally {
             setLoading(false);
         }

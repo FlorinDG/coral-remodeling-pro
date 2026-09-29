@@ -8,6 +8,7 @@ import { Loader2, MapPin, Clock, Edit2, ShieldAlert, X, FileText } from 'lucide-
 import { resolveFileUrl } from '@/lib/files';
 import SearchableSelect from '@/components/ui/SearchableSelect';
 import { isSelfApproved } from '@/lib/provenance';
+import { describeError } from '@/lib/describe-error';
 
 interface TimesheetEntryDetailProps {
     entry: any;
@@ -125,7 +126,8 @@ export function TimesheetEntryDetail({ entry, onUpdate, unlockTokenValid }: Time
             onUpdate(updated);
             setEditing(false);
         } catch (err: any) {
-            setError(err.message || 'Failed to update entry');
+            console.error('[TimesheetEntryDetail] Update failed:', err);
+            setError(`Failed to update entry — ${describeError(err)}`);
         } finally {
             setLoading(false);
         }

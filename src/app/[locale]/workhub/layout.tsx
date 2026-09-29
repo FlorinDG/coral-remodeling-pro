@@ -8,6 +8,7 @@ import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
 import { provisionLockedDatabases } from "@/lib/provisionTenantDbs";
 import { redirect } from "next/navigation";
+import { isWorkforceRole } from "@/lib/roles";
 
 /**
  * /workhub — Standalone HR & Workforce Webapp
@@ -22,6 +23,12 @@ export default async function WorkHubLayout({ children }: { children: React.Reac
     if (!session?.user?.tenantId) redirect("/login");
 
     const tenantId = session.user.tenantId;
+
+    // FILES-CREW-1 / WH-2: the crew's screens read the HR API, never the ERP database store.
+    // Loading it shipped EVERY ERP database (invoices, expenses, clients, quotes — only projects
+    // were filtered) to the crew phone and persisted it in the browser. Office roles using the
+    // WorkHub keep it (the admin "Record Site Visit" needs it).
+    const crew = isWorkforceRole((session.user as { role?: string }).role);
 
     // ── Fetch tenant data + databases ──
     let activeModules: string[] = ["HR"];
@@ -78,8 +85,8 @@ export default async function WorkHubLayout({ children }: { children: React.Reac
                     creditnoteNextNumber: true,
                 },
             }),
-            IS_LAZY_DATA_ENABLED ? getGlobalDatabaseSchemas() : getGlobalDatabases(),
-            getGlobalPageIndex()
+            crew ? Promise.resolve([]) : (IS_LAZY_DATA_ENABLED ? getGlobalDatabaseSchemas() : getGlobalDatabases()),
+            crew ? Promise.resolve([]) : getGlobalPageIndex()
         ]);
 
         let fullTenant = null;
@@ -99,7 +106,9 @@ export default async function WorkHubLayout({ children }: { children: React.Reac
         return (
             <AuthProvider>
                 <WorkHubProviders>
-                    <GlobalDatabaseSyncer databases={databases} pageIndex={pageIndex} tenantId={tenantId} userId={session?.user?.id} />
+                    {!crew && (
+                        <GlobalDatabaseSyncer databases={databases} pageIndex={pageIndex} tenantId={tenantId} userId={session?.user?.id} />
+                    )}
                     <WorkHubShell activeModules={activeModules} planType={planType} lockedDbIds={lockedDbIds} tenant={fullTenant}>
                         {children}
                     </WorkHubShell>

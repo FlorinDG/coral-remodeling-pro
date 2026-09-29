@@ -74,6 +74,13 @@ export default function WorkHubShell({
     // pd.md 5a: the shell asks the one definition; it does not list roles itself.
     const isWorkforce = isWorkforceRole(userRole);
 
+    // FILES-CREW-1: a crew phone no longer receives the ERP dataset — also remove what earlier
+    // sessions persisted there (same key the Sign-out button clears).
+    useEffect(() => {
+        if (!isWorkforce) return;
+        del('coral-database-storage-v4').catch(err => console.error('[WorkHubShell] could not clear ERP cache:', err));
+    }, [isWorkforce]);
+
     const filteredPrimaryItems = PRIMARY_ITEMS;
 
     // Workforce users retain access to Documents (files) in the drawer (WHS-1 §4)

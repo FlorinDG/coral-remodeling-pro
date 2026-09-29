@@ -22,10 +22,10 @@ import { hrList, hrCreate } from '@/lib/hr-api';
 
 interface UserProfile {
   id: string;
-  user_id: string;
-  full_name: string;
-  hourly_rate: number;
-  created_at: string;
+  userId: string;
+  name: string;
+  hourlyRate: number;
+  createdAt: string;
   roles: AppRole[];
   teams: { id: string; name: string; role: string }[];
   schedule: boolean;
@@ -51,10 +51,10 @@ export function UserManager() {
       
       const usersWithRoles: UserProfile[] = employees.map(emp => ({
         id: emp.id,
-        user_id: emp.id,
-        full_name: `${emp.firstName} ${emp.lastName}`.trim(),
-        hourly_rate: emp.hourlyCost || 0,
-        created_at: emp.createdAt || new Date().toISOString(),
+        userId: emp.id,
+        name: `${emp.firstName} ${emp.lastName}`.trim(),
+        hourlyRate: emp.hourlyCost || 0,
+        createdAt: emp.createdAt || new Date().toISOString(),
         roles: [(emp.role?.toLowerCase() || 'employee') as AppRole],
         teams: [],
         schedule: emp.schedule !== false,
@@ -138,7 +138,7 @@ export function UserManager() {
     <>
       {selectedUser && (
         <UserDetailView
-          user={selectedUser}
+          user={selectedUser as any}
           teams={teams}
           onBack={() => setSelectedUser(null)}
           onUpdate={handleUserUpdate}

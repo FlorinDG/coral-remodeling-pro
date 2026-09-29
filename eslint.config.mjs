@@ -262,7 +262,6 @@ const eslintConfig = defineConfig([
       "src/app/actions/timesheets.ts",
       "src/components/time-tracker/components/Documents.tsx",
       "src/components/time-tracker/components/LateEntryCard.tsx",
-      "src/components/time-tracker/components/LateEntryForm.tsx",
       "src/components/time-tracker/components/TimesheetView.tsx",
       "src/components/time-tracker/components/admin/UserDetailView.tsx",
       "src/components/time-tracker/components/admin/UserManager.tsx",

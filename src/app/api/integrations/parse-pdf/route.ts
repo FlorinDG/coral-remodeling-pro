@@ -4,6 +4,7 @@ import OpenAI from 'openai';
 import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
 import { canAccess } from '@/lib/feature-flags';
+import { describeError } from '@/lib/describe-error';
 
 export const maxDuration = 60; // Allow longer execution for LLM
 
@@ -282,6 +283,6 @@ ${text.substring(0, 120000)}`;
 
     } catch (error: any) {
         console.error('PDF Parsing Error:', error);
-        return NextResponse.json({ success: false, error: error.message || 'Failed to parse PDF' }, { status: 500 });
+        return NextResponse.json({ success: false, error: `Failed to parse PDF — ${describeError(error)}` }, { status: 500 });
     }
 }

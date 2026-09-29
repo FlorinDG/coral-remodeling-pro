@@ -6,6 +6,7 @@ import prisma from '@/lib/prisma';
 import { v4 as uuidv4 } from 'uuid';
 import { type SystemDatabaseRole, SYSTEM_DATABASES, BASE_TO_KEY } from '@/lib/kernel/system-databases';
 import { checkDuplicateExpense } from '@/lib/expense-dedup';
+import { describeError } from '@/lib/describe-error';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60; // Increased — pdfjs page render can take longer
@@ -603,7 +604,7 @@ export async function POST(req: Request) {
         if (e.status) {
             return NextResponse.json({ error: e.message, code: e.code }, { status: e.status });
         }
-        console.error('[/api/scan] Error:', e?.message ?? e);
-        return NextResponse.json({ error: e?.message || 'Scan failed' }, { status: 500 });
+        console.error('[/api/scan] Error:', e);
+        return NextResponse.json({ error: `Scan failed — ${describeError(e)}` }, { status: 500 });
     }
 }

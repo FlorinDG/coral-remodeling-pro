@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
 import { getAccessibleUserIds } from '@/app/api/hr/lib/team-scoping';
+import { describeError } from '@/lib/describe-error';
 
 async function getContext() {
     const session = await auth();
@@ -109,6 +110,6 @@ export async function POST(req: Request) {
 
     } catch (err: any) {
         console.error('Rate restamp error:', err);
-        return NextResponse.json({ error: err.message || 'Server error' }, { status: 500 });
+        return NextResponse.json({ error: `Server error — ${describeError(err)}` }, { status: 500 });
     }
 }

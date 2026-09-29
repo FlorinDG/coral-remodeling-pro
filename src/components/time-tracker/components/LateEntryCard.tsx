@@ -52,7 +52,7 @@ export function LateEntryCard() {
   const [taskDescription, setTaskDescription] = useState('');
   const [includeLocation, setIncludeLocation] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
-  const [allUsers, setAllUsers] = useState<{ user_id: string; full_name: string }[]>([]);
+  const [allUsers, setAllUsers] = useState<{ userId: string; name: string }[]>([]);
   const [selectedUserId, setSelectedUserId] = useState('');
   const [usersLoading, setUsersLoading] = useState(false);
 
@@ -72,9 +72,9 @@ export function LateEntryCard() {
         const data = await hrList<any>('employees');
         if (data) {
           setAllUsers(data.map((u: any) => ({
-            user_id: u.userId,
-            full_name: `${u.firstName} ${u.lastName}`.trim()
-          })).sort((a: any, b: any) => a.full_name.localeCompare(b.full_name)));
+            userId: u.userId,
+            name: `${u.firstName} ${u.lastName}`.trim()
+          })).sort((a: any, b: any) => a.name.localeCompare(b.name)));
         }
       } catch (error) {
         console.error('Failed to fetch users', error);
@@ -232,8 +232,8 @@ export function LateEntryCard() {
                         <SelectItem value="loading" disabled>Loading users...</SelectItem>
                       ) : (
                         allUsers.map(u => (
-                          <SelectItem key={u.user_id} value={u.user_id}>
-                            {u.full_name}
+                          <SelectItem key={u.userId} value={u.userId}>
+                            {u.name}
                           </SelectItem>
                         ))
                       )}

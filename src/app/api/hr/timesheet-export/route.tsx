@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
-import { getAccessibleUserIds } from '@/app/api/hr/lib/team-scoping';
+import { resolveReach } from '@/app/api/hr/lib/actor-reach';
 import { computeWorkedDuration } from '@/lib/computeWorkedDuration';
 import * as XLSX from 'xlsx';
 import { ClockEntry } from '@prisma/client';
@@ -50,10 +50,11 @@ export async function GET(req: Request) {
     const requestedProjectIds = url.searchParams.getAll('projectIds[]');
 
     // RBAC: Only get data for users this requester is allowed to see
-    const isAdminRole = ['TENANT_ADMIN', 'SUPERADMIN', 'ACCOUNTANT', 'APP_MANAGER', 'TENANT_OWNER', 'TENANT_PRO_OWNER', 'TENANT_ENTERPRISE_OWNER', 'TENANT_ENTERPRISE_ADMIN'].includes(ctx.role);
+    // Gate 2 — one authority (actor-reach.ts): tenant HR roles see the tenant, others their reach.
+    const reach = await resolveReach(ctx);
     let allowedUserIds: string[] | null = null;
-    if (!isAdminRole) {
-        allowedUserIds = await getAccessibleUserIds(ctx.tenantId, ctx.userId);
+    if (reach.userIds !== null) {
+        allowedUserIds = Array.from(reach.userIds);
     }
     
     let targetUserIds = allowedUserIds;

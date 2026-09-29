@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
+import { isTenantHrRole } from '@/app/api/hr/lib/actor-reach';
 import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
-import { getAccessibleUserIds } from '@/app/api/hr/lib/team-scoping';
 import { describeError } from '@/lib/describe-error';
 
 async function getContext() {
@@ -19,8 +19,8 @@ export async function POST(req: Request) {
     const ctx = await getContext();
     if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const isAdminRole = ['TENANT_ADMIN', 'SUPERADMIN', 'ACCOUNTANT', 'APP_MANAGER', 'TENANT_OWNER', 'TENANT_PRO_OWNER', 'TENANT_ENTERPRISE_OWNER'].includes(ctx.role);
-    if (!isAdminRole) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    // Gate 2 — restamping cost rates is an HR act (actor-reach.ts).
+    if (!isTenantHrRole(ctx.role)) return NextResponse.json({ error: 'requires_hr_role' }, { status: 403 });
 
     try {
         const body = await req.json();

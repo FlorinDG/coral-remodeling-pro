@@ -14,6 +14,8 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
 import { buildAuditLogData, buildAuditLogOperation } from '@/lib/audit';
+import { resolveReach } from '../lib/actor-reach';
+import { hrWriteRefusal } from '../lib/write-policy';
 import crypto from 'crypto';
 import { Resend } from 'resend';
 import React from 'react';
@@ -85,6 +87,16 @@ function sanitize(data: Record<string, unknown>) {
     return clean;
 }
 
+/** Gate 2 refusal → a named 403 (ERROR-SURFACING: the code says what was refused). */
+function hrWriteGate(
+    entity: string, method: 'POST' | 'PATCH' | 'DELETE', mayApprove: boolean, actorId: string,
+    data: Record<string, unknown>, existing: Record<string, unknown> | null,
+): NextResponse | null {
+    const refusal = hrWriteRefusal(entity, method, mayApprove, actorId, data, existing);
+    if (!refusal) return null;
+    return NextResponse.json({ error: refusal.detail ? `${refusal.code}: ${refusal.detail}` : refusal.code }, { status: 403 });
+}
+
 // ── GET ────────────────────────────────────────────────────────────────────
 export async function GET(
     _req: Request,
@@ -111,10 +123,11 @@ export async function GET(
 
     if (userId) where.userId = userId;
 
-    const isAdminRole = ['TENANT_ADMIN', 'SUPERADMIN', 'ACCOUNTANT', 'APP_MANAGER', 'TENANT_OWNER', 'TENANT_PRO_OWNER', 'TENANT_ENTERPRISE_OWNER', 'TENANT_ENTERPRISE_ADMIN'].includes(ctx.role);
+    // Gate 2 (actor reach) — asked of ONE authority, never decided here (pd.md 5a).
+    const reach = await resolveReach(ctx);
+    const isAdminRole = reach.kind === 'tenant';
     if ((entity === 'time-off' || entity === 'clock-entries' || entity === 'shifts') && !isAdminRole) {
-        const { getAccessibleUserIds } = await import('../lib/team-scoping');
-        const accessibleIds = await getAccessibleUserIds(ctx.tenantId, ctx.userId);
+        const accessibleIds = Array.from(reach.userIds ?? []);
         where.userId = { in: accessibleIds };
     }
 
@@ -160,8 +173,7 @@ export async function GET(
                 let internalProjectWhere: any = { tenantId: ctx.tenantId };
 
                 if (!isAdminRole) {
-                    const { getAccessibleUserIds } = await import('../lib/team-scoping');
-                    const accessibleIds = await getAccessibleUserIds(ctx.tenantId, ctx.userId);
+                    const accessibleIds = Array.from(reach.userIds ?? []);
                     const shifts = await prisma.scheduledShift.findMany({
                         where: { userId: { in: accessibleIds }, tenantId: ctx.tenantId },
                         select: { projectId: true }
@@ -446,6 +458,20 @@ export async function POST(
         data.userId = ctx.userId;
     }
 
+    // ── GATE 2 · WRITE POLICY (POST) — coral-walkdown-actor-reach-writes.md ──────
+    // Only tenant HR roles (tenant admin · director · HR) write the back office or approve.
+    // Everyone else gets named self-service: their OWN clock entries, leave and requests, all pending.
+    const writeReach = await resolveReach(ctx);
+    const gate2 = hrWriteGate(entity, 'POST', writeReach.mayApprove, ctx.userId, data, null);
+    if (gate2) return gate2;
+    if (entity === 'clock-entries') {
+        // Facts the server records about an act — never values a client supplies (any role).
+        delete data.approvedBy;
+        delete data.approvedAt;
+        delete data.editedAfterApproval;
+        delete data.costRateApplied;
+    }
+
     // For clock-entries, stamp createdBy server-side from authenticated ctx.userId (HR-TS-7)
     if (entity === 'clock-entries') {
         data.createdBy = ctx.userId;
@@ -458,7 +484,8 @@ export async function POST(
     // SCH-1: Reroute shift creations with status 'leave' to TimeOffRequest
     if (entity === 'shifts' && data.status === 'leave') {
         try {
-            const isAdminRole = ctx.role === 'admin' || ctx.role === 'owner';
+            // Gate 2: 'admin'/'owner' matched no real role, so every admin-created leave landed pending.
+            const isAdminRole = (await resolveReach(ctx)).mayApprove;
             const leaveBody = {
                 tenantId: ctx.tenantId,
                 userId: data.userId as string,
@@ -683,6 +710,23 @@ export async function PATCH(
     const body = await req.json();
     const data = sanitize(body);
     const warnings: string[] = [];
+
+    // ── GATE 2 · WRITE POLICY (PATCH) ──
+    const patchReach = await resolveReach(ctx);
+    if (!patchReach.mayApprove) {
+        const selfServiceEntity = entity === 'clock-entries' || entity === 'time-off';
+        const existingRow = selfServiceEntity
+            ? await model.findFirst({ where: { id, tenantId: ctx.tenantId } })
+            : null;
+        const gate2 = hrWriteGate(entity, 'PATCH', false, ctx.userId, data, existingRow);
+        if (gate2) return gate2;
+    }
+    if (entity === 'clock-entries') {
+        // Server-recorded facts — the approval branch below stamps approvedBy/approvedAt itself.
+        delete data.approvedBy;
+        delete data.approvedAt;
+        delete data.costRateApplied;
+    }
 
     try {
         let record;
@@ -912,6 +956,11 @@ export async function DELETE(
     } catch {
         return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
+
+    // ── GATE 2 · WRITE POLICY (DELETE) ──
+    const deleteReach = await resolveReach(ctx);
+    const gate2 = hrWriteGate(entity, 'DELETE', deleteReach.mayApprove, ctx.userId, {}, null);
+    if (gate2) return gate2;
 
     try {
         await model.delete({ where: { id } });

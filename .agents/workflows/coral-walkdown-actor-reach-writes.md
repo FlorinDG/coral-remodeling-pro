@@ -72,3 +72,29 @@ Governed by `coral-workhub-structure.md` (Gate 2 · actor reach) and `pd.md` 5a 
 3. **Self-approval** stays allowed for approvers (your earlier call, `HR-TS-7`) — confirming it survives the move.
 
 🟨 **Behaviour changes the bridge WILL cause, stated so none is a surprise:** the `erp-tasks` branch starts treating the tenant owner as admin; admin-created leave starts landing `approved` as SCH-1 intended; `TENANT_ENTERPRISE_MANAGER`/`HR_OFFICER` (if you agree to 2) gain tenant reach in HR.
+
+---
+
+# 3 · ✅ DECIDED AND BUILT — 2026-09-30
+**Florin:** *"only tenant enabled roles. tenant admin, director, hr."* — and: *"the signature approves the hours and file freezes together with attachments, notes and all there is."*
+
+| Florin's word | `ROLES` |
+|---|---|
+| tenant admin | `APP_MANAGER`, `TENANT_FREE`, `TENANT_PRO_OWNER`, `TENANT_ENTERPRISE_OWNER` (+ legacy spellings `TENANT_ADMIN`, `TENANT_OWNER`) |
+| director | `TENANT_ENTERPRISE_MANAGER` |
+| HR | `HR_OFFICER` |
+
+🔴 **Consequences, stated:** `SUPERADMIN` and `ACCOUNTANT` **lose** HR tenant reach and approval (they are not tenant roles). `TENANT_ENTERPRISE_MANAGER` and `HR_OFFICER` **gain** them. An accountant's timesheet export now returns only their own (empty) reach.
+
+**Two approval doors, not one:** internal approval = these roles (`actor-reach.ts`). **The client's signature on the werkbon is the other door** — a PORTAL actor that approves and freezes the entry with its attachments and notes (`WB-C` + `WB-D`). It is not a role and is not decided in Gate 2.
+
+## Built
+- `src/app/api/hr/lib/actor-reach.ts` — `resolveReach`, `isTenantHrRole`: **the one authority**. Exit: `R1-4`'s `scope.reach()`.
+- `src/app/api/hr/lib/write-policy.ts` — **pure** policy table, `tests/hr-write-policy.test.ts` (22 cases: every crew call path passes; every escalation refused).
+- Routed through it: `[entity]` GET reach · POST · PATCH · DELETE · leave reroute · `timesheet-export` · `timesheet-reports` · `timesheet-rates` · `timesheet-rates/undo`. **Five of the six copies are gone.**
+- Server-only fields stripped from every clock-entry write: `approvedBy`, `approvedAt`, `costRateApplied`, `editedAfterApproval`.
+
+## Still open
+- `[entity]` `erp-tasks` keeps its own 3-role list — **Tasks module visibility, not hours**; belongs to the Tasks module's entitlement (`access-control.ts`), not Gate 2.
+- **Gate 2 phase 2:** `shifts`, `shift-tasks`, `shift-attachments` — crew self-service on their own shifts needs reach-on-parent (rides with `R1-4`).
+- 🔴 **Live clock-in trusts the client's `clockInTime`.** A crew member can backdate a live clock-in. Late entries legitimately carry times (and are pending); a live clock-in should be stamped `now()` by the server. → `CE-TIME-1`.

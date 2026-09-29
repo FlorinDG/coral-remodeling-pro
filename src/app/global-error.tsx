@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { AlertOctagon, RefreshCw, LayoutDashboard, ChevronDown, ChevronUp, Terminal } from 'lucide-react';
+import { describeError } from '@/lib/describe-error';
 import './globals.css';
 
 export default function GlobalError({
@@ -79,7 +80,7 @@ export default function GlobalError({
                             {showDiagnostics && (
                                 <div className="mt-3 p-4 rounded-2xl bg-neutral-900 text-neutral-200 font-mono text-[11px] overflow-x-auto max-h-48 border border-neutral-800 animate-in slide-in-from-top-2 duration-200">
                                     <p className="text-red-400 font-bold mb-1">
-                                        {error.name || 'Error'}: {error.message || 'No details'}
+                                        {describeError(error)}
                                     </p>
                                     {error.stack && (
                                         <pre className="text-neutral-500 leading-relaxed whitespace-pre-wrap mt-2 overflow-y-auto">

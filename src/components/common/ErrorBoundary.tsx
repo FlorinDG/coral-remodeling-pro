@@ -2,6 +2,7 @@
 
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { AlertCircle, RefreshCcw } from 'lucide-react';
+import { describeError } from '@/lib/describe-error';
 
 interface Props {
     children: ReactNode;
@@ -44,7 +45,7 @@ export default class ErrorBoundary extends Component<Props, State> {
                     <p className="text-sm text-red-700 dark:text-red-400 mb-6 max-w-xs mx-auto">
                         An error occurred while rendering this section: <br/>
                         <code className="text-[10px] font-mono mt-2 block bg-red-100/50 p-1 rounded">
-                            {this.state.error?.message || 'Unknown error'}
+                            {describeError(this.state.error)}
                         </code>
                     </p>
                     <button

@@ -247,5 +247,17 @@
       "rejected": "Respins",
       "unreviewed": "Încă neverificat"
     }
+  },
+  "tasks": {
+    "title": "Sarcinile mele",
+    "urgent": "Urgent",
+    "high": "Ridicată",
+    "overdue": "întârziată",
+    "loadFailed": "Sarcinile tale nu au putut fi încărcate",
+    "empty": "Nicio sarcină atribuită ție",
+    "done_one": "{{count}} finalizată",
+    "done_few": "{{count}} finalizate",
+    "done_other": "{{count}} de finalizate",
+    "noDetails": "Fără note sau atașamente"
   }
 }

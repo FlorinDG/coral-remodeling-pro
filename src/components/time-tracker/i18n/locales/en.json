@@ -245,5 +245,16 @@
       "rejected": "Rejected",
       "unreviewed": "Not yet reviewed"
     }
+  },
+  "tasks": {
+    "title": "My tasks",
+    "urgent": "Urgent",
+    "high": "High",
+    "overdue": "overdue",
+    "loadFailed": "Your tasks could not be loaded",
+    "empty": "No tasks assigned to you",
+    "done_one": "{{count}} done",
+    "done_other": "{{count}} done",
+    "noDetails": "No notes or attachments"
   }
 }

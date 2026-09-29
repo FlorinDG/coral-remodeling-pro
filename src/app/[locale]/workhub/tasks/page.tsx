@@ -2,19 +2,16 @@
 
 import dynamic from "next/dynamic";
 
-const TaskModuleShell = dynamic(
-    () => import("@/components/admin/tasks/TaskModuleShell"),
+/**
+ * WorkHub — My tasks (WH-2).
+ * A phone-native, read-only list of the tasks assigned to the worker. The admin Task Manager
+ * is no longer shown to the crew (it stays at /admin/tasks and /m/tasks for the office).
+ */
+const MyTasksScreen = dynamic(
+    () => import("@/components/workhub/screens/MyTasksScreen").then(m => m.MyTasksScreen),
     { ssr: false }
 );
 
-/**
- * WorkHub Tasks — re-uses the full Task Manager from the admin module.
- * Employees can see and manage their assigned tasks directly from WorkHub.
- */
 export default function WorkHubTasksPage() {
-    return (
-        <div className="w-full h-[calc(100vh-8rem)] md:h-[calc(100vh-7rem)]">
-            <TaskModuleShell />
-        </div>
-    );
+    return <MyTasksScreen />;
 }

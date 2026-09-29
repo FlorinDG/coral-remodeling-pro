@@ -245,5 +245,16 @@
       "rejected": "Afgewezen",
       "unreviewed": "Nog niet nagekeken"
     }
+  },
+  "tasks": {
+    "title": "Mijn taken",
+    "urgent": "Dringend",
+    "high": "Hoog",
+    "overdue": "te laat",
+    "loadFailed": "Je taken konden niet geladen worden",
+    "empty": "Geen taken aan jou toegewezen",
+    "done_one": "{{count}} klaar",
+    "done_other": "{{count}} klaar",
+    "noDetails": "Geen notities of bijlagen"
   }
 }

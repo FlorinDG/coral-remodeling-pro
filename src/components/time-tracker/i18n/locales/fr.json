@@ -245,5 +245,16 @@
       "rejected": "Refusé",
       "unreviewed": "Pas encore vérifié"
     }
+  },
+  "tasks": {
+    "title": "Mes tâches",
+    "urgent": "Urgent",
+    "high": "Haute",
+    "overdue": "en retard",
+    "loadFailed": "Vos tâches n’ont pas pu être chargées",
+    "empty": "Aucune tâche ne vous est assignée",
+    "done_one": "{{count}} terminée",
+    "done_other": "{{count}} terminées",
+    "noDetails": "Pas de notes ni de pièces jointes"
   }
 }

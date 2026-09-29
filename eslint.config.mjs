@@ -261,7 +261,6 @@ const eslintConfig = defineConfig([
       // carried the shape but went unmatched until the Step 0b pattern widening.
       "src/app/actions/timesheets.ts",
       "src/components/time-tracker/components/TimesheetView.tsx",
-      "src/components/time-tracker/components/admin/UserDetailView.tsx",
       "src/components/time-tracker/components/schedule/CreateShiftForm.tsx",
       "src/components/time-tracker/components/schedule/EditShiftDialog.tsx",
       "src/components/time-tracker/components/schedule/ScheduleMatrixView.tsx",

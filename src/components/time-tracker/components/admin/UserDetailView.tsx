@@ -40,10 +40,10 @@ import { Team } from '@/components/time-tracker/hooks/useTeams';
 
 interface UserProfile {
   id: string;
-  user_id: string;
-  full_name: string;
-  hourly_rate: number;
-  created_at: string;
+  userId?: string;
+  name: string;
+  hourlyRate: number;
+  createdAt: string;
   roles: AppRole[];
   teams: { id: string; name: string; role: string }[];
   schedule?: boolean;
@@ -92,11 +92,11 @@ export function UserDetailView({
   const [currentUser, setCurrentUser] = useState<UserProfile>(user);
   
   // Edit name state
-  const [editName, setEditName] = useState(user.full_name);
+  const [editName, setEditName] = useState(user.name);
   const [savingName, setSavingName] = useState(false);
   
   // Edit rate state
-  const [editRate, setEditRate] = useState(user.hourly_rate.toString());
+  const [editRate, setEditRate] = useState(user.hourlyRate.toString());
   const [savingRate, setSavingRate] = useState(false);
   
   // Password reset state
@@ -124,7 +124,7 @@ export function UserDetailView({
       const { hrUpdate } = await import('@/lib/hr-api');
       await hrUpdate('employees', currentUser.id, { firstName: editName.trim().split(' ')[0], lastName: editName.trim().split(' ').slice(1).join(' ') });
       toast.success('Name updated');
-      const updated = { ...currentUser, full_name: editName.trim() };
+      const updated = { ...currentUser, name: editName.trim() };
       setCurrentUser(updated);
       onUpdate(updated);
     } catch (error) {
@@ -148,7 +148,7 @@ export function UserDetailView({
       const { hrUpdate } = await import('@/lib/hr-api');
       await hrUpdate('employees', currentUser.id, { hourlyRate: rate });
       toast.success('Hourly rate updated');
-      const updated = { ...currentUser, hourly_rate: rate };
+      const updated = { ...currentUser, hourlyRate: rate };
       setCurrentUser(updated);
       onUpdate(updated);
     } catch (error) {
@@ -206,7 +206,7 @@ export function UserDetailView({
     try {
       const { resetEmployeePassword } = await import('@/app/actions/hr-admin');
       
-      const response = await resetEmployeePassword(currentUser.user_id, resetPassword);
+      const response = await resetEmployeePassword(currentUser.userId || currentUser.id, resetPassword);
 
       if (response.error) {
         toast.error(response.error || 'Failed to reset password');
@@ -230,7 +230,7 @@ export function UserDetailView({
     try {
       const { deleteEmployee } = await import('@/app/actions/hr-admin');
 
-      const response = await deleteEmployee(currentUser.user_id);
+      const response = await deleteEmployee(currentUser.userId || currentUser.id);
 
       if (response.error) {
         toast.error(response.error || 'Failed to delete user');
@@ -251,7 +251,7 @@ export function UserDetailView({
   const handleAddTeam = async () => {
     if (!selectedTeamId) return;
     
-    await addTeamMember(selectedTeamId, currentUser.user_id);
+    await addTeamMember(selectedTeamId, currentUser.userId || currentUser.id);
     const team = teams.find(t => t.id === selectedTeamId);
     if (team) {
       const updated = {
@@ -265,7 +265,7 @@ export function UserDetailView({
   };
 
   const handleRemoveTeam = async (teamId: string) => {
-    await removeTeamMember(teamId, currentUser.user_id);
+    await removeTeamMember(teamId, currentUser.userId || currentUser.id);
     const updated = {
       ...currentUser,
       teams: currentUser.teams.filter(t => t.id !== teamId)
@@ -279,7 +279,7 @@ export function UserDetailView({
       <Dialog open={true} onOpenChange={(open) => { if (!open) onBack(); }}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader className="sr-only">
-            <DialogTitle>{currentUser.full_name}</DialogTitle>
+            <DialogTitle>{currentUser.name}</DialogTitle>
             <DialogDescription>User details and profile editing</DialogDescription>
           </DialogHeader>
           
@@ -294,9 +294,9 @@ export function UserDetailView({
               <User className="h-6 w-6 text-primary" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold">{currentUser.full_name}</h2>
+              <h2 className="text-xl font-semibold">{currentUser.name}</h2>
               <p className="text-sm text-muted-foreground">
-                Member since {formatDate(currentUser.created_at)}
+                Member since {formatDate(currentUser.createdAt)}
               </p>
             </div>
           </div>
@@ -320,7 +320,7 @@ export function UserDetailView({
                   />
                   <Button 
                     onClick={handleSaveName} 
-                    disabled={savingName || editName === currentUser.full_name}
+                    disabled={savingName || editName === currentUser.name}
                   >
                     {savingName ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save'}
                   </Button>
@@ -344,7 +344,7 @@ export function UserDetailView({
                   </div>
                   <Button 
                     onClick={handleSaveRate} 
-                    disabled={savingRate || editRate === currentUser.hourly_rate.toString()}
+                    disabled={savingRate || editRate === currentUser.hourlyRate.toString()}
                   >
                     {savingRate ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save'}
                   </Button>
@@ -498,7 +498,7 @@ export function UserDetailView({
           <DialogHeader>
             <DialogTitle>Reset Password</DialogTitle>
             <DialogDescription>
-              Set a new password for <strong>{currentUser.full_name}</strong>.
+              Set a new password for <strong>{currentUser.name}</strong>.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -541,7 +541,7 @@ export function UserDetailView({
           <AlertDialogHeader>
             <AlertDialogTitle>Delete User?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete <strong>{currentUser.full_name}</strong>? 
+              Are you sure you want to delete <strong>{currentUser.name}</strong>? 
               This will remove their profile from the system. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>

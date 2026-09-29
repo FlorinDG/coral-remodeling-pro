@@ -470,6 +470,12 @@ export async function POST(
         delete data.approvedAt;
         delete data.editedAfterApproval;
         delete data.costRateApplied;
+        // CE-TIME-1: a LIVE clock-in (no clockOutTime) happens NOW — the server's clock, not the phone's.
+        // Closed records (late entries, manual entries) carry typed times and are pending / HR-made.
+        // When the offline queue lands (kernel), the queued intent's time comes from it, not from here.
+        if (!data.clockOutTime) {
+            data.clockInTime = new Date();
+        }
     }
 
     // For clock-entries, stamp createdBy server-side from authenticated ctx.userId (HR-TS-7)
@@ -726,6 +732,11 @@ export async function PATCH(
         delete data.approvedBy;
         delete data.approvedAt;
         delete data.costRateApplied;
+        // CE-TIME-1: a crew member closing their own entry clocks out NOW (server time).
+        // HR roles may set an explicit clockOutTime (force clock-out, corrections — audited below).
+        if (!patchReach.mayApprove && 'clockOutTime' in data) {
+            data.clockOutTime = new Date();
+        }
     }
 
     try {

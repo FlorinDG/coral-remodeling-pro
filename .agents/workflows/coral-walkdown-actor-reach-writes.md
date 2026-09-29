@@ -98,3 +98,9 @@ Governed by `coral-workhub-structure.md` (Gate 2 · actor reach) and `pd.md` 5a 
 - `[entity]` `erp-tasks` keeps its own 3-role list — **Tasks module visibility, not hours**; belongs to the Tasks module's entitlement (`access-control.ts`), not Gate 2.
 - **Gate 2 phase 2:** `shifts`, `shift-tasks`, `shift-attachments` — crew self-service on their own shifts needs reach-on-parent (rides with `R1-4`).
 - 🔴 **Live clock-in trusts the client's `clockInTime`.** A crew member can backdate a live clock-in. Late entries legitimately carry times (and are pending); a live clock-in should be stamped `now()` by the server. → `CE-TIME-1`.
+
+## Amendment — 2026-09-30, after the role census
+**Census:** `SUPERADMIN` ×3 (tfo@, florin.t@, admin@) · `TENANT_ADMIN` ×1 · `ACCOUNTANT` ×1 · `PROJECT_MANAGER` ×1 · `TEAMLEAD` ×1 · `TENANT_ENTERPRISE_WORKFORCE` ×5 · **no owner roles at all.**
+🔴 As first built, **Florin (SUPERADMIN) could not approve hours in his own company.**
+**Florin chose: superadmin keeps HR reach and approval in every tenant, including while impersonating.** *(Rejected: "admin in home tenant only" — Planner's recommendation; "change my account's role".)* `SUPERADMIN` added to `actor-reach.ts`. The audit row records the actor on every approval.
+**Still losing HR reach:** `ACCOUNTANT` (holban.florin@yahoo.com) — its timesheet export now returns nothing. `PROJECT_MANAGER` and `TEAMLEAD` keep self/team reach, no approval.

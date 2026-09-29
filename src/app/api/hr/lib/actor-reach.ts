@@ -6,8 +6,8 @@
  *   Exit: deleted when R1-4 exposes `scope.reach()`; its callers switch in one commit.
  *   Until then: no HR route evaluates a role itself. It asks this file.
  *
- * Florin, 2026-09-30: approval and tenant-wide reach belong ONLY to tenant roles —
- *   tenant admin · director · HR.
+ * Florin, 2026-09-30: approval and tenant-wide reach belong to tenant admin · director · HR,
+ *   plus SUPERADMIN (platform), in every tenant.
  * Client-side approval of hours is a separate door: the client's signature on the werkbon
  * (WB-C) approves and freezes. It is a PORTAL actor, not a role, and is not decided here.
  */
@@ -16,6 +16,9 @@ import { getAccessibleUserIds } from './team-scoping';
 
 /** tenant admin · director · HR — the only roles with tenant-wide HR reach and the right to approve. */
 const TENANT_HR_ROLES: ReadonlySet<string> = new Set<string>([
+    // platform — Florin 2026-09-30: superadmin keeps HR reach and approval in every tenant,
+    // including while impersonating (chosen over "home tenant only"; the audit row records the actor).
+    ROLES.SUPERADMIN,
     // tenant admin
     ROLES.APP_MANAGER,
     ROLES.TENANT_FREE,

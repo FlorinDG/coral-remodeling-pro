@@ -19,11 +19,19 @@ export function TimesheetEntryDetail({ entry, onUpdate, unlockTokenValid }: Time
 
     const [loading, setLoading] = useState(false);
     const [editing, setEditing] = useState(false);
-    const [clockInTime, setClockInTime] = useState(entry.clockInTime ? new Date(entry.clockInTime).toISOString().substring(11, 16) : '');
-    const [clockOutTime, setClockOutTime] = useState(entry.clockOutTime ? new Date(entry.clockOutTime).toISOString().substring(11, 16) : '');
+    const [clockInTime, setClockInTime] = useState(entry.clockInTime ? format(parseISO(entry.clockInTime), 'HH:mm') : '');
+    const [clockOutTime, setClockOutTime] = useState(entry.clockOutTime ? format(parseISO(entry.clockOutTime), 'HH:mm') : '');
     const [projectId, setProjectId] = useState(entry.projectId || '');
     const [error, setError] = useState('');
     const [auditLogs, setAuditLogs] = useState<any[]>([]);
+
+    useEffect(() => {
+        setClockInTime(entry.clockInTime ? format(parseISO(entry.clockInTime), 'HH:mm') : '');
+        setClockOutTime(entry.clockOutTime ? format(parseISO(entry.clockOutTime), 'HH:mm') : '');
+        setProjectId(entry.projectId || '');
+        setEditing(false);
+        setError('');
+    }, [entry.id, entry.clockInTime, entry.clockOutTime, entry.projectId]);
 
     useEffect(() => {
         const fetchAudit = async () => {
@@ -47,8 +55,8 @@ export function TimesheetEntryDetail({ entry, onUpdate, unlockTokenValid }: Time
     const showUnlockWarning = isApproved && !unlockTokenValid && editing;
 
     const handleSave = async () => {
-        const dateBaseIn = entry.clockInTime ? new Date(entry.clockInTime).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
-        const dateBaseOut = entry.clockOutTime ? new Date(entry.clockOutTime).toISOString().split('T')[0] : dateBaseIn;
+        const dateBaseIn = entry.clockInTime ? format(parseISO(entry.clockInTime), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd');
+        const dateBaseOut = entry.clockOutTime ? format(parseISO(entry.clockOutTime), 'yyyy-MM-dd') : dateBaseIn;
         
         const combinedIn = clockInTime ? new Date(`${dateBaseIn}T${clockInTime}:00`) : null;
         const combinedOut = clockOutTime ? new Date(`${dateBaseOut}T${clockOutTime}:00`) : null;

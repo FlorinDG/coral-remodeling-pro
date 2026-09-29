@@ -78,7 +78,7 @@ export default function Profile() {
         requestedBy: user.id,
         entityType: 'email_change',
         requestType: 'email_change',
-        requestData: { new_email: newEmail, old_email: user.email },
+        requestData: { newEmail, oldEmail: user.email },
       });
       
       toast({ title: t('common.success'), description: t('profile.emailChangeRequested') });

@@ -98,7 +98,9 @@ export default function WorkHubShell({
 
     return (
         <div
-            className="min-h-screen w-full bg-neutral-50 dark:bg-black text-neutral-900 dark:text-white flex flex-col font-content"
+            // WH-2: overflow-x-clip — nothing inside the crew app may widen the page past the phone.
+            // One over-wide row made iOS zoom the whole app out to ~75% (all text with it).
+            className="min-h-screen w-full overflow-x-clip bg-neutral-50 dark:bg-black text-neutral-900 dark:text-white flex flex-col font-content"
             style={{ '--brand-color': brandColor } as React.CSSProperties}
         >
             {/* ── Top Bar ── */}
@@ -225,7 +227,7 @@ export default function WorkHubShell({
                                 <div className={`transition-transform [&>svg]:w-6 [&>svg]:h-6 ${active ? 'scale-105' : ''}`}>
                                     {item.icon}
                                 </div>
-                                <span className="text-[0.75rem] leading-none font-semibold tracking-wide">
+                                <span className="text-[0.8125rem] leading-none font-semibold tracking-wide">
                                     {t(item.labelKey)}
                                 </span>
                             </>

@@ -159,7 +159,10 @@
       "erp-projects": "ERP projects",
       "employees": "Crew names",
       "time-off": "Time off"
-    }
+    },
+    "shiftCount_one": "{{count}} shift",
+    "shiftCount_other": "{{count}} shifts",
+    "rangeHint": "last week to 2 weeks ahead"
   },
   "timeOff": {
     "title": "Time Off",

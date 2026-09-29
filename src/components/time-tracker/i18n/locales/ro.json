@@ -159,7 +159,11 @@
       "erp-projects": "Proiecte ERP",
       "employees": "Numele colegilor",
       "time-off": "Concediu"
-    }
+    },
+    "shiftCount_one": "{{count}} tură",
+    "shiftCount_few": "{{count}} ture",
+    "shiftCount_other": "{{count}} de ture",
+    "rangeHint": "săptămâna trecută până la 2 săptămâni înainte"
   },
   "timeOff": {
     "title": "Concediu",

@@ -159,7 +159,10 @@
       "erp-projects": "Projets ERP",
       "employees": "Noms de l’équipe",
       "time-off": "Congés"
-    }
+    },
+    "shiftCount_one": "{{count}} service",
+    "shiftCount_other": "{{count}} services",
+    "rangeHint": "semaine passée à 2 semaines à venir"
   },
   "timeOff": {
     "title": "Congés",

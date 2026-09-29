@@ -142,6 +142,23 @@ export function formatDayMonth(d: Date | string | number | null | undefined, loc
 }
 
 /**
+ * Short weekday, day, short month (e.g. nl 'do 24 sep', fr 'jeu. 24 sept.', en 'Thu 24 Sept').
+ * `withYear` appends the year. Day-first in every supported locale — never 'Thu, Sep 24'.
+ */
+export function formatWeekdayDayMonth(d: Date | string | number | null | undefined, locale?: string | null, withYear = false): string {
+    const date = parseDateInput(d);
+    if (!date) return '';
+
+    const resolved = resolveLocale(locale);
+    return new Intl.DateTimeFormat(resolved, {
+        weekday: 'short',
+        day: 'numeric',
+        month: 'short',
+        ...(withYear ? { year: 'numeric' as const } : {}),
+    }).format(date);
+}
+
+/**
  * Formats a date to month and year (e.g. 'september 2026').
  */
 export function formatMonthYear(d: Date | string | number | null | undefined, locale?: string | null): string {

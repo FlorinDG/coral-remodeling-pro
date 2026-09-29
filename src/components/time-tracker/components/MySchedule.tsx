@@ -15,7 +15,7 @@ import { useAuth } from '@/components/time-tracker/contexts/AuthContext';
 import { format, parseISO, isToday, addDays, subDays, isBefore, isAfter, startOfDay } from 'date-fns';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
-import { formatTime } from '@/lib/format/date';
+import { formatTime, formatWeekdayDayMonth } from '@/lib/format/date';
 import { describeError } from '@/lib/describe-error';
 import { shiftBrief, type ShiftBriefResult } from '@/lib/data/shift-brief';
 
@@ -48,7 +48,7 @@ interface ShiftCardProps {
 }
 
 function ShiftCard({ shift, isNextShift, activeEntry, elapsedTime, now, onClick }: ShiftCardProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { shiftTasks, loading: tasksLoading } = useShiftTasks(shift.id);
 
   const pendingTasks = shiftTasks.filter(st => st.status !== 'completed');
@@ -85,10 +85,12 @@ function ShiftCard({ shift, isNextShift, activeEntry, elapsedTime, now, onClick 
       />
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-4">
-          <div className="space-y-1.5 flex-1">
+          {/* WH-2: min-w-0 — without it this column kept the address's full one-line width, the page
+              grew wider than the phone, and iOS zoomed the whole app out to ~75% (every font with it). */}
+          <div className="space-y-1.5 flex-1 min-w-0">
             {/* Primary line: Project Name */}
             <div className="flex items-start justify-between gap-2">
-              <h3 className="text-base font-semibold text-foreground leading-snug">
+              <h3 className="text-lg font-semibold text-foreground leading-snug break-words min-w-0">
                 {shift.status === 'leave' ? '🌴 ' : ''}
                 {primaryTitle}
               </h3>
@@ -107,17 +109,17 @@ function ShiftCard({ shift, isNextShift, activeEntry, elapsedTime, now, onClick 
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
-                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground hover:underline transition-colors mt-1"
+                className="flex items-center gap-2 min-w-0 text-base text-muted-foreground hover:text-foreground hover:underline transition-colors mt-1"
               >
-                <MapPin className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <MapPin className="h-5 w-5 shrink-0 text-muted-foreground" />
                 <span className="truncate">{address}</span>
               </a>
             )}
 
             {/* Third line: Time and Date with elapsed time above date (WH-UI-1 §9.4) */}
-            <div className="flex items-end justify-between text-sm text-muted-foreground mt-2">
+            <div className="flex items-end justify-between gap-3 text-base text-muted-foreground mt-2">
               <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <Clock className="h-5 w-5 shrink-0 text-muted-foreground" />
                 <span className="font-medium text-foreground">
                   {formatTime(shift.shiftStart)} – {formatTime(shift.shiftEnd)}
                 </span>
@@ -132,7 +134,7 @@ function ShiftCard({ shift, isNextShift, activeEntry, elapsedTime, now, onClick 
                   <span className="font-medium">
                     {isToday(shiftDate) 
                       ? t('schedule.today') 
-                      : format(shiftDate, 'EEE, d MMM')}
+                      : formatWeekdayDayMonth(shiftDate, i18n.language)}
                   </span>
                   {isNextShift && !isToday(shiftDate) && (
                     <Badge variant="outline" className="text-sm font-normal py-0 px-2">{t('schedule.next')}</Badge>
@@ -148,7 +150,7 @@ function ShiftCard({ shift, isNextShift, activeEntry, elapsedTime, now, onClick 
           <div className="border-t mt-3 pt-3">
             <div className="flex items-center gap-2 mb-2">
               <CheckSquare className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-medium">
+              <span className="text-base font-medium">
                 {t('schedule.tasks')} ({completedTasks.length}/{shiftTasks.length})
               </span>
             </div>
@@ -158,9 +160,9 @@ function ShiftCard({ shift, isNextShift, activeEntry, elapsedTime, now, onClick 
             ) : (
               <div className="space-y-1">
                 {pendingTasks.slice(0, 2).map((st) => (
-                  <div key={st.id} className="flex items-center gap-2">
+                  <div key={st.id} className="flex items-center gap-2 min-w-0">
                     <div className="w-2 h-2 rounded-full bg-secondary shrink-0" />
-                    <span className="text-sm truncate">{st.task?.title}</span>
+                    <span className="text-base truncate">{st.task?.title}</span>
                   </div>
                 ))}
                 {pendingTasks.length > 2 && (
@@ -183,7 +185,7 @@ function ShiftCard({ shift, isNextShift, activeEntry, elapsedTime, now, onClick 
 }
 
 export function MySchedule() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const { isManager } = useUserRoles();
   const { shifts, loading, error, failedEndpoints } = useScheduledShifts();
@@ -392,9 +394,9 @@ export function MySchedule() {
             </Badge>
           )}
         </div>
-        <CardDescription className="text-sm">
+        <CardDescription className="text-base">
           {filteredShifts.length > 0 
-            ? `${filteredShifts.length} shifts • 1 week ago to 2 weeks ahead`
+            ? `${t('schedule.shiftCount', { count: filteredShifts.length })} · ${t('schedule.rangeHint')}`
             : t('schedule.noShiftsScheduled')}
         </CardDescription>
 
@@ -454,7 +456,7 @@ export function MySchedule() {
             const shiftDateObj = parseISO(selectedShift.shiftDate);
             const scheduledDateStr = isToday(shiftDateObj) 
               ? t('schedule.today') 
-              : format(shiftDateObj, 'EEE, d MMM yyyy');
+              : formatWeekdayDayMonth(shiftDateObj, i18n.language, true);
             const scheduledTimeStr = `${formatTime(selectedShift.shiftStart)} – ${formatTime(selectedShift.shiftEnd)}`;
 
             const projectName = (selectedShift.project?.name || selectedShift.projectName || '').replace(/^\[ERP\]\s*/i, '').trim();
@@ -564,9 +566,9 @@ export function MySchedule() {
                             href={file.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center justify-between p-2.5 hover:bg-neutral-200/50 dark:hover:bg-neutral-800 rounded-lg text-sm text-foreground transition-colors group"
+                            className="flex items-center justify-between gap-2 min-w-0 p-2.5 hover:bg-neutral-200/50 dark:hover:bg-neutral-800 rounded-lg text-base text-foreground transition-colors group"
                           >
-                            <span className="truncate font-medium">{file.name}</span>
+                            <span className="truncate font-medium min-w-0">{file.name}</span>
                             <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-foreground shrink-0 ml-2" />
                           </a>
                         ))}

@@ -159,7 +159,10 @@
       "erp-projects": "ERP-projecten",
       "employees": "Namen van collega’s",
       "time-off": "Verlof"
-    }
+    },
+    "shiftCount_one": "{{count}} dienst",
+    "shiftCount_other": "{{count}} diensten",
+    "rangeHint": "vorige week tot 2 weken vooruit"
   },
   "timeOff": {
     "title": "Verlof",

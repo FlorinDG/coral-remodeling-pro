@@ -145,7 +145,12 @@
     "worked": "Отработано",
     "photos": "Фотографии",
     "files": "Файлы",
-    "shiftCompleted": "Смена завершена"
+    "shiftCompleted": "Смена завершена",
+    "shiftCount_one": "{{count}} смена",
+    "shiftCount_few": "{{count}} смены",
+    "shiftCount_many": "{{count}} смен",
+    "shiftCount_other": "{{count}} смены",
+    "rangeHint": "с прошлой недели на 2 недели вперёд"
   },
   "timeOff": {
     "title": "Отпуск",

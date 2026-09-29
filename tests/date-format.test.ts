@@ -7,6 +7,7 @@ import {
     formatDateLong,
     formatTime,
     formatDayMonth,
+    formatWeekdayDayMonth,
     resolveLocale,
     DEFAULT_LOCALE,
 } from '../src/lib/format/date.ts';
@@ -88,4 +89,15 @@ test('WH-2: formatDayMonth is day-first, no year, never US order', () => {
     assert.match(formatDayMonth(d, 'en'), /^7\s/);   // en-GB, not 'Aug 7'
     assert.match(formatDayMonth('2026-08-07', 'fr'), /^7\s/); // plain YYYY-MM-DD parsed as local date
     assert.equal(formatDayMonth(null), '');
+});
+
+test('WH-2: formatWeekdayDayMonth puts the day before the month in every crew locale', () => {
+    const d = new Date(2026, 8, 24); // Thu 24 Sep 2026, local
+    for (const loc of ['nl', 'fr', 'en', 'ro', 'ru']) {
+        const out = formatWeekdayDayMonth(d, loc);
+        const day = out.search(/24/);
+        assert.ok(day > 0, `${loc}: '${out}' has a weekday before the day`);
+        assert.doesNotMatch(out, /2026/, `${loc}: no year unless asked`);
+    }
+    assert.match(formatWeekdayDayMonth(d, 'nl', true), /2026/);
 });

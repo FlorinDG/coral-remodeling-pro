@@ -993,6 +993,8 @@
       "viewTimesheet": "Vezi bonul de lucru",
       "hideDetail": "Ascunde detaliile",
       "cannotApproveRunning": "Tura în desfășurare nu poate fi aprobată",
+      "attachments": "Fotografii și atașamente",
+      "noAttachments": "Nicio fotografie sau atașament",
       "bulkApprove": "Aprobă selecția",
       "bulkDeny": "Respinge selecția",
       "bulkConfirm": "Aprobați {count} înregistrări ({hours})?",

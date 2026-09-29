@@ -4,7 +4,8 @@ import { hrUpdate } from '@/lib/hr-api';
 import { format, parseISO } from 'date-fns';
 import { nl, fr, enUS } from 'date-fns/locale';
 import { useLocale, useTranslations } from 'next-intl';
-import { Loader2, MapPin, Clock, Edit2, ShieldAlert, X, FileText } from 'lucide-react';
+import { Loader2, MapPin, Clock, Edit2, ShieldAlert, X, FileText, Paperclip } from 'lucide-react';
+import { resolveFileUrl } from '@/lib/files';
 
 interface TimesheetEntryDetailProps {
     entry: any;
@@ -24,6 +25,7 @@ export function TimesheetEntryDetail({ entry, onUpdate, unlockTokenValid }: Time
     const [projectId, setProjectId] = useState(entry.projectId || '');
     const [error, setError] = useState('');
     const [auditLogs, setAuditLogs] = useState<any[]>([]);
+    const [shiftAttachments, setShiftAttachments] = useState<any[]>([]);
 
     useEffect(() => {
         setClockInTime(entry.clockInTime ? format(parseISO(entry.clockInTime), 'HH:mm') : '');
@@ -47,6 +49,28 @@ export function TimesheetEntryDetail({ entry, onUpdate, unlockTokenValid }: Time
         };
         fetchAudit();
     }, [entry.id]);
+
+    useEffect(() => {
+        if (!entry.shiftId) {
+            setShiftAttachments([]);
+            return;
+        }
+        const fetchShiftAttachments = async () => {
+            try {
+                const res = await fetch(`/api/hr/shift-attachments?shiftId=${entry.shiftId}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setShiftAttachments(Array.isArray(data) ? data : []);
+                }
+            } catch (err) {
+                console.error("Failed to load shift attachments", err);
+            }
+        };
+        fetchShiftAttachments();
+    }, [entry.shiftId]);
+
+    const entryPhotos = Array.isArray(entry.photos) ? entry.photos : [];
+    const allMedia = [...entryPhotos, ...shiftAttachments];
 
     const isApproved = entry.approvalStatus === 'approved';
     const canEdit = !isApproved || unlockTokenValid;
@@ -88,7 +112,7 @@ export function TimesheetEntryDetail({ entry, onUpdate, unlockTokenValid }: Time
                 </div>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                 {/* TIMELINE */}
                 <div className="space-y-2">
                     <h4 className="text-xs font-semibold uppercase text-muted-foreground">{t('timeline', { fallback: 'Timeline' })}</h4>
@@ -205,6 +229,62 @@ export function TimesheetEntryDetail({ entry, onUpdate, unlockTokenValid }: Time
                                     </div>
                                 ))}
                             </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* ATTACHMENTS & PHOTOS (HR-TS-3) */}
+                <div className="space-y-2">
+                    <h4 className="text-xs font-semibold uppercase text-muted-foreground">{t('attachments', { fallback: "Foto's & Bijlagen" })}</h4>
+                    {allMedia.length === 0 ? (
+                        <div className="text-xs text-neutral-400 italic py-2">
+                            {t('noAttachments', { fallback: "Geen foto's of bijlagen" })}
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-2 gap-2">
+                            {entryPhotos.map((rawPhoto: any, idx: number) => {
+                                const photoUrl = typeof rawPhoto === 'string' ? rawPhoto : (rawPhoto?.url || rawPhoto?.key || '');
+                                if (!photoUrl) return null;
+                                return (
+                                    <a
+                                        key={`photo-${idx}`}
+                                        href={resolveFileUrl(photoUrl)}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="group relative aspect-square bg-neutral-200 dark:bg-neutral-800 rounded-lg overflow-hidden border border-neutral-300 dark:border-white/10 hover:border-orange-500 transition-colors flex flex-col"
+                                    >
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                        <img src={resolveFileUrl(photoUrl)} alt={`Foto ${idx + 1}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                                        <span className="absolute bottom-1 left-1 bg-black/70 text-white text-[9px] px-1 py-0.5 rounded font-medium">Foto (Klok)</span>
+                                    </a>
+                                );
+                            })}
+                            {shiftAttachments.map((att: any, idx: number) => {
+                                const isImg = att.type?.startsWith('image/') || /\.(jpg|jpeg|png|webp|gif|svg)$/i.test(att.url || att.name || '');
+                                return (
+                                    <a
+                                        key={`att-${idx}`}
+                                        href={resolveFileUrl(att.url)}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="group relative aspect-square bg-neutral-200 dark:bg-neutral-800 rounded-lg overflow-hidden border border-neutral-300 dark:border-white/10 hover:border-orange-500 transition-colors flex flex-col items-center justify-center p-1"
+                                    >
+                                        {isImg ? (
+                                            /* eslint-disable-next-line @next/next/no-img-element */
+                                            <img src={resolveFileUrl(att.url)} alt={att.name || 'Bijlage'} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                                        ) : (
+                                            <div className="flex flex-col items-center justify-center text-center p-1">
+                                                <FileText className="w-5 h-5 text-orange-500 mb-0.5" />
+                                                <span className="text-[10px] font-semibold line-clamp-1 text-neutral-700 dark:text-neutral-300">{att.name || 'Document'}</span>
+                                                {att.size && att.size > 0 ? (
+                                                    <span className="text-[9px] text-neutral-400">{Math.round(att.size / 1024)} KB</span>
+                                                ) : null}
+                                            </div>
+                                        )}
+                                        <span className="absolute bottom-1 left-1 bg-orange-600/90 text-white text-[9px] px-1 py-0.5 rounded font-medium">Bijlage (Dienst)</span>
+                                    </a>
+                                );
+                            })}
                         </div>
                     )}
                 </div>

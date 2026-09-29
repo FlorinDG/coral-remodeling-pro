@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { CustomDatePicker } from '@/components/ui/CustomDatePicker';
 import FileViewer from '@/components/files/FileViewer';
+import { resolveFileUrl } from '@/lib/files';
 
 
 import { Page } from '@/components/admin/database/types';
@@ -294,12 +295,7 @@ export function TaskDetailPanel({ page, onClose, onUpdate, onDelete, onOpenFullP
         return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
     };
 
-    const getAttachmentUrl = (url: string) => {
-        if (!url) return '';
-        if (url.startsWith('data:') || url.startsWith('http') || url.startsWith('/api/files/')) return url;
-        if (url.startsWith('t_')) return `/api/files/${url}`;
-        return `/api/files/${url}`;
-    };
+    const getAttachmentUrl = (url: string) => resolveFileUrl(url);
 
     const photos = attachments.filter(a => a.type.startsWith('image/') && !a.uploading);
     const docFiles = attachments.filter(a => !a.type.startsWith('image/') && !a.uploading);

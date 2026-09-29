@@ -993,6 +993,8 @@
       "viewTimesheet": "Werkbon bekijken",
       "hideDetail": "Verberg details",
       "cannotApproveRunning": "Lopende dienst kan niet worden goedgekeurd",
+      "attachments": "Foto's & Bijlagen",
+      "noAttachments": "Geen foto's of bijlagen",
       "bulkApprove": "Selectie goedkeuren",
       "bulkDeny": "Selectie weigeren",
       "bulkConfirm": "{count} registraties goedkeuren ({hours})?",

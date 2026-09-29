@@ -9,6 +9,7 @@ import { nl, fr, enUS } from 'date-fns/locale';
 import { useLocale } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Link } from '@/i18n/routing';
+import { resolveFileUrl } from '@/lib/files';
 
 interface Employee {
     id: string;
@@ -47,6 +48,7 @@ export default function WerkbonDetailPage() {
     const id = params.id as string;
     
     const [entry, setEntry] = useState<ClockEntry | null>(null);
+    const [shiftAttachments, setShiftAttachments] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
     const locale = useLocale();
@@ -71,6 +73,18 @@ export default function WerkbonDetailPage() {
                     const shift = (rawEntry as any).shiftId ? shiftsData.find((s: any) => s.id === (rawEntry as any).shiftId) : null;
                     const effectiveProjectId = (rawEntry as any).projectId || shift?.projectId;
                     const project = effectiveProjectId ? projectsData.find(p => p.id === effectiveProjectId) : null;
+
+                    let attachmentsList: any[] = [];
+                    if ((rawEntry as any).shiftId) {
+                        try {
+                            const atts = await hrList<any>('shift-attachments', { shiftId: (rawEntry as any).shiftId });
+                            attachmentsList = Array.isArray(atts) ? atts : [];
+                        } catch {
+                            attachmentsList = [];
+                        }
+                    }
+                    setShiftAttachments(attachmentsList);
+
                     setEntry({
                         ...rawEntry,
                         user: employee,
@@ -205,17 +219,42 @@ export default function WerkbonDetailPage() {
                     </div>
                 </div>
 
-                {/* Photos */}
-                {entry.photos.length > 0 && (
+                {/* Photos & Attachments */}
+                {((entry.photos && entry.photos.length > 0) || shiftAttachments.length > 0) && (
                     <div className="mb-12">
-                        <h3 className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 border-b border-neutral-100 pb-1 mb-4">Bijgevoegde Foto&apos;s</h3>
-                        <div className="grid grid-cols-2 gap-4">
-                            {entry.photos.map((url, idx) => (
-                                <div key={idx} className="aspect-video bg-neutral-100 dark:bg-neutral-800 rounded-xl overflow-hidden border border-neutral-200 dark:border-white/10 flex items-center justify-center">
-                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                    <img src={url.startsWith('t_') ? `/api/files/${url}` : url} alt={`Werf foto ${idx + 1}`} className="w-full h-full object-cover" />
-                                </div>
-                            ))}
+                        <h3 className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 border-b border-neutral-100 pb-1 mb-4">Bijgevoegde Foto&apos;s &amp; Documenten</h3>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                            {entry.photos.map((rawPhoto, idx) => {
+                                const photoUrl = typeof rawPhoto === 'string' ? rawPhoto : ((rawPhoto as any)?.url || (rawPhoto as any)?.key || '');
+                                if (!photoUrl) return null;
+                                return (
+                                    <a key={`photo-${idx}`} href={resolveFileUrl(photoUrl)} target="_blank" rel="noopener noreferrer" className="group aspect-video bg-neutral-100 dark:bg-neutral-800 rounded-xl overflow-hidden border border-neutral-200 dark:border-white/10 flex flex-col relative">
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                        <img src={resolveFileUrl(photoUrl)} alt={`Werf foto ${idx + 1}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                                        <span className="absolute bottom-1 left-1 bg-black/60 text-white text-[9px] px-1.5 py-0.5 rounded">Foto (Klok)</span>
+                                    </a>
+                                );
+                            })}
+                            {shiftAttachments.map((att, idx) => {
+                                const isImg = att.type?.startsWith('image/') || /\.(jpg|jpeg|png|webp|gif|svg)$/i.test(att.url || att.name || '');
+                                return (
+                                    <a key={`att-${idx}`} href={resolveFileUrl(att.url)} target="_blank" rel="noopener noreferrer" className="group aspect-video bg-neutral-100 dark:bg-neutral-800 rounded-xl overflow-hidden border border-neutral-200 dark:border-white/10 flex flex-col relative p-2">
+                                        {isImg ? (
+                                            /* eslint-disable-next-line @next/next/no-img-element */
+                                            <img src={resolveFileUrl(att.url)} alt={att.name || 'Bijlage'} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                                        ) : (
+                                            <div className="flex-1 flex flex-col items-center justify-center gap-1 text-neutral-600 dark:text-neutral-400">
+                                                <ClipboardList className="w-6 h-6 text-orange-500" />
+                                                <span className="text-xs font-semibold line-clamp-1 text-center">{att.name || 'Document'}</span>
+                                                {att.size && att.size > 0 ? (
+                                                    <span className="text-[10px] text-neutral-400">{Math.round(att.size / 1024)} KB</span>
+                                                ) : null}
+                                            </div>
+                                        )}
+                                        <span className="absolute bottom-1 left-1 bg-orange-600/80 text-white text-[9px] px-1.5 py-0.5 rounded">Bijlage (Dienst)</span>
+                                    </a>
+                                );
+                            })}
                         </div>
                     </div>
                 )}

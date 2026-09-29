@@ -992,6 +992,8 @@
       "viewTimesheet": "Voir le bon de travail",
       "hideDetail": "Masquer les détails",
       "cannotApproveRunning": "Un quart en cours ne peut pas être approuvé",
+      "attachments": "Photos et pièces jointes",
+      "noAttachments": "Aucune photo ou pièce jointe",
       "bulkApprove": "Approuver la sélection",
       "bulkDeny": "Refuser la sélection",
       "bulkConfirm": "Approuver {count} enregistrements ({hours}) ?",

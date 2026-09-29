@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Upload, Trash2, ExternalLink, FileText, Plus, X } from 'lucide-react';
 import SearchableSelect from '@/components/ui/SearchableSelect';
 import { uploadFileAction, deleteFileAction } from '@/app/actions/files';
+import { describeError } from '@/lib/describe-error';
 
 interface SupplierQuotation {
     id: string;
@@ -75,7 +76,7 @@ export default function SupplierQuotationsCard({ projectId, quotations, supplier
             setFormData({ supplierId: '', supplierName: '', amount: '', note: '' });
         } catch (err: any) {
             console.error('Error saving supplier quotation:', err);
-            alert(err.message || 'Failed to save quotation');
+            alert(`Failed to save quotation — ${describeError(err)}`);
         } finally {
             setIsUploading(false);
         }

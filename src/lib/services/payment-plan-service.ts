@@ -1,5 +1,6 @@
 import prisma from '@/lib/prisma';
 import { PaymentPlan } from '@/components/admin/database/types';
+import { describeError } from '@/lib/describe-error';
 
 /**
  * Extract PaymentPlan from a page's properties object.
@@ -44,6 +45,6 @@ export async function updatePaymentPlanAction(pageId: string, plan: PaymentPlan)
         return { success: true };
     } catch (err: any) {
         console.error('[updatePaymentPlanAction] Error:', err);
-        return { success: false, error: err.message || 'Failed to update payment plan.' };
+        return { success: false, error: `Failed to update payment plan. — ${describeError(err)}` };
     }
 }

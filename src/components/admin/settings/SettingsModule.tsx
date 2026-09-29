@@ -13,6 +13,7 @@ import { signIn } from 'next-auth/react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { useTenant } from '@/context/TenantContext';
+import { describeError } from '@/lib/describe-error';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -481,8 +482,10 @@ function PeppolPanel() {
             const data = await res.json();
             if (data.success) { toast.success(data.message || 'Peppol connected!'); fetchStatus(); }
             else { toast.error(data.error || 'Onboarding failed'); }
-        } catch (e: any) { toast.error('Connection failed: ' + (e.message || 'Unknown error')); }
-        finally { setConnecting(false); }
+        } catch (e: any) {
+            console.error('[SettingsModule] Connection failed:', e);
+            toast.error(`Connection failed — ${describeError(e)}`);
+        } finally { setConnecting(false); }
     };
 
     const isConnected = status?.connected || status?.alreadyConnected;

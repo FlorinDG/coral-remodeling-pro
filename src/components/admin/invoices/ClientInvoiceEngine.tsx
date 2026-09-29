@@ -23,6 +23,7 @@ import { emitNotificationAction } from '@/app/actions/notifications';
 
 import { InvoicePDFTemplate } from './InvoicePDFTemplate';
 import PDFImportModal from './PDFImportModal';
+import { describeError } from '@/lib/describe-error';
 import { QuoteSendModal } from '../quotations/QuoteSendModal';
 import { calculateInvoiceTotals } from '@/lib/invoice-totals';
 import { calculateDueDate } from '@/lib/invoices/due-date';
@@ -908,8 +909,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
             }
         } catch (e: any) {
             console.error(e);
-            const detail = e?.message || e?.cause?.message || e?.name || String(e);
-            toast.error(`Verzenden mislukt: ${detail}`);
+            toast.error(`Verzenden mislukt: ${describeError(e)}`);
         } finally {
             setIsSending(false);
         }
@@ -1927,8 +1927,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                                         window.open(url, '_blank');
                                     } catch (e: any) {
                                         console.error('[PDF] preview failed:', e);
-                                        const detail = e?.message || e?.cause?.message || e?.name || String(e);
-                                        toast.error(`PDF preview mislukt: ${detail}`);
+                                        toast.error(`PDF preview mislukt: ${describeError(e)}`);
                                     } finally {
                                         setIsPreviewing(false);
                                     }

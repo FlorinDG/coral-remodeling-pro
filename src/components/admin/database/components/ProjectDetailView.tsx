@@ -8,6 +8,7 @@ import { createPrismaInvoice } from "@/app/actions/create-invoice";
 import { getNextDocumentNumber } from "@/app/actions/next-document-number";
 import { useTenant } from '@/context/TenantContext';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
+import { describeError } from '@/lib/describe-error';
 import dynamic from 'next/dynamic';
 import { labourForProject } from '@/lib/data/project-labour';
 import {
@@ -567,8 +568,7 @@ export default function ProjectDetailView({ databaseId, pageId, locale, onClose 
             router.push(`/${locale}/admin/financials/income/invoices/${newInvoice.id}`);
         } catch (e: any) {
             console.error('Failed to create invoice from progress statement:', e);
-            const detail = e?.message || e?.cause?.message || e?.name || String(e);
-            toast.error(`Factuur aanmaken mislukt: ${detail}`);
+            toast.error(`Factuur aanmaken mislukt: ${describeError(e)}`);
         }
     };
 

@@ -14,6 +14,7 @@ import { useTenant } from '@/context/TenantContext';
 import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/routing';
 import { useOverlayEventShield } from '@/hooks/useOverlayEventShield';
+import { describeError } from '@/lib/describe-error';
 
 interface TicketCaptureModalProps {
     onClose: () => void;
@@ -267,7 +268,8 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
 
             setStep('review');
         } catch (e: any) {
-            setScanError(e?.message || 'Network error. Check your connection and try again.');
+            console.error('[TicketCaptureModal] Scan failed:', e);
+            setScanError(`Network error. Check your connection and try again. — ${describeError(e)}`);
             setScanResult(null);
             setStep('review');
         }
@@ -446,7 +448,8 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
             addConfirmedPage(result.page);
             setStep('done');
         } catch (e: any) {
-            setSaveError(e?.message || 'Network error during save');
+            console.error('[TicketCaptureModal] Save failed:', e);
+            setSaveError(`Network error during save — ${describeError(e)}`);
             setStep('review');
         }
     };

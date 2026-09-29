@@ -9,6 +9,7 @@ import { saveGlobalDatabase, saveGlobalPage, saveGlobalPagesBatch, deleteGlobalD
 import { generateOGM } from '@/lib/ogm';
 import { toast } from 'sonner';
 import { type SystemDatabaseRole, SYSTEM_DATABASES, BASE_TO_KEY } from '@/lib/kernel/system-databases';
+import { describeError } from '@/lib/describe-error';
 
 export function extractPageTitle(properties: Record<string, any> | undefined): string {
     if (!properties) return 'Untitled';
@@ -360,7 +361,7 @@ export const useDatabaseStore = create<DatabaseState>()(
                             loadingDatabaseIds: s.loadingDatabaseIds.filter(id => id !== databaseId)
                         }));
                         console.error(`[loadDatabasePages] Failed for ${databaseId}:`, err);
-                        toast.error(`Kon gegevens voor database niet laden: ${err?.message || 'Fout'}`);
+                        toast.error(`Kon gegevens voor database niet laden: Fout — ${describeError(err)}`);
                         throw err;
                     } finally {
                         inFlightPageLoads.delete(databaseId);

@@ -7,18 +7,18 @@ export interface User {
   id: string;
   name?: string | null;
   email?: string;
-  app_metadata: any;
-  user_metadata: any;
+  appMetadata?: any;
+  userMetadata?: any;
   aud: string;
   createdAt?: string;
 }
 
 export interface Session {
-  access_token: string;
-  refresh_token: string;
-  expires_in: number;
-  expires_at: number;
-  token_type: string;
+  accessToken: string;
+  refreshToken: string;
+  expiresIn: number;
+  expiresAt: number;
+  tokenType: string;
   user: User;
 }
 
@@ -80,18 +80,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       id: nextSession.user.id,
       name: nextSession.user.name || 'User',
       email: nextSession.user.email || undefined,
-      app_metadata: {},
-      user_metadata: { tenantId: (nextSession.user as any).tenantId },
+      appMetadata: {},
+      userMetadata: { tenantId: (nextSession.user as any).tenantId },
       aud: 'authenticated',
       createdAt: new Date().toISOString(),
     };
 
     const bridgedSession: Session = {
-      access_token: 'bridged-token',
-      refresh_token: 'bridged-token',
-      expires_in: 3600,
-      expires_at: Math.floor(Date.now() / 1000) + 3600,
-      token_type: 'bearer',
+      accessToken: 'bridged-token',
+      refreshToken: 'bridged-token',
+      expiresIn: 3600,
+      expiresAt: Math.floor(Date.now() / 1000) + 3600,
+      tokenType: 'bearer',
       user: bridgedUser,
     };
 

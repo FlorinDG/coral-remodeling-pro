@@ -42,7 +42,7 @@ export default function Index({ embedded = false }: IndexProps) {
     <div className={embedded ? '' : 'min-h-screen bg-background'}>
       {!embedded && <Header />}
 
-      <main className={embedded ? 'py-2 md:py-4 pb-36 md:pb-28' : 'container mx-auto px-4 py-6 md:py-12 pb-36 md:pb-28'}>
+      <main className={embedded ? 'py-2 md:py-4 pb-44 md:pb-28' : 'container mx-auto px-4 py-6 md:py-12 pb-44 md:pb-28'}>
         {isAdmin && (
           <div className="flex justify-end mb-4 px-4 md:px-0">
             <Button variant="outline" size="sm" className="rounded-full text-sm" onClick={() => setSiteVisitOpen(true)}>
@@ -76,7 +76,7 @@ export default function Index({ embedded = false }: IndexProps) {
       </main>
 
       {/* Clock Button — Fixed directly above bottom nav, visible on all scroll positions */}
-      <div className="fixed bottom-[calc(4rem+env(safe-area-inset-bottom,0px))] md:bottom-6 left-0 right-0 z-40 p-4 pointer-events-none flex justify-center">
+      <div className="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:bottom-6 left-0 right-0 z-40 p-4 pointer-events-none flex justify-center">
         <div className="w-full max-w-sm pointer-events-auto">
           <ClockButton />
         </div>

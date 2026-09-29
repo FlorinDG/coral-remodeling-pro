@@ -289,3 +289,60 @@ export async function shiftBrief(scope, shiftId): Promise<{
 - 🛑 **No `text-xs` on primary crew content.**
 - 🛑 **No colour literal in the new component.** Palette tokens only.
 - 🛑 **Do not change the global `body` font.** `DS-1`.
+
+---
+
+# 9 · ROUND 2 — the bottom bar and the shift-entry state *(Florin, 2026-09-29, after using it)*
+
+## 9.1 · 🔴 THE BOTTOM BAR — the safe-area inset is INSIDE the fixed height
+```tsx
+// WorkHubShell.tsx:218
+<div className="flex items-center justify-around h-16 px-1"
+     style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+```
+**`h-16` is 64px TOTAL.** On an iPhone the home-indicator inset (~34px) is **subtracted from** that, not added — **leaving the icons roughly 30px to live in.** That is the whole of *"too small and sitting at the very edge"*.
+
+- [ ] **The safe-area inset is ADDITIONAL.** `height: calc(4.5rem + env(safe-area-inset-bottom))`, or an outer wrapper carrying the padding with a fixed-height row inside. 🛑 **Never `h-…` and `paddingBottom: env(...)` on the same element.**
+- [ ] **Bar content height 4.5rem (72px)**, up from 64 — thumb targets, gloves, sunlight.
+- [ ] **Icons `w-6 h-6`** (24px), up from `w-5 h-5`. **Labels ≥ `0.75rem`** and legible — they are currently part of the `text-xs` count.
+- [ ] **Vertical breathing room**: the icon row is centred in the bar, not flush to the bottom edge.
+- [ ] 🔴 **`main`'s bottom padding must grow with the bar.** It is `pb-20`; if the bar grows and this does not, the last shift entry hides behind it. **The fixed clock button sits above the bar — its offset moves too.**
+
+## 9.2 · 🔴 TWO GREENS ON ONE SCREEN
+The nav is `bg-emerald-600 dark:bg-emerald-800 border-emerald-500/20`; the new clock button is `var(--persian-green)`. **They are visibly different and adjacent.**
+- [ ] **The nav uses `var(--persian-green)`.** Derive the hover/active/border shades from it — **no `emerald-*` anywhere in `WorkHubShell`.**
+- [ ] 🛑 **Still no wider palette conversion** — that is `DS-1`. This is one component, on the screen where the mismatch is visible.
+
+## 9.3 · THE SHIFT ENTRY — a state bar on the left
+**A 3–4px vertical rule down the left edge of every entry**, full row height, flush to the leading edge.
+
+| State | Colour |
+|---|---|
+| **past** | grey — the existing muted neutral |
+| **current** | 🟠 `var(--tawny)` |
+| **upcoming** | 🟢 `var(--persian-green)` |
+
+- [ ] 🔴 **State is TEMPORAL, computed from date + time, and has NOTHING to do with clock-in status** *(Florin's words)*. A shift running now is *current* whether or not anyone clocked in.
+  ```
+  past      shiftEnd   <  now
+  current   shiftStart <= now <= shiftEnd
+  upcoming  shiftStart >  now
+  ```
+- [ ] 🛑 **CONSTRUCT THE MOMENT EXPLICITLY. Do not parse `` `${shiftDate}T${shiftStart}` ``.**
+  **That ambiguous form is what made a 09:00 entry display as 11:00** — Safari parses it as UTC. Build from parts (`new Date(y, m-1, d, hh, mm)`) or via the kernel's date helpers. 🔴 **A wrong parse here mislabels which shift is "now" by two hours.**
+- [ ] **Recompute as time passes** — a minute tick is enough. **A shift must not stay "upcoming" all morning.**
+- [ ] 🟨 **The existing `isNextShift` highlight and the clocked-in ring are separate** and stay as they are. **The state bar is a fourth signal, not a replacement.**
+
+## 9.4 · ELAPSED TIME ON THE ROW
+- [ ] **Above the date, right-aligned in the row: the time elapsed since clock-in** — the same value the button shows, from the same `useTimer` / `formattedTime` source *(`ClockButton.tsx:272`)*.
+- [ ] **Only on the shift that is actually clocked into** — `activeEntry.shiftId === shift.id`.
+- [ ] 🔴 **Florin: *"if the button lost it, leave it lost; if the button still shows clock-in status, let it keep showing."*** **Mirror the button exactly.** If the timer is ever removed from the button, this goes with it. **Do not build a second timer.**
+
+## 9.5 · VERIFY — on a phone with a home indicator
+1. **Nav icons are not against the bottom edge.** Bar ~72px of content **plus** the safe-area inset beneath it.
+2. **Nothing is hidden behind the bar** — scroll to the last shift entry; the fixed clock button clears it too.
+3. **One green.** No `emerald-*` in `WorkHubShell`. 🔴 `grep -rn "emerald-" src/components/workhub` → nothing.
+4. **The state bar is correct at a boundary**: a shift ending in five minutes reads *current*, not *past*; **verify at a real wall-clock time, not with a mocked date.**
+5. **A shift today from 09:00–17:00, opened at 14:00, is `--tawny`** — *without* clocking in.
+6. **Elapsed time appears on the clocked-into row only**, and matches the button to the second.
+7. `test:compile` · `test:lint` · suite — all exit 0.

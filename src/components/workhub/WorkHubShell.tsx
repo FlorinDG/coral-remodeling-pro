@@ -207,33 +207,44 @@ export default function WorkHubShell({
             )}
 
             {/* ── Content ── */}
-            <main className="flex-1 pb-20 md:pb-0 overflow-y-auto">
+            <main className="flex-1 pb-44 md:pb-0 overflow-y-auto">
                 <TenantProvider activeModules={activeModules} planType={planType} lockedDbIds={lockedDbIds} tenant={tenant}>
                     {children}
                 </TenantProvider>
             </main>
 
-            {/* ── Mobile Bottom Nav ── */}
-            <nav className="fixed bottom-0 inset-x-0 z-50 md:hidden border-t border-emerald-500/20 bg-emerald-600 dark:bg-emerald-800 backdrop-blur-xl shadow-lg">
-                <div className="flex items-center justify-around h-16 px-1" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+            {/* ── Mobile Bottom Nav (WH-UI-1 §9.1, §9.2) ── */}
+            <nav 
+                className="fixed bottom-0 inset-x-0 z-50 md:hidden border-t border-[var(--persian-green)]/20 bg-[var(--persian-green)] backdrop-blur-xl shadow-lg"
+                style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+            >
+                <div className="flex items-center justify-around h-[4.5rem] px-1">
                     {mobileTabs.map(item => {
+                        const active = item.id === 'menu' ? menuOpen : isActive(item.href);
+                        const content = (
+                            <>
+                                <div className={`transition-transform [&>svg]:w-6 [&>svg]:h-6 ${active ? 'scale-105' : ''}`}>
+                                    {item.icon}
+                                </div>
+                                <span className="text-xs font-semibold tracking-wide">
+                                    {item.mobileLabel}
+                                </span>
+                            </>
+                        );
+                        const buttonClasses = `flex flex-col items-center justify-center gap-1 min-h-[48px] min-w-[48px] px-3.5 py-1.5 rounded-xl transition-all relative ${
+                            active
+                                ? 'text-white bg-black/20 shadow-inner'
+                                : 'text-white/80 hover:text-white hover:bg-white/10'
+                        }`;
+
                         if (item.id === 'menu') {
                             return (
                                 <button
                                     key={item.id}
                                     onClick={() => setMenuOpen(!menuOpen)}
-                                    className={`flex flex-col items-center justify-center gap-1 py-2 min-h-[44px] min-w-[44px] px-3.5 rounded-xl transition-all relative ${
-                                        menuOpen
-                                            ? 'text-white bg-emerald-700/60 dark:bg-emerald-900/40 shadow-inner'
-                                            : 'text-emerald-100 hover:text-white opacity-80 hover:opacity-100'
-                                    }`}
+                                    className={buttonClasses}
                                 >
-                                    <div className={`transition-transform ${menuOpen ? 'scale-105' : ''}`}>
-                                        {item.icon}
-                                    </div>
-                                    <span className="text-[9px] font-bold tracking-wider">
-                                        {item.mobileLabel}
-                                    </span>
+                                    {content}
                                 </button>
                             );
                         }
@@ -242,18 +253,9 @@ export default function WorkHubShell({
                             <Link
                                 key={item.id}
                                 href={item.href}
-                                className={`flex flex-col items-center justify-center gap-1 py-2 min-h-[44px] min-w-[44px] px-3.5 rounded-xl transition-all relative ${
-                                    isActive(item.href)
-                                        ? 'text-white bg-emerald-700/60 dark:bg-emerald-900/40 shadow-inner'
-                                        : 'text-emerald-100 hover:text-white opacity-80 hover:opacity-100'
-                                }`}
+                                className={buttonClasses}
                             >
-                                <div className={`transition-transform ${isActive(item.href) ? 'scale-105' : ''}`}>
-                                    {item.icon}
-                                </div>
-                                <span className="text-[9px] font-bold tracking-wider">
-                                    {item.mobileLabel}
-                                </span>
+                                {content}
                             </Link>
                         );
                     })}

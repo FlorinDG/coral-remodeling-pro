@@ -18,15 +18,35 @@ import { useTranslation } from 'react-i18next';
 import { formatTime } from '@/lib/format/date';
 import { shiftBrief, type ShiftBriefResult } from '@/lib/data/shift-brief';
 
+function parseShiftDateTime(dateStr: string, timeStr: string): Date {
+  const [y, m, d] = (dateStr || '').split('-').map(Number);
+  const [hh, mm] = (timeStr || '00:00').split(':').map(Number);
+  return new Date(y, (m || 1) - 1, d || 1, hh || 0, mm || 0, 0, 0);
+}
+
+function getShiftTemporalState(shiftDateStr: string, startStr: string, endStr: string, now: Date): 'past' | 'current' | 'upcoming' {
+  const start = parseShiftDateTime(shiftDateStr, startStr);
+  const end = parseShiftDateTime(shiftDateStr, endStr);
+  if (end.getTime() < start.getTime()) {
+    end.setDate(end.getDate() + 1);
+  }
+  const t = now.getTime();
+  if (end.getTime() < t) return 'past';
+  if (start.getTime() <= t && t <= end.getTime()) return 'current';
+  return 'upcoming';
+}
+
 interface ShiftCardProps {
   shift: any;
   profile: any;
   isNextShift: boolean;
   activeEntry: any;
+  elapsedTime?: string;
+  now: Date;
   onClick: () => void;
 }
 
-function ShiftCard({ shift, isNextShift, activeEntry, onClick }: ShiftCardProps) {
+function ShiftCard({ shift, isNextShift, activeEntry, elapsedTime, now, onClick }: ShiftCardProps) {
   const { t } = useTranslation();
   const { shiftTasks, loading: tasksLoading } = useShiftTasks(shift.id);
 
@@ -35,7 +55,8 @@ function ShiftCard({ shift, isNextShift, activeEntry, onClick }: ShiftCardProps)
 
   const isClockedIn = Boolean(activeEntry && activeEntry.shiftId === shift?.id);
   const shiftDate = parseISO(shift.shiftDate);
-  const isPast = isBefore(startOfDay(shiftDate), startOfDay(new Date()));
+  const temporalState = getShiftTemporalState(shift.shiftDate, shift.shiftStart, shift.shiftEnd, now);
+  const isPast = temporalState === 'past';
 
   // 3-step fallback chain: Project name -> description (shiftName / notes) -> localized 'shift'
   const projectName = (shift.project?.name || shift.projectName || '').replace(/^\[ERP\]\s*/i, '').trim();
@@ -47,9 +68,20 @@ function ShiftCard({ shift, isNextShift, activeEntry, onClick }: ShiftCardProps)
 
   return (
     <Card 
-      className={`rounded-none border-x-0 border-t-0 border-b md:rounded-xl md:border-x md:border-t cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors ${isClockedIn ? 'ring-2 ring-[var(--tawny)]' : ''} ${isNextShift ? 'border-primary' : ''} ${isPast ? 'opacity-60' : ''}`}
+      className={`relative overflow-hidden pl-1 rounded-none border-x-0 border-t-0 border-b md:rounded-xl md:border-x md:border-t cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors ${isClockedIn ? 'ring-2 ring-[var(--tawny)]' : ''} ${isNextShift ? 'border-primary' : ''} ${isPast ? 'opacity-60' : ''}`}
       onClick={onClick}
     >
+      {/* 3-4px vertical rule state bar on the left edge (WH-UI-1 §9.3) */}
+      <div 
+        aria-hidden="true"
+        className={`absolute left-0 top-0 bottom-0 w-1 ${
+          temporalState === 'current'
+            ? 'bg-[var(--tawny)]'
+            : temporalState === 'upcoming'
+              ? 'bg-[var(--persian-green)]'
+              : 'bg-neutral-300 dark:bg-neutral-700'
+        }`}
+      />
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-1.5 flex-1">
@@ -81,23 +113,30 @@ function ShiftCard({ shift, isNextShift, activeEntry, onClick }: ShiftCardProps)
               </a>
             )}
 
-            {/* Third line: Time and Date */}
-            <div className="flex items-center justify-between text-sm text-muted-foreground mt-2">
+            {/* Third line: Time and Date with elapsed time above date (WH-UI-1 §9.4) */}
+            <div className="flex items-end justify-between text-sm text-muted-foreground mt-2">
               <div className="flex items-center gap-2">
                 <Clock className="h-4 w-4 shrink-0 text-muted-foreground" />
                 <span className="font-medium text-foreground">
                   {formatTime(shift.shiftStart)} – {formatTime(shift.shiftEnd)}
                 </span>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="font-medium">
-                  {isToday(shiftDate) 
-                    ? t('schedule.today') 
-                    : format(shiftDate, 'EEE, d MMM')}
-                </span>
-                {isNextShift && !isToday(shiftDate) && (
-                  <Badge variant="outline" className="text-sm font-normal py-0 px-2">{t('schedule.next')}</Badge>
+              <div className="flex flex-col items-end">
+                {isClockedIn && elapsedTime && (
+                  <span className="font-mono font-bold text-sm text-[var(--tawny)] tracking-wider">
+                    {elapsedTime}
+                  </span>
                 )}
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">
+                    {isToday(shiftDate) 
+                      ? t('schedule.today') 
+                      : format(shiftDate, 'EEE, d MMM')}
+                  </span>
+                  {isNextShift && !isToday(shiftDate) && (
+                    <Badge variant="outline" className="text-sm font-normal py-0 px-2">{t('schedule.next')}</Badge>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -156,7 +195,16 @@ export function MySchedule() {
   const [brief, setBrief] = useState<ShiftBriefResult | null>(null);
   const [briefLoading, setBriefLoading] = useState(false);
   const [elapsedTime, setElapsedTime] = useState('00:00:00');
+  const [now, setNow] = useState(() => new Date());
   const nextShiftRef = useRef<HTMLDivElement>(null);
+
+  // Minute tick to recompute temporal shift state (WH-UI-1 §9.3)
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNow(new Date());
+    }, 30000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     if (!selectedShift?.id) {
@@ -362,6 +410,8 @@ export function MySchedule() {
                   profile={user}
                   isNextShift={shift.id === nextShift?.id}
                   activeEntry={activeEntry}
+                  elapsedTime={elapsedTime}
+                  now={now}
                   onClick={() => setSelectedShift(shift)}
                 />
               </div>

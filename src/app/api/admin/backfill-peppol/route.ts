@@ -5,6 +5,7 @@ import { getInboxDocument, getDocumentUbl, parseUBLToInvoice, getDocumentSupplie
 import { storage } from '@/lib/storage';
 import { getLockedDbId } from '@/lib/lockedDbUtils';
 import { v4 as uuidv4 } from 'uuid';
+import { describeError } from '@/lib/describe-error';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300; // Allow 5 minutes for backfill script
@@ -228,6 +229,6 @@ export async function GET(req: Request) {
 
     } catch (error: any) {
         console.error('[Backfill Route] Error:', error);
-        return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+        return NextResponse.json({ error: `Internal Server Error — ${describeError(error)}` }, { status: 500 });
     }
 }

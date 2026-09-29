@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
 import { getInboxDocument, getDocumentUbl } from '@/lib/e-invoice-inbox';
+import { describeError } from '@/lib/describe-error';
 
 /**
  * GET /api/peppol/inbox/[id]
@@ -76,7 +77,7 @@ export async function GET(
     } catch (error: any) {
         console.error('[Peppol Inbox Detail] error:', error);
         return NextResponse.json(
-            { error: error.message || 'Failed to get document' },
+            { error: `Failed to get document — ${describeError(error)}` },
             { status: 500 }
         );
     }

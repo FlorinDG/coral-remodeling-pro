@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
 import { onboardTenant, getPeppolStatus } from '@/lib/e-invoice';
+import { describeError } from '@/lib/describe-error';
 
 /**
  * POST /api/peppol/onboard
@@ -140,7 +141,7 @@ export async function POST() {
     } catch (error: any) {
         console.error('[Peppol Onboard] Error:', error);
         return NextResponse.json({
-            error: error.message || 'ONBOARD_FAILED',
+            error: `ONBOARD_FAILED — ${describeError(error)}`,
             success: false,
         }, { status: 500 });
     }

@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { storage } from '@/lib/storage';
 import prisma from '@/lib/prisma';
+import { describeError } from '@/lib/describe-error';
 import {
     listInboxDocuments,
     listInboxInvoices,
@@ -52,18 +53,18 @@ export async function GET(req: Request) {
 
         const [inboxPending, inboxInvoices, inboxCreditNotes] = await Promise.all([
             listInboxDocuments(tenant.eInvoiceApiKey).catch((err) => {
-                console.error('[Peppol Inbox] listInboxDocuments FAILED:', err.message || err);
-                fetchErrors.push(`inbox: ${err.message || 'unknown'}`);
+                console.error('[Peppol Inbox] listInboxDocuments FAILED:', err);
+                fetchErrors.push(`inbox: ${describeError(err)}`);
                 return { items: [], total: 0 } as const;
             }),
             listInboxInvoices(tenant.eInvoiceApiKey).catch((err) => {
-                console.error('[Peppol Inbox] listInboxInvoices FAILED:', err.message || err);
-                fetchErrors.push(`invoices: ${err.message || 'unknown'}`);
+                console.error('[Peppol Inbox] listInboxInvoices FAILED:', err);
+                fetchErrors.push(`invoices: ${describeError(err)}`);
                 return { items: [], total: 0 } as const;
             }),
             listInboxCreditNotes(tenant.eInvoiceApiKey).catch((err) => {
-                console.error('[Peppol Inbox] listInboxCreditNotes FAILED:', err.message || err);
-                fetchErrors.push(`credit-notes: ${err.message || 'unknown'}`);
+                console.error('[Peppol Inbox] listInboxCreditNotes FAILED:', err);
+                fetchErrors.push(`credit-notes: ${describeError(err)}`);
                 return { items: [], total: 0 } as const;
             }),
         ]);
@@ -431,7 +432,7 @@ export async function GET(req: Request) {
     } catch (error: any) {
         console.error('[Peppol Inbox] GET error:', error);
         return NextResponse.json(
-            { error: error.message || 'INBOX_FETCH_FAILED' },
+            { error: `INBOX_FETCH_FAILED — ${describeError(error)}` },
             { status: 500 }
         );
     }
@@ -491,7 +492,7 @@ export async function POST(req: Request) {
     } catch (error: any) {
         console.error('[Peppol Inbox] POST error:', error);
         return NextResponse.json(
-            { error: error.message || 'Action failed' },
+            { error: `Action failed — ${describeError(error)}` },
             { status: 500 }
         );
     }

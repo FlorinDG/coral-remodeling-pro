@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma';
 import { storage, resolveDocumentKey } from '@/lib/storage';
 import { buildAuditLogData, buildAuditLogOperation } from '@/lib/audit';
 import JSZip from 'jszip';
+import { describeError } from '@/lib/describe-error';
 
 export const runtime = 'nodejs';
 
@@ -387,12 +388,13 @@ export async function GET(req: Request) {
                     const fileName = cleanFileName(`verkoop_${invNum}_${clientName}.pdf`);
                     pdfFolder?.file(fileName, fileData);
                 } catch (err: any) {
+                    console.error('[financials/export] Failed to read sales PDF:', err);
                     failedDocuments.push({
                         id: inv.id,
                         title: invNum,
                         type: 'verkoop',
                         key: resolvedKey,
-                        error: err?.message || 'Bestand kon niet worden gelezen'
+                        error: `Bestand kon niet worden gelezen — ${describeError(err)}`
                     });
                 }
             }
@@ -423,12 +425,13 @@ export async function GET(req: Request) {
                     const fileName = cleanFileName(`aankoop_${expNum}_${supplierName}.pdf`);
                     pdfFolder?.file(fileName, fileData);
                 } catch (err: any) {
+                    console.error('[financials/export] Failed to read purchase PDF:', err);
                     failedDocuments.push({
                         id: exp.id,
                         title: expNum,
                         type: 'aankoop',
                         key: resolvedKey,
-                        error: err?.message || 'Bestand kon niet worden gelezen'
+                        error: `Bestand kon niet worden gelezen — ${describeError(err)}`
                     });
                 }
             }
@@ -560,6 +563,6 @@ export async function GET(req: Request) {
 
     } catch (e: any) {
         console.error('Accountant export failed:', e);
-        return NextResponse.json({ error: e.message || 'Export failed' }, { status: 500 });
+        return NextResponse.json({ error: `Export failed — ${describeError(e)}` }, { status: 500 });
     }
 }

@@ -9,6 +9,7 @@ import { generateOGM } from '@/lib/ogm';
 import { checkExportLock } from '@/lib/records/export-lock';
 import { SYSTEM_DATABASES, BASE_TO_KEY, SystemDatabaseRole } from '@/lib/kernel/system-databases';
 import { systemDatabaseId } from '@/lib/data/system-databases';
+import { describeError } from '@/lib/describe-error';
 
 /**
  * Server-first page creation.
@@ -159,9 +160,8 @@ export async function createPageServerFirst(
 
         return { success: true, page };
     } catch (e: unknown) {
-        const error = e as Error;
-        console.error('[createPageServerFirst] Error:', error?.message ?? error);
-        return { success: false, error: error?.message || 'Database write failed' };
+        console.error('[pages] createPageServerFirst failed:', e);
+        return { success: false, error: `Database write failed — ${describeError(e)}` };
     }
 }
 
@@ -260,9 +260,8 @@ export async function updatePageServerFirst(
 
         return { success: true, page };
     } catch (e: unknown) {
-        const error = e as Error;
-        console.error('[updatePageServerFirst] Error:', error?.message ?? error);
-        return { success: false, error: error?.message || 'Update failed' };
+        console.error('[pages] updatePageServerFirst failed:', e);
+        return { success: false, error: `Update failed — ${describeError(e)}` };
     }
 }
 

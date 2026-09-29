@@ -4,6 +4,7 @@ import { Resend } from 'resend';
 import InvoiceEmail from '@/emails/InvoiceEmail';
 import { t } from '@/lib/document-i18n';
 import React from 'react';
+import { describeError } from '@/lib/describe-error';
 
 const resend = new Resend(process.env.RESEND_API_KEY || 're_dummy_fallback');
 
@@ -147,8 +148,7 @@ export async function sendInvoiceToClient(
 
     } catch (err: any) {
         console.error("Failed to execute invoice mail dispatch:", err);
-        const detail = err?.message || err?.cause?.message || err?.name || String(err);
-        return { success: false, error: `[${err?.name ?? 'Error'}] ${detail}` };
+        return { success: false, error: describeError(err) };
     }
 }
 

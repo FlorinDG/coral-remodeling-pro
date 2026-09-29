@@ -5,6 +5,7 @@ import prisma from '@/lib/prisma';
 import { storage } from '@/lib/storage';
 import { archiveDocument } from '@/lib/records/document-archive';
 import { updatePageServerFirst } from '@/app/actions/pages';
+import { describeError } from '@/lib/describe-error';
 
 export interface ReconstructDocumentResult {
     success: boolean;
@@ -107,7 +108,7 @@ export async function reconstructDocumentAction(params: {
         console.error('[reconstructDocumentAction] Fout bij documentreconstructie:', err);
         return {
             success: false,
-            error: err?.message || 'Onverwachte fout bij documentreconstructie.'
+            error: `Onverwachte fout bij documentreconstructie. — ${describeError(err)}`
         };
     }
 }

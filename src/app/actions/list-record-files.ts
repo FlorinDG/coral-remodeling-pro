@@ -2,6 +2,7 @@
 
 import { auth } from '@/auth';
 import { storage } from '@/lib/storage';
+import { describeError } from '@/lib/describe-error';
 
 export async function listRecordFiles(recordType: string, recordId: string) {
     const session = await auth();
@@ -29,6 +30,6 @@ export async function listRecordFiles(recordType: string, recordId: string) {
         };
     } catch (e: any) {
         console.error("Failed to list record files:", e);
-        return { success: false, error: e.message || 'Failed to list files' };
+        return { success: false, error: `Failed to list files — ${describeError(e)}` };
     }
 }

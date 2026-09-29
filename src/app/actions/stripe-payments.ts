@@ -4,6 +4,7 @@ import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
 import { decrypt } from '@/lib/encryption';
 import Stripe from 'stripe';
+import { describeError } from '@/lib/describe-error';
 
 export async function createInvoiceCheckout(invoiceId: string) {
     try {
@@ -100,6 +101,6 @@ export async function createInvoiceCheckout(invoiceId: string) {
         return { success: true, url: stripeCheckoutUrl };
     } catch (error: any) {
         console.error('[Stripe Payment] Error creating checkout session:', error);
-        return { success: false, error: error.message || 'Failed to create payment session.' };
+        return { success: false, error: `Failed to create payment session. — ${describeError(error)}` };
     }
 }

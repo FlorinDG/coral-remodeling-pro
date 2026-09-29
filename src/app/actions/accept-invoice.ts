@@ -1,6 +1,7 @@
 "use server";
 
 import prisma from '@/lib/prisma';
+import { describeError } from '@/lib/describe-error';
 
 interface AcceptInvoicePayload {
     invoiceId: string;
@@ -44,6 +45,6 @@ export async function acceptInvoice({ invoiceId, signatureBase64, signatureMetho
         return { success: true };
     } catch (error: any) {
         console.error("Invoice signature acceptance failed:", error);
-        return { success: false, error: error.message || "An error occurred while saving." };
+        return { success: false, error: `An error occurred while saving. — ${describeError(error)}` };
     }
 }

@@ -7,6 +7,7 @@ import { cookies } from "next/headers";
 import { PLATFORM_ADMIN_ROLES } from "@/lib/roles";
 
 import { calculatePeppolOverage } from "@/lib/stripe";
+import { describeError } from "@/lib/describe-error";
 
 async function verifySuperadmin() {
     const session = await auth();
@@ -203,6 +204,6 @@ export async function getTenantPeppolHealth(tenantId: string) {
         };
     } catch (e: any) {
         console.error(`[getTenantPeppolHealth] Failed for ${tenantId}:`, e);
-        throw new Error(e.message || "Failed to fetch Peppol health details");
+        throw new Error(`Failed to fetch Peppol health details — ${describeError(e)}`);
     }
 }

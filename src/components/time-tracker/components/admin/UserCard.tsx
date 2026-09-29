@@ -7,8 +7,7 @@ import type { AppRole } from '@/components/time-tracker/hooks/useUserRoles';
 interface UserCardProps {
   user: {
     id: string;
-    user_id: string;
-    full_name: string;
+    name?: string;
     roles: AppRole[];
     teams: { id: string; name: string; role: string }[];
   };
@@ -40,7 +39,7 @@ export function UserCard({ user, onClick }: UserCardProps) {
             <User className="h-5 w-5 text-primary" />
           </div>
           <div className="flex-1 min-w-0 space-y-2">
-            <h3 className="font-medium truncate">{user.full_name}</h3>
+            <h3 className="font-medium truncate">{user.name}</h3>
             
             {/* Teams */}
             <div className="flex flex-wrap gap-1">

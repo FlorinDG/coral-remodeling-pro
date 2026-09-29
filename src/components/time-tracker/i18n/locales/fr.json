@@ -229,5 +229,21 @@
     "network": "Erreur réseau. Vérifiez votre connexion.",
     "unauthorized": "Vous n'êtes pas autorisé à effectuer cette action.",
     "notFound": "La ressource demandée n'a pas été trouvée."
+  },
+  "hours": {
+    "title": "Mes heures",
+    "thisWeek": "Cette semaine",
+    "previousWeek": "Semaine précédente",
+    "nextWeek": "Semaine suivante",
+    "running": "en cours",
+    "breakDeducted": "Pause de 30 min déduite",
+    "noEntries": "Aucune heure enregistrée cette semaine",
+    "loadFailed": "Vos heures n’ont pas pu être chargées",
+    "status": {
+      "approved": "Approuvé",
+      "pending": "En attente d’approbation",
+      "rejected": "Refusé",
+      "unreviewed": "Pas encore vérifié"
+    }
   }
 }

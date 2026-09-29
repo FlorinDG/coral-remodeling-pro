@@ -229,5 +229,21 @@
     "network": "Netwerkfout. Controleer uw verbinding.",
     "unauthorized": "U bent niet gemachtigd om deze actie uit te voeren.",
     "notFound": "De gevraagde bron is niet gevonden."
+  },
+  "hours": {
+    "title": "Mijn uren",
+    "thisWeek": "Deze week",
+    "previousWeek": "Vorige week",
+    "nextWeek": "Volgende week",
+    "running": "loopt",
+    "breakDeducted": "30 min pauze afgetrokken",
+    "noEntries": "Geen uren geregistreerd deze week",
+    "loadFailed": "Je uren konden niet geladen worden",
+    "status": {
+      "approved": "Goedgekeurd",
+      "pending": "Wacht op goedkeuring",
+      "rejected": "Afgewezen",
+      "unreviewed": "Nog niet nagekeken"
+    }
   }
 }

@@ -1,30 +1,17 @@
 "use client";
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { AuthProvider } from "@/components/time-tracker/contexts/AuthContext";
-import { ThemeProvider } from "@/context/ThemeContext";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import "@/app/[locale]/admin/hr/time-tracker/time-tracker.css";
 import dynamic from "next/dynamic";
 
-const PerformanceView = dynamic(
-    () => import("@/components/time-tracker/pages/Performance"),
+/**
+ * WorkHub — My hours (WH-2).
+ * A phone-native screen; the admin Performance page is no longer shown to the crew.
+ * Providers (query client, auth, i18n, theme) come from WorkHubProviders in the layout.
+ */
+const MyHoursScreen = dynamic(
+    () => import("@/components/workhub/screens/MyHoursScreen").then(m => m.MyHoursScreen),
     { ssr: false }
 );
 
-const queryClient = new QueryClient();
-
-/**
- * WorkHub Timesheets — re-uses the Performance/Timesheets component
- * for weekly/monthly time tracking reports.
- */
 export default function WorkHubTimesheetsPage() {
-    return (
-        <div className="time-tracker-theme">
-            <div className="max-w-4xl mx-auto px-4 py-4">
-                <h1 className="text-xl font-black tracking-tight mb-4 text-neutral-900 dark:text-white">Timesheets & Reports</h1>
-                <PerformanceView />
-            </div>
-        </div>
-    );
+    return <MyHoursScreen />;
 }

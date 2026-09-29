@@ -229,5 +229,21 @@
     "network": "Network error. Please check your connection.",
     "unauthorized": "You are not authorized to perform this action.",
     "notFound": "The requested resource was not found."
+  },
+  "hours": {
+    "title": "My hours",
+    "thisWeek": "This week",
+    "previousWeek": "Previous week",
+    "nextWeek": "Next week",
+    "running": "running",
+    "breakDeducted": "30 min break deducted",
+    "noEntries": "No hours recorded this week",
+    "loadFailed": "Your hours could not be loaded",
+    "status": {
+      "approved": "Approved",
+      "pending": "Waiting for approval",
+      "rejected": "Rejected",
+      "unreviewed": "Not yet reviewed"
+    }
   }
 }

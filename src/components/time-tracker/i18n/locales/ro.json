@@ -231,5 +231,21 @@
     "network": "Eroare de rețea. Verifică conexiunea.",
     "unauthorized": "Nu ești autorizat să efectuezi această acțiune.",
     "notFound": "Resursa solicitată nu a fost găsită."
+  },
+  "hours": {
+    "title": "Orele mele",
+    "thisWeek": "Săptămâna aceasta",
+    "previousWeek": "Săptămâna trecută",
+    "nextWeek": "Săptămâna următoare",
+    "running": "în curs",
+    "breakDeducted": "Pauză de 30 min scăzută",
+    "noEntries": "Nicio oră înregistrată săptămâna aceasta",
+    "loadFailed": "Orele tale nu au putut fi încărcate",
+    "status": {
+      "approved": "Aprobat",
+      "pending": "Așteaptă aprobarea",
+      "rejected": "Respins",
+      "unreviewed": "Încă neverificat"
+    }
   }
 }

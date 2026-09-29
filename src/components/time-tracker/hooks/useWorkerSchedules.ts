@@ -56,10 +56,8 @@ export function useWorkerSchedules() {
       const userSchedules = schedules.filter(s => s.userId === emp.id);
       return {
         id: emp.id,
-        user_id: emp.id,
         userId: emp.id,
         name: `${emp.firstName} ${emp.lastName}`,
-        full_name: `${emp.firstName} ${emp.lastName}`,
         schedules: userSchedules,
       };
     });

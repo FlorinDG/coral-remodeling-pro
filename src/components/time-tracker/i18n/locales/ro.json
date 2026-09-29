@@ -109,7 +109,9 @@
     "todaysShift": "Tura de Azi",
     "noScheduledShift": "Nicio Tură Programată",
     "userInitiatedEntry": "Pontarea va crea o înregistrare inițiată de utilizator",
-    "locationRecorded": "Locație înregistrată"
+    "locationRecorded": "Locație înregistrată",
+    "alreadyClockedInSince": "Erai deja pontat din {{time}}.",
+    "statusUnconfirmed": "Starea pontajului nu a putut fi confirmată. Pontajul rămâne sigur."
   },
   "schedule": {
     "title": "Program",
@@ -139,7 +141,19 @@
     "worked": "Lucrat",
     "photos": "Fotografii",
     "files": "Fișiere",
-    "shiftCompleted": "Tură finalizată"
+    "shiftCompleted": "Tură finalizată",
+    "shiftsUnavailableNotice": "Ture indisponibile — pontaj fără tură",
+    "shiftsLoadFailed": "Turele tale nu au putut fi încărcate de pe server.",
+    "shiftsLoadFailedHint": "Poți în continuare să pontezi fără tură folosind butonul de mai jos.",
+    "partialDataNotice": "Unele detalii ale programului nu au putut fi încărcate.",
+    "unloadedEndpoints": "Indisponibil",
+    "partialDataExplanation": "Orele turelor sunt afișate, dar unele detalii despre proiecte sau colegi pot lipsi.",
+    "endpoint": {
+      "projects": "Proiecte",
+      "erp-projects": "Proiecte ERP",
+      "employees": "Numele colegilor",
+      "time-off": "Concediu"
+    }
   },
   "timeOff": {
     "title": "Concediu",

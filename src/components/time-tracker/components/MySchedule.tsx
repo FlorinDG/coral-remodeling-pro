@@ -16,6 +16,7 @@ import { format, parseISO, isToday, addDays, subDays, isBefore, isAfter, startOf
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { formatTime } from '@/lib/format/date';
+import { describeError } from '@/lib/describe-error';
 import { shiftBrief, type ShiftBriefResult } from '@/lib/data/shift-brief';
 
 function parseShiftDateTime(dateStr: string, timeStr: string): Date {
@@ -321,10 +322,15 @@ export function MySchedule() {
         clockInData.shiftId = shiftId;
       }
 
-      const { error } = await clockIn(clockInData);
+      const { data, error, alreadyClockedIn } = await clockIn(clockInData);
       
       if (error) {
-        toast.error('Failed to clock in');
+        console.error('[MySchedule] Clock-in failed:', error);
+        toast.error(`Failed to clock in — ${describeError(error)}`);
+      } else if (alreadyClockedIn && data) {
+        // WHS-1b §1: the server already had an open entry — adopted, nothing created.
+        toast.info(t('clock.alreadyClockedInSince', { time: formatTime(new Date(data.clockInTime)) }));
+        setShowGeofenceWarning(null);
       } else {
         toast.success(overrideShiftWithFallback ? 'Clocked in without shift (pending approval)' : 'Clocked in successfully');
         setShowGeofenceWarning(null);
@@ -399,19 +405,13 @@ export function MySchedule() {
               <div className="space-y-1">
                 <p className="font-semibold">
                   {failedEndpoints.includes('shifts') 
-                    ? t('schedule.shiftsLoadFailed', 'Could not load your shifts from the server.')
-                    : t('schedule.partialDataNotice', 'Notice: Some schedule details could not be loaded.')}
+                    ? t('schedule.shiftsLoadFailed')
+                    : t('schedule.partialDataNotice')}
                 </p>
                 <p className="text-xs text-amber-800 dark:text-amber-300">
                   {failedEndpoints.includes('shifts')
-                    ? t('schedule.shiftsLoadFailedHint', 'You can still clock in without a shift using the button below.')
-                    : `${t('schedule.unloadedEndpoints', 'Unavailable')}: ${failedEndpoints.map(e => {
-                        if (e === 'projects') return 'Projects';
-                        if (e === 'erp-projects') return 'ERP Projects';
-                        if (e === 'employees') return 'Crew Names';
-                        if (e === 'time-off') return 'Time Off';
-                        return e;
-                      }).join(', ')}. ${t('schedule.partialDataExplanation', 'Shift times are displayed, but some project or colleague details may be missing.')}`}
+                    ? t('schedule.shiftsLoadFailedHint')
+                    : `${t('schedule.unloadedEndpoints')}: ${failedEndpoints.map(e => t(`schedule.endpoint.${e}`, { defaultValue: e })).join(', ')}. ${t('schedule.partialDataExplanation')}`}
                 </p>
               </div>
             </div>

@@ -6,6 +6,14 @@ import { withRetry } from "@/lib/fetch-retry";
 
 const BASE = '/api/hr';
 
+/** A non-OK HR API response. Carries the status and parsed body so callers can act on them (e.g. a 409 payload). */
+export class HrApiError extends Error {
+    constructor(message: string, public readonly status: number, public readonly body: Record<string, any>) {
+        super(message);
+        this.name = 'HrApiError';
+    }
+}
+
 export async function hrFetch<T = any>(entity: string, options?: RequestInit): Promise<T> {
     const res = await fetch(`${BASE}/${entity}`, {
         headers: { 'Content-Type': 'application/json' },
@@ -14,7 +22,7 @@ export async function hrFetch<T = any>(entity: string, options?: RequestInit): P
     });
     if (!res.ok) {
         const err = await res.json().catch(() => ({ error: res.statusText }));
-        throw new Error(err.error || `HR API error: ${res.status}`);
+        throw new HrApiError(err.error || `HR API error: ${res.status}`, res.status, err);
     }
     return res.json();
 }

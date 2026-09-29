@@ -109,7 +109,9 @@
     "todaysShift": "Today's Shift",
     "noScheduledShift": "No Scheduled Shift",
     "userInitiatedEntry": "Clocking in will create a user-initiated entry",
-    "locationRecorded": "Location recorded"
+    "locationRecorded": "Location recorded",
+    "alreadyClockedInSince": "You were already clocked in since {{time}}.",
+    "statusUnconfirmed": "Your clock status could not be confirmed. Clocking in is still safe."
   },
   "schedule": {
     "title": "Schedule",
@@ -139,7 +141,19 @@
     "worked": "Worked",
     "photos": "Photos",
     "files": "Files",
-    "shiftCompleted": "Shift completed"
+    "shiftCompleted": "Shift completed",
+    "shiftsUnavailableNotice": "Shifts unavailable — clocking in without shift",
+    "shiftsLoadFailed": "Could not load your shifts from the server.",
+    "shiftsLoadFailedHint": "You can still clock in without a shift using the button below.",
+    "partialDataNotice": "Some schedule details could not be loaded.",
+    "unloadedEndpoints": "Unavailable",
+    "partialDataExplanation": "Shift times are shown, but some project or colleague details may be missing.",
+    "endpoint": {
+      "projects": "Projects",
+      "erp-projects": "ERP projects",
+      "employees": "Crew names",
+      "time-off": "Time off"
+    }
   },
   "timeOff": {
     "title": "Time Off",

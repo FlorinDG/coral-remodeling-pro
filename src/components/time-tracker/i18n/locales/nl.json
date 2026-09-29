@@ -109,7 +109,9 @@
     "todaysShift": "Dienst van Vandaag",
     "noScheduledShift": "Geen Dienst Gepland",
     "userInitiatedEntry": "Inklokken creëert een door gebruiker geïnitieerde registratie",
-    "locationRecorded": "Locatie geregistreerd"
+    "locationRecorded": "Locatie geregistreerd",
+    "alreadyClockedInSince": "Je was al ingeklokt sinds {{time}}.",
+    "statusUnconfirmed": "Je klokstatus kon niet bevestigd worden. Inklokken blijft veilig."
   },
   "schedule": {
     "title": "Rooster",
@@ -139,7 +141,19 @@
     "worked": "Gewerkt",
     "photos": "Foto's",
     "files": "Bestanden",
-    "shiftCompleted": "Dienst voltooid"
+    "shiftCompleted": "Dienst voltooid",
+    "shiftsUnavailableNotice": "Diensten niet beschikbaar — inklokken zonder dienst",
+    "shiftsLoadFailed": "Je diensten konden niet van de server geladen worden.",
+    "shiftsLoadFailedHint": "Je kunt nog steeds inklokken zonder dienst met de knop hieronder.",
+    "partialDataNotice": "Sommige planningsgegevens konden niet geladen worden.",
+    "unloadedEndpoints": "Niet beschikbaar",
+    "partialDataExplanation": "De diensttijden worden getoond, maar sommige project- of collegagegevens kunnen ontbreken.",
+    "endpoint": {
+      "projects": "Projecten",
+      "erp-projects": "ERP-projecten",
+      "employees": "Namen van collega’s",
+      "time-off": "Verlof"
+    }
   },
   "timeOff": {
     "title": "Verlof",

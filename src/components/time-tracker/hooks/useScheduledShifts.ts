@@ -191,9 +191,9 @@ export function useScheduledShifts() {
         userName: (s as any).userName || (s.userId ? employeeMap.get(s.userId) : undefined) || employeeMap.get((s as any).user_id || '') || 'Onbekend',
       }));
       setRawShifts(enriched);
-    } else {
-      setRawShifts([]);
     }
+    // WHS-1b §3: on a shifts failure keep what is already on screen — a failed REFETCH must not
+    // blank a week that loaded. The banner (failedEndpoints) says the data could not be refreshed.
 
     setProjects(allProjects);
     setLoading(false);

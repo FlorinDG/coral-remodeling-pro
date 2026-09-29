@@ -496,6 +496,28 @@ export async function POST(
     // ── PRE-CREATE Automations ───────────────────────────────────────
     let parentShift: { id: string; projectId: string | null } | null = null;
     if (entity === 'clock-entries') {
+        // WHS-1b: one OPEN entry per worker. A client that could not load its own state
+        // (slow network, failed GET) may still offer "clock in" — the server is the authority.
+        // Closed records (manual / late entries carry a clockOutTime) are never refused.
+        // Read-then-refuse; the durable form is a partial unique index (Florin decision).
+        if (!data.clockOutTime) {
+            try {
+                const open = await prisma.clockEntry.findFirst({
+                    where: { tenantId: ctx.tenantId, userId: data.userId as string, clockOutTime: null },
+                    orderBy: { clockInTime: 'desc' },
+                });
+                if (open) {
+                    return NextResponse.json({ error: 'already_clocked_in', entry: open }, { status: 409 });
+                }
+            } catch (err) {
+                console.error('[HR API] POST clock-entries: open-entry check failed:', err);
+                return NextResponse.json(
+                    { error: `open_entry_check_failed: ${err instanceof Error ? err.message : String(err)}` },
+                    { status: 503 }
+                );
+            }
+        }
+
         // TS-8: Stamp hourly cost from Employee profile at time of creation
         try {
             const employee = await prisma.employee.findFirst({

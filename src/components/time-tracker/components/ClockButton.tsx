@@ -11,6 +11,8 @@ import { LocationPermissionDialog } from './LocationPermissionDialog';
 import { GeofenceWarningDialog } from './GeofenceWarningDialog';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
+import { describeError } from '@/lib/describe-error';
+import { formatTime } from '@/lib/format/date';
 
 function ClockButtonComponent() {
   const { t } = useTranslation();
@@ -21,22 +23,24 @@ function ClockButtonComponent() {
   const [activeShiftId, setActiveShiftId] = useState<string | null>(null);
   
   const [entriesTimedOut, setEntriesTimedOut] = useState(false);
-  const [shiftsTimedOut, setShiftsTimedOut] = useState(false);
   
-  const { activeEntry, loading: entriesLoading, clockIn, clockOut } = useClockEntries();
+  const { activeEntry, loading: entriesLoading, error: entriesError, clockIn, clockOut } = useClockEntries();
   const { getTodayShift, createUserShift, completeUserShift, loading: shiftsLoading, error: shiftsError, failedEndpoints, refetch: refetchShifts } = useScheduledShifts();
   const { formattedTime, isRunning, startTimer, stopTimer, resetTimer, setStartTime } = useTimer();
   const { requestLocation, loading: locationLoading, permissionState } = useGeolocation();
 
-  // Terminal branch timeouts (WHS-1 §2): never spin forever
+  // Terminal branch (WHS-1 §2): never spin forever on the entries load.
+  // Shifts have NO timeout here (WHS-1b §2): useScheduledShifts owns its own 9s bound, and a
+  // second, shorter guess here turned "slow" into "no shift today" and created duplicate shifts.
   useEffect(() => {
     const tEntries = setTimeout(() => setEntriesTimedOut(true), 5000);
-    const tShifts = setTimeout(() => setShiftsTimedOut(true), 3000);
-    return () => {
-      clearTimeout(tEntries);
-      clearTimeout(tShifts);
-    };
+    return () => clearTimeout(tEntries);
   }, []);
+
+  const shiftsFailed = Boolean(shiftsError || failedEndpoints?.includes('shifts'));
+  // WHS-1b §1: an empty entries list we did not successfully load is NOT "clocked out".
+  // The button still offers clock-in (the server refuses a second open entry), with a note.
+  const entriesUnconfirmed = (entriesLoading && entriesTimedOut) || Boolean(entriesError);
 
   const todayShift = getTodayShift();
   const hasScheduledShift = !!todayShift;
@@ -114,17 +118,27 @@ function ClockButtonComponent() {
       clockInData.shiftId = todayShift.id;
     }
 
-    const { data, error } = await clockIn(clockInData);
+    const { data, error, alreadyClockedIn } = await clockIn(clockInData);
     
     if (error) {
       console.error('[ClockButton] Clock-in failed:', error);
       setIsProcessing(false);
-      toast.error('Failed to clock in. Please try again.');
+      toast.error(`Failed to clock in. Please try again. — ${describeError(error)}`);
+      return;
+    }
+
+    // WHS-1b §1: the server already had an open entry for this worker — adopted, nothing created.
+    if (alreadyClockedIn && data) {
+      setIsProcessing(false);
+      setShowGeofenceWarning(null);
+      toast.info(t('clock.alreadyClockedInSince', { time: formatTime(new Date(data.clockInTime)) }));
       return;
     }
     
-    // If no scheduled shift, try to create a user-initiated shift (WHS-1 §2: shift failure must not break clock-in)
-    if (!todayShift && data && !overrideShiftWithFallback) {
+    // If no scheduled shift, try to create a user-initiated shift (WHS-1 §2: shift failure must not break clock-in).
+    // WHS-1b §2: only when shifts actually LOADED. If they failed we do not know whether a shift
+    // exists today, so the entry is recorded without one — never a guessed, possibly duplicate shift.
+    if (!todayShift && data && !overrideShiftWithFallback && !shiftsFailed) {
       try {
         const userShift = await createUserShift();
         if (userShift?.data) {
@@ -213,7 +227,7 @@ function ClockButtonComponent() {
 
   // Terminal branch (WHS-1 §2): never block indefinitely on loading
   const isAwaitingInitialEntries = entriesLoading && !entriesTimedOut;
-  const isAwaitingShifts = !isClockedIn && shiftsLoading && !shiftsTimedOut && !shiftsError && !failedEndpoints?.includes('shifts');
+  const isAwaitingShifts = !isClockedIn && shiftsLoading && !shiftsFailed;
 
   if (isAwaitingInitialEntries || isAwaitingShifts) {
     return (
@@ -228,8 +242,6 @@ function ClockButtonComponent() {
       </div>
     );
   }
-
-  const shiftsFailed = Boolean(shiftsError || failedEndpoints?.includes('shifts'));
 
   return (
     <>
@@ -273,7 +285,13 @@ function ClockButtonComponent() {
 
         {!isClockedIn && shiftsFailed && (
           <p className="text-xs text-amber-700 dark:text-amber-300 font-medium mt-2 text-center bg-amber-50 dark:bg-amber-950/60 px-2.5 py-1 rounded-md border border-amber-200 dark:border-amber-800">
-            {t('schedule.shiftsUnavailableNotice', 'Shifts unavailable — clocking in without shift')}
+            {t('schedule.shiftsUnavailableNotice')}
+          </p>
+        )}
+
+        {!isClockedIn && entriesUnconfirmed && (
+          <p className="text-xs text-amber-700 dark:text-amber-300 font-medium mt-2 text-center bg-amber-50 dark:bg-amber-950/60 px-2.5 py-1 rounded-md border border-amber-200 dark:border-amber-800">
+            {t('clock.statusUnconfirmed')}
           </p>
         )}
       </div>

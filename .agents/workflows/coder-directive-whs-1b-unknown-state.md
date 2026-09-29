@@ -11,6 +11,8 @@ BLAST RADIUS — only these files may change in this pass:
   src/components/time-tracker/i18n/locales/en.json
   src/components/time-tracker/i18n/locales/nl.json
   src/components/time-tracker/i18n/locales/fr.json
+  src/components/time-tracker/i18n/locales/ro.json        (added at implementation)
+  src/lib/hr-api.ts                                        (added at implementation — see §6)
 Anything else: STOP AND REPORT. Do not change it, even if it is wrong.
 A better idea is a report, not a commit.
 No branch move, no promotion, no deploy, no migration run, NO SCHEMA CHANGE.
@@ -95,3 +97,19 @@ const isAwaitingInitialEntries = entriesLoading && !entriesTimedOut;
 - 🛑 **No schema change, no unique index, no migration** — the guard is a server read-then-refuse in this pass. *(A partial unique index is the durable form; it is a Florin decision once §0 is known.)*
 - 🛑 **No change to the POST path of any entity other than `clock-entries`.**
 - 🛑 **Do not rebuild WorkHub Home (`WH-2`).**
+
+---
+
+# 6 · IMPLEMENTED BY THE PLANNER — 2026-09-30 — what differs from the plan above
+- **`src/lib/hr-api.ts` joined the radius.** `hrFetch` threw a bare `Error(message)` and discarded the response body, so the client could not read the 409's `entry`. It now throws `HrApiError` (`status`, `body`) — a subclass of `Error`, so every existing `catch` and `.message` read is unchanged.
+- **§2 went one step further, deliberately:** when shifts **failed**, clock-in records the entry **without creating a user shift**. A failed load means we do not know whether a shift exists today; creating one is the same guess as the 3 s timeout. *(4x: the hours are the fact; the entry stands without a shift.)*
+- **Open-entry check failure → `503`, named.** Fail closed: the create would hit the same database.
+- **`ro.json` got the keys too**, and the endpoint labels became `schedule.endpoint.<name>` keys.
+- **Clock-in error toasts in `ClockButton` / `MySchedule` now carry `describeError(err)`** (ERR-1's helper) — these files are fenced from the coder, so they were converted here.
+
+## Noticed, not fixed — recorded
+- 🔴 **`tests/i18n.test.ts` scans next-intl only** (`src/messages`, `useTranslations`). **The time-tracker's react-i18next locales have NO guard** — which is how six missing keys shipped in `WHS-1`. → `I18N-TT-1`.
+- 🔴 **POST `/api/hr/clock-entries` accepts a client-supplied `userId` from any role.** A workforce user can create an entry for someone else. Checklist item 5 (intra-tenant RBAC, server-side). → `RBAC-CE-1`.
+- `[entity]/route.ts` — `AUTH_SECRET || 'fallback-secret-for-dev'` signs the timesheet-unlock cookie. Harmless while `AUTH_SECRET` is set in every environment; a forgeable cookie if it ever is not.
+- `[entity]/route.ts:157` — `locked['projects'] || 'db-1'`: a fail-open identity fallback (R1-2) still in the `erp-projects` branch.
+- The read-then-refuse guard has a race window (two taps inside one round-trip). **Durable form: a partial unique index `ON "ClockEntry"("tenantId","userId") WHERE "clockOutTime" IS NULL`** — additive, Florin's migration; the open-entries census returned zero rows, so it would apply cleanly today.

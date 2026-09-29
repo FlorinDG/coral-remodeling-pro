@@ -2,7 +2,7 @@
 import { useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
-import { hrList, hrCreate, hrUpdate } from '@/lib/hr-api';
+import { hrList, hrCreate, hrUpdate, HrApiError } from '@/lib/hr-api';
 
 export interface ClockEntry {
   id: string;
@@ -55,15 +55,24 @@ export function useClockEntries() {
       clockInLongitude?: number;
       taskDescription?: string;
       shiftId?: string;
-    }) => {
-      const entry = await hrCreate<ClockEntry>('clock-entries', {
-        clockInTime: new Date().toISOString(),
-        ...data,
-      });
-      return addSnake(entry);
+    }): Promise<{ entry: ClockEntry; alreadyClockedIn: boolean }> => {
+      try {
+        const entry = await hrCreate<ClockEntry>('clock-entries', {
+          clockInTime: new Date().toISOString(),
+          ...data,
+        });
+        return { entry: addSnake(entry), alreadyClockedIn: false };
+      } catch (err) {
+        // WHS-1b: the server refuses a second open entry and returns the one that exists.
+        // Adopt it — the worker IS clocked in; the client simply had not loaded that yet.
+        if (err instanceof HrApiError && err.status === 409 && err.body?.error === 'already_clocked_in' && err.body.entry) {
+          return { entry: addSnake(err.body.entry as ClockEntry), alreadyClockedIn: true };
+        }
+        throw err;
+      }
     },
-    onSuccess: (newEntry) => {
-      queryClient.setQueryData<ClockEntry[]>(queryKey, (old = []) => [newEntry, ...old]);
+    onSuccess: ({ entry }) => {
+      queryClient.setQueryData<ClockEntry[]>(queryKey, (old = []) => [entry, ...old.filter(e => e.id !== entry.id)]);
       queryClient.invalidateQueries({ queryKey });
     }
   });
@@ -114,10 +123,10 @@ export function useClockEntries() {
 
   const clockIn = async (data: any) => {
     try {
-      const res = await clockInMutation.mutateAsync(data);
-      return { data: res, error: null };
+      const { entry, alreadyClockedIn } = await clockInMutation.mutateAsync(data);
+      return { data: entry, error: null, alreadyClockedIn };
     } catch (err: any) {
-      return { data: null, error: err };
+      return { data: null, error: err, alreadyClockedIn: false };
     }
   };
 

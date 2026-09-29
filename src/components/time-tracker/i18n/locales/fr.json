@@ -109,7 +109,9 @@
     "todaysShift": "Quart d'aujourd'hui",
     "noScheduledShift": "Aucun quart prévu",
     "userInitiatedEntry": "Le pointage créera une entrée initiée par l'utilisateur",
-    "locationRecorded": "Emplacement enregistré"
+    "locationRecorded": "Emplacement enregistré",
+    "alreadyClockedInSince": "Vous étiez déjà pointé depuis {{time}}.",
+    "statusUnconfirmed": "Votre statut de pointage n’a pas pu être confirmé. Pointer reste sûr."
   },
   "schedule": {
     "title": "Planning",
@@ -139,7 +141,19 @@
     "worked": "Travaillé",
     "photos": "Photos",
     "files": "Fichiers",
-    "shiftCompleted": "Quart terminé"
+    "shiftCompleted": "Quart terminé",
+    "shiftsUnavailableNotice": "Services indisponibles — pointage sans service",
+    "shiftsLoadFailed": "Impossible de charger vos services depuis le serveur.",
+    "shiftsLoadFailedHint": "Vous pouvez toujours pointer sans service avec le bouton ci-dessous.",
+    "partialDataNotice": "Certains détails du planning n’ont pas pu être chargés.",
+    "unloadedEndpoints": "Indisponible",
+    "partialDataExplanation": "Les horaires sont affichés, mais certains détails de projet ou de collègues peuvent manquer.",
+    "endpoint": {
+      "projects": "Projets",
+      "erp-projects": "Projets ERP",
+      "employees": "Noms de l’équipe",
+      "time-off": "Congés"
+    }
   },
   "timeOff": {
     "title": "Congés",

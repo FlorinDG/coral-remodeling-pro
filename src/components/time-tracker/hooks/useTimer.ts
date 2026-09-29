@@ -31,14 +31,14 @@ export function useTimer(): UseTimerResult {
     if (isRunning && startTimeRef.current) {
       // Calculate initial elapsed time
       const now = new Date();
-      const elapsed = Math.floor((now.getTime() - startTimeRef.current.getTime()) / 1000);
+      const elapsed = Math.max(0, Math.floor((now.getTime() - startTimeRef.current.getTime()) / 1000));
       setElapsedTime(elapsed);
 
       // Set up interval
       intervalRef.current = setInterval(() => {
         if (startTimeRef.current) {
           const now = new Date();
-          const elapsed = Math.floor((now.getTime() - startTimeRef.current.getTime()) / 1000);
+          const elapsed = Math.max(0, Math.floor((now.getTime() - startTimeRef.current.getTime()) / 1000));
           setElapsedTime(elapsed);
         }
       }, 1000);
@@ -75,7 +75,7 @@ export function useTimer(): UseTimerResult {
   const setStartTime = useCallback((time: Date) => {
     startTimeRef.current = time;
     const now = new Date();
-    const elapsed = Math.floor((now.getTime() - time.getTime()) / 1000);
+    const elapsed = Math.max(0, Math.floor((now.getTime() - time.getTime()) / 1000));
     setElapsedTime(elapsed);
   }, []);
 

@@ -7,10 +7,11 @@ export interface Announcement {
   title: string;
   content: string;
   priority: 'normal' | 'important' | 'urgent';
-  created_at: string;
-  created_by: string;
-  author_name?: string;
-  is_read?: boolean;
+  createdAt: string;
+  createdBy: string;
+  authorName?: string;
+  isRead?: boolean;
+  [key: string]: any;
 }
 
 export function useAnnouncements() {
@@ -25,7 +26,7 @@ export function useAnnouncements() {
       const data = await getHrAnnouncements();
       
       setAnnouncements(data);
-      setUnreadCount(data.filter((a: any) => !a.is_read).length);
+      setUnreadCount(data.filter((a: any) => !a.isRead).length);
     } catch (err) {
       console.warn('[useAnnouncements] Error:', err);
       setAnnouncements([]);
@@ -42,7 +43,7 @@ export function useAnnouncements() {
     try {
       await markHrAnnouncementRead(announcementId);
       setAnnouncements(prev =>
-        prev.map(a => a.id === announcementId ? { ...a, is_read: true } : a)
+        prev.map(a => a.id === announcementId ? { ...a, isRead: true } : a)
       );
       setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (error) {

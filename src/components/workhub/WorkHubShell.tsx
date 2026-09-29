@@ -8,9 +8,9 @@ import { TenantProvider } from '@/context/TenantContext';
 import { ROLES } from '@/lib/roles';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import {
-    Clock, CalendarDays, CalendarOff, Users, FolderOpen,
-    CheckSquare, FileText, User, LogOut, Menu, X,
-    LayoutDashboard, BookOpen
+    Clock, CalendarDays, CalendarOff, FolderOpen,
+    CheckSquare, FileText, User, LogOut, Menu,
+    BookOpen
 } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 import { del } from 'idb-keyval';
@@ -25,16 +25,16 @@ interface NavItem {
 }
 
 const PRIMARY_ITEMS: NavItem[] = [
-    { id: 'home',     label: 'Dashboard',         href: '/workhub',           icon: <LayoutDashboard className="w-5 h-5" />, mobileLabel: 'Home' },
-    { id: 'leave',    label: 'Time Off',          href: '/workhub/leave',     icon: <CalendarOff className="w-5 h-5" />,     mobileLabel: 'Time Off' },
-    { id: 'tasks',    label: 'My Tasks',          href: '/workhub/tasks',     icon: <CheckSquare className="w-5 h-5" />,     mobileLabel: 'Tasks' },
+    { id: 'schedule', label: 'My Schedule',       href: '/workhub',           icon: <CalendarDays className="w-5 h-5" />, mobileLabel: 'Schedule' },
+    { id: 'leave',    label: 'Time Off',          href: '/workhub/leave',     icon: <CalendarOff className="w-5 h-5" />,  mobileLabel: 'Time Off' },
+    { id: 'tasks',    label: 'My Tasks',          href: '/workhub/tasks',     icon: <CheckSquare className="w-5 h-5" />,  mobileLabel: 'Tasks' },
 ];
 
 const SECONDARY_ITEMS: NavItem[] = [
-    { id: 'timesheets', label: 'Timesheets',       href: '/workhub/timesheets', icon: <Clock className="w-5 h-5" />,          mobileLabel: 'Timesheets' },
-    { id: 'files',     label: 'Documents',         href: '/workhub/files',      icon: <FileText className="w-5 h-5" />,        mobileLabel: 'Files' },
-    { id: 'projects',  label: 'Projects',          href: '/workhub/projects',   icon: <FolderOpen className="w-5 h-5" />,      mobileLabel: 'Projects' },
-    { id: 'wiki',      label: 'Company Wiki',      href: '/workhub/wiki',       icon: <BookOpen className="w-5 h-5" />,        mobileLabel: 'Wiki' },
+    { id: 'timesheets', label: 'Timesheets',       href: '/workhub/timesheets', icon: <Clock className="w-5 h-5" />,       mobileLabel: 'Timesheets' },
+    { id: 'files',     label: 'Documents',         href: '/workhub/files',      icon: <FileText className="w-5 h-5" />,     mobileLabel: 'Files' },
+    { id: 'projects',  label: 'Projects',          href: '/workhub/projects',   icon: <FolderOpen className="w-5 h-5" />,   mobileLabel: 'Projects' },
+    { id: 'wiki',      label: 'Company Wiki',      href: '/workhub/wiki',       icon: <BookOpen className="w-5 h-5" />,     mobileLabel: 'Wiki' },
 ];
 
 // Bottom Nav logic moved inside component to handle state/filtering
@@ -73,8 +73,9 @@ export default function WorkHubShell({
 
     const filteredPrimaryItems = PRIMARY_ITEMS;
 
+    // Workforce users retain access to Documents (files) in the drawer (WHS-1 §4)
     const filteredSecondaryItems = SECONDARY_ITEMS.filter(item => {
-        if (isWorkforce && ['projects', 'team', 'wiki', 'files'].includes(item.id)) return false;
+        if (isWorkforce && ['projects', 'team', 'wiki'].includes(item.id)) return false;
         return true;
     });
 
@@ -85,9 +86,7 @@ export default function WorkHubShell({
 
     const isActive = (href: string) => {
         if (href === '/workhub') {
-            return pathname === '/workhub' || 
-                   pathname.startsWith('/workhub/team') || 
-                   pathname.startsWith('/workhub/timesheets');
+            return pathname === '/workhub';
         }
         if (href === '/workhub/files') {
             return pathname.startsWith('/workhub/files') || pathname.startsWith('/workhub/projects');

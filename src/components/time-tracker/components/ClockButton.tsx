@@ -20,10 +20,23 @@ function ClockButtonComponent() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [activeShiftId, setActiveShiftId] = useState<string | null>(null);
   
+  const [entriesTimedOut, setEntriesTimedOut] = useState(false);
+  const [shiftsTimedOut, setShiftsTimedOut] = useState(false);
+  
   const { activeEntry, loading: entriesLoading, clockIn, clockOut } = useClockEntries();
-  const { getTodayShift, createUserShift, completeUserShift, loading: shiftsLoading, refetch: refetchShifts } = useScheduledShifts();
+  const { getTodayShift, createUserShift, completeUserShift, loading: shiftsLoading, error: shiftsError, failedEndpoints, refetch: refetchShifts } = useScheduledShifts();
   const { formattedTime, isRunning, startTimer, stopTimer, resetTimer, setStartTime } = useTimer();
   const { requestLocation, loading: locationLoading, permissionState } = useGeolocation();
+
+  // Terminal branch timeouts (WHS-1 §2): never spin forever
+  useEffect(() => {
+    const tEntries = setTimeout(() => setEntriesTimedOut(true), 5000);
+    const tShifts = setTimeout(() => setShiftsTimedOut(true), 3000);
+    return () => {
+      clearTimeout(tEntries);
+      clearTimeout(tShifts);
+    };
+  }, []);
 
   const todayShift = getTodayShift();
   const hasScheduledShift = !!todayShift;
@@ -110,28 +123,34 @@ function ClockButtonComponent() {
       return;
     }
     
-    // If no scheduled shift, create a user-initiated shift
+    // If no scheduled shift, try to create a user-initiated shift (WHS-1 §2: shift failure must not break clock-in)
     if (!todayShift && data && !overrideShiftWithFallback) {
-      const userShift = await createUserShift();
-      if (userShift?.data) {
-        setActiveShiftId(userShift.data.id);
-        
-        // Link the newly created shift to the clock entry
-        try {
-          await fetch(`/api/hr/clock-entries?id=${data.id}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ shiftId: userShift.data.id }),
-          });
-        } catch (patchErr) {
-          console.error('[ClockButton] Failed to link shift to clock entry:', patchErr);
+      try {
+        const userShift = await createUserShift();
+        if (userShift?.data) {
+          setActiveShiftId(userShift.data.id);
+          
+          // Link the newly created shift to the clock entry
+          try {
+            await fetch(`/api/hr/clock-entries?id=${data.id}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ shiftId: userShift.data.id }),
+            });
+          } catch (patchErr) {
+            console.error('[ClockButton] Failed to link shift to clock entry:', patchErr);
+          }
         }
+      } catch (shiftErr) {
+        console.warn('[ClockButton] Failed to create user shift, clock entry remains valid:', shiftErr);
       }
     } else if (todayShift && !overrideShiftWithFallback) {
       setActiveShiftId(todayShift.id);
     }
 
-    await refetchShifts();
+    try {
+      await refetchShifts();
+    } catch {}
     setIsProcessing(false);
     setShowGeofenceWarning(null);
 
@@ -192,7 +211,11 @@ function ClockButtonComponent() {
     setActiveShiftId(null);
   };
 
-  if (entriesLoading || shiftsLoading) {
+  // Terminal branch (WHS-1 §2): never block indefinitely on loading
+  const isAwaitingInitialEntries = entriesLoading && !entriesTimedOut;
+  const isAwaitingShifts = !isClockedIn && shiftsLoading && !shiftsTimedOut && !shiftsError && !failedEndpoints?.includes('shifts');
+
+  if (isAwaitingInitialEntries || isAwaitingShifts) {
     return (
       <div className="w-full">
         <Button
@@ -205,6 +228,8 @@ function ClockButtonComponent() {
       </div>
     );
   }
+
+  const shiftsFailed = Boolean(shiftsError || failedEndpoints?.includes('shifts'));
 
   return (
     <>
@@ -245,6 +270,12 @@ function ClockButtonComponent() {
             </div>
           )}
         </Button>
+
+        {!isClockedIn && shiftsFailed && (
+          <p className="text-xs text-amber-700 dark:text-amber-300 font-medium mt-2 text-center bg-amber-50 dark:bg-amber-950/60 px-2.5 py-1 rounded-md border border-amber-200 dark:border-amber-800">
+            {t('schedule.shiftsUnavailableNotice', 'Shifts unavailable — clocking in without shift')}
+          </p>
+        )}
       </div>
 
       <LocationPermissionDialog

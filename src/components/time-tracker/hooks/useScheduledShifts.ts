@@ -106,61 +106,97 @@ export function useScheduledShifts() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const [errors, setErrors] = useState<Record<string, Error>>({});
+  const [failedEndpoints, setFailedEndpoints] = useState<string[]>([]);
   const { isAdmin, isManager, userId } = useUserRoles();
 
   const canManage = isAdmin || isManager;
 
   const fetchAll = useCallback(async () => {
-    try {
-      setLoading(true);
-      const [shiftsData, projectsData, erpProjectsData, employeesData, timeOffData] = await Promise.all([
-        hrList<ScheduledShift>('shifts'),
-        hrList<Project>('projects'),
-        hrList<{ id: string; name: string; address?: string; latitude?: number; longitude?: number }>('erp-projects'),
-        hrList<{ id: string; userId?: string | null; firstName: string; lastName: string }>('employees'),
-        hrList<any>('time-off'),
+    setLoading(true);
+    const withTimeout = <T>(p: Promise<T>, ms = 9000, name: string): Promise<T> =>
+      Promise.race([
+        p,
+        new Promise<T>((_, reject) => setTimeout(() => reject(new Error(`${name} timed out after ${ms}ms`)), ms)),
       ]);
 
-      // Normalize ERP projects to match Project interface
-      const normalizedErpProjects: Project[] = erpProjectsData.map(p => ({
-        id: p.id,
-        name: `[ERP] ${p.name}`,
-        address: p.address || null,
-        latitude: p.latitude || null,
-        longitude: p.longitude || null,
-        color: 'indigo', // Default color for ERP projects
-        createdBy: 'system',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        isErp: true, // Tag for UI
-      }));
+    const results = await Promise.allSettled([
+      withTimeout(hrList<ScheduledShift>('shifts'), 9000, 'shifts'),
+      withTimeout(hrList<Project>('projects'), 9000, 'projects'),
+      withTimeout(hrList<{ id: string; name: string; address?: string; latitude?: number; longitude?: number }>('erp-projects'), 9000, 'erp-projects'),
+      withTimeout(hrList<{ id: string; userId?: string | null; firstName: string; lastName: string }>('employees'), 9000, 'employees'),
+      withTimeout(hrList<any>('time-off'), 9000, 'time-off'),
+    ]);
 
-      const allProjects = [...projectsData, ...normalizedErpProjects];
-      const projectMap = new Map(allProjects.map(p => [p.id, p]));
-      // Build lookup keyed by User.id (canonical) AND Employee.id (legacy fallback)
-      const employeeMap = new Map<string, string>();
-      employeesData.forEach(e => {
-        const name = `${e.firstName} ${e.lastName}`;
-        if (e.userId) employeeMap.set(e.userId, name);  // Primary: keyed by User.id
-        employeeMap.set(e.id, name);                     // Fallback: keyed by Employee.id
-      });
+    const [shiftsRes, projectsRes, erpProjectsRes, employeesRes] = results;
 
-      const allValidShifts = [...shiftsData];
+    const currentErrors: Record<string, Error> = {};
+    const failed: string[] = [];
+    const endpointNames = ['shifts', 'projects', 'erp-projects', 'employees', 'time-off'] as const;
 
-      const enriched = allValidShifts.map(s => addSnakeCase({
+    results.forEach((res, i) => {
+      if (res.status === 'rejected') {
+        const name = endpointNames[i];
+        failed.push(name);
+        currentErrors[name] = res.reason instanceof Error ? res.reason : new Error(String(res.reason));
+      }
+    });
+
+    setErrors(currentErrors);
+    setFailedEndpoints(failed);
+
+    if (shiftsRes.status === 'rejected') {
+      setError(shiftsRes.reason instanceof Error ? shiftsRes.reason : new Error(String(shiftsRes.reason)));
+    } else if (failed.length > 0) {
+      setError(currentErrors[failed[0]]);
+    } else {
+      setError(null);
+    }
+
+    // Projects: graceful degradation
+    const projectsData: Project[] = projectsRes.status === 'fulfilled' ? projectsRes.value : [];
+    const erpProjectsData = erpProjectsRes.status === 'fulfilled' ? erpProjectsRes.value : [];
+
+    const normalizedErpProjects: Project[] = erpProjectsData.map(p => ({
+      id: p.id,
+      name: `[ERP] ${p.name}`,
+      address: p.address || null,
+      latitude: p.latitude || null,
+      longitude: p.longitude || null,
+      color: 'indigo',
+      createdBy: 'system',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      isErp: true,
+    }));
+
+    const allProjects = [...projectsData, ...normalizedErpProjects];
+    const projectMap = new Map(allProjects.map(p => [p.id, p]));
+
+    // Employees lookup: graceful degradation
+    const employeesData = employeesRes.status === 'fulfilled' ? employeesRes.value : [];
+    const employeeMap = new Map<string, string>();
+    employeesData.forEach(e => {
+      const name = `${e.firstName} ${e.lastName}`;
+      if (e.userId) employeeMap.set(e.userId, name);
+      employeeMap.set(e.id, name);
+    });
+
+    // Shifts: render if fulfilled, even if other lookups failed
+    if (shiftsRes.status === 'fulfilled') {
+      const shiftsData = shiftsRes.value;
+      const enriched = shiftsData.map(s => addSnakeCase({
         ...s,
         project: s.projectId ? projectMap.get(s.projectId) || null : null,
         userName: (s as any).userName || (s.userId ? employeeMap.get(s.userId) : undefined) || employeeMap.get((s as any).user_id || '') || 'Onbekend',
       }));
-
       setRawShifts(enriched);
-      setProjects(allProjects);
-      setError(null);
-    } catch (err: any) {
-      setError(err);
-    } finally {
-      setLoading(false);
+    } else {
+      setRawShifts([]);
     }
+
+    setProjects(allProjects);
+    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -299,6 +335,8 @@ export function useScheduledShifts() {
     projects,
     loading,
     error,
+    errors,
+    failedEndpoints,
     canManage,
     createShift,
     updateShift,

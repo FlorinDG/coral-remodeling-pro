@@ -17,7 +17,6 @@ import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { formatTime } from '@/lib/format/date';
 import { shiftBrief, type ShiftBriefResult } from '@/lib/data/shift-brief';
-import { useTimer } from '@/components/time-tracker/hooks/useTimer';
 
 function parseShiftDateTime(dateStr: string, timeStr: string): Date {
   const [y, m, d] = (dateStr || '').split('-').map(Number);
@@ -186,7 +185,7 @@ export function MySchedule() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { isManager } = useUserRoles();
-  const { shifts, loading } = useScheduledShifts();
+  const { shifts, loading, error, failedEndpoints } = useScheduledShifts();
   const { activeEntry, clockIn, clockOut } = useClockEntries();
   const { location, requestLocation } = useGeolocation();
   const [isClockingIn, setIsClockingIn] = useState(false);
@@ -195,9 +194,31 @@ export function MySchedule() {
   const [selectedShift, setSelectedShift] = useState<any>(null);
   const [brief, setBrief] = useState<ShiftBriefResult | null>(null);
   const [briefLoading, setBriefLoading] = useState(false);
-  const { formattedTime: elapsedTime } = useTimer();
+  const [elapsedTime, setElapsedTime] = useState('00:00:00');
   const [now, setNow] = useState(() => new Date());
   const nextShiftRef = useRef<HTMLDivElement>(null);
+
+  // Live timer derived from activeEntry.clockInTime (WHS-1 §3)
+  useEffect(() => {
+    if (!activeEntry?.clockInTime) {
+      setElapsedTime('00:00:00');
+      return;
+    }
+    const update = () => {
+      const start = new Date(activeEntry.clockInTime).getTime();
+      const diff = Math.max(0, Date.now() - start);
+      const totalSeconds = Math.floor(diff / 1000);
+      const h = Math.floor(totalSeconds / 3600);
+      const m = Math.floor((totalSeconds % 3600) / 60);
+      const s = totalSeconds % 60;
+      setElapsedTime(
+        `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
+      );
+    };
+    update();
+    const interval = setInterval(update, 1000);
+    return () => clearInterval(interval);
+  }, [activeEntry?.clockInTime]);
 
   // Minute tick to recompute temporal shift state (WH-UI-1 §9.3)
   useEffect(() => {
@@ -370,6 +391,32 @@ export function MySchedule() {
             ? `${filteredShifts.length} shifts • 1 week ago to 2 weeks ahead`
             : t('schedule.noShiftsScheduled')}
         </CardDescription>
+
+        {failedEndpoints && failedEndpoints.length > 0 && (
+          <div className="mt-3 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200 text-sm">
+            <div className="flex items-start gap-2">
+              <span className="font-bold text-base leading-none">⚠️</span>
+              <div className="space-y-1">
+                <p className="font-semibold">
+                  {failedEndpoints.includes('shifts') 
+                    ? t('schedule.shiftsLoadFailed', 'Could not load your shifts from the server.')
+                    : t('schedule.partialDataNotice', 'Notice: Some schedule details could not be loaded.')}
+                </p>
+                <p className="text-xs text-amber-800 dark:text-amber-300">
+                  {failedEndpoints.includes('shifts')
+                    ? t('schedule.shiftsLoadFailedHint', 'You can still clock in without a shift using the button below.')
+                    : `${t('schedule.unloadedEndpoints', 'Unavailable')}: ${failedEndpoints.map(e => {
+                        if (e === 'projects') return 'Projects';
+                        if (e === 'erp-projects') return 'ERP Projects';
+                        if (e === 'employees') return 'Crew Names';
+                        if (e === 'time-off') return 'Time Off';
+                        return e;
+                      }).join(', ')}. ${t('schedule.partialDataExplanation', 'Shift times are displayed, but some project or colleague details may be missing.')}`}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
       </CardHeader>
       <CardContent className="p-0">
         {filteredShifts.length === 0 ? (

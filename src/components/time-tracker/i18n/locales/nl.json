@@ -256,5 +256,13 @@
     "done_one": "{{count}} klaar",
     "done_other": "{{count}} klaar",
     "noDetails": "Geen notities of bijlagen"
+  },
+  "documents": {
+    "title": "Documenten",
+    "add": "Toevoegen",
+    "added": "Document toegevoegd",
+    "addFailed": "Het document kon niet toegevoegd worden",
+    "loadFailed": "De documenten konden niet geladen worden",
+    "empty": "Nog geen gedeelde documenten"
   }
 }

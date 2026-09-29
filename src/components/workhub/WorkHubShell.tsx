@@ -6,7 +6,7 @@ import { useSession } from 'next-auth/react';
 import { Link, usePathname } from '@/i18n/routing';
 import { useTranslation } from 'react-i18next';
 import { TenantProvider } from '@/context/TenantContext';
-import { ROLES } from '@/lib/roles';
+import { isWorkforceRole } from '@/lib/roles';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import {
     Clock, CalendarDays, CalendarOff, FolderOpen,
@@ -71,7 +71,8 @@ export default function WorkHubShell({
     const userName = session?.user?.name || '';
     const firstName = userName ? userName.split(' ')[0] : '';
     const userRole = session?.user?.role as any;
-    const isWorkforce = userRole === ROLES.TENANT_ENTERPRISE_WORKFORCE || userRole === 'TENANT_PRO_WORKFORCE' || userRole === 'crew';
+    // pd.md 5a: the shell asks the one definition; it does not list roles itself.
+    const isWorkforce = isWorkforceRole(userRole);
 
     const filteredPrimaryItems = PRIMARY_ITEMS;
 

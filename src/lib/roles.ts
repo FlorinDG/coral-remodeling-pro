@@ -131,6 +131,20 @@ export function isTenantHrRole(role?: string | null): boolean {
     return !!role && TENANT_HR_ROLES.has(role);
 }
 
+/**
+ * The crew: users whose whole world is the WorkHub (pd.md 4y — "workforce reaches WorkHub and
+ * nothing else"). One definition; the shell, the file actions and Gate 2 ask this.
+ */
+const WORKFORCE_ROLES: ReadonlySet<string> = new Set<string>([
+    ROLES.TENANT_ENTERPRISE_WORKFORCE,
+    'TENANT_PRO_WORKFORCE',   // read by WorkHubShell before this definition existed
+    'crew',                   // legacy
+]);
+
+export function isWorkforceRole(role?: string | null): boolean {
+    return !!role && WORKFORCE_ROLES.has(role);
+}
+
 // ── Financial export authorization (LOCK-6) ─────────────────────────
 
 export function isAccountantRole(role?: string | null): boolean {

@@ -256,5 +256,13 @@
     "done_one": "{{count}} done",
     "done_other": "{{count}} done",
     "noDetails": "No notes or attachments"
+  },
+  "documents": {
+    "title": "Documents",
+    "add": "Add",
+    "added": "Document added",
+    "addFailed": "Could not add the document",
+    "loadFailed": "Documents could not be loaded",
+    "empty": "No shared documents yet"
   }
 }

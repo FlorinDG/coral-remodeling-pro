@@ -3,6 +3,8 @@
 import { auth } from '@/auth';
 import { storage, DocumentArchivedError, StorageKeyConflictError } from '@/lib/storage';
 import { v4 as uuidv4 } from 'uuid';
+import { isWorkforceRole } from '@/lib/roles';
+import { crewFileRefusal } from '@/lib/crew-file-policy';
 
 const STORAGE_ERROR_FALLBACKS: Record<string, Record<string, string>> = {
     nl: {
@@ -41,6 +43,13 @@ export async function uploadFileAction(formData: FormData, recordType: string, r
 
     if (!tenantId) {
         throw new Error('Unauthorized');
+    }
+
+    // Crew fence (crew-file-policy.ts): the crew uploads only into HR contexts.
+    const role = (session?.user as { role?: string } | undefined)?.role;
+    if (isWorkforceRole(role)) {
+        const refusal = crewFileRefusal('upload', recordType, recordId);
+        if (refusal) return { success: false, error: `Forbidden: ${refusal}` };
     }
 
     const file = formData.get('file') as File | null;
@@ -88,6 +97,12 @@ export async function listRecordFiles(recordType: string, recordId?: string) {
         throw new Error('Unauthorized');
     }
 
+    // Crew fence: the crew browses only the shared crew documents.
+    if (isWorkforceRole((session?.user as { role?: string } | undefined)?.role)) {
+        const refusal = crewFileRefusal('list', recordType, recordId);
+        if (refusal) throw new Error(`Forbidden: ${refusal}`);
+    }
+
     // Key prefix scheme: t_{tenantId}/{recordType}/{recordId}/
     const prefix = recordId 
         ? `t_${tenantId}/${recordType}/${recordId}/`
@@ -128,6 +143,11 @@ export async function deleteFileAction(key: string) {
         throw new Error('Forbidden: Access denied');
     }
 
+    // Crew fence: the crew deletes nothing.
+    if (isWorkforceRole((session?.user as { role?: string } | undefined)?.role)) {
+        throw new Error(`Forbidden: ${crewFileRefusal('delete')}`);
+    }
+
     try {
         await storage.delete(key);
         return { success: true };
@@ -143,6 +163,11 @@ export async function listAllTenantFiles() {
 
     if (!tenantId) {
         throw new Error('Unauthorized');
+    }
+
+    // Crew fence: listing every tenant file is an office function.
+    if (isWorkforceRole((session?.user as { role?: string } | undefined)?.role)) {
+        throw new Error(`Forbidden: ${crewFileRefusal('listAll')}`);
     }
 
     const prefix = `t_${tenantId}/`;

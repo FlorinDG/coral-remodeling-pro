@@ -256,5 +256,13 @@
     "done_one": "{{count}} terminée",
     "done_other": "{{count}} terminées",
     "noDetails": "Pas de notes ni de pièces jointes"
+  },
+  "documents": {
+    "title": "Documents",
+    "add": "Ajouter",
+    "added": "Document ajouté",
+    "addFailed": "Le document n’a pas pu être ajouté",
+    "loadFailed": "Les documents n’ont pas pu être chargés",
+    "empty": "Aucun document partagé"
   }
 }

@@ -259,5 +259,13 @@
     "done_few": "{{count}} finalizate",
     "done_other": "{{count}} de finalizate",
     "noDetails": "Fără note sau atașamente"
+  },
+  "documents": {
+    "title": "Documente",
+    "add": "Adaugă",
+    "added": "Document adăugat",
+    "addFailed": "Documentul nu a putut fi adăugat",
+    "loadFailed": "Documentele nu au putut fi încărcate",
+    "empty": "Niciun document partajat încă"
   }
 }

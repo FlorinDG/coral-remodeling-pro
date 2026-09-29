@@ -93,7 +93,7 @@ export function ScheduleManager() {
                 <SelectContent>
                   {allWorkers.map((worker) => (
                     <SelectItem key={worker.id} value={worker.id}>
-                      {worker.full_name}
+                      {worker.name}
                     </SelectItem>
                   ))}
                 </SelectContent>

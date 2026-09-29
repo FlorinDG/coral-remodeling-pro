@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
 import { storage, resolveDocumentKey } from '@/lib/storage';
-import { buildAuditLogOperation } from '@/lib/audit';
+import { buildAuditLogData, buildAuditLogOperation } from '@/lib/audit';
 import JSZip from 'jszip';
 
 export const runtime = 'nodejs';
@@ -485,10 +485,10 @@ export async function GET(req: Request) {
             }
         };
 
-        const invoiceAuditLogs = await Promise.all(
+        const invoiceAuditData = await Promise.all(
             filteredInvoices
                 .filter(inv => (inv.properties as any)?.accountantExportedAt !== true)
-                .map(inv => buildAuditLogOperation(prisma, auditScope, {
+                .map(inv => buildAuditLogData(auditScope, {
                     entityType: 'globalPage',
                     entityId: inv.id,
                     action: 'accountant-export',
@@ -503,6 +503,7 @@ export async function GET(req: Request) {
                     reason: `Accountant export for period ${periodStr}`,
                 }))
         );
+        const invoiceAuditLogs = invoiceAuditData.map(data => buildAuditLogOperation(prisma, data));
 
         const expenseUpdates = filteredExpenses
             .filter(exp => (exp.properties as any)?.accountantExportedAt !== true)
@@ -523,10 +524,10 @@ export async function GET(req: Request) {
                 });
             });
 
-        const expenseAuditLogs = await Promise.all(
+        const expenseAuditData = await Promise.all(
             filteredExpenses
                 .filter(exp => (exp.properties as any)?.accountantExportedAt !== true)
-                .map(exp => buildAuditLogOperation(prisma, auditScope, {
+                .map(exp => buildAuditLogData(auditScope, {
                     entityType: 'globalPage',
                     entityId: exp.id,
                     action: 'accountant-export',
@@ -541,6 +542,7 @@ export async function GET(req: Request) {
                     reason: `Accountant export for period ${periodStr}`,
                 }))
         );
+        const expenseAuditLogs = expenseAuditData.map(data => buildAuditLogOperation(prisma, data));
 
         const allOps = [...invoiceUpdates, ...expenseUpdates, ...invoiceAuditLogs, ...expenseAuditLogs];
         if (allOps.length > 0) {

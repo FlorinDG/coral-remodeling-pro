@@ -13,7 +13,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
-import { buildAuditLogOperation } from '@/lib/audit';
+import { buildAuditLogData, buildAuditLogOperation } from '@/lib/audit';
 import crypto from 'crypto';
 import { Resend } from 'resend';
 import React from 'react';
@@ -660,7 +660,7 @@ export async function PATCH(
                 auditAction = 'forceClockOut';
             }
 
-            const auditOp = await buildAuditLogOperation(prisma, {
+            const auditData = await buildAuditLogData({
                 tenantId: ctx.tenantId,
                 userId: ctx.userId,
             }, {
@@ -671,6 +671,7 @@ export async function PATCH(
                 after: { ...existingEntry, ...data, ...(data.source ? { source: data.source } : {}) },
                 reason: data.editedAfterApproval ? 'edited-after-approval' : null,
             });
+            const auditOp = buildAuditLogOperation(prisma, auditData);
 
             // Execute in transaction
             const [updated] = await prisma.$transaction([

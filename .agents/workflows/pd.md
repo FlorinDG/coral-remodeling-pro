@@ -596,5 +596,15 @@ Muscle-memory checklist — do this before promoting to production, no exception
 ---
 
 *Written: 2026-05-13. Author: Florin + Antigravity.*
-*This file is a living document. Update the premises table after each validated change.*
 
+
+## 5d · AN ATTACHMENT BELONGS TO THE MOMENT. A PROJECT REFERENCES IT, NEVER OWNS IT.
+**Florin, 2026-09-29:** *"the photo belongs to the moment… projects do not appropriate themselves of the attachments, they just gather them under a common umbrella for reference and management."*
+
+A project's file library is **derived** — a query over the attachments of the work currently attributed to that project — **never a table of rows pointing at files.** Re-attribute the work and the file follows in the same instant; a join table would leave it filed under the old project with nothing able to detect it. This is `4x` applied to files: **the work is the fact, the project is a changeable attribute.**
+
+🛑 **Derivation is not publication.** A file becoming visible in a project library must never make it visible to the client portal as a side effect.
+
+---
+
+*This file is a living document. Update the premises table after each validated change.*

@@ -118,7 +118,6 @@ export async function recordAuditLog(scope: AuditScope, event: AuditEvent) {
     return insertAuditLog(data);
 }
 
-export async function buildAuditLogOperation(prismaClient: any, scope: AuditScope, event: AuditEvent) {
-    const data = await buildAuditLogData(scope, event);
+export function buildAuditLogOperation(prismaClient: any, data: Awaited<ReturnType<typeof buildAuditLogData>>) {
     return prismaClient.auditLog.create({ data });
 }

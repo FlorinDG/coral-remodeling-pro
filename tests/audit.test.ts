@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
     buildAuditLogData,
+    buildAuditLogOperation,
     resolveActorFromScope,
     type AuditScope,
     type AuditEvent
@@ -128,4 +129,78 @@ test('CORE-2 · actorKind is required: buildAuditLogData always produces a valid
     const data = await buildAuditLogData(scope, event);
     assert.ok(data.actorKind === 'USER' || data.actorKind === 'SYSTEM' || data.actorKind === 'PORTAL' || data.actorKind === 'OPERATOR');
     assert.ok(data.actorLabel.length > 0);
+});
+
+test('CORE-3 · buildAuditLogOperation is strictly synchronous and returns a PrismaPromise', () => {
+    let createCalled = false;
+    let receivedData: any = null;
+    const sentinelPrismaPromise = {
+        then: (onfulfilled?: any) => Promise.resolve('ok').then(onfulfilled),
+        [Symbol.toStringTag]: 'PrismaPromise'
+    };
+
+    const stubPrisma = {
+        auditLog: {
+            create({ data }: { data: any }) {
+                createCalled = true;
+                receivedData = data;
+                return sentinelPrismaPromise;
+            }
+        }
+    };
+
+    const auditData = {
+        tenantId: 'tenant-1',
+        actorKind: 'USER' as const,
+        actorUserId: 'u1',
+        actorRef: null,
+        actorLabel: 'Alice',
+        onBehalfOfId: null,
+        entityType: 'clockEntry',
+        entityId: 'ce-1',
+        action: 'approve',
+        field: null,
+        before: null,
+        after: null,
+        reason: null,
+    };
+
+    const op = buildAuditLogOperation(stubPrisma, auditData);
+
+    assert.equal(createCalled, true);
+    assert.equal(receivedData, auditData);
+    assert.equal(op, sentinelPrismaPromise);
+    assert.equal(typeof (op as any).then, 'function');
+    assert.ok(!(op instanceof Promise), 'Must be a direct PrismaPromise, not an async-wrapped Promise');
+});
+
+test('CORE-3 · $transaction accepts buildAuditLogOperation alongside other Prisma promises', async () => {
+    const sentinelClockOp = {
+        then: (fn: any) => Promise.resolve({ id: 'ce-1', status: 'approved' }).then(fn)
+    };
+    const sentinelAuditOp = {
+        then: (fn: any) => Promise.resolve({ id: 'audit-1' }).then(fn)
+    };
+
+    const stubPrisma = {
+        auditLog: {
+            create: () => sentinelAuditOp
+        },
+        $transaction: async (ops: any[]) => {
+            for (const op of ops) {
+                // Mimic Prisma Client's strict check on $transaction array elements
+                if (!op || typeof op.then !== 'function' || (op instanceof Promise && !Object.prototype.hasOwnProperty.call(op, 'then') && op.constructor.name === 'Promise')) {
+                    throw new Error('All elements of the array need to be Prisma Client promises. Hint: Please make sure you are not awaiting the Prisma calls you intended to pass in the $transaction function.');
+                }
+            }
+            return Promise.all(ops);
+        }
+    };
+
+    const auditOp = buildAuditLogOperation(stubPrisma, {} as any);
+    const results = await stubPrisma.$transaction([sentinelClockOp, auditOp]);
+
+    assert.equal(results.length, 2);
+    assert.equal(results[0].status, 'approved');
+    assert.equal(results[1].id, 'audit-1');
 });

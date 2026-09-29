@@ -17,6 +17,7 @@ import { TimesheetEntryDetail } from '@/components/time-tracker/components/times
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { nl } from 'date-fns/locale';
 import { format } from 'date-fns';
+import { isSelfApproved } from '@/lib/provenance';
 
 interface Employee {
     id: string;
@@ -32,6 +33,13 @@ interface ClockEntry {
     clockOutTime: string | null;
     taskDescription: string | null;
     approvalStatus: string | null;
+    approvedBy?: string | null;
+    approvedAt?: string | null;
+    approverName?: string | null;
+    createdBy?: string | null;
+    createdByName?: string | null;
+    source?: string;
+    notes?: string | null;
     photos: string[] | null;
     noBreak?: boolean;
     user?: Employee;
@@ -252,7 +260,18 @@ function TimesheetsContent() {
                                 <Check className="w-3 h-3 mr-1" />
                                 {t('statusGoedgekeurd')}
                             </span>
-                            {entry.approvedBy && <span className="text-[10px] text-neutral-400 mt-1">by {entry.approvedBy.slice(0,6)}</span>}
+                            {entry.approvedBy && (
+                                <span className="text-[10px] text-neutral-500 mt-1 leading-tight">
+                                    {isSelfApproved(entry)
+                                        ? t('selfApprovedBy', { name: entry.approverName || t('admin', { fallback: 'Beheerder' }) })
+                                        : t('approvedByWorker', { name: entry.approverName || t('admin', { fallback: 'Beheerder' }) })}
+                                    {entry.approvedAt && (
+                                        <span className="block text-[9px] text-neutral-400">
+                                            {format(new Date(entry.approvedAt), 'dd/MM/yyyy HH:mm')}
+                                        </span>
+                                    )}
+                                </span>
+                            )}
                         </div>
                     ) : entry.approvalStatus === 'denied' ? (
                         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700 w-max">

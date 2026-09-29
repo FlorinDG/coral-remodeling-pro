@@ -36,7 +36,6 @@ interface ClockEntry {
     clockOutLatitude: number | null;
     clockOutLongitude: number | null;
     taskDescription: string | null;
-    approvalStatus: string | null;
     photos: string[];
     noBreak: boolean;
     user?: Employee;

@@ -33,6 +33,7 @@ export function ManualEntryModal({ open, onOpenChange, onSuccess }: Props) {
     const [startTime, setStartTime] = useState('08:00');
     const [endTime, setEndTime] = useState('17:00');
     const [description, setDescription] = useState('');
+    const [notes, setNotes] = useState('');
 
     useEffect(() => {
         if (open) {
@@ -58,10 +59,12 @@ export function ManualEntryModal({ open, onOpenChange, onSuccess }: Props) {
             
             await hrCreate('clock-entries', {
                 userId,
-                projectId: projectId || null,
+                projectId: projectId === 'none' ? null : (projectId || null),
                 clockInTime,
                 clockOutTime,
                 taskDescription: description,
+                notes: notes.trim() || null,
+                source: 'admin_entry',
                 approvalStatus: 'approved',
                 photos: [],
             });
@@ -72,6 +75,7 @@ export function ManualEntryModal({ open, onOpenChange, onSuccess }: Props) {
             setUserId('');
             setProjectId('');
             setDescription('');
+            setNotes('');
         } catch (err) {
             console.error('Failed to create manual entry:', err);
         } finally {
@@ -146,6 +150,15 @@ export function ManualEntryModal({ open, onOpenChange, onSuccess }: Props) {
                             placeholder="Beschrijf de uitgevoerde werkzaamheden..." 
                             value={description} 
                             onChange={e => setDescription(e.target.value)} 
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label>Notities (Optioneel)</Label>
+                        <Textarea 
+                            placeholder="Bijv. telefonisch doorgegeven vanaf de werf" 
+                            value={notes} 
+                            onChange={e => setNotes(e.target.value)} 
                         />
                     </div>
                     

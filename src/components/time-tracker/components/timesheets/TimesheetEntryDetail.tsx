@@ -7,6 +7,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { Loader2, MapPin, Clock, Edit2, ShieldAlert, X, FileText } from 'lucide-react';
 import { resolveFileUrl } from '@/lib/files';
 import SearchableSelect from '@/components/ui/SearchableSelect';
+import { isSelfApproved } from '@/lib/provenance';
 
 interface TimesheetEntryDetailProps {
     entry: any;
@@ -25,6 +26,7 @@ export function TimesheetEntryDetail({ entry, onUpdate, unlockTokenValid }: Time
     const [clockOutTime, setClockOutTime] = useState(entry.clockOutTime ? format(parseISO(entry.clockOutTime), 'HH:mm') : '');
     const [projectId, setProjectId] = useState(entry.projectId || '');
     const [billable, setBillable] = useState(entry.billable !== false);
+    const [notes, setNotes] = useState(entry.notes || '');
     const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
     const [error, setError] = useState('');
     const [auditLogs, setAuditLogs] = useState<any[]>([]);
@@ -35,9 +37,10 @@ export function TimesheetEntryDetail({ entry, onUpdate, unlockTokenValid }: Time
         setClockOutTime(entry.clockOutTime ? format(parseISO(entry.clockOutTime), 'HH:mm') : '');
         setProjectId(entry.projectId || '');
         setBillable(entry.billable !== false);
+        setNotes(entry.notes || '');
         setEditing(false);
         setError('');
-    }, [entry.id, entry.clockInTime, entry.clockOutTime, entry.projectId, entry.billable]);
+    }, [entry.id, entry.clockInTime, entry.clockOutTime, entry.projectId, entry.billable, entry.notes]);
 
     useEffect(() => {
         let active = true;
@@ -97,6 +100,7 @@ export function TimesheetEntryDetail({ entry, onUpdate, unlockTokenValid }: Time
         setClockOutTime(entry.clockOutTime ? format(parseISO(entry.clockOutTime), 'HH:mm') : '');
         setProjectId(entry.projectId || '');
         setBillable(entry.billable !== false);
+        setNotes(entry.notes || '');
         setError('');
         setEditing(false);
     };
@@ -116,6 +120,7 @@ export function TimesheetEntryDetail({ entry, onUpdate, unlockTokenValid }: Time
                 clockOutTime: combinedOut?.toISOString(),
                 projectId: projectId || null,
                 billable: Boolean(billable),
+                notes: notes.trim() || null,
             });
             onUpdate(updated);
             setEditing(false);
@@ -298,6 +303,17 @@ export function TimesheetEntryDetail({ entry, onUpdate, unlockTokenValid }: Time
                                     <span>{billable ? t('billableYes', { fallback: 'Factureerbaar' }) : t('billableNo', { fallback: 'Niet factureerbaar (intern)' })}</span>
                                 </button>
                             </div>
+
+                            <div className="space-y-1 pt-1">
+                                <span className="font-medium text-neutral-500 block text-xs">{t('notes', { fallback: 'Notities' })}:</span>
+                                <textarea
+                                    value={notes}
+                                    onChange={(e) => setNotes(e.target.value)}
+                                    disabled={!canEdit}
+                                    className="border rounded px-2 py-1 text-xs w-full min-h-[50px] bg-white dark:bg-neutral-800"
+                                    placeholder={t('notes', { fallback: 'Notities' })}
+                                />
+                            </div>
                         </div>
                     ) : (
                         <>
@@ -312,6 +328,22 @@ export function TimesheetEntryDetail({ entry, onUpdate, unlockTokenValid }: Time
                                     {entry.billable !== false ? t('billableYes', { fallback: 'Factureerbaar' }) : t('billableNo', { fallback: 'Niet factureerbaar (intern)' })}
                                 </span>
                             </div>
+
+                            {entry.createdBy && entry.source !== 'clocked' && (
+                                <div className="text-sm">
+                                    <span className="font-medium text-neutral-500">{t('enteredBy', { fallback: 'Ingevoerd door' })}:</span>{' '}
+                                    <span className="font-medium text-neutral-800 dark:text-neutral-200">{entry.createdByName || t('admin', { fallback: 'Beheerder' })}</span>
+                                </div>
+                            )}
+
+                            {entry.notes && (
+                                <div className="text-sm pt-1">
+                                    <span className="font-medium text-neutral-500 block text-xs">{t('notes', { fallback: 'Notities' })}:</span>
+                                    <p className="text-xs text-neutral-700 dark:text-neutral-300 italic bg-neutral-100/80 dark:bg-white/5 p-2 rounded border border-neutral-200/50 dark:border-white/5 mt-0.5 whitespace-pre-wrap">
+                                        {entry.notes}
+                                    </p>
+                                </div>
+                            )}
                         </>
                     )}
                     
@@ -338,8 +370,30 @@ export function TimesheetEntryDetail({ entry, onUpdate, unlockTokenValid }: Time
                     <h4 className="text-xs font-semibold uppercase text-muted-foreground">{t('approval', { fallback: 'Approval' })}</h4>
                     <div className="text-sm">
                         <span className="font-medium text-neutral-500">{t('status', { fallback: 'Status' })}:</span>{' '}
-                        <span className="font-semibold">{entry.approvalStatus || 'Pending'}</span>
+                        <span className="font-semibold">
+                            {entry.approvalStatus === 'approved' 
+                                ? t('statusGoedgekeurd', { fallback: 'Goedgekeurd' })
+                                : entry.approvalStatus === 'denied'
+                                    ? t('statusGeweigerd', { fallback: 'Geweigerd' })
+                                    : t('statusTeBeoordelen', { fallback: 'Te beoordelen' })}
+                        </span>
                     </div>
+
+                    {entry.approvalStatus === 'approved' && entry.approvedBy && (
+                        <div className="text-xs text-neutral-600 dark:text-neutral-400 mt-1 leading-tight">
+                            <span className={isSelfApproved(entry) ? "text-amber-700 dark:text-amber-400 font-medium" : "font-medium"}>
+                                {isSelfApproved(entry)
+                                    ? t('selfApprovedBy', { name: entry.approverName || t('admin', { fallback: 'Beheerder' }) })
+                                    : t('approvedByWorker', { name: entry.approverName || t('admin', { fallback: 'Beheerder' }) })}
+                            </span>
+                            {entry.approvedAt && (
+                                <span className="block text-[10px] text-neutral-400 mt-0.5">
+                                    {format(new Date(entry.approvedAt), 'dd/MM/yyyy HH:mm', { locale: dateFnsLocale })}
+                                </span>
+                            )}
+                        </div>
+                    )}
+
                     {entry.editedAfterApproval && (
                         <div className="mt-1 inline-flex items-center gap-1 bg-amber-100 text-amber-800 text-xs px-2 py-1 rounded-md">
                             <Edit2 className="w-3 h-3" />

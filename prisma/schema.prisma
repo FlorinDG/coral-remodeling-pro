@@ -778,6 +778,7 @@ model ClockEntry {
 
   costRatePrevious  Float?
   createdBy         String?
+  notes             String?
   tenant            Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   shift             ScheduledShift? @relation(fields: [shiftId], references: [id], onDelete: SetNull)
 

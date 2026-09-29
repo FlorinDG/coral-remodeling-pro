@@ -111,12 +111,8 @@ export async function GET(req: Request) {
     });
 
     // We also need employees to get names. User table is the unified source of truth.
-    const usersWhere: any = { tenantId: ctx.tenantId };
-    if (targetUserIds) {
-        usersWhere.id = { in: targetUserIds };
-    }
     const users = await prisma.user.findMany({
-        where: usersWhere,
+        where: { tenantId: ctx.tenantId },
         select: { id: true, name: true }
     });
     const userMap = new Map(users.map(u => [u.id, u]));
@@ -133,6 +129,7 @@ export async function GET(req: Request) {
     let billableHours = 0;
     let internalHours = 0;
     let approvedHours = 0;
+    let selfApprovedHours = 0;
     let pendingHours = 0;
     let openEntries = 0;
 
@@ -146,6 +143,11 @@ export async function GET(req: Request) {
         const user = userMap.get(entry.userId);
         const workerName = user?.name ? user.name : 'Unknown';
         
+        const approver = entry.approvedBy ? userMap.get(entry.approvedBy) : null;
+        const approverName = approver?.name || null;
+        const creator = entry.createdBy ? userMap.get(entry.createdBy) : null;
+        const createdByName = creator?.name || null;
+
         const proj = entry.projectId ? projMap.get(entry.projectId) : null;
         const projectName = proj ? proj.name : (entry.projectId ? 'Unknown Project' : 'Unattributed');
 
@@ -164,6 +166,9 @@ export async function GET(req: Request) {
             ...entry,
             workerName,
             projectName,
+            approverName,
+            createdByName,
+            notes: (entry as any).notes || null,
             duration,
             hoursDecimal,
             flags
@@ -184,6 +189,9 @@ export async function GET(req: Request) {
 
             if (entry.approvalStatus === 'approved') {
                 approvedHours += hoursDecimal;
+                if (entry.approvedBy && entry.approvedBy === entry.createdBy) {
+                    selfApprovedHours += hoursDecimal;
+                }
             } else {
                 pendingHours += hoursDecimal;
             }
@@ -231,6 +239,7 @@ export async function GET(req: Request) {
             billableHours: Math.round(billableHours * 100) / 100,
             internalHours: Math.round(internalHours * 100) / 100,
             approvedHours: Math.round(approvedHours * 100) / 100,
+            selfApprovedHours: Math.round(selfApprovedHours * 100) / 100,
             pendingHours: Math.round(pendingHours * 100) / 100,
             openEntries,
             outsidePeriodCount,

@@ -5,6 +5,8 @@ import { getAccessibleUserIds } from '@/app/api/hr/lib/team-scoping';
 import { computeWorkedDuration } from '@/lib/computeWorkedDuration';
 import * as XLSX from 'xlsx';
 import { ClockEntry } from '@prisma/client';
+import { format as formatLocal } from 'date-fns';
+import { isSelfApproved } from '@/lib/provenance';
 import { Document, Page, Text, View, StyleSheet, renderToBuffer } from '@react-pdf/renderer';
 
 const styles = StyleSheet.create({
@@ -39,7 +41,7 @@ export async function GET(req: Request) {
     if (!ctx) return new NextResponse('Unauthorized', { status: 401 });
 
     const url = new URL(req.url);
-    const format = url.searchParams.get('format') || 'xlsx';
+    const exportFormat = url.searchParams.get('format') || 'xlsx';
     
     // Parse filters
     const fromParam = url.searchParams.get('from');
@@ -105,6 +107,12 @@ export async function GET(req: Request) {
     });
     const projMap = new Map(projects.map((p: any) => [p.id, p]));
 
+    const users = await prisma.user.findMany({
+        where: { tenantId: ctx.tenantId },
+        select: { id: true, name: true }
+    });
+    const userMap = new Map(users.map(u => [u.id, u.name]));
+
     // Generate Excel File
     const rawData = entries.map((rawEntry) => {
         const entry = rawEntry as ExtendedClockEntry;
@@ -120,16 +128,45 @@ export async function GET(req: Request) {
         const costRate = entry.costRateApplied ?? emp?.hourlyCost ?? 0;
         const totalCost = hoursDecimal * costRate;
 
+        const isSelf = isSelfApproved(entry);
+        let approverDisplay = '';
+        if (entry.approvalStatus === 'approved' && entry.approvedBy) {
+            const approverName = userMap.get(entry.approvedBy) || entry.approvedBy;
+            approverDisplay = isSelf ? `${approverName} (Zelf goedgekeurd)` : approverName;
+        }
+
+        const creatorDisplay = entry.createdBy && entry.source !== 'clocked' ? (userMap.get(entry.createdBy) || entry.createdBy) : '';
+
+        const sourceDisplay = entry.source === 'clocked'
+            ? 'Geklokt'
+            : entry.source === 'late_entry'
+                ? 'Nageleverd'
+                : entry.source === 'admin_entry'
+                    ? 'Beheerdersinvoer'
+                    : entry.source === 'Aangepast' || entry.source === 'adjusted'
+                        ? 'Aangepast'
+                        : (entry.source || 'Geklokt');
+
+        const statusDisplay = entry.approvalStatus === 'approved'
+            ? 'Goedgekeurd'
+            : entry.approvalStatus === 'denied'
+                ? 'Geweigerd'
+                : 'Te beoordelen';
+
         return {
             'ID': entry.id,
             'Medewerker': workerName,
             'Project': projectName,
-            'Datum': entry.clockInTime.toISOString().split('T')[0],
-            'In': entry.clockInTime.toISOString().split('T')[1].slice(0,5),
-            'Uit': entry.clockOutTime ? entry.clockOutTime.toISOString().split('T')[1].slice(0,5) : '',
+            'Datum': formatLocal(entry.clockInTime, 'yyyy-MM-dd'),
+            'In': formatLocal(entry.clockInTime, 'HH:mm'),
+            'Uit': entry.clockOutTime ? formatLocal(entry.clockOutTime, 'HH:mm') : '',
             'Uren (Decimaal)': hoursDecimal,
             'Pauze Afgetrokken': duration.breakDeducted ? 'Ja' : 'Nee',
-            'Status': entry.approvalStatus || 'pending',
+            'Status': statusDisplay,
+            'Herkomst': sourceDisplay,
+            'Ingevoerd door': creatorDisplay,
+            'Goedgekeurd door': approverDisplay,
+            'Notities': (entry as any).notes || '',
             'Facturabel': entry.billable ? 'Ja' : 'Nee',
             'Kosten per uur': costRate,
             'Totale kosten': totalCost
@@ -144,7 +181,7 @@ export async function GET(req: Request) {
     if (requestedProjectIds.length > 0) filterParts.push(`Projects: ${requestedProjectIds.length} selected`);
     const filterDescription = `Filters active - ${filterParts.join(' | ')}`;
 
-    if (format === 'csv') {
+    if (exportFormat === 'csv') {
         const Papa = require('papaparse');
         const csvString = Papa.unparse(rawData);
         const finalCsv = `${filterDescription}\n\n${csvString}`;
@@ -157,7 +194,7 @@ export async function GET(req: Request) {
         });
     }
 
-    if (format === 'pdf') {
+    if (exportFormat === 'pdf') {
         const MyDocument = (
             <Document>
                 <Page size="A4" style={styles.page}>
@@ -199,7 +236,7 @@ export async function GET(req: Request) {
         });
     }
 
-    if (format === 'xlsx') {
+    if (exportFormat === 'xlsx') {
         const wb = XLSX.utils.book_new();
         
         // Convert to array of arrays so we can prepend the header row easily

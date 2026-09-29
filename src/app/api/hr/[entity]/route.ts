@@ -61,7 +61,7 @@ const HR_EMPLOYEE_ROLES = [
 ];
 
 // Fields that should NOT be overwritten by client
-const PROTECTED_FIELDS = ['id', 'tenantId', 'tenant', 'createdAt', 'updatedAt'];
+const PROTECTED_FIELDS = ['id', 'tenantId', 'tenant', 'createdAt', 'updatedAt', 'createdBy'];
 
 async function getTenantAndUser() {
     const session = await auth();
@@ -446,6 +446,15 @@ export async function POST(
         data.userId = ctx.userId;
     }
 
+    // For clock-entries, stamp createdBy server-side from authenticated ctx.userId (HR-TS-7)
+    if (entity === 'clock-entries') {
+        data.createdBy = ctx.userId;
+        if (data.approvalStatus === 'approved') {
+            data.approvedBy = ctx.userId;
+            data.approvedAt = new Date();
+        }
+    }
+
     // SCH-1: Reroute shift creations with status 'leave' to TimeOffRequest
     if (entity === 'shifts' && data.status === 'leave') {
         try {
@@ -665,9 +674,9 @@ export async function PATCH(
                 }
             }
 
-            // Force source = 'Aangepast' if not just approving/unapproving
+            // Force source = 'Aangepast' if not just approving/unapproving (preserving admin_entry)
             const isJustApproval = Object.keys(data).every(k => ['approvalStatus', 'approvedBy', 'approvedAt', 'editedAfterApproval'].includes(k));
-            if (!isJustApproval) {
+            if (!isJustApproval && existingEntry.source !== 'admin_entry') {
                 data.source = 'Aangepast';
             }
 

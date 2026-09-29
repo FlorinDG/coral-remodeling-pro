@@ -1978,8 +1978,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                                         setTimeout(() => URL.revokeObjectURL(url), 10000);
                                     } catch (e: any) {
                                         console.error('[PDF] export failed:', e);
-                                        const detail = e?.message || e?.cause?.message || e?.name || String(e);
-                                        toast.error(`PDF genereren mislukt: ${detail}`);
+                                        toast.error(`PDF genereren mislukt: ${describeError(e)}`);
                                     } finally {
                                         setIsDownloading(false);
                                     }

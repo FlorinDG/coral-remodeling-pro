@@ -6,6 +6,7 @@ import {
     formatDateTime,
     formatDateLong,
     formatTime,
+    formatDayMonth,
     resolveLocale,
     DEFAULT_LOCALE,
 } from '../src/lib/format/date.ts';
@@ -77,4 +78,14 @@ test('WH-UI-1: formatTime returns 24h format and never AM/PM', () => {
         assert.doesNotMatch(result, /AM|PM/i, `formatTime(${h}) must not contain AM/PM`);
         assert.match(result, /^\d{2}:\d{2}$/, `formatTime(${h}) must match HH:mm`);
     }
+});
+
+test('WH-2: formatDayMonth is day-first, no year, never US order', () => {
+    const d = new Date(2026, 7, 7); // 7 Aug 2026, local
+    const nl = formatDayMonth(d, 'nl');
+    assert.match(nl, /^7\s/);            // day first
+    assert.doesNotMatch(nl, /2026/);      // no year
+    assert.match(formatDayMonth(d, 'en'), /^7\s/);   // en-GB, not 'Aug 7'
+    assert.match(formatDayMonth('2026-08-07', 'fr'), /^7\s/); // plain YYYY-MM-DD parsed as local date
+    assert.equal(formatDayMonth(null), '');
 });

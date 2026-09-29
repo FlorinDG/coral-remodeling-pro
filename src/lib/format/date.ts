@@ -127,6 +127,21 @@ export function formatDateLong(d: Date | string | number | null | undefined, loc
 }
 
 /**
+ * Day and short month, no year (e.g. nl '7 aug', fr '7 août', en '7 Aug').
+ * For compact lists where the year is implied. Never month-first.
+ */
+export function formatDayMonth(d: Date | string | number | null | undefined, locale?: string | null): string {
+    const date = parseDateInput(d);
+    if (!date) return '';
+
+    const resolved = resolveLocale(locale);
+    return new Intl.DateTimeFormat(resolved, {
+        day: 'numeric',
+        month: 'short',
+    }).format(date);
+}
+
+/**
  * Formats a date to month and year (e.g. 'september 2026').
  */
 export function formatMonthYear(d: Date | string | number | null | undefined, locale?: string | null): string {

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Toaster } from 'sonner';
 import { useSession } from 'next-auth/react';
 import { Link, usePathname } from '@/i18n/routing';
+import { useTranslation } from 'react-i18next';
 import { TenantProvider } from '@/context/TenantContext';
 import { ROLES } from '@/lib/roles';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -18,23 +19,23 @@ import { del } from 'idb-keyval';
 // ── Navigation Items ──────────────────────────────────────────────────
 interface NavItem {
     id: string;
-    label: string;
+    /** time-tracker i18n key (the crew app's own instance: en · nl · fr · ro · ru) */
+    labelKey: string;
     href: string;
     icon: React.ReactNode;
-    mobileLabel: string;
 }
 
 const PRIMARY_ITEMS: NavItem[] = [
-    { id: 'schedule', label: 'My Schedule',       href: '/workhub',           icon: <CalendarDays className="w-5 h-5" />, mobileLabel: 'Schedule' },
-    { id: 'leave',    label: 'Time Off',          href: '/workhub/leave',     icon: <CalendarOff className="w-5 h-5" />,  mobileLabel: 'Time Off' },
-    { id: 'tasks',    label: 'My Tasks',          href: '/workhub/tasks',     icon: <CheckSquare className="w-5 h-5" />,  mobileLabel: 'Tasks' },
+    { id: 'schedule', labelKey: 'nav.schedule',   href: '/workhub',           icon: <CalendarDays className="w-5 h-5" /> },
+    { id: 'leave',    labelKey: 'nav.timeOff',    href: '/workhub/leave',     icon: <CalendarOff className="w-5 h-5" /> },
+    { id: 'tasks',    labelKey: 'nav.tasks',      href: '/workhub/tasks',     icon: <CheckSquare className="w-5 h-5" /> },
 ];
 
 const SECONDARY_ITEMS: NavItem[] = [
-    { id: 'timesheets', label: 'Timesheets',       href: '/workhub/timesheets', icon: <Clock className="w-5 h-5" />,       mobileLabel: 'Timesheets' },
-    { id: 'files',     label: 'Documents',         href: '/workhub/files',      icon: <FileText className="w-5 h-5" />,     mobileLabel: 'Files' },
-    { id: 'projects',  label: 'Projects',          href: '/workhub/projects',   icon: <FolderOpen className="w-5 h-5" />,   mobileLabel: 'Projects' },
-    { id: 'wiki',      label: 'Company Wiki',      href: '/workhub/wiki',       icon: <BookOpen className="w-5 h-5" />,     mobileLabel: 'Wiki' },
+    { id: 'timesheets', labelKey: 'nav.timesheets', href: '/workhub/timesheets', icon: <Clock className="w-5 h-5" /> },
+    { id: 'files',     labelKey: 'nav.documents',   href: '/workhub/files',      icon: <FileText className="w-5 h-5" /> },
+    { id: 'projects',  labelKey: 'nav.projects',    href: '/workhub/projects',   icon: <FolderOpen className="w-5 h-5" /> },
+    { id: 'wiki',      labelKey: 'nav.wiki',        href: '/workhub/wiki',       icon: <BookOpen className="w-5 h-5" /> },
 ];
 
 // Bottom Nav logic moved inside component to handle state/filtering
@@ -52,6 +53,7 @@ export default function WorkHubShell({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     tenant?: any;
 }) {
+    const { t } = useTranslation();
     const { data: session, status } = useSession();
     const pathname = usePathname();
     const [menuOpen, setMenuOpen] = useState(false);
@@ -81,7 +83,7 @@ export default function WorkHubShell({
 
     const mobileTabs = [
         ...filteredPrimaryItems,
-        { id: 'menu', label: 'Menu', href: '#', icon: <Menu className="w-5 h-5" />, mobileLabel: 'Menu' }
+        { id: 'menu', labelKey: 'nav.menu', href: '#', icon: <Menu className="w-5 h-5" /> }
     ];
 
     const isActive = (href: string) => {
@@ -143,7 +145,7 @@ export default function WorkHubShell({
                                 }`}
                             >
                                 {item.icon}
-                                {item.label}
+                                {t(item.labelKey)}
                             </Link>
                         ))}
                     </div>
@@ -155,7 +157,8 @@ export default function WorkHubShell({
                 <div className="md:hidden fixed inset-0 z-40 bg-black/40 backdrop-blur-sm" onClick={() => setMenuOpen(false)}>
                     <div className="bg-white dark:bg-neutral-950 border-b border-neutral-200 dark:border-white/10 shadow-2xl mt-14 mx-0 animate-in slide-in-from-top-2 duration-200" onClick={e => e.stopPropagation()}>
                         <div className="p-4 space-y-1">
-                            {[...filteredPrimaryItems, ...filteredSecondaryItems].map(item => (
+                            {/* WH-2: the drawer carries only what the bottom bar does not — no item twice */}
+                            {filteredSecondaryItems.map(item => (
                                 <Link
                                     key={item.id}
                                     href={item.href}
@@ -167,7 +170,7 @@ export default function WorkHubShell({
                                     }`}
                                 >
                                     {item.icon}
-                                    {item.label}
+                                    {t(item.labelKey)}
                                 </Link>
                             ))}
 
@@ -177,10 +180,7 @@ export default function WorkHubShell({
                                         <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center text-white text-sm font-bold">
                                             {firstName ? firstName[0] : ''}
                                         </div>
-                                        <div>
-                                            <p className="text-sm font-bold">{userName}</p>
-                                            <p className="text-[10px] text-neutral-400 uppercase tracking-wider">Workforce</p>
-                                        </div>
+                                        <p className="text-base font-bold">{userName}</p>
                                     </div>
                                 )}
                                 <Link
@@ -188,7 +188,7 @@ export default function WorkHubShell({
                                     onClick={() => setMenuOpen(false)}
                                     className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors"
                                 >
-                                    <User className="w-5 h-5 text-neutral-500" /> My Profile
+                                    <User className="w-5 h-5 text-neutral-500" /> {t('nav.profile')}
                                 </Link>
                                 <button
                                     onClick={async () => {
@@ -197,7 +197,7 @@ export default function WorkHubShell({
                                     }}
                                     className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
                                 >
-                                    <LogOut className="w-5 h-5" /> Sign Out
+                                    <LogOut className="w-5 h-5" /> {t('nav.signOut')}
                                 </button>
                             </div>
                         </div>
@@ -226,7 +226,7 @@ export default function WorkHubShell({
                                     {item.icon}
                                 </div>
                                 <span className="text-[0.75rem] leading-none font-semibold tracking-wide">
-                                    {item.mobileLabel}
+                                    {t(item.labelKey)}
                                 </span>
                             </>
                         );

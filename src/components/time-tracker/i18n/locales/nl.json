@@ -39,7 +39,13 @@
     "projects": "Projecten",
     "performance": "Prestaties",
     "admin": "Beheer",
-    "profile": "Profiel"
+    "profile": "Profiel",
+    "tasks": "Taken",
+    "timesheets": "Mijn uren",
+    "documents": "Documenten",
+    "wiki": "Wiki",
+    "menu": "Menu",
+    "signOut": "Afmelden"
   },
   "header": {
     "title": "WorkHub",
@@ -167,7 +173,24 @@
     "status": "Status",
     "pending": "In behandeling",
     "approved": "Goedgekeurd",
-    "rejected": "Afgewezen"
+    "rejected": "Afgewezen",
+    "other": "Andere",
+    "cancelled": "Ingetrokken",
+    "new": "Nieuw",
+    "notes": "Opmerking (optioneel)",
+    "submit": "Aanvraag versturen",
+    "submitted": "Aanvraag verstuurd",
+    "submitFailed": "De aanvraag kon niet verstuurd worden",
+    "endBeforeStart": "De einddatum ligt vóór de begindatum",
+    "cancelConfirm": "Deze aanvraag intrekken?",
+    "withdraw": "Intrekken",
+    "withdrawnToast": "Aanvraag ingetrokken",
+    "cancelFailed": "De aanvraag kon niet ingetrokken worden",
+    "loadFailed": "Je verlof kon niet geladen worden",
+    "retry": "Opnieuw proberen",
+    "empty": "Nog geen verlofaanvragen",
+    "days_one": "{{count}} dag",
+    "days_other": "{{count}} dagen"
   },
   "projects": {
     "title": "Projecten",

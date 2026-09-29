@@ -39,7 +39,13 @@
     "projects": "Projects",
     "performance": "Performance",
     "admin": "Admin",
-    "profile": "Profile"
+    "profile": "Profile",
+    "tasks": "Tasks",
+    "timesheets": "My hours",
+    "documents": "Documents",
+    "wiki": "Wiki",
+    "menu": "Menu",
+    "signOut": "Sign out"
   },
   "header": {
     "title": "WorkHub",
@@ -167,7 +173,24 @@
     "status": "Status",
     "pending": "Pending",
     "approved": "Approved",
-    "rejected": "Rejected"
+    "rejected": "Rejected",
+    "other": "Other",
+    "cancelled": "Cancelled",
+    "new": "New",
+    "notes": "Note (optional)",
+    "submit": "Send request",
+    "submitted": "Request sent",
+    "submitFailed": "Could not send the request",
+    "endBeforeStart": "The end date is before the start date",
+    "cancelConfirm": "Withdraw this request?",
+    "withdraw": "Withdraw",
+    "withdrawnToast": "Request withdrawn",
+    "cancelFailed": "Could not withdraw the request",
+    "loadFailed": "Your time off could not be loaded",
+    "retry": "Try again",
+    "empty": "No time off requests yet",
+    "days_one": "{{count}} day",
+    "days_other": "{{count}} days"
   },
   "projects": {
     "title": "Projects",

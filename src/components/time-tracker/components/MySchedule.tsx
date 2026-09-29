@@ -429,6 +429,8 @@ export function MySchedule() {
               <div 
                 key={shift.id} 
                 ref={index === nextShiftIndex ? nextShiftRef : undefined}
+                // WH-2: the shell's header is sticky (h-14) — land the next shift BELOW it, not under it
+                className="scroll-mt-14 md:scroll-mt-28"
               >
                 <ShiftCard
                   shift={shift}

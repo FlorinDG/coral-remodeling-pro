@@ -39,7 +39,13 @@
     "projects": "Projets",
     "performance": "Performance",
     "admin": "Admin",
-    "profile": "Profil"
+    "profile": "Profil",
+    "tasks": "Tâches",
+    "timesheets": "Mes heures",
+    "documents": "Documents",
+    "wiki": "Wiki",
+    "menu": "Menu",
+    "signOut": "Se déconnecter"
   },
   "header": {
     "title": "WorkHub",
@@ -167,7 +173,24 @@
     "status": "Statut",
     "pending": "En attente",
     "approved": "Approuvé",
-    "rejected": "Refusé"
+    "rejected": "Refusé",
+    "other": "Autre",
+    "cancelled": "Retiré",
+    "new": "Nouveau",
+    "notes": "Remarque (facultatif)",
+    "submit": "Envoyer la demande",
+    "submitted": "Demande envoyée",
+    "submitFailed": "La demande n’a pas pu être envoyée",
+    "endBeforeStart": "La date de fin est avant la date de début",
+    "cancelConfirm": "Retirer cette demande ?",
+    "withdraw": "Retirer",
+    "withdrawnToast": "Demande retirée",
+    "cancelFailed": "La demande n’a pas pu être retirée",
+    "loadFailed": "Vos congés n’ont pas pu être chargés",
+    "retry": "Réessayer",
+    "empty": "Aucune demande de congé",
+    "days_one": "{{count}} jour",
+    "days_other": "{{count}} jours"
   },
   "projects": {
     "title": "Projets",

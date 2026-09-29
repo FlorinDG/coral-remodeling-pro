@@ -39,7 +39,13 @@
     "projects": "Proiecte",
     "performance": "Performanță",
     "admin": "Admin",
-    "profile": "Profil"
+    "profile": "Profil",
+    "tasks": "Sarcini",
+    "timesheets": "Orele mele",
+    "documents": "Documente",
+    "wiki": "Wiki",
+    "menu": "Meniu",
+    "signOut": "Deconectare"
   },
   "header": {
     "title": "WorkHub",
@@ -167,7 +173,25 @@
     "status": "Status",
     "pending": "În Așteptare",
     "approved": "Aprobat",
-    "rejected": "Respins"
+    "rejected": "Respins",
+    "other": "Altele",
+    "cancelled": "Retrasă",
+    "new": "Nouă",
+    "notes": "Notă (opțional)",
+    "submit": "Trimite cererea",
+    "submitted": "Cerere trimisă",
+    "submitFailed": "Cererea nu a putut fi trimisă",
+    "endBeforeStart": "Data de sfârșit este înaintea datei de început",
+    "cancelConfirm": "Retragi această cerere?",
+    "withdraw": "Retrage",
+    "withdrawnToast": "Cerere retrasă",
+    "cancelFailed": "Cererea nu a putut fi retrasă",
+    "loadFailed": "Concediile tale nu au putut fi încărcate",
+    "retry": "Încearcă din nou",
+    "empty": "Nicio cerere de concediu încă",
+    "days_one": "{{count}} zi",
+    "days_few": "{{count}} zile",
+    "days_other": "{{count}} de zile"
   },
   "projects": {
     "title": "Proiecte",

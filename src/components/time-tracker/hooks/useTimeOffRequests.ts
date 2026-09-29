@@ -19,14 +19,18 @@ export interface TimeOffRequest {
 export function useTimeOffRequests() {
   const [requests, setRequests] = useState<TimeOffRequest[]>([]);
   const [loading, setLoading] = useState(true);
+  // A failed load must not read as "no requests" — callers can show it (pd.md: fail loudly).
+  const [error, setError] = useState<Error | null>(null);
 
   const fetchRequests = useCallback(async () => {
     setLoading(true);
     try {
       const data = await hrList<TimeOffRequest>('time-off');
       setRequests(data);
+      setError(null);
     } catch (err) {
       console.error('[useTimeOffRequests] fetch error:', err);
+      setError(err instanceof Error ? err : new Error(String(err)));
     } finally {
       setLoading(false);
     }
@@ -70,6 +74,7 @@ export function useTimeOffRequests() {
   return {
     requests,
     loading,
+    error,
     createRequest,
     cancelRequest,
     deleteRequest,

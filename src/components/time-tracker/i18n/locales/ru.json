@@ -39,7 +39,13 @@
     "projects": "Проекты",
     "performance": "Производительность",
     "admin": "Админ",
-    "profile": "Профиль"
+    "profile": "Профиль",
+    "tasks": "Задачи",
+    "timesheets": "Мои часы",
+    "documents": "Документы",
+    "wiki": "Вики",
+    "menu": "Меню",
+    "signOut": "Выйти"
   },
   "header": {
     "title": "WorkHub",
@@ -153,7 +159,26 @@
     "status": "Статус",
     "pending": "На рассмотрении",
     "approved": "Одобрено",
-    "rejected": "Отклонено"
+    "rejected": "Отклонено",
+    "other": "Другое",
+    "cancelled": "Отозвана",
+    "new": "Новая",
+    "notes": "Примечание (необязательно)",
+    "submit": "Отправить заявку",
+    "submitted": "Заявка отправлена",
+    "submitFailed": "Не удалось отправить заявку",
+    "endBeforeStart": "Дата окончания раньше даты начала",
+    "cancelConfirm": "Отозвать эту заявку?",
+    "withdraw": "Отозвать",
+    "withdrawnToast": "Заявка отозвана",
+    "cancelFailed": "Не удалось отозвать заявку",
+    "loadFailed": "Не удалось загрузить отпуска",
+    "retry": "Повторить",
+    "empty": "Заявок на отпуск пока нет",
+    "days_one": "{{count}} день",
+    "days_few": "{{count}} дня",
+    "days_many": "{{count}} дней",
+    "days_other": "{{count}} дня"
   },
   "projects": {
     "title": "Проекты",

@@ -89,7 +89,8 @@
     "message": "Bericht",
     "sendMessage": "Bericht Versturen",
     "messageSent": "Bericht succesvol verzonden",
-    "preferencesUpdated": "Voorkeuren succesvol bijgewerkt"
+    "preferencesUpdated": "Voorkeuren succesvol bijgewerkt",
+    "contactSupervisor": "Wil je je gegevens wijzigen? Vraag het aan je leidinggevende of HR."
   },
   "faq": {
     "q1": "Hoe klok ik in en uit?",

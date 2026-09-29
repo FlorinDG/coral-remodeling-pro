@@ -89,7 +89,8 @@
     "message": "Mesaj",
     "sendMessage": "Trimite Mesajul",
     "messageSent": "Mesaj trimis cu succes",
-    "preferencesUpdated": "Preferințe actualizate cu succes"
+    "preferencesUpdated": "Preferințe actualizate cu succes",
+    "contactSupervisor": "Pentru a-ți modifica datele, adresează-te șefului tău sau departamentului HR."
   },
   "faq": {
     "q1": "Cum pontez la intrare și ieșire?",

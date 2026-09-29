@@ -89,7 +89,8 @@
     "message": "Message",
     "sendMessage": "Envoyer le message",
     "messageSent": "Message envoyé avec succès",
-    "preferencesUpdated": "Préférences mises à jour avec succès"
+    "preferencesUpdated": "Préférences mises à jour avec succès",
+    "contactSupervisor": "Pour modifier vos données, adressez-vous à votre responsable ou aux RH."
   },
   "faq": {
     "q1": "Comment pointer à l'arrivée et au départ?",

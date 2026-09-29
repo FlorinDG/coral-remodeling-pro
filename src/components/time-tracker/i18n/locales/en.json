@@ -89,7 +89,8 @@
     "message": "Message",
     "sendMessage": "Send Message",
     "messageSent": "Message sent successfully",
-    "preferencesUpdated": "Preferences updated successfully"
+    "preferencesUpdated": "Preferences updated successfully",
+    "contactSupervisor": "To change your details, ask your supervisor or HR."
   },
   "faq": {
     "q1": "How do I clock in and out?",

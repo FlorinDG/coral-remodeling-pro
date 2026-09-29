@@ -1,73 +1,77 @@
 "use client";
 
+/**
+ * WorkHub — Profile (WH-2). Who I am, and the app's LANGUAGE.
+ * The old admin header (removed from the crew screens) carried the only language switcher;
+ * for the crews (nl · fr · ro · ru) it lives here now, in their own i18n instance, persisted
+ * on the phone by the detector's localStorage cache.
+ */
 import { useSession } from "next-auth/react";
-import { User, Mail, Shield, Clock, MapPin } from "lucide-react";
-import { ThemeProvider } from "@/context/ThemeContext";
+import { useTranslation } from "react-i18next";
+import { Mail, Languages, Check } from "lucide-react";
+
+const LANGUAGES = [
+    { code: "nl", label: "Nederlands" },
+    { code: "fr", label: "Français" },
+    { code: "en", label: "English" },
+    { code: "ro", label: "Română" },
+    { code: "ru", label: "Русский" },
+] as const;
 
 export default function WorkerProfilePage() {
     const { data: session } = useSession();
+    const { t, i18n } = useTranslation();
     const user = session?.user;
-
     if (!user) return null;
 
+    const current = (i18n.resolvedLanguage || i18n.language || "en").slice(0, 2);
     const initials = user.name
         ? user.name.split(" ").map((n) => n[0]).join("").substring(0, 2).toUpperCase()
-        : "U";
+        : "·";
 
     return (
-        <ThemeProvider>
-            <div className="max-w-3xl mx-auto px-4 py-8">
-                <div className="bg-white dark:bg-neutral-900 rounded-3xl border border-neutral-200 dark:border-neutral-800 shadow-sm overflow-hidden">
-                    <div className="bg-primary/10 px-8 py-12 flex flex-col items-center justify-center border-b border-neutral-200 dark:border-neutral-800">
-                        <div className="w-24 h-24 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-3xl font-black mb-4">
-                            {initials}
-                        </div>
-                        <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">
-                            {user.name || "Worker"}
-                        </h1>
-                        <p className="text-primary font-medium mt-1 uppercase tracking-wider text-sm">
-                            Workforce Member
+        <div className="px-3 py-4 space-y-4">
+            <div className="flex items-center gap-4 p-4 rounded-2xl border border-border bg-card shadow-sm">
+                <div className="w-16 h-16 rounded-full bg-[var(--persian-green)] text-white flex items-center justify-center text-2xl font-bold shrink-0">
+                    {initials}
+                </div>
+                <div className="min-w-0">
+                    <h1 className="text-xl font-bold text-foreground break-words">{user.name}</h1>
+                    {user.email && (
+                        <p className="flex items-center gap-1.5 text-base text-muted-foreground min-w-0">
+                            <Mail className="w-5 h-5 shrink-0" /><span className="truncate">{user.email}</span>
                         </p>
-                    </div>
-
-                    <div className="p-8">
-                        <h2 className="text-lg font-semibold mb-6 flex items-center gap-2 text-neutral-900 dark:text-white">
-                            <User className="w-5 h-5 text-primary" />
-                            Account Details
-                        </h2>
-
-                        <div className="space-y-6">
-                            <div className="flex items-start gap-4">
-                                <div className="w-10 h-10 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center flex-shrink-0">
-                                    <Mail className="w-5 h-5 text-neutral-500 dark:text-neutral-400" />
-                                </div>
-                                <div>
-                                    <p className="text-sm text-neutral-500 dark:text-neutral-400">Email Address</p>
-                                    <p className="font-medium text-neutral-900 dark:text-white">{user.email || "No email"}</p>
-                                </div>
-                            </div>
-
-                            <div className="flex items-start gap-4">
-                                <div className="w-10 h-10 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center flex-shrink-0">
-                                    <Shield className="w-5 h-5 text-neutral-500 dark:text-neutral-400" />
-                                </div>
-                                <div>
-                                    <p className="text-sm text-neutral-500 dark:text-neutral-400">System Role</p>
-                                    <p className="font-medium text-neutral-900 dark:text-white">
-                                        {user.role === 'TENANT_ENTERPRISE_WORKFORCE' ? 'Field Workforce' : user.role}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="mt-10 pt-8 border-t border-neutral-200 dark:border-neutral-800">
-                            <p className="text-sm text-neutral-500 dark:text-neutral-400 text-center">
-                                To update your profile details, please contact your team supervisor or HR administrator.
-                            </p>
-                        </div>
-                    </div>
+                    )}
                 </div>
             </div>
-        </ThemeProvider>
+
+            <section className="p-4 rounded-2xl border border-border bg-card shadow-sm space-y-3">
+                <h2 className="flex items-center gap-2 text-lg font-semibold text-foreground">
+                    <Languages className="w-6 h-6 text-[var(--persian-green)]" />{t("profile.language")}
+                </h2>
+                <div className="grid grid-cols-1 gap-2">
+                    {LANGUAGES.map((l) => {
+                        const active = current === l.code;
+                        return (
+                            <button
+                                key={l.code}
+                                type="button"
+                                onClick={() => i18n.changeLanguage(l.code)}
+                                className={`flex items-center justify-between h-14 px-4 rounded-xl border text-base font-semibold transition-colors ${
+                                    active
+                                        ? "border-[var(--persian-green)] bg-[var(--persian-green)]/10 text-[var(--persian-green)]"
+                                        : "border-border text-foreground"
+                                }`}
+                            >
+                                {l.label}
+                                {active && <Check className="w-6 h-6" />}
+                            </button>
+                        );
+                    })}
+                </div>
+            </section>
+
+            <p className="px-2 text-sm text-muted-foreground text-center">{t("profile.contactSupervisor")}</p>
+        </div>
     );
 }

@@ -226,7 +226,7 @@ export default function WorkHubShell({
                                 <div className={`transition-transform [&>svg]:w-6 [&>svg]:h-6 ${active ? 'scale-105' : ''}`}>
                                     {item.icon}
                                 </div>
-                                <span className="text-xs font-semibold tracking-wide">
+                                <span className="text-[0.75rem] leading-none font-semibold tracking-wide">
                                     {item.mobileLabel}
                                 </span>
                             </>

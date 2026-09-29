@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { formatTime } from '@/lib/format/date';
 import { shiftBrief, type ShiftBriefResult } from '@/lib/data/shift-brief';
+import { useTimer } from '@/components/time-tracker/hooks/useTimer';
 
 function parseShiftDateTime(dateStr: string, timeStr: string): Date {
   const [y, m, d] = (dateStr || '').split('-').map(Number);
@@ -194,7 +195,7 @@ export function MySchedule() {
   const [selectedShift, setSelectedShift] = useState<any>(null);
   const [brief, setBrief] = useState<ShiftBriefResult | null>(null);
   const [briefLoading, setBriefLoading] = useState(false);
-  const [elapsedTime, setElapsedTime] = useState('00:00:00');
+  const { formattedTime: elapsedTime } = useTimer();
   const [now, setNow] = useState(() => new Date());
   const nextShiftRef = useRef<HTMLDivElement>(null);
 
@@ -260,29 +261,6 @@ export function MySchedule() {
       }, 100);
     }
   }, [loading, nextShiftIndex]);
-
-  // Live timer effect using persisted activeEntry
-  useEffect(() => {
-    if (!activeEntry) {
-      setElapsedTime('00:00:00');
-      return;
-    }
-
-    const interval = setInterval(() => {
-      const start = new Date(activeEntry.clockInTime).getTime();
-      const now = new Date().getTime();
-      const diff = now - start;
-
-      const h = Math.floor(diff / (1000 * 60 * 60));
-      const m = Math.floor((diff / 1000 / 60) % 60);
-      const s = Math.floor((diff / 1000) % 60);
-      setElapsedTime(
-        `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
-      );
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [activeEntry]);
 
   const handleClockIn = async (shiftId: string, overrideShiftWithFallback = false) => {
     setIsClockingIn(true);

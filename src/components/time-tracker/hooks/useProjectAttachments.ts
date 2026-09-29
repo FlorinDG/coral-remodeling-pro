@@ -8,13 +8,13 @@ import { useState, useCallback } from 'react';
 
 export interface ProjectAttachment {
   id: string;
-  project_id: string;
-  file_name: string;
-  file_path: string;
-  file_type: string;
-  file_size: number | null;
-  uploaded_by: string | null;
-  created_at: string;
+  projectId: string;
+  name: string;
+  url: string;
+  type: string;
+  size: number | null;
+  uploadedBy: string | null;
+  createdAt: string;
 }
 
 export function useProjectAttachments(_projectId: string | null) {

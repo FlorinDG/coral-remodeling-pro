@@ -62,7 +62,7 @@ export function ScheduleTable({ shifts, onDelete, onStatusChange, onShiftClick, 
   const today = new Date().toISOString().split('T')[0];
   
   const filteredShifts = shifts.filter(shift => {
-    const d = shift.shiftDate || shift.shift_date || '';
+    const d = shift.shiftDate || '';
     if (filter === 'upcoming') return d >= today;
     if (filter === 'past') return d < today;
     return true;
@@ -118,10 +118,10 @@ export function ScheduleTable({ shifts, onDelete, onStatusChange, onShiftClick, 
                       onClick={() => onShiftClick?.(shift)}
                     >
                       <TableCell className="font-medium whitespace-nowrap">
-                        {formatDate(shift.shiftDate || shift.shift_date || '')}
+                        {formatDate(shift.shiftDate || '')}
                       </TableCell>
                       <TableCell className="whitespace-nowrap">
-                        {formatTime(shift.shiftStart || shift.shift_start || '00:00')} - {formatTime(shift.shiftEnd || shift.shift_end || '00:00')}
+                        {formatTime(shift.shiftStart || '00:00')} - {formatTime(shift.shiftEnd || '00:00')}
                       </TableCell>
                       <TableCell>
                         {shift.userName || 'Unknown'}

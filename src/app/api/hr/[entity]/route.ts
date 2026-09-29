@@ -496,6 +496,16 @@ export async function POST(
     // ── PRE-CREATE Automations ───────────────────────────────────────
     let parentShift: { id: string; projectId: string | null } | null = null;
     if (entity === 'clock-entries') {
+        // Seraph (checklist item 8): the worker an entry is FOR must be a user of THIS tenant.
+        // ClockEntry.userId has no FK; without this a foreign user's id was accepted as-is.
+        const subject = await prisma.user.findFirst({
+            where: { id: data.userId as string, tenantId: ctx.tenantId },
+            select: { id: true },
+        });
+        if (!subject) {
+            return NextResponse.json({ error: 'Not found' }, { status: 404 });
+        }
+
         // WHS-1b: one OPEN entry per worker. A client that could not load its own state
         // (slow network, failed GET) may still offer "clock in" — the server is the authority.
         // Closed records (manual / late entries carry a clockOutTime) are never refused.

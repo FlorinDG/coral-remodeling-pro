@@ -5,9 +5,10 @@ export async function getAccessibleUserIds(tenantId: string, userId: string): Pr
     const accessibleIds = new Set<string>();
     accessibleIds.add(userId);
 
-    // Find all teams where this user is a "lead"
+    // Find all teams where this user is a "lead" — within THIS tenant only.
+    // HrTeamMember is Class B (tenant via `team`); without this filter the parameter was decorative.
     const ledTeams = await prisma.hrTeamMember.findMany({
-        where: { userId, role: 'lead' },
+        where: { userId, role: 'lead', team: { tenantId } },
         select: { teamId: true }
     });
 
@@ -19,7 +20,7 @@ export async function getAccessibleUserIds(tenantId: string, userId: string): Pr
 
     // Find all members of those teams
     const teamMembers = await prisma.hrTeamMember.findMany({
-        where: { teamId: { in: teamIds } },
+        where: { teamId: { in: teamIds }, team: { tenantId } },
         select: { userId: true }
     });
 

@@ -5,6 +5,16 @@
 
 ---
 
+# 0 · UPDATE — 2026-09-30 (read this first; the sections below are the 29 Sep baseline)
+- **The Planner now works in Claude Code, on the repo directly.** It implements judgement-heavy items itself; the Antigravity coder takes mechanical items under a file fence and reports in `.agents/reports/<ITEM>.md` (`coder-report-protocol.md`, `pd.md` 5g).
+- **Promotion to `main`:** during the WorkHub iteration phase the Planner promotes green commits (CI + Vercel preview green, no `prisma/`/package change, rollback hash noted). Florin ends the phase.
+- **Gate 2 exists:** `app/api/hr/lib/actor-reach.ts` + `write-policy.ts`; the HR role set is ONE definition in `lib/roles.ts` (`isTenantHrRole`: SUPERADMIN, tenant admin, director, HR). `isWorkforceRole` likewise.
+- **Found and closed:** the crew could approve their own hours and leave (Gate 2); backdate clock-ins (`CE-TIME-1`); list/delete/overwrite every tenant file and received the whole ERP dataset on the phone (`FILES-CREW-1`).
+- **WorkHub (WH-2):** the "tiny text" was iOS zooming the app to ~75% (a truncated address without `min-w-0`); fixed at the cause + `overflow-x-clip`. Crew app at 1.2rem, cards, 8px status rails, phone-native Time Off / My hours / My tasks / Documents / Shift Brief.
+- **Live queue:** `CODER-QUEUE.md`. **Open for Florin:** `FILES-GATE-1` scope · werkbon phasing · whether crew tasks stay read-only.
+
+---
+
 # 1 · WHO AND WHAT
 
 **Florin** (`tfo@coral-group.be`) runs **BV CORAL ENTERPRISES**, a Belgian construction business, on **CoralOS** — a multi-tenant SaaS ERP he is building **solo** and already **running his real company on**. A second tenant exists (*Murgu, Catalin*). More are coming.

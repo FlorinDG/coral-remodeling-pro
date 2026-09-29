@@ -8,14 +8,14 @@ import { useState, useCallback } from 'react';
 
 export interface ProjectAssignment {
   id: string;
-  project_id: string;
-  user_id: string;
-  assigned_by: string | null;
-  created_at: string;
+  projectId: string;
+  userId: string;
+  assignedBy: string | null;
+  createdAt: string;
 }
 
 export interface ProjectAssignmentWithProfile extends ProjectAssignment {
-  profiles?: { full_name: string } | null;
+  profiles?: { name: string } | null;
 }
 
 export function useProjectAssignments(_projectId?: string) {

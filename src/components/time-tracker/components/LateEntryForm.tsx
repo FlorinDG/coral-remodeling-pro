@@ -175,7 +175,7 @@ export function LateEntryForm({ open, onClose }: LateEntryFormProps) {
               max={format(new Date(today.getTime() - 86400000), 'yyyy-MM-dd')}
               required
             />
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className="text-sm text-muted-foreground mt-1">
               Select a past date for this entry
             </p>
           </div>
@@ -245,7 +245,7 @@ export function LateEntryForm({ open, onClose }: LateEntryFormProps) {
               <MapPin className="h-4 w-4 text-muted-foreground" />
               <div>
                 <p className="text-sm font-medium">Include Location</p>
-                <p className="text-xs text-muted-foreground">Optional for late entries</p>
+                <p className="text-sm text-muted-foreground">Optional for late entries</p>
               </div>
             </div>
             <Switch
@@ -256,7 +256,7 @@ export function LateEntryForm({ open, onClose }: LateEntryFormProps) {
           </div>
 
           {includeLocation && location && (
-            <p className="text-xs text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               Location: {location.latitude.toFixed(4)}, {location.longitude.toFixed(4)}
             </p>
           )}

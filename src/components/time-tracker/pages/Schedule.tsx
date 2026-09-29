@@ -134,7 +134,7 @@ export default function Schedule() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background font-content">
       <Header />
       
       <main className="container mx-auto px-4 py-6 max-w-4xl">
@@ -155,7 +155,7 @@ export default function Schedule() {
 
         {/* Shift Detail Dialog */}
         <Dialog open={!!selectedShift} onOpenChange={() => setSelectedShift(null)}>
-          <DialogContent className="sm:max-w-md border-0 bg-background/95 backdrop-blur-xl shadow-2xl">
+          <DialogContent className="sm:max-w-md border-0 bg-background/95 backdrop-blur-xl shadow-2xl font-content">
             <DialogHeader className="pb-2">
               <div className="flex items-center justify-between">
                   <DialogTitle className="text-xl font-semibold">
@@ -163,7 +163,7 @@ export default function Schedule() {
                   </DialogTitle>
                   {selectedShift && (
                     <span className={cn(
-                      "px-3 py-1 rounded-full text-xs font-medium",
+                      "px-3 py-1 rounded-full text-sm font-semibold",
                       getStatusColor(selectedShift.status)
                     )}>
                       {selectedShift.status}
@@ -180,7 +180,7 @@ export default function Schedule() {
                     <Calendar className="h-4 w-4 text-primary" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-xs text-muted-foreground">Date</p>
+                    <p className="text-sm text-muted-foreground">Date</p>
                     <p className="font-medium">
                       {new Date(selectedShift.shiftDate + 'T00:00:00').toLocaleDateString('en-US', {
                         weekday: 'long',
@@ -197,7 +197,7 @@ export default function Schedule() {
                     <Clock className="h-4 w-4 text-secondary" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-xs text-muted-foreground">Time</p>
+                    <p className="text-sm text-muted-foreground">Time</p>
                     <p className="font-medium">
                       {formatTime(selectedShift.shiftStart)} - {formatTime(selectedShift.shiftEnd)}
                     </p>
@@ -211,7 +211,7 @@ export default function Schedule() {
                       <Briefcase className="h-4 w-4 text-accent-foreground" />
                     </div>
                     <div className="flex-1">
-                      <p className="text-xs text-muted-foreground">Project</p>
+                      <p className="text-sm text-muted-foreground">Project</p>
                       <p className="font-medium">{selectedShift.project.name}</p>
                     </div>
                   </div>
@@ -224,7 +224,7 @@ export default function Schedule() {
                       <User className="h-4 w-4 text-primary" />
                     </div>
                     <div className="flex-1">
-                      <p className="text-xs text-muted-foreground">Worker</p>
+                      <p className="text-sm text-muted-foreground">Worker</p>
                       <p className="font-medium">{selectedShift.userName}</p>
                     </div>
                   </div>
@@ -240,7 +240,7 @@ export default function Schedule() {
                       <MapPin className="h-4 w-4 text-primary" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs text-muted-foreground">Location</p>
+                      <p className="text-sm text-muted-foreground">Location</p>
                       <p className="font-medium truncate group-hover:text-primary transition-colors">
                         {selectedShift.project.address}
                       </p>
@@ -256,7 +256,7 @@ export default function Schedule() {
                       <User className="h-4 w-4 text-secondary" />
                     </div>
                     <div className="flex-1">
-                      <p className="text-xs text-muted-foreground">Role</p>
+                      <p className="text-sm text-muted-foreground">Role</p>
                       <p className="font-medium">{selectedShift.role}</p>
                     </div>
                   </div>
@@ -267,7 +267,7 @@ export default function Schedule() {
                   <div className="p-3 rounded-lg bg-muted/30">
                     <div className="flex items-center gap-2 mb-2">
                       <FileText className="h-4 w-4 text-muted-foreground" />
-                      <p className="text-xs text-muted-foreground">Notes</p>
+                      <p className="text-sm text-muted-foreground">Notes</p>
                     </div>
                     <p className="text-sm pl-6">{selectedShift.notes}</p>
                   </div>
@@ -305,7 +305,7 @@ export default function Schedule() {
               <div className="space-y-4 pt-2">
                 {/* Date display */}
                 <div>
-                  <Label className="text-xs text-muted-foreground">Date</Label>
+                  <Label className="text-sm text-muted-foreground">Date</Label>
                   <div className="font-medium mt-1">
                     {new Date(selectedShift.shiftDate + 'T00:00:00').toLocaleDateString('en-US', {
                       weekday: 'long',
@@ -318,7 +318,7 @@ export default function Schedule() {
                 {/* Time inputs */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="clockIn" className="text-xs text-muted-foreground">Clock In</Label>
+                    <Label htmlFor="clockIn" className="text-sm text-muted-foreground">Clock In</Label>
                     <Input 
                       id="clockIn"
                       type="time" 
@@ -327,7 +327,7 @@ export default function Schedule() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="clockOut" className="text-xs text-muted-foreground">Clock Out</Label>
+                    <Label htmlFor="clockOut" className="text-sm text-muted-foreground">Clock Out</Label>
                     <Input 
                       id="clockOut"
                       type="time" 
@@ -354,7 +354,7 @@ export default function Schedule() {
 
                 {/* Project selection */}
                 <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground">Project</Label>
+                  <Label className="text-sm text-muted-foreground">Project</Label>
                   <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select a project" />
@@ -377,7 +377,7 @@ export default function Schedule() {
 
                 {/* Notes */}
                 <div className="space-y-2">
-                  <Label htmlFor="notes" className="text-xs text-muted-foreground">Notes</Label>
+                  <Label htmlFor="notes" className="text-sm text-muted-foreground">Notes</Label>
                   <Textarea 
                     id="notes"
                     placeholder="Add any notes about this shift..."
@@ -389,7 +389,7 @@ export default function Schedule() {
 
                 {/* File upload */}
                 <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground">Attachments</Label>
+                  <Label className="text-sm text-muted-foreground">Attachments</Label>
                   <div className="space-y-2">
                     <input
                       ref={fileInputRef}

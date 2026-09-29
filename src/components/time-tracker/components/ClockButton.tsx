@@ -230,8 +230,8 @@ function ClockButtonComponent() {
             </div>
           ) : isClockedIn ? (
             <div className="flex flex-col items-center justify-center w-full leading-tight">
-              <div className="flex items-center text-[10px] md:text-xs uppercase tracking-widest opacity-90 mb-0.5">
-                <Square className="w-3 h-3 md:w-4 h-4 mr-1.5 fill-current" />
+              <div className="flex items-center text-sm font-semibold uppercase tracking-wider opacity-90 mb-0.5">
+                <Square className="w-3.5 h-3.5 mr-1.5 fill-current" />
                 {t('clock.clockOut')}
               </div>
               <div className="text-2xl md:text-3xl font-black tabular-nums tracking-wider font-mono">

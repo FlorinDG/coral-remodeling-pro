@@ -252,7 +252,7 @@ export function LateEntryCard() {
                   max={format(today, 'yyyy-MM-dd')}
                   required
                 />
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-sm text-muted-foreground mt-1">
                   Select today or a past date for this entry
                 </p>
               </div>
@@ -388,7 +388,7 @@ export function LateEntryCard() {
                   <MapPin className="h-4 w-4 text-muted-foreground" />
                   <div>
                     <p className="text-sm font-medium">Include Location</p>
-                    <p className="text-xs text-muted-foreground">Optional for late entries</p>
+                    <p className="text-sm text-muted-foreground">Optional for late entries</p>
                   </div>
                 </div>
                 <Switch
@@ -399,7 +399,7 @@ export function LateEntryCard() {
               </div>
 
               {includeLocation && location && (
-                <p className="text-xs text-muted-foreground">
+                <p className="text-sm text-muted-foreground">
                   Location: {location.latitude.toFixed(4)}, {location.longitude.toFixed(4)}
                 </p>
               )}

@@ -107,7 +107,7 @@ export function DailySummary() {
     : 0;
 
   return (
-    <section className="w-full animate-fade-in">
+    <section className="w-full animate-fade-in font-content">
       <h2 className="text-xl font-semibold text-foreground mb-4">Today's Overview</h2>
 
       <div className="bg-card border border-border rounded-2xl overflow-hidden">
@@ -118,17 +118,17 @@ export function DailySummary() {
               <CalendarDays className="w-4 h-4 text-primary" />
             </div>
             <div>
-              <p className="text-sm font-bold text-foreground">
+              <p className="text-base font-bold text-foreground">
                 {format(new Date(), 'EEEE, MMMM d')}
               </p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-sm text-muted-foreground">
                 {todayShift.status === 'Completed' ? '✅ Completed' :
                  todayShift.status === 'In Progress' ? '🟢 In Progress' :
                  '⏳ Scheduled'}
               </p>
             </div>
           </div>
-          <span className={`px-3 py-1 text-xs font-semibold rounded-full ${
+          <span className={`px-3 py-1 text-sm font-semibold rounded-full ${
             todayShift.status === 'Completed'
               ? 'bg-secondary/20 text-secondary'
               : todayShift.status === 'In Progress'
@@ -187,7 +187,7 @@ export function DailySummary() {
               </div>
               <div className="flex items-center gap-1.5 text-primary opacity-0 group-hover:opacity-100 transition-opacity">
                 <Navigation className="w-4 h-4" />
-                <span className="text-xs font-semibold">Navigate</span>
+                <span className="text-sm font-semibold">Navigate</span>
               </div>
             </button>
           )}
@@ -213,7 +213,7 @@ export function DailySummary() {
                   <CheckSquare className="w-4 h-4 text-primary" />
                   <span className="text-sm font-semibold text-foreground">Tasks</span>
                 </div>
-                <span className="text-xs font-medium text-muted-foreground">
+                <span className="text-sm font-medium text-muted-foreground">
                   {completedTasks.length}/{shiftTasks.length} done
                 </span>
               </div>
@@ -234,7 +234,7 @@ export function DailySummary() {
                     </div>
                   ))}
                   {pendingTasks.length > 3 && (
-                    <p className="text-xs text-muted-foreground pl-3.5">
+                    <p className="text-sm text-muted-foreground pl-3.5">
                       +{pendingTasks.length - 3} more
                     </p>
                   )}
@@ -246,7 +246,7 @@ export function DailySummary() {
           {/* Notes */}
           {todayShift.notes && (
             <div className="bg-amber-50/50 dark:bg-amber-500/5 border border-amber-200 dark:border-amber-500/20 rounded-xl p-3">
-              <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 mb-1">📝 Notes</p>
+              <p className="text-sm font-semibold text-amber-700 dark:text-amber-400 mb-1">📝 Notes</p>
               <p className="text-sm text-foreground">{todayShift.notes}</p>
             </div>
           )}
@@ -255,17 +255,17 @@ export function DailySummary() {
         {/* Tomorrow preview footer */}
         {tomorrowShift && (
           <div className="border-t border-border px-6 py-3 flex items-center justify-between bg-muted/20">
-            <div className="text-xs text-muted-foreground">
+            <div className="text-sm text-muted-foreground">
               <span className="font-semibold text-foreground">Tomorrow:</span>{' '}
               {formatTime(tomorrowShift.shiftStart)} – {formatTime(tomorrowShift.shiftEnd)}
               {tomorrowShift.project?.name && ` · ${tomorrowShift.project.name}`}
             </div>
             <Link
               href={`${basePath}/schedule`}
-              className="text-primary text-xs font-medium flex items-center gap-0.5 hover:underline"
+              className="text-primary text-sm font-medium flex items-center gap-0.5 hover:underline"
             >
               View
-              <ChevronRight className="w-3 h-3" />
+              <ChevronRight className="w-3.5 h-3.5" />
             </Link>
           </div>
         )}

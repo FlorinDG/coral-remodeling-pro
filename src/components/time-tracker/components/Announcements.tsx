@@ -110,7 +110,7 @@ export function Announcements() {
                     </p>
 
                     {/* Meta */}
-                    <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-3 mt-2 text-sm text-muted-foreground">
                       <span>{announcement.author_name}</span>
                       <span>·</span>
                       <span>{timeAgo}</span>

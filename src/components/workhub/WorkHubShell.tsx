@@ -102,15 +102,15 @@ export default function WorkHubShell({
         >
             {/* ── Top Bar ── */}
             <header className="sticky top-0 z-50 bg-white/80 dark:bg-neutral-950/80 backdrop-blur-xl border-b border-neutral-200 dark:border-white/10">
-                <div className="flex items-center justify-between h-14 px-4 w-full px-4 w-full">
+                <div className="flex items-center justify-between h-14 px-4 w-full">
                     <div className="flex items-center gap-2">
-                        <h1 className="text-sm font-black tracking-tight" style={{ color: brandColor }}>WorkHub</h1>
+                        <h1 className="text-base font-black tracking-tight" style={{ color: brandColor }}>WorkHub</h1>
                         {isSessionLoading ? (
                             <div className="w-16 h-3.5 bg-neutral-200 dark:bg-neutral-800 rounded animate-pulse" />
                         ) : userName ? (
                             <>
-                                <span className="text-xs font-bold text-neutral-350 dark:text-neutral-700">•</span>
-                                <span className="text-xs font-bold text-neutral-550 dark:text-neutral-450 truncate max-w-[140px]" title={userName}>{userName}</span>
+                                <span className="text-sm font-bold text-neutral-350 dark:text-neutral-700">•</span>
+                                <span className="text-sm font-bold text-neutral-550 dark:text-neutral-450 truncate max-w-[140px]" title={userName}>{userName}</span>
                             </>
                         ) : null}
                     </div>
@@ -121,10 +121,10 @@ export default function WorkHubShell({
                         {/* Desktop: User avatar */}
                         {firstName && (
                             <div className="hidden md:flex items-center gap-2 pl-2 border-l border-neutral-200 dark:border-white/10 ml-2">
-                                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center text-white text-xs font-bold">
+                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center text-white text-sm font-bold">
                                     {firstName[0]}
                                 </div>
-                                <span className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">{firstName}</span>
+                                <span className="text-sm font-semibold text-neutral-600 dark:text-neutral-400">{firstName}</span>
                             </div>
                         )}
                     </div>
@@ -132,12 +132,12 @@ export default function WorkHubShell({
 
                 {/* Desktop: Horizontal tab navigation */}
                 <nav className="hidden md:block border-t border-neutral-100 dark:border-white/5">
-                    <div className="flex items-center gap-1 px-4 w-full px-4 flex-wrap justify-center">
+                    <div className="flex items-center gap-1 px-4 w-full flex-wrap justify-center">
                         {[...filteredPrimaryItems, ...filteredSecondaryItems].map(item => (
                             <Link
                                 key={item.id}
                                 href={item.href}
-                                className={`flex items-center gap-2 px-3 py-2.5 text-xs font-bold tracking-wide whitespace-nowrap transition-all border-b-2 ${
+                                className={`flex items-center gap-2 px-3 py-2.5 text-sm font-semibold tracking-wide whitespace-nowrap transition-all border-b-2 ${
                                     isActive(item.href)
                                         ? 'border-[var(--brand-color)] text-[var(--brand-color)]'
                                         : 'border-transparent text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300'

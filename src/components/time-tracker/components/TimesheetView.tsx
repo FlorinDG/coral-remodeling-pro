@@ -33,23 +33,23 @@ import { format, startOfMonth, endOfMonth, parseISO, differenceInMinutes } from 
 
 interface TimesheetEntry {
   id: string;
-  clock_in_time: string;
-  clock_out_time: string | null;
-  task_description: string | null;
-  project_id: string | null;
-  project_name: string | null;
+  clockInTime: string;
+  clockOutTime: string | null;
+  taskDescription: string | null;
+  projectId: string | null;
+  projectName: string | null;
 }
 
 interface ConsolidatedEntry {
   date: string;
   dateFormatted: string;
-  project_id: string | null;
-  project_name: string | null;
-  first_clock_in: string;
-  last_clock_out: string | null;
-  total_work_minutes: number;
-  break_minutes: number;
-  has_in_progress: boolean;
+  projectId: string | null;
+  projectName: string | null;
+  firstClockIn: string;
+  lastClockOut: string | null;
+  totalWorkMinutes: number;
+  breakMinutes: number;
+  hasInProgress: boolean;
 }
 
 interface TimesheetViewProps {
@@ -105,14 +105,14 @@ export function TimesheetView({ userId }: TimesheetViewProps) {
   const consolidatedEntries = useMemo(() => {
     const grouped = new Map<string, {
       entries: TimesheetEntry[];
-      project_id: string | null;
-      project_name: string | null;
+      projectId: string | null;
+      projectName: string | null;
     }>();
 
     // Group entries by date and project
     entries.forEach(entry => {
-      const date = format(parseISO(entry.clock_in_time), 'yyyy-MM-dd');
-      const projectKey = entry.project_id || 'no-project';
+      const date = format(parseISO(entry.clockInTime), 'yyyy-MM-dd');
+      const projectKey = entry.projectId || 'no-project';
       const key = `${date}|${projectKey}`;
 
       const existing = grouped.get(key);
@@ -121,8 +121,8 @@ export function TimesheetView({ userId }: TimesheetViewProps) {
       } else {
         grouped.set(key, {
           entries: [entry],
-          project_id: entry.project_id,
-          project_name: entry.project_name,
+          projectId: entry.projectId,
+          projectName: entry.projectName,
         });
       }
     });
@@ -131,22 +131,22 @@ export function TimesheetView({ userId }: TimesheetViewProps) {
     const result: ConsolidatedEntry[] = [];
     
     grouped.forEach((group) => {
-      // Sort entries by clock_in_time
+      // Sort entries by clockInTime
       const sortedEntries = group.entries.sort((a, b) => 
-        new Date(a.clock_in_time).getTime() - new Date(b.clock_in_time).getTime()
+        new Date(a.clockInTime).getTime() - new Date(b.clockInTime).getTime()
       );
 
       const firstEntry = sortedEntries[0];
       const lastEntry = sortedEntries[sortedEntries.length - 1];
-      const date = format(parseISO(firstEntry.clock_in_time), 'yyyy-MM-dd');
+      const date = format(parseISO(firstEntry.clockInTime), 'yyyy-MM-dd');
       
       // Calculate total work minutes
       let totalWorkMinutes = 0;
       sortedEntries.forEach(entry => {
-        if (entry.clock_out_time) {
+        if (entry.clockOutTime) {
           totalWorkMinutes += differenceInMinutes(
-            parseISO(entry.clock_out_time), 
-            parseISO(entry.clock_in_time)
+            parseISO(entry.clockOutTime), 
+            parseISO(entry.clockInTime)
           );
         }
       });
@@ -156,10 +156,10 @@ export function TimesheetView({ userId }: TimesheetViewProps) {
       for (let i = 1; i < sortedEntries.length; i++) {
         const prevEntry = sortedEntries[i - 1];
         const currEntry = sortedEntries[i];
-        if (prevEntry.clock_out_time) {
+        if (prevEntry.clockOutTime) {
           const gap = differenceInMinutes(
-            parseISO(currEntry.clock_in_time),
-            parseISO(prevEntry.clock_out_time)
+            parseISO(currEntry.clockInTime),
+            parseISO(prevEntry.clockOutTime)
           );
           if (gap > 0) {
             breakMinutes += gap;
@@ -167,20 +167,20 @@ export function TimesheetView({ userId }: TimesheetViewProps) {
         }
       }
 
-      const hasInProgress = sortedEntries.some(e => !e.clock_out_time);
+      const hasInProgress = sortedEntries.some(e => !e.clockOutTime);
 
       result.push({
         date,
         dateFormatted: format(parseISO(date), 'dd/MM/yyyy'),
-        project_id: group.project_id,
-        project_name: group.project_name,
-        first_clock_in: format(parseISO(firstEntry.clock_in_time), 'HH:mm'),
-        last_clock_out: lastEntry.clock_out_time 
-          ? format(parseISO(lastEntry.clock_out_time), 'HH:mm') 
+        projectId: group.projectId,
+        projectName: group.projectName,
+        firstClockIn: format(parseISO(firstEntry.clockInTime), 'HH:mm'),
+        lastClockOut: lastEntry.clockOutTime 
+          ? format(parseISO(lastEntry.clockOutTime), 'HH:mm') 
           : null,
-        total_work_minutes: totalWorkMinutes,
-        break_minutes: breakMinutes,
-        has_in_progress: hasInProgress,
+        totalWorkMinutes,
+        breakMinutes,
+        hasInProgress,
       });
     });
 
@@ -197,8 +197,8 @@ export function TimesheetView({ userId }: TimesheetViewProps) {
   const totalHours = useMemo(() => {
     let totalMins = 0;
     entries.forEach(entry => {
-      if (entry.clock_out_time) {
-        totalMins += differenceInMinutes(parseISO(entry.clock_out_time), parseISO(entry.clock_in_time));
+      if (entry.clockOutTime) {
+        totalMins += differenceInMinutes(parseISO(entry.clockOutTime), parseISO(entry.clockInTime));
       }
     });
     return (totalMins / 60).toFixed(1);
@@ -208,11 +208,11 @@ export function TimesheetView({ userId }: TimesheetViewProps) {
     const headers = ['Date', 'Clock In', 'Clock Out', 'Break', 'Total Hours', 'Project'];
     const rows = consolidatedEntries.map(entry => [
       entry.dateFormatted,
-      entry.first_clock_in,
-      entry.last_clock_out || 'In progress',
-      formatMinutes(entry.break_minutes),
-      entry.has_in_progress ? 'In progress' : formatMinutes(entry.total_work_minutes),
-      entry.project_name || '-',
+      entry.firstClockIn,
+      entry.lastClockOut || 'In progress',
+      formatMinutes(entry.breakMinutes),
+      entry.hasInProgress ? 'In progress' : formatMinutes(entry.totalWorkMinutes),
+      entry.projectName || '-',
     ]);
 
     const worksheet = XLSX.utils.aoa_to_sheet([headers, ...rows]);
@@ -239,11 +239,11 @@ export function TimesheetView({ userId }: TimesheetViewProps) {
     
     const tableData = consolidatedEntries.map(entry => [
       entry.dateFormatted,
-      entry.first_clock_in,
-      entry.last_clock_out || 'In progress',
-      formatMinutes(entry.break_minutes),
-      entry.has_in_progress ? 'In progress' : formatMinutes(entry.total_work_minutes),
-      entry.project_name || '-',
+      entry.firstClockIn,
+      entry.lastClockOut || 'In progress',
+      formatMinutes(entry.breakMinutes),
+      entry.hasInProgress ? 'In progress' : formatMinutes(entry.totalWorkMinutes),
+      entry.projectName || '-',
     ]);
 
     autoTable(doc, {
@@ -325,24 +325,24 @@ export function TimesheetView({ userId }: TimesheetViewProps) {
                 </TableHeader>
                 <TableBody>
                   {consolidatedEntries.map((entry, idx) => (
-                    <TableRow key={`${entry.date}-${entry.project_id || 'none'}-${idx}`}>
+                    <TableRow key={`${entry.date}-${entry.projectId || 'none'}-${idx}`}>
                       <TableCell className="font-medium">
                         {entry.dateFormatted}
                       </TableCell>
-                      <TableCell>{entry.first_clock_in}</TableCell>
+                      <TableCell>{entry.firstClockIn}</TableCell>
                       <TableCell>
-                        {entry.last_clock_out || <span className="text-primary">In progress</span>}
+                        {entry.lastClockOut || <span className="text-primary">In progress</span>}
                       </TableCell>
-                      <TableCell>{formatMinutes(entry.break_minutes)}</TableCell>
+                      <TableCell>{formatMinutes(entry.breakMinutes)}</TableCell>
                       <TableCell>
-                        {entry.has_in_progress ? (
+                        {entry.hasInProgress ? (
                           <span className="text-primary">In progress</span>
                         ) : (
-                          formatMinutes(entry.total_work_minutes)
+                          formatMinutes(entry.totalWorkMinutes)
                         )}
                       </TableCell>
                       <TableCell>
-                        {entry.project_name || <span className="text-muted-foreground">-</span>}
+                        {entry.projectName || <span className="text-muted-foreground">-</span>}
                       </TableCell>
                     </TableRow>
                   ))}

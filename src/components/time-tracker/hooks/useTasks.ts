@@ -106,17 +106,17 @@ export function useTasks(projectId?: string | null) {
         fetchTasks();
     }, [fetchTasks]);
 
-    const createTask = useCallback(async (data: Partial<Task>) => {
+    const createTask = useCallback(async (data: Partial<Task> & { [key: string]: any }) => {
         try {
             const page = await createTaskPage({
                 title: data.title || 'Untitled Task',
                 priority: data.priority || undefined,
-                projectId: data.projectId || undefined,
+                projectId: data.projectId || data['project_id'] || undefined,
             });
 
             const newTask: Task = {
                 id: page.id,
-                projectId: data.projectId || null,
+                projectId: data.projectId || data['project_id'] || null,
                 title: data.title || 'Untitled Task',
                 description: null,
                 status: 'opt-todo',

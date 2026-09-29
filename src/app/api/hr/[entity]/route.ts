@@ -656,6 +656,13 @@ export async function PATCH(
             let auditAction = 'update';
             if (data.approvalStatus && data.approvalStatus !== existingEntry.approvalStatus) {
                 auditAction = data.approvalStatus === 'approved' ? 'approve' : 'unapprove';
+                if (data.approvalStatus === 'approved') {
+                    data.approvedBy = ctx.userId;
+                    data.approvedAt = new Date();
+                } else {
+                    data.approvedBy = null;
+                    data.approvedAt = null;
+                }
             } else if (!existingEntry.clockOutTime && data.clockOutTime) {
                 auditAction = 'forceClockOut';
             }

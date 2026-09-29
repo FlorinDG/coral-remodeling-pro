@@ -128,12 +128,10 @@ export function TimesheetEntryDetail({ entry, onUpdate, unlockTokenValid }: Time
                                     {isRunning ? t('forceClockOut', { fallback: 'Klok stopzetten' }) : t('edit', { fallback: 'Bewerken' })}
                                 </Button>
                                 
-                                {entry.shiftId && (
-                                    <Button size="sm" variant="secondary" className="w-full text-xs" onClick={() => window.open(`/api/hr/werkbon?shiftId=${entry.shiftId}`, '_blank')}>
-                                        <FileText className="w-3 h-3 mr-1" />
-                                        {t('viewWorkOrder', { fallback: 'Bekijk werkbon' })}
-                                    </Button>
-                                )}
+                                <Button size="sm" variant="secondary" className="w-full text-xs" onClick={() => window.open(`/${locale}/admin/hr/timesheets/${entry.id}`, '_blank')}>
+                                    <FileText className="w-3 h-3 mr-1" />
+                                    {t('viewWorkOrder', { fallback: 'Bekijk werkbon' })}
+                                </Button>
                             </div>
                         </>
                     )}

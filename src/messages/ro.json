@@ -991,6 +991,8 @@
       "approve": "Aprobă",
       "deny": "Respinge",
       "viewTimesheet": "Vezi bonul de lucru",
+      "hideDetail": "Ascunde detaliile",
+      "cannotApproveRunning": "Tura în desfășurare nu poate fi aprobată",
       "bulkApprove": "Aprobă selecția",
       "bulkDeny": "Respinge selecția",
       "bulkConfirm": "Aprobați {count} înregistrări ({hours})?",

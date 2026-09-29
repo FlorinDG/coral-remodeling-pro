@@ -5,7 +5,8 @@ import { useParams } from 'next/navigation';
 import { hrList } from '@/lib/hr-api';
 import { Loader2, ArrowLeft, Printer, Download, Clock, Calendar, User, ClipboardList } from 'lucide-react';
 import { format } from 'date-fns';
-import { nl } from 'date-fns/locale';
+import { nl, fr, enUS } from 'date-fns/locale';
+import { useLocale } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Link } from '@/i18n/routing';
 
@@ -48,13 +49,18 @@ export default function WerkbonDetailPage() {
     const [entry, setEntry] = useState<ClockEntry | null>(null);
     const [loading, setLoading] = useState(true);
 
+    const locale = useLocale();
+    const dateFnsLocale = locale === 'nl' ? nl : locale === 'fr' ? fr : enUS;
+
     useEffect(() => {
         const fetchData = async () => {
             try {
                 // In a real app, we'd have a get-by-id endpoint, but here we'll filter the list
-                const [entriesData, employeesData] = await Promise.all([
+                const [entriesData, employeesData, projectsData, shiftsData] = await Promise.all([
                     hrList<ClockEntry>('clock-entries'),
-                    hrList<Employee>('employees')
+                    hrList<Employee>('employees'),
+                    hrList<ErpProject>('erp-projects').catch(() => []),
+                    hrList<any>('scheduled-shifts').catch(() => [])
                 ]);
 
                 const rawEntry = entriesData.find(e => e.id === id);
@@ -62,11 +68,13 @@ export default function WerkbonDetailPage() {
                     // Match by Employee.userId (correct) or Employee.id (legacy pre-backfill rows)
                     const employee = employeesData.find((e) => e.userId === rawEntry.userId)
                         || employeesData.find((e) => e.id === rawEntry.userId);
-                    // Find project if linked via shift
-                    // For now we'll assume it's just the raw entry
+                    const shift = (rawEntry as any).shiftId ? shiftsData.find((s: any) => s.id === (rawEntry as any).shiftId) : null;
+                    const effectiveProjectId = (rawEntry as any).projectId || shift?.projectId;
+                    const project = effectiveProjectId ? projectsData.find(p => p.id === effectiveProjectId) : null;
                     setEntry({
                         ...rawEntry,
                         user: employee,
+                        project: project || null,
                         photos: Array.isArray(rawEntry.photos) ? rawEntry.photos : []
                     });
                 }
@@ -119,7 +127,7 @@ export default function WerkbonDetailPage() {
                     <Button variant="outline" size="sm" className="gap-2" onClick={() => window.print()}>
                         <Printer className="w-4 h-4" /> Print
                     </Button>
-                    <Button variant="default" size="sm" className="gap-2 bg-orange-500 hover:bg-orange-600">
+                    <Button variant="default" size="sm" className="gap-2 bg-orange-500 hover:bg-orange-600" onClick={() => window.print()}>
                         <Download className="w-4 h-4" /> Export PDF
                     </Button>
                 </div>
@@ -135,7 +143,7 @@ export default function WerkbonDetailPage() {
                     </div>
                     <div className="text-right">
                         <p className="text-sm font-bold text-neutral-900 dark:text-white">ID: {entry.id.slice(-8).toUpperCase()}</p>
-                        <p className="text-xs text-neutral-500">{format(new Date(), 'dd MMMM yyyy HH:mm', { locale: nl })}</p>
+                        <p className="text-xs text-neutral-500">Afgedrukt op: {format(new Date(), 'dd MMMM yyyy HH:mm', { locale: dateFnsLocale })}</p>
                     </div>
                 </header>
 
@@ -158,7 +166,7 @@ export default function WerkbonDetailPage() {
                         <div className="space-y-2">
                             <div className="flex items-center gap-2 text-sm">
                                 <Calendar className="w-3.5 h-3.5 text-neutral-400" />
-                                <span className="font-bold">{format(start, 'eeee dd MMMM yyyy', { locale: nl })}</span>
+                                <span className="font-bold">{format(start, 'eeee dd MMMM yyyy', { locale: dateFnsLocale })}</span>
                             </div>
                             <div className="flex items-center gap-2 text-xs text-neutral-600 dark:text-neutral-400">
                                 <Clock className="w-3.5 h-3.5 text-neutral-400" />
@@ -217,12 +225,15 @@ export default function WerkbonDetailPage() {
                     <div className="space-y-8">
                         <p className="text-[10px] font-bold text-neutral-400 uppercase">Handtekening Medewerker</p>
                         <div className="h-16 border-b border-neutral-300"></div>
-                        <p className="text-[10px] text-neutral-400">{entry.user?.firstName} {entry.user?.lastName}</p>
+                        <div className="flex justify-between text-[10px] text-neutral-400">
+                            <span>{entry.user ? `${entry.user.firstName} ${entry.user.lastName}` : ''}</span>
+                            <span>Datum: ____________________</span>
+                        </div>
                     </div>
                     <div className="space-y-8 text-right">
                         <p className="text-[10px] font-bold text-neutral-400 uppercase">Handtekening Opdrachtgever</p>
                         <div className="h-16 border-b border-neutral-300"></div>
-                        <p className="text-[10px] text-neutral-400">Gevalideerd op {format(new Date(), 'dd/MM/yyyy')}</p>
+                        <p className="text-[10px] text-neutral-400">Datum: ____________________</p>
                     </div>
                 </div>
             </div>

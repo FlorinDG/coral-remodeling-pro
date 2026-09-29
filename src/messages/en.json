@@ -991,6 +991,8 @@
       "approve": "Approve",
       "deny": "Deny",
       "viewTimesheet": "View work order",
+      "hideDetail": "Hide details",
+      "cannotApproveRunning": "Running shift cannot be approved",
       "bulkApprove": "Approve selection",
       "bulkDeny": "Deny selection",
       "bulkConfirm": "Approve {count} entries ({hours})?",

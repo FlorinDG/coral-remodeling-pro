@@ -990,6 +990,8 @@
       "approve": "Approuver",
       "deny": "Refuser",
       "viewTimesheet": "Voir le bon de travail",
+      "hideDetail": "Masquer les détails",
+      "cannotApproveRunning": "Un quart en cours ne peut pas être approuvé",
       "bulkApprove": "Approuver la sélection",
       "bulkDeny": "Refuser la sélection",
       "bulkConfirm": "Approuver {count} enregistrements ({hours}) ?",

@@ -120,9 +120,9 @@ function TimesheetsContent() {
             }
             setSelectedEntries(new Set());
             await fetchData();
-        } catch (err) {
-            console.error(err);
-            alert(t('bulkActionFailed'));
+        } catch (err: any) {
+            console.error('Bulk action error:', err);
+            alert(err.message ? `${t('bulkActionFailed')}: ${err.message}` : t('bulkActionFailed'));
         } finally {
             setLoading(false);
         }
@@ -186,10 +186,11 @@ function TimesheetsContent() {
 
     const handleApproval = async (id: string, status: 'approved' | 'denied') => {
         try {
-            await hrUpdate('clock-entries', id, { approvalStatus: status });
-            setEntries(prev => prev.map(e => e.id === id ? { ...e, approvalStatus: status } : e));
-        } catch (err) {
+            const updated = await hrUpdate('clock-entries', id, { approvalStatus: status });
+            setEntries(prev => prev.map(e => e.id === id ? { ...e, ...updated, approvalStatus: status } : e));
+        } catch (err: any) {
             console.error('Failed to update status:', err);
+            alert(err.message || 'Failed to update status');
         }
     };
 
@@ -265,17 +266,38 @@ function TimesheetsContent() {
                         </span>
                     )}
                 </td>
-                <td className="px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        {entry.approvalStatus !== 'approved' && entry.clockOutTime && (
-                            <Button size="sm" variant="ghost" onClick={() => handleApproval(entry.id, 'approved')} className="h-8 text-green-600 hover:text-green-700 hover:bg-green-50">{t('approve')}</Button>
+                <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex items-center justify-end gap-2">
+                        {entry.approvalStatus !== 'approved' && (
+                            <Button 
+                                size="sm" 
+                                variant="outline" 
+                                disabled={!entry.clockOutTime}
+                                title={!entry.clockOutTime ? t('cannotApproveRunning', { fallback: 'Lopende dienst kan niet worden goedgekeurd' }) : undefined}
+                                onClick={() => handleApproval(entry.id, 'approved')} 
+                                className="h-8 border-green-200 text-green-600 hover:text-green-700 hover:bg-green-50 disabled:opacity-50"
+                            >
+                                {t('approve')}
+                            </Button>
                         )}
                         {entry.approvalStatus !== 'denied' && (
-                            <Button size="sm" variant="ghost" onClick={() => handleApproval(entry.id, 'denied')} className="h-8 text-red-600 hover:text-red-700 hover:bg-red-50">{t('deny')}</Button>
+                            <Button 
+                                size="sm" 
+                                variant="outline" 
+                                onClick={() => handleApproval(entry.id, 'denied')} 
+                                className="h-8 border-red-200 text-red-600 hover:text-red-700 hover:bg-red-50"
+                            >
+                                {t('deny')}
+                            </Button>
                         )}
-                        <Button variant="outline" size="sm" className="h-8 gap-1.5 text-[10px] font-bold uppercase tracking-wider ml-2" onClick={(e) => { e.stopPropagation(); setExpandedRowId(expandedRowId === entry.id ? null : entry.id); }}>
+                        <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="h-8 gap-1.5 text-[10px] font-bold uppercase tracking-wider ml-2" 
+                            onClick={() => setExpandedRowId(expandedRowId === entry.id ? null : entry.id)}
+                        >
                             <FileText className="w-3.5 h-3.5" />
-                            {expandedRowId === entry.id ? 'Hide Detail' : t('viewTimesheet')}
+                            {expandedRowId === entry.id ? t('hideDetail', { fallback: 'Verberg details' }) : t('viewTimesheet')}
                         </Button>
                     </div>
                 </td>

@@ -505,12 +505,12 @@ export default function Schedule() {
                           selectedShift.userId,
                           { 
                             date: selectedShift.shiftDate, 
-                            clock_in: manualClockIn, 
-                            clock_out: manualClockOut,
-                            had_break: hadBreak,
-                            project_id: selectedProjectId || null,
+                            clockIn: manualClockIn, 
+                            clockOut: manualClockOut,
+                            hadBreak: hadBreak,
+                            projectId: selectedProjectId || null,
                             notes: notes || null,
-                            files_count: selectedFiles.length
+                            filesCount: selectedFiles.length
                           },
                           notes || 'Manual hours submitted from schedule'
                         );

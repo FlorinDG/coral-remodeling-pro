@@ -44,7 +44,7 @@ export function Announcements() {
       setExpandedId(null);
     } else {
       setExpandedId(announcement.id);
-      if (!announcement.is_read) {
+      if (!announcement.isRead) {
         markAsRead(announcement.id);
       }
     }
@@ -66,7 +66,7 @@ export function Announcements() {
       <div className="space-y-2">
         {announcements.slice(0, 5).map(announcement => {
           const isExpanded = expandedId === announcement.id;
-          const timeAgo = formatDistanceToNow(parseISO(announcement.created_at), { addSuffix: true });
+          const timeAgo = formatDistanceToNow(parseISO(announcement.createdAt), { addSuffix: true });
 
           return (
             <button
@@ -75,7 +75,7 @@ export function Announcements() {
               className={`
                 w-full text-left bg-card border rounded-xl transition-all duration-200
                 hover:shadow-sm hover:border-primary/30
-                ${!announcement.is_read
+                ${!announcement.isRead
                   ? 'border-primary/30 bg-primary/[0.02]'
                   : 'border-border'
                 }
@@ -85,7 +85,7 @@ export function Announcements() {
                 <div className="flex items-start gap-3">
                   {/* Unread indicator */}
                   <div className="mt-1 flex-shrink-0">
-                    {!announcement.is_read ? (
+                    {!announcement.isRead ? (
                       <div className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse" />
                     ) : (
                       <div className="w-2.5 h-2.5 rounded-full bg-muted" />
@@ -97,7 +97,7 @@ export function Announcements() {
                     <div className="flex items-center gap-2 mb-1">
                       <PriorityIcon priority={announcement.priority} />
                       <h3 className={`text-sm font-semibold truncate ${
-                        !announcement.is_read ? 'text-foreground' : 'text-muted-foreground'
+                        !announcement.isRead ? 'text-foreground' : 'text-muted-foreground'
                       }`}>
                         {announcement.title}
                       </h3>
@@ -111,10 +111,10 @@ export function Announcements() {
 
                     {/* Meta */}
                     <div className="flex items-center gap-3 mt-2 text-sm text-muted-foreground">
-                      <span>{announcement.author_name}</span>
+                      <span>{announcement.authorName}</span>
                       <span>·</span>
                       <span>{timeAgo}</span>
-                      {announcement.is_read && (
+                      {announcement.isRead && (
                         <>
                           <span>·</span>
                           <span className="flex items-center gap-0.5 text-secondary">

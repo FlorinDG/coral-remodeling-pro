@@ -1,5 +1,13 @@
 # CORAL — CODER DIRECTIVE — `HR-TS-6` · the edit pane shows every time two hours early — Planner 2026-09-29
 
+```
+BLAST RADIUS — only these files may change in this pass.
+Anything else: STOP AND REPORT. Do not change it, even if it is wrong.
+A better idea is a report, not a commit.
+No branch move, no promotion, no deploy, no migration run.
+```
+
+
 🔴 **URGENT, SMALL, AND IT SHIPS ALONE.** Florin is clocking hours today and correcting them through this pane.
 
 **Confirmed from the `CLEAN-12` census, not inferred.** The row the `CORE-3` report called a *failed* correction — audit `07:51:00.000Z` vs database `07:51:01.248Z` — **is the same instant, 1.2 seconds apart.** Belgium is **CEST (UTC+2)** until late October, so `07:51Z` **is** the 09:51 Florin typed. **The correction was a no-op, and only that is why no damage was done.**

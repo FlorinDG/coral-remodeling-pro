@@ -607,4 +607,39 @@ A project's file library is **derived** — a query over the attachments of the 
 
 ---
 
+
+## 5e · 🔴 A PRISMA SCHEMA CHANGE BREAKS PRODUCTION AT DEPLOY TIME, NOT AT MIGRATION TIME
+**`INC-2`, 2026-09-29.** `ClockEntry.notes` shipped in `schema.prisma` with its migration correctly written but unapplied. `postinstall` runs `prisma generate`, so the client selected a column the database did not have and **every `clockEntry.findMany()` threw P2022** — the workhub emptied, the clock button hung, and a crew could not clock in for a working day.
+
+**The order is: apply the migration to the database FIRST, deploy the code carrying the schema change SECOND.** For an additive nullable column the old code ignores the extra column, so that order has no broken window. **The reverse order always does.**
+
+🔴 **A DESTRUCTIVE migration inverts this.** Dropping a column or table goes **CODE FIRST, database second** — the table may only be dropped once no *deployed* code references it. **Additive: database first. Destructive: code first.** Getting the direction backwards breaks production in both cases.
+
+🛑 **Never ship a `schema.prisma` change and defer its migration.** Florin still runs every migration; the coder writes it, hands it over, and **waits for confirmation before the schema commit is promoted.**
+
+🔴 **The Planner's "migration written, NOT run" instruction caused this.** It protected the data and said nothing about the deploy. **"Additive, nullable, backfill, verify, tighten" is a DATA-safety rule. This is the DEPLOY-safety rule, and it was missing.**
+
+---
+
+
+## 5f · 🔴 EVERY DIRECTIVE DECLARES ITS BLAST RADIUS
+**Florin, 2026-09-29:** *"wherever he has a chance to hallucinate, he'll diverge happily."*
+
+**Divergence is not carelessness — it is the coder choosing a better-looking answer in a space the directive left open.** The `useTimer` singleton, the unrequested promotion to `main`, and the instance-level `SearchableSelect` fix were all confident, plausible, and outside what was asked. 🔴 **Each landed inside a commit whose message described something else, which is what makes them expensive to find.**
+
+### Every directive from now carries, at the top:
+```
+BLAST RADIUS — files that may change in this pass:
+  <explicit list>
+Anything else: STOP AND REPORT. Do not change it, even if it is wrong.
+```
+- **A file not on the list is not touched**, however obvious the improvement.
+- 🔴 **A better idea is a REPORT, not a commit.** *"If the coder believes the spec is wrong, say so and stop."*
+- **Verification must be able to catch the divergence, not only confirm the feature.** A step that passes whether or not the coder rewrote a hook is not a verification.
+- 🛑 **No promotion, no branch move, no deploy.** Florin's, always.
+
+🟢 **The Planner owns this.** **A directive that leaves a decision unstated has delegated it**, and the coder will answer it. **State the decision, or expect it to be made.**
+
+---
+
 *This file is a living document. Update the premises table after each validated change.*

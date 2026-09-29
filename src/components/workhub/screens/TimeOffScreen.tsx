@@ -247,8 +247,8 @@ export function TimeOffScreen() {
       )}
 
       {loading && requests.length === 0 ? (
-        <div className="space-y-px animate-pulse">
-          {[0, 1, 2].map(i => <div key={i} className="h-20 bg-muted/60" />)}
+        <div className="space-y-3 px-3 animate-pulse">
+          {[0, 1, 2].map(i => <div key={i} className="h-20 rounded-2xl bg-muted/60" />)}
         </div>
       ) : !error && runs.length === 0 ? (
         <div className="flex flex-col items-center text-center px-8 py-16 text-muted-foreground">
@@ -256,10 +256,10 @@ export function TimeOffScreen() {
           <p className="text-base">{t('timeOff.empty')}</p>
         </div>
       ) : (
-        <ul className="border-t border-border">
+        <ul className="space-y-3 px-3">
           {runs.map(run => (
-            <li key={run.ids[0]} className="relative flex items-center gap-3 pl-5 pr-4 py-4 border-b border-border bg-background">
-              <span className={`absolute left-0 top-0 bottom-0 w-1.5 ${STATUS_RAIL[run.status]}`} aria-hidden />
+            <li key={run.ids[0]} className="relative overflow-hidden flex items-center gap-3 pl-6 pr-4 py-4 rounded-2xl border border-border bg-card shadow-sm">
+              <span className={`absolute left-0 top-0 bottom-0 w-2 ${STATUS_RAIL[run.status]}`} aria-hidden />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className={`text-base font-semibold ${run.status === 'cancelled' ? 'text-muted-foreground line-through' : 'text-foreground'}`}>

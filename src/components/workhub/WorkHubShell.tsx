@@ -103,6 +103,11 @@ export default function WorkHubShell({
             className="min-h-screen w-full overflow-x-clip bg-neutral-50 dark:bg-black text-neutral-900 dark:text-white flex flex-col font-content"
             style={{ '--brand-color': brandColor } as React.CSSProperties}
         >
+            {/* WH-2 (Florin): the crew app reads at 1.2rem. Every size in this UI is rem-based, so the
+                root scale moves text, spacing, icons and touch targets together. Server-rendered with
+                the shell, so there is no flash; scoped to the WorkHub — the ERP keeps 16px. */}
+            <style dangerouslySetInnerHTML={{ __html: 'html{font-size:120%}' }} />
+
             {/* ── Top Bar ── */}
             <header className="sticky top-0 z-50 bg-white/80 dark:bg-neutral-950/80 backdrop-blur-xl border-b border-neutral-200 dark:border-white/10">
                 <div className="flex items-center justify-between h-14 px-4 w-full">

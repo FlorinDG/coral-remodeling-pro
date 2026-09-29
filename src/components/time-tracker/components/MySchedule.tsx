@@ -69,18 +69,20 @@ function ShiftCard({ shift, isNextShift, activeEntry, elapsedTime, now, onClick 
 
   return (
     <Card 
-      className={`relative overflow-hidden pl-1 rounded-none border-x-0 border-t-0 border-b md:rounded-xl md:border-x md:border-t cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors ${isClockedIn ? 'ring-2 ring-[var(--tawny)]' : ''} ${isNextShift ? 'border-primary' : ''} ${isPast ? 'opacity-60' : ''}`}
+      // WH-2: a card per shift (Florin: a border-separated list is hard to read). Past shifts stay
+      // legible — the grey rail says "past"; fading the whole card made the rail itself disappear.
+      className={`relative overflow-hidden pl-3 rounded-2xl border bg-card shadow-sm cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors ${isClockedIn ? 'ring-2 ring-[var(--tawny)]' : ''} ${isNextShift ? 'border-primary' : ''} ${isPast ? 'opacity-80' : ''}`}
       onClick={onClick}
     >
       {/* 3-4px vertical rule state bar on the left edge (WH-UI-1 §9.3) */}
       <div 
         aria-hidden="true"
-        className={`absolute left-0 top-0 bottom-0 w-1 ${
+        className={`absolute left-0 top-0 bottom-0 w-2 ${
           temporalState === 'current'
             ? 'bg-[var(--tawny)]'
             : temporalState === 'upcoming'
               ? 'bg-[var(--persian-green)]'
-              : 'bg-neutral-300 dark:bg-neutral-700'
+              : 'bg-neutral-400 dark:bg-neutral-600'
         }`}
       />
       <CardContent className="p-4">
@@ -426,7 +428,7 @@ export function MySchedule() {
             {t('schedule.noShiftsScheduledPeriod')}
           </p>
         ) : (
-          <div className="space-y-0 md:space-y-3 p-0 md:p-4">
+          <div className="space-y-3 px-3 py-3 md:p-4">
             {filteredShifts.map((shift, index) => (
               <div 
                 key={shift.id} 

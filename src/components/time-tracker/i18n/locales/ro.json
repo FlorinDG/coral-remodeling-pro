@@ -163,7 +163,13 @@
     "shiftCount_one": "{{count}} tură",
     "shiftCount_few": "{{count}} ture",
     "shiftCount_other": "{{count}} de ture",
-    "rangeHint": "săptămâna trecută până la 2 săptămâni înainte"
+    "rangeHint": "săptămâna trecută până la 2 săptămâni înainte",
+    "call": "Sună",
+    "attachments": "Atașamente",
+    "startTask": "Începe",
+    "markDone": "Gata",
+    "taskFallback": "Sarcină",
+    "taskUpdateFailed": "Sarcina nu a putut fi actualizată"
   },
   "timeOff": {
     "title": "Concediu",

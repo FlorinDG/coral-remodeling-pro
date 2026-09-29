@@ -109,6 +109,28 @@ export const PLAN_USER_LIMITS: Record<string, number> = {
     CUSTOM:     Infinity,
 };
 
+// ── HR authority (Gate 2) ───────────────────────────────────────────
+/**
+ * Roles with tenant-wide HR reach and the right to approve hours and leave.
+ * Florin, 2026-09-30: tenant admin · director · HR — plus SUPERADMIN, in every tenant.
+ * The ONE definition: `app/api/hr/lib/actor-reach.ts` and the data layer both ask this.
+ */
+const TENANT_HR_ROLES: ReadonlySet<string> = new Set<string>([
+    ROLES.SUPERADMIN,                 // platform — every tenant, including while impersonating
+    ROLES.APP_MANAGER,                // tenant admin
+    ROLES.TENANT_FREE,
+    ROLES.TENANT_PRO_OWNER,
+    ROLES.TENANT_ENTERPRISE_OWNER,
+    'TENANT_ADMIN',                   // legacy spelling of APP_MANAGER still present in User.role
+    'TENANT_OWNER',                   // legacy owner spelling
+    ROLES.TENANT_ENTERPRISE_MANAGER,  // director
+    ROLES.HR_OFFICER,                 // HR
+]);
+
+export function isTenantHrRole(role?: string | null): boolean {
+    return !!role && TENANT_HR_ROLES.has(role);
+}
+
 // ── Financial export authorization (LOCK-6) ─────────────────────────
 
 export function isAccountantRole(role?: string | null): boolean {

@@ -11,26 +11,8 @@
  * Client-side approval of hours is a separate door: the client's signature on the werkbon
  * (WB-C) approves and freezes. It is a PORTAL actor, not a role, and is not decided here.
  */
-import { ROLES } from '@/lib/roles';
+import { isTenantHrRole } from '@/lib/roles';
 import { getAccessibleUserIds } from './team-scoping';
-
-/** tenant admin · director · HR — the only roles with tenant-wide HR reach and the right to approve. */
-const TENANT_HR_ROLES: ReadonlySet<string> = new Set<string>([
-    // platform — Florin 2026-09-30: superadmin keeps HR reach and approval in every tenant,
-    // including while impersonating (chosen over "home tenant only"; the audit row records the actor).
-    ROLES.SUPERADMIN,
-    // tenant admin
-    ROLES.APP_MANAGER,
-    ROLES.TENANT_FREE,
-    ROLES.TENANT_PRO_OWNER,
-    ROLES.TENANT_ENTERPRISE_OWNER,
-    'TENANT_ADMIN',   // legacy spelling of APP_MANAGER still read by the old checks (roles.ts:19)
-    'TENANT_OWNER',   // legacy owner spelling still read by the old checks
-    // director
-    ROLES.TENANT_ENTERPRISE_MANAGER,
-    // HR
-    ROLES.HR_OFFICER,
-]);
 
 export interface Reach {
     kind: 'tenant' | 'team' | 'self';
@@ -40,9 +22,8 @@ export interface Reach {
     mayApprove: boolean;
 }
 
-export function isTenantHrRole(role: string | null | undefined): boolean {
-    return !!role && TENANT_HR_ROLES.has(role);
-}
+/** Re-exported so HR routes keep asking this file; the definition lives in lib/roles.ts. */
+export { isTenantHrRole };
 
 export async function resolveReach(ctx: { tenantId: string; userId: string; role: string }): Promise<Reach> {
     if (isTenantHrRole(ctx.role)) {

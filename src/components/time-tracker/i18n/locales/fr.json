@@ -162,7 +162,13 @@
     },
     "shiftCount_one": "{{count}} service",
     "shiftCount_other": "{{count}} services",
-    "rangeHint": "semaine passée à 2 semaines à venir"
+    "rangeHint": "semaine passée à 2 semaines à venir",
+    "call": "Appeler",
+    "attachments": "Pièces jointes",
+    "startTask": "Commencer",
+    "markDone": "Terminé",
+    "taskFallback": "Tâche",
+    "taskUpdateFailed": "La tâche n’a pas pu être mise à jour"
   },
   "timeOff": {
     "title": "Congés",

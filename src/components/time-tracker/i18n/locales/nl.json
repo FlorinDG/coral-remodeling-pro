@@ -162,7 +162,13 @@
     },
     "shiftCount_one": "{{count}} dienst",
     "shiftCount_other": "{{count}} diensten",
-    "rangeHint": "vorige week tot 2 weken vooruit"
+    "rangeHint": "vorige week tot 2 weken vooruit",
+    "call": "Bellen",
+    "attachments": "Bijlagen",
+    "startTask": "Starten",
+    "markDone": "Klaar",
+    "taskFallback": "Taak",
+    "taskUpdateFailed": "De taak kon niet bijgewerkt worden"
   },
   "timeOff": {
     "title": "Verlof",

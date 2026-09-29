@@ -150,7 +150,13 @@
     "shiftCount_few": "{{count}} смены",
     "shiftCount_many": "{{count}} смен",
     "shiftCount_other": "{{count}} смены",
-    "rangeHint": "с прошлой недели на 2 недели вперёд"
+    "rangeHint": "с прошлой недели на 2 недели вперёд",
+    "call": "Позвонить",
+    "attachments": "Вложения",
+    "startTask": "Начать",
+    "markDone": "Готово",
+    "taskFallback": "Задача",
+    "taskUpdateFailed": "Не удалось обновить задачу"
   },
   "timeOff": {
     "title": "Отпуск",

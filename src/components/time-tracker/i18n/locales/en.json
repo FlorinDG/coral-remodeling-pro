@@ -162,7 +162,13 @@
     },
     "shiftCount_one": "{{count}} shift",
     "shiftCount_other": "{{count}} shifts",
-    "rangeHint": "last week to 2 weeks ahead"
+    "rangeHint": "last week to 2 weeks ahead",
+    "call": "Call",
+    "attachments": "Attachments",
+    "startTask": "Start",
+    "markDone": "Done",
+    "taskFallback": "Task",
+    "taskUpdateFailed": "Could not update the task"
   },
   "timeOff": {
     "title": "Time Off",

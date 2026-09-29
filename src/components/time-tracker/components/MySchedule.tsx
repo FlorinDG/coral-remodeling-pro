@@ -1,12 +1,11 @@
 "use client";
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { Calendar, Clock, MapPin, Briefcase, Loader2, CheckSquare, Play, User, Phone, ExternalLink, FileText, Image as ImageIcon, ChevronRight } from 'lucide-react';
+import { Calendar, Clock, Loader2, Play } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useScheduledShifts } from '@/components/time-tracker/hooks/useScheduledShifts';
-import { useShiftTasks } from '@/components/time-tracker/hooks/useTasks';
 import { useUserRoles } from '@/components/time-tracker/hooks/useUserRoles';
 import { useClockEntries } from '@/components/time-tracker/hooks/useClockEntries';
 import { useGeolocation, validateGeofence } from '@/components/time-tracker/hooks/useGeolocation';
@@ -18,6 +17,8 @@ import { useTranslation } from 'react-i18next';
 import { formatTime, formatWeekdayDayMonth } from '@/lib/format/date';
 import { describeError } from '@/lib/describe-error';
 import { shiftBrief, type ShiftBriefResult } from '@/lib/data/shift-brief';
+import { ShiftBriefDetails } from '@/components/workhub/ShiftBriefDetails';
+import FileViewer, { type ViewableFile } from '@/components/files/FileViewer';
 
 function parseShiftDateTime(dateStr: string, timeStr: string): Date {
   const [y, m, d] = (dateStr || '').split('-').map(Number);
@@ -49,10 +50,8 @@ interface ShiftCardProps {
 
 function ShiftCard({ shift, isNextShift, activeEntry, elapsedTime, now, onClick }: ShiftCardProps) {
   const { t, i18n } = useTranslation();
-  const { shiftTasks, loading: tasksLoading } = useShiftTasks(shift.id);
-
-  const pendingTasks = shiftTasks.filter(st => st.status !== 'completed');
-  const completedTasks = shiftTasks.filter(st => st.status === 'completed');
+  // WH-2: tasks, address and attachments live in the Shift Brief modal, not on the card —
+  // which also drops two requests per card (shift-tasks + the whole erp-tasks list).
 
   const isClockedIn = Boolean(activeEntry && activeEntry.shiftId === shift?.id);
   const shiftDate = parseISO(shift.shiftDate);
@@ -64,8 +63,6 @@ function ShiftCard({ shift, isNextShift, activeEntry, elapsedTime, now, onClick 
   const description = (shift.shiftName || '').trim() || (shift.notes || '').trim();
   const fallback = t('schedule.shiftFallback');
   const primaryTitle = projectName || description || fallback;
-
-  const address = shift.project?.address?.trim() || shift.projectAddress?.trim();
 
   return (
     <Card 
@@ -104,20 +101,6 @@ function ShiftCard({ shift, isNextShift, activeEntry, elapsedTime, now, onClick 
               )}
             </div>
 
-            {/* Second line: Tappable address link to native map */}
-            {address && (
-              <a
-                href={`https://maps.google.com/?q=${encodeURIComponent(address)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
-                className="flex items-center gap-2 min-w-0 text-base text-muted-foreground hover:text-foreground hover:underline transition-colors mt-1"
-              >
-                <MapPin className="h-5 w-5 shrink-0 text-muted-foreground" />
-                <span className="truncate">{address}</span>
-              </a>
-            )}
-
             {/* Third line: Time and Date with elapsed time above date (WH-UI-1 §9.4) */}
             <div className="flex items-end justify-between gap-3 text-base text-muted-foreground mt-2">
               <div className="flex items-center gap-2">
@@ -147,40 +130,6 @@ function ShiftCard({ shift, isNextShift, activeEntry, elapsedTime, now, onClick 
           </div>
         </div>
 
-        {/* Tasks Section */}
-        {shiftTasks.length > 0 && (
-          <div className="border-t mt-3 pt-3">
-            <div className="flex items-center gap-2 mb-2">
-              <CheckSquare className="h-4 w-4 text-muted-foreground" />
-              <span className="text-base font-medium">
-                {t('schedule.tasks')} ({completedTasks.length}/{shiftTasks.length})
-              </span>
-            </div>
-            
-            {tasksLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <div className="space-y-1">
-                {pendingTasks.slice(0, 2).map((st) => (
-                  <div key={st.id} className="flex items-center gap-2 min-w-0">
-                    <div className="w-2 h-2 rounded-full bg-secondary shrink-0" />
-                    <span className="text-base truncate">{st.task?.title}</span>
-                  </div>
-                ))}
-                {pendingTasks.length > 2 && (
-                  <Badge variant="secondary" className="text-sm">
-                    +{pendingTasks.length - 2} {t('schedule.more')}
-                  </Badge>
-                )}
-                {pendingTasks.length === 0 && completedTasks.length > 0 && (
-                  <p className="text-sm text-primary font-medium">
-                    {t('schedule.allTasksCompleted')}
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
-        )}
       </CardContent>
     </Card>
   );
@@ -198,6 +147,7 @@ export function MySchedule() {
   const [showGeofenceWarning, setShowGeofenceWarning] = useState<{distance: number, site: string, location: any, shiftId: string} | null>(null);
   const [selectedShift, setSelectedShift] = useState<any>(null);
   const [brief, setBrief] = useState<ShiftBriefResult | null>(null);
+  const [viewer, setViewer] = useState<{ files: ViewableFile[]; index: number } | null>(null);
   const [briefLoading, setBriefLoading] = useState(false);
   const [elapsedTime, setElapsedTime] = useState('00:00:00');
   const [now, setNow] = useState(() => new Date());
@@ -452,7 +402,9 @@ export function MySchedule() {
       </CardContent>
 
       {/* Shift Detail Dialog / Shift Brief Modal (WH-UI-1 §8.2) */}
-      <Dialog open={!!selectedShift} onOpenChange={(open) => { if (!open) setSelectedShift(null); }}>
+      {/* While the carousel is open the brief steps aside (and returns when it closes): a full-screen
+          viewer cannot live inside Radix's transformed dialog content. */}
+      <Dialog open={!!selectedShift && !viewer} onOpenChange={(open) => { if (!open && !viewer) setSelectedShift(null); }}>
         <DialogContent className="sm:max-w-[480px] p-0 overflow-hidden font-content">
           {selectedShift && (() => {
             const shiftDateObj = parseISO(selectedShift.shiftDate);
@@ -484,37 +436,15 @@ export function MySchedule() {
                 </DialogHeader>
 
                 <div className="p-4 space-y-3 max-h-[60vh] overflow-y-auto">
-                  {/* Address row (maps.google.com/?q=...) */}
-                  {addressText && mapUrl && (
-                    <a
-                      href={mapUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-between p-3.5 bg-neutral-50 hover:bg-neutral-100 dark:bg-neutral-900/60 dark:hover:bg-neutral-900 rounded-xl transition-colors border border-neutral-100 dark:border-white/5 text-foreground group"
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <MapPin className="w-5 h-5 text-[var(--persian-green)] shrink-0" />
-                        <span className="text-base text-foreground font-medium truncate">{addressText}</span>
-                      </div>
-                      <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-foreground shrink-0 ml-2" />
-                    </a>
-                  )}
-
-                  {/* Phone row (tel:...) */}
-                  {brief?.contactPhone && (
-                    <a
-                      href={`tel:${brief.contactPhone}`}
-                      className="flex items-center justify-between p-3.5 bg-neutral-50 hover:bg-neutral-100 dark:bg-neutral-900/60 dark:hover:bg-neutral-900 rounded-xl transition-colors border border-neutral-100 dark:border-white/5 text-foreground group"
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <Phone className="w-5 h-5 text-[var(--persian-green)] shrink-0" />
-                        <span className="text-base text-foreground font-medium truncate">
-                          {brief.contactName ? `${brief.contactName} · ` : ''}{brief.contactPhone}
-                        </span>
-                      </div>
-                      <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground shrink-0 ml-2" />
-                    </a>
-                  )}
+                  {/* WH-2: address · contact · notes · tasks · attachments — each rendered by what it is */}
+                  <ShiftBriefDetails
+                    shiftId={selectedShift.id}
+                    brief={brief}
+                    fallbackAddress={addressText}
+                    title={displayTitle}
+                    userId={user?.id}
+                    onOpenMedia={(files, index) => setViewer({ files, index })}
+                  />
 
                   {/* Worked duration (only when clock entry exists) */}
                   {brief?.worked && (
@@ -527,53 +457,6 @@ export function MySchedule() {
                             {formatTime(brief.worked.in)} – {brief.worked.out ? formatTime(brief.worked.out) : '…'} · {Math.floor(brief.worked.minutes / 60)}h {brief.worked.minutes % 60}m
                           </span>
                         </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Photos */}
-                  {brief?.photos && brief.photos.length > 0 && (
-                    <div className="p-3.5 bg-neutral-50 dark:bg-neutral-900/60 rounded-xl border border-neutral-100 dark:border-white/5 space-y-2">
-                      <span className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
-                        <ImageIcon className="w-4 h-4" />
-                        {t('schedule.photos')}
-                      </span>
-                      <div className="flex gap-2.5 overflow-x-auto pb-1">
-                        {brief.photos.map((photo, i) => (
-                          <a
-                            key={i}
-                            href={photo.key}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="shrink-0 w-16 h-16 rounded-lg overflow-hidden border border-neutral-200 dark:border-white/10 hover:opacity-80 transition-opacity"
-                          >
-                            <img src={photo.key} alt={photo.name} className="w-full h-full object-cover" />
-                          </a>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Files */}
-                  {brief?.files && brief.files.length > 0 && (
-                    <div className="p-3.5 bg-neutral-50 dark:bg-neutral-900/60 rounded-xl border border-neutral-100 dark:border-white/5 space-y-2">
-                      <span className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
-                        <FileText className="w-4 h-4" />
-                        {t('schedule.files')}
-                      </span>
-                      <div className="space-y-1.5">
-                        {brief.files.map((file) => (
-                          <a
-                            key={file.id}
-                            href={file.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center justify-between gap-2 min-w-0 p-2.5 hover:bg-neutral-200/50 dark:hover:bg-neutral-800 rounded-lg text-base text-foreground transition-colors group"
-                          >
-                            <span className="truncate font-medium min-w-0">{file.name}</span>
-                            <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-foreground shrink-0 ml-2" />
-                          </a>
-                        ))}
                       </div>
                     </div>
                   )}
@@ -629,6 +512,14 @@ export function MySchedule() {
           })()}
         </DialogContent>
       </Dialog>
+      {viewer && (
+        <FileViewer
+          files={viewer.files}
+          index={viewer.index}
+          onIndexChange={(index) => setViewer(v => (v ? { ...v, index } : v))}
+          onClose={() => setViewer(null)}
+        />
+      )}
       <GeofenceWarningDialog
         open={!!showGeofenceWarning}
         distanceMeters={showGeofenceWarning?.distance || 0}

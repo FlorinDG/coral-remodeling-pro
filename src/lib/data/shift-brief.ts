@@ -3,6 +3,8 @@
 import prisma from "@/lib/prisma";
 import { auth } from "@/auth";
 import { computeWorkedDuration } from "@/lib/computeWorkedDuration";
+import { isTenantHrRole } from "@/lib/roles";
+import { normalizeStoredPhotos } from "@/lib/files";
 
 export interface ShiftBriefScope {
     tenantId?: string | null;
@@ -14,8 +16,11 @@ export interface ShiftBriefResult {
     mapUrl: string | null;       // built server-side from the address
     contactName: string | null;   // project → Klant → Naam
     contactPhone: string | null;  // project → Klant → Telefoon
+    contactEmail: string | null;  // project → Klant → E-mail
+    notes: string | null;         // ScheduledShift.notes — what the planner wrote for the crew
     scheduled: { start: string; end: string; date: string };
     worked: { in: string; out: string | null; minutes: number } | null;
+    /** Photos from EVERY clock entry on this shift; `key` is a storage key or URL — resolve with resolveFileUrl. */
     photos: { key: string; name: string; type: string }[];
     files: { id: string; name: string; url: string; type: string }[];
 }
@@ -31,16 +36,16 @@ export async function shiftBrief(
     let tenantId: string | undefined;
     let shiftId: string;
 
+    // The actor always comes from the session — the brief carries a client's phone and address.
+    const session = await auth();
+    const actorId = session?.user?.id as string | undefined;
+    const actorRole = (session?.user as { role?: string } | undefined)?.role;
+
     if (typeof scopeOrShiftId === 'string') {
         shiftId = scopeOrShiftId;
-        const session = await auth();
         tenantId = session?.user?.tenantId || undefined;
     } else {
-        tenantId = scopeOrShiftId?.tenantId || undefined;
-        if (!tenantId) {
-            const session = await auth();
-            tenantId = session?.user?.tenantId || undefined;
-        }
+        tenantId = scopeOrShiftId?.tenantId || session?.user?.tenantId || undefined;
         shiftId = maybeShiftId!;
     }
 
@@ -66,10 +71,16 @@ export async function shiftBrief(
         throw new Error(`Shift not found: ${shiftId}`);
     }
 
+    // Gate 2: a worker reads the brief of their OWN shift; HR roles read any in the tenant.
+    if (!isTenantHrRole(actorRole) && shift.userId !== actorId) {
+        throw new Error(`Shift not found: ${shiftId}`);
+    }
+
     let projectName: string | null = null;
     let address: string | null = null;
     let contactName: string | null = null;
     let contactPhone: string | null = null;
+    let contactEmail: string | null = null;
 
     if (shift.projectId) {
         // Try GlobalPage first (Dynamic DB project)
@@ -99,7 +110,8 @@ export async function shiftBrief(
                 if (clientPage?.properties) {
                     const cProps = clientPage.properties as Record<string, any>;
                     contactName = (cProps.title || cProps.name || cProps.Naam || '').trim() || null;
-                    contactPhone = (cProps.phone || cProps.telefoon || cProps.Telefoon || '').trim() || null;
+                    contactPhone = String(cProps.phone || cProps.telefoon || cProps.Telefoon || '').trim() || null;
+                    contactEmail = String(cProps.email || cProps['e-mail'] || cProps.Email || cProps['E-mail'] || '').trim() || null;
                 }
             }
         } else {
@@ -146,14 +158,11 @@ export async function shiftBrief(
             minutes: duration.totalMinutes,
         };
 
-        if (activeClockEntry.photos && Array.isArray(activeClockEntry.photos)) {
-            photos = (activeClockEntry.photos as any[]).map(p => ({
-                key: p.key || p.url || '',
-                name: p.name || 'Photo',
-                type: p.type || 'image/jpeg',
-            }));
-        }
     }
+
+    // Photos from every entry on this shift. ClockEntry.photos is Json? — in production it holds
+    // plain storage-key strings (useClockEntries), objects ({ key|url, name, type }), or a JSON string.
+    photos = shift.clockEntries.flatMap(e => normalizeStoredPhotos(e.photos));
 
     const files = shift.attachments.map(a => ({
         id: a.id,
@@ -168,6 +177,8 @@ export async function shiftBrief(
         mapUrl,
         contactName,
         contactPhone,
+        contactEmail,
+        notes: shift.notes?.trim() || null,
         scheduled: {
             start: shift.shiftStart,
             end: shift.shiftEnd,
@@ -178,3 +189,4 @@ export async function shiftBrief(
         files,
     };
 }
+

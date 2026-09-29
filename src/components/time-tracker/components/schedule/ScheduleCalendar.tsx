@@ -92,7 +92,7 @@ function MobileWeekView({ shifts, weekStart, onShiftClick }: {
       days.push({
         date,
         dateStr,
-        shifts: shifts.filter(s => s.shift_date === dateStr),
+        shifts: shifts.filter(s => s.shiftDate === dateStr),
         holiday: isBelgianHoliday(date),
       });
     }
@@ -184,7 +184,7 @@ function DesktopCalendarView({ shifts, currentMonth, onShiftClick }: {
         date: new Date(current),
         dateStr,
         isCurrentMonth: current.getMonth() === month,
-        shifts: shifts.filter(s => s.shift_date === dateStr),
+        shifts: shifts.filter(s => s.shiftDate === dateStr),
       });
       current.setDate(current.getDate() + 1);
       if (days.length >= 42) break; // Max 6 weeks

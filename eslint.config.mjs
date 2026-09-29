@@ -270,7 +270,6 @@ const eslintConfig = defineConfig([
       "src/components/time-tracker/components/admin/UserManager.tsx",
       "src/components/time-tracker/components/schedule/CreateShiftForm.tsx",
       "src/components/time-tracker/components/schedule/EditShiftDialog.tsx",
-      "src/components/time-tracker/components/schedule/ScheduleCalendar.tsx",
       "src/components/time-tracker/components/schedule/ScheduleMatrixView.tsx",
       "src/components/time-tracker/components/schedule/ScheduleTable.tsx",
       "src/components/time-tracker/contexts/AuthContext.tsx",

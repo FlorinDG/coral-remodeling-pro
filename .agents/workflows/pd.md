@@ -642,4 +642,12 @@ Anything else: STOP AND REPORT. Do not change it, even if it is wrong.
 
 ---
 
+
+## 5g · 🔴 EVERY ITEM ENDS WITH A REPORT FILE — `coder-report-protocol.md`
+**Florin, 2026-09-30.** The coder's walkthroughs live where the Planner cannot read them. **An item is not done until `.agents/reports/<ITEM-ID>.md` exists, follows `coder-report-protocol.md`, and is committed as the item's last commit.**
+- **The report is a claim; the Planner verifies it.** A mismatch between a report line and the code invalidates the whole report.
+- 🔴 **Its §5 — decisions the directive did not state — is read first.** It is where 5f's divergence surfaces instead of hiding inside a commit.
+
+---
+
 *This file is a living document. Update the premises table after each validated change.*

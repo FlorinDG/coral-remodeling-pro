@@ -157,7 +157,8 @@
     "startTask": "Начать",
     "markDone": "Готово",
     "taskFallback": "Задача",
-    "taskUpdateFailed": "Не удалось обновить задачу"
+    "taskUpdateFailed": "Не удалось обновить задачу",
+    "clockInAgain": "Отметиться снова"
   },
   "timeOff": {
     "title": "Отпуск",

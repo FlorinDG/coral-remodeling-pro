@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { hrList, hrCreate, hrUpdate, hrDelete } from '@/lib/hr-api';
 import { useDatabaseStore } from '@/components/admin/database/store';
 import { useUserRoles } from '@/components/time-tracker/hooks/useUserRoles';
+import { pickShiftNow, localDateKey } from '@/lib/kernel/shift-time';
 
 export const NOTION_COLORS = [
   { name: 'blue',    value: '#3b82f6', bg: '#dbeafe' },
@@ -265,13 +266,15 @@ export function useScheduledShifts() {
     }
   }, []);
 
+  // The shift that is NOW for this worker (kernel/shift-time): running, else next today, else last today.
+  // Was `.find()` over createdAt order — with two shifts in a day it returned the later-created one —
+  // and "today" was toISOString() (UTC), i.e. yesterday between 00:00 and 02:00 in Belgium.
   const getTodayShift = useCallback(() => {
-    const today = new Date().toISOString().split('T')[0];
-    return shifts.find(s => s.shiftDate === today && s.userId === userId) || null;
+    return pickShiftNow(shifts.filter(s => s.userId === userId), new Date());
   }, [shifts, userId]);
 
   const createUserShift = useCallback(async () => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = localDateKey(new Date());   // local date — never toISOString() (UTC)
     const now = new Date();
     const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
     return createShift({

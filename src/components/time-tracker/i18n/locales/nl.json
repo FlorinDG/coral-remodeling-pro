@@ -169,7 +169,8 @@
     "startTask": "Starten",
     "markDone": "Klaar",
     "taskFallback": "Taak",
-    "taskUpdateFailed": "De taak kon niet bijgewerkt worden"
+    "taskUpdateFailed": "De taak kon niet bijgewerkt worden",
+    "clockInAgain": "Opnieuw inklokken"
   },
   "timeOff": {
     "title": "Verlof",

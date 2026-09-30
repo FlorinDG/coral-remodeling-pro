@@ -19,24 +19,11 @@ import { describeError } from '@/lib/describe-error';
 import { shiftBrief, type ShiftBriefResult } from '@/lib/data/shift-brief';
 import { ShiftBriefDetails } from '@/components/workhub/ShiftBriefDetails';
 import FileViewer, { type ViewableFile } from '@/components/files/FileViewer';
+import { shiftTemporalState, compareShifts } from '@/lib/kernel/shift-time';
 
-function parseShiftDateTime(dateStr: string, timeStr: string): Date {
-  const [y, m, d] = (dateStr || '').split('-').map(Number);
-  const [hh, mm] = (timeStr || '00:00').split(':').map(Number);
-  return new Date(y, (m || 1) - 1, d || 1, hh || 0, mm || 0, 0, 0);
-}
-
-function getShiftTemporalState(shiftDateStr: string, startStr: string, endStr: string, now: Date): 'past' | 'current' | 'upcoming' {
-  const start = parseShiftDateTime(shiftDateStr, startStr);
-  const end = parseShiftDateTime(shiftDateStr, endStr);
-  if (end.getTime() < start.getTime()) {
-    end.setDate(end.getDate() + 1);
-  }
-  const t = now.getTime();
-  if (end.getTime() < t) return 'past';
-  if (start.getTime() <= t && t <= end.getTime()) return 'current';
-  return 'upcoming';
-}
+// Shift time is kernel (kernel/shift-time): built from parts, local, one definition for list + clock.
+const getShiftTemporalState = (shiftDate: string, shiftStart: string, shiftEnd: string, now: Date) =>
+  shiftTemporalState({ shiftDate, shiftStart, shiftEnd }, now);
 
 interface ShiftCardProps {
   shift: any;
@@ -217,25 +204,28 @@ export function MySchedule() {
       .filter(s => {
         return s.shiftDate >= rangeStartStr && s.shiftDate <= rangeEndStr;
       })
-      .sort((a, b) => a.shiftDate.localeCompare(b.shiftDate));
+      // Chronological by date AND start time (was date only — same-day shifts came in creation order).
+      .sort(compareShifts);
   }, [shifts, user?.id, rangeStartStr, rangeEndStr]);
 
   // Find the next upcoming shift (today or future)
+  // The first shift that is not over yet (running or upcoming) — by time, not just by date.
   const nextShiftIndex = useMemo(() => {
-    const todayStr = format(today, 'yyyy-MM-dd');
-    const idx = filteredShifts.findIndex(s => s.shiftDate >= todayStr);
+    const idx = filteredShifts.findIndex(s => shiftTemporalState(s, now) !== 'past');
     return idx >= 0 ? idx : filteredShifts.length - 1;
-  }, [filteredShifts, today]);
+  }, [filteredShifts, now]);
 
   const nextShift = filteredShifts[nextShiftIndex];
 
-  // Scroll to next shift on mount
+  // Scroll to the next shift ONCE per load — the index now follows the clock (a shift ending moves it),
+  // and re-scrolling then would yank the list from under the worker's thumb.
+  const didScrollRef = useRef(false);
   useEffect(() => {
-    if (nextShiftRef.current && !loading) {
-      setTimeout(() => {
-        nextShiftRef.current?.scrollIntoView({ block: 'start', behavior: 'auto' });
-      }, 100);
-    }
+    if (didScrollRef.current || loading || !nextShiftRef.current) return;
+    didScrollRef.current = true;
+    setTimeout(() => {
+      nextShiftRef.current?.scrollIntoView({ block: 'start', behavior: 'auto' });
+    }, 100);
   }, [loading, nextShiftIndex]);
 
   const handleClockIn = async (shiftId: string, overrideShiftWithFallback = false) => {
@@ -489,21 +479,15 @@ export function MySchedule() {
                       <Button
                         className="w-full h-14 text-base font-bold bg-[var(--persian-green)] hover:brightness-110 text-white shadow-md transition-all active:scale-[0.98] rounded-xl"
                         onClick={() => handleClockIn(selectedShift.id)}
-                        disabled={
-                          isClockingIn ||
-                          selectedShift.status === 'Completed' ||
-                          (selectedShift.clockEntries?.some((e: any) => e.clockOutTime != null) ?? false) ||
-                          !!activeEntry
-                        }
+                        // A shift can be worked more than once (Florin: twice at one site in a day).
+                        // Only an OPEN entry blocks — and the server refuses a second open one anyway.
+                        disabled={isClockingIn || !!activeEntry}
                       >
                         {isClockingIn ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Play className="w-5 h-5 mr-2 fill-current" />}
-                        {t('schedule.clockIntoShift')}
+                        {(selectedShift.clockEntries?.some((e: { clockOutTime?: string | null }) => e.clockOutTime != null) ?? false)
+                          ? t('schedule.clockInAgain')
+                          : t('schedule.clockIntoShift')}
                       </Button>
-                      {((selectedShift.clockEntries?.some((e: any) => e.clockOutTime != null) ?? false) || selectedShift.status === 'Completed') && (
-                        <p className="text-sm text-muted-foreground mt-2 font-medium">
-                          {t('schedule.shiftCompleted', 'Shift completed')}
-                        </p>
-                      )}
                     </>
                   )}
                 </div>

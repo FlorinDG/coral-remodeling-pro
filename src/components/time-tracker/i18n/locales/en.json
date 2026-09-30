@@ -169,7 +169,8 @@
     "startTask": "Start",
     "markDone": "Done",
     "taskFallback": "Task",
-    "taskUpdateFailed": "Could not update the task"
+    "taskUpdateFailed": "Could not update the task",
+    "clockInAgain": "Clock in again"
   },
   "timeOff": {
     "title": "Time Off",

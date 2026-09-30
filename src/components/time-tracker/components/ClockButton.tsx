@@ -21,6 +21,9 @@ function ClockButtonComponent() {
   const [showGeofenceWarning, setShowGeofenceWarning] = useState<{distance: number, site: string, location: any} | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [activeShiftId, setActiveShiftId] = useState<string | null>(null);
+  // The ad-hoc shift THIS button created at clock-in. Only that one is closed (end time + completed)
+  // at clock-out — a PLANNED shift is the planner's record and is never rewritten by clocking out.
+  const [userCreatedShiftId, setUserCreatedShiftId] = useState<string | null>(null);
   
   const [entriesTimedOut, setEntriesTimedOut] = useState(false);
   
@@ -143,6 +146,7 @@ function ClockButtonComponent() {
         const userShift = await createUserShift();
         if (userShift?.data) {
           setActiveShiftId(userShift.data.id);
+          setUserCreatedShiftId(userShift.data.id);
           
           // Link the newly created shift to the clock entry
           try {
@@ -202,10 +206,12 @@ function ClockButtonComponent() {
       noBreak: data.noBreak
     });
     
-    // If this was a user-created shift, update the end time
-    if (activeShiftId) {
+    // Only an ad-hoc shift this button created gets its end time set. Before, ANY active shift was
+    // "completed" here — clocking out of a planned 13:00–17:00 at 12:10 rewrote it to end at 12:10.
+    if (activeShiftId && activeShiftId === userCreatedShiftId) {
       await completeUserShift(activeShiftId);
     }
+    setUserCreatedShiftId(null);
 
     await refetchShifts();
     setIsProcessing(false);
@@ -282,6 +288,19 @@ function ClockButtonComponent() {
             </div>
           )}
         </Button>
+
+        {/* Short-notice changes: a shift is planned, but today the work is elsewhere / different.
+            Recorded without a shift, pending approval — HR attributes it later (pd.md 4x). */}
+        {!isClockedIn && hasScheduledShift && (
+          <button
+            type="button"
+            onClick={() => performClockIn(true)}
+            disabled={locationLoading || isProcessing}
+            className="mt-2 h-11 px-5 rounded-full text-base font-semibold bg-white/95 dark:bg-neutral-900/95 text-[var(--tawny)] border border-[var(--tawny)]/40 shadow-md disabled:opacity-50"
+          >
+            {t('schedule.clockInWithoutShift')}
+          </button>
+        )}
 
         {!isClockedIn && shiftsFailed && (
           <p className="text-xs text-amber-700 dark:text-amber-300 font-medium mt-2 text-center bg-amber-50 dark:bg-amber-950/60 px-2.5 py-1 rounded-md border border-amber-200 dark:border-amber-800">

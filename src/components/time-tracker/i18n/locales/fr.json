@@ -169,7 +169,8 @@
     "startTask": "Commencer",
     "markDone": "Terminé",
     "taskFallback": "Tâche",
-    "taskUpdateFailed": "La tâche n’a pas pu être mise à jour"
+    "taskUpdateFailed": "La tâche n’a pas pu être mise à jour",
+    "clockInAgain": "Pointer à nouveau"
   },
   "timeOff": {
     "title": "Congés",

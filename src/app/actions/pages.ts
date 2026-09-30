@@ -1,5 +1,6 @@
 'use server';
 
+import { isWorkforceRole } from '@/lib/roles';
 import prisma from '@/lib/prisma';
 import { auth } from '@/auth';
 import { v4 as uuidv4 } from 'uuid';
@@ -24,6 +25,9 @@ export async function createPageServerFirst(
     const session = await auth();
     const tenantId = session?.user?.tenantId;
     if (!tenantId) return { success: false, error: 'Not authenticated' };
+    // pd.md 4y — workforce reaches the WorkHub and nothing else; the ERP database doors are closed to it
+    // (a crew phone held the tenant's database ids and could call these by hand — incl. deleting a database).
+    if (isWorkforceRole((session?.user as { role?: string } | undefined)?.role)) return { success: false, error: 'Forbidden: workforce' };
 
     // Resolve role and canonical databaseId
     let role: SystemDatabaseRole | null = null;
@@ -176,6 +180,9 @@ export async function updatePageServerFirst(
     const session = await auth();
     const tenantId = session?.user?.tenantId;
     if (!tenantId) return { success: false, error: 'Not authenticated' };
+    // pd.md 4y — workforce reaches the WorkHub and nothing else; the ERP database doors are closed to it
+    // (a crew phone held the tenant's database ids and could call these by hand — incl. deleting a database).
+    if (isWorkforceRole((session?.user as { role?: string } | undefined)?.role)) return { success: false, error: 'Forbidden: workforce' };
 
     try {
         // Auth: confirm the page's DB belongs to this tenant

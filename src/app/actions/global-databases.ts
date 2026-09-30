@@ -1,5 +1,6 @@
 'use server';
 
+import { isWorkforceRole } from '@/lib/roles';
 import prisma from '@/lib/prisma';
 import { Database, Page, Property, DatabaseView, Block, PageIndexEntry } from '@/components/admin/database/types';
 import type { SystemDatabaseRole } from '@/lib/kernel/system-databases';
@@ -23,6 +24,9 @@ export async function getGlobalDatabases(): Promise<Database[]> {
     const session = await auth();
     const tenantId = session?.user?.tenantId;
     if (!tenantId) return [];
+    // pd.md 4y — workforce reaches the WorkHub and nothing else; the ERP database doors are closed to it
+    // (a crew phone held the tenant's database ids and could call these by hand — incl. deleting a database).
+    if (isWorkforceRole((session?.user as { role?: string } | undefined)?.role)) return [];
 
     let allowedProjectIds: string[] | null = null;
     const userId = session?.user?.id;
@@ -142,6 +146,9 @@ export async function getGlobalDatabaseSchemas(): Promise<Database[]> {
     const session = await auth();
     const tenantId = session?.user?.tenantId;
     if (!tenantId) return [];
+    // pd.md 4y — workforce reaches the WorkHub and nothing else; the ERP database doors are closed to it
+    // (a crew phone held the tenant's database ids and could call these by hand — incl. deleting a database).
+    if (isWorkforceRole((session?.user as { role?: string } | undefined)?.role)) return [];
 
     try {
         const dbs = await prisma.globalDatabase.findMany({
@@ -184,6 +191,9 @@ export async function getDatabasePages(databaseId: string): Promise<Page[]> {
     if (!tenantId) {
         throw new Error('Unauthorized');
     }
+    // pd.md 4y — workforce reaches the WorkHub and nothing else; the ERP database doors are closed to it
+    // (a crew phone held the tenant's database ids and could call these by hand — incl. deleting a database).
+    if (isWorkforceRole((session?.user as { role?: string } | undefined)?.role)) throw new Error('Forbidden: workforce');
 
     // Security: verify database ownership before querying its pages
     const parentDb = await prisma.globalDatabase.findUnique({
@@ -293,6 +303,9 @@ export async function getGlobalPageIndex(): Promise<PageIndexEntry[]> {
     const session = await auth();
     const tenantId = session?.user?.tenantId;
     if (!tenantId) return [];
+    // pd.md 4y — workforce reaches the WorkHub and nothing else; the ERP database doors are closed to it
+    // (a crew phone held the tenant's database ids and could call these by hand — incl. deleting a database).
+    if (isWorkforceRole((session?.user as { role?: string } | undefined)?.role)) return [];
 
     try {
         const rows = await prisma.$queryRaw<Array<{ id: string; databaseId: string; title: string | null; updatedAt: Date }>>`
@@ -354,6 +367,9 @@ export async function saveGlobalDatabase(db: Database) {
     const session = await auth();
     const tenantId = session?.user?.tenantId;
     if (!tenantId) return { success: false, error: 'Unauthorized' };
+    // pd.md 4y — workforce reaches the WorkHub and nothing else; the ERP database doors are closed to it
+    // (a crew phone held the tenant's database ids and could call these by hand — incl. deleting a database).
+    if (isWorkforceRole((session?.user as { role?: string } | undefined)?.role)) return { success: false, error: 'Forbidden: workforce' };
 
     try {
         const existing = await prisma.globalDatabase.findUnique({ where: { id: safeId(db.id) } });
@@ -409,6 +425,9 @@ export async function saveGlobalPage(page: Page) {
     const session = await auth();
     const tenantId = session?.user?.tenantId;
     if (!tenantId) return { success: false, error: 'Unauthorized' };
+    // pd.md 4y — workforce reaches the WorkHub and nothing else; the ERP database doors are closed to it
+    // (a crew phone held the tenant's database ids and could call these by hand — incl. deleting a database).
+    if (isWorkforceRole((session?.user as { role?: string } | undefined)?.role)) return { success: false, error: 'Forbidden: workforce' };
 
     try {
         // Security: ensure the page belongs to a database owned by this tenant.
@@ -612,6 +631,9 @@ export async function saveGlobalPagesBatch(pages: Page[]) {
     const session = await auth();
     const tenantId = session?.user?.tenantId;
     if (!tenantId) return { success: false, error: 'Unauthorized' };
+    // pd.md 4y — workforce reaches the WorkHub and nothing else; the ERP database doors are closed to it
+    // (a crew phone held the tenant's database ids and could call these by hand — incl. deleting a database).
+    if (isWorkforceRole((session?.user as { role?: string } | undefined)?.role)) return { success: false, error: 'Forbidden: workforce' };
     if (!pages.length) return { success: true, count: 0, results: [] };
 
     try {
@@ -810,6 +832,9 @@ export async function deleteGlobalPage(pageId: string) {
     const session = await auth();
     const tenantId = session?.user?.tenantId;
     if (!tenantId) return { success: false, error: 'Unauthorized' };
+    // pd.md 4y — workforce reaches the WorkHub and nothing else; the ERP database doors are closed to it
+    // (a crew phone held the tenant's database ids and could call these by hand — incl. deleting a database).
+    if (isWorkforceRole((session?.user as { role?: string } | undefined)?.role)) return { success: false, error: 'Forbidden: workforce' };
 
     try {
         const page = await prisma.globalPage.findUnique({
@@ -832,6 +857,9 @@ export async function deleteGlobalDatabase(dbId: string) {
     const session = await auth();
     const tenantId = session?.user?.tenantId;
     if (!tenantId) return { success: false, error: 'Unauthorized' };
+    // pd.md 4y — workforce reaches the WorkHub and nothing else; the ERP database doors are closed to it
+    // (a crew phone held the tenant's database ids and could call these by hand — incl. deleting a database).
+    if (isWorkforceRole((session?.user as { role?: string } | undefined)?.role)) return { success: false, error: 'Forbidden: workforce' };
 
     try {
         const existing = await prisma.globalDatabase.findUnique({ where: { id: dbId } });
@@ -852,6 +880,9 @@ export async function getGlobalPage(pageId: string) {
     const session = await auth();
     const tenantId = session?.user?.tenantId;
     if (!tenantId) return null;
+    // pd.md 4y — workforce reaches the WorkHub and nothing else; the ERP database doors are closed to it
+    // (a crew phone held the tenant's database ids and could call these by hand — incl. deleting a database).
+    if (isWorkforceRole((session?.user as { role?: string } | undefined)?.role)) return null;
     const page = await prisma.globalPage.findUnique({ 
         where: { id: pageId },
         include: { database: { select: { tenantId: true } } }

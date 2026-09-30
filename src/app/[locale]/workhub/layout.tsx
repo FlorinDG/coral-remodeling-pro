@@ -93,14 +93,22 @@ export default async function WorkHubLayout({ children }: { children: React.Reac
         if (tenant) {
             if (tenant.activeModules) activeModules = tenant.activeModules;
             if (tenant.planType) planType = tenant.planType;
-            fullTenant = JSON.parse(JSON.stringify(tenant));
+            // A crew phone gets what the crew app shows (name, logo, brand colour) — not the tenant's
+            // IBAN, VAT, Peppol id or invoice numbering, which the full record carries.
+            fullTenant = crew
+                ? { id: tenant.id, companyName: tenant.companyName, commercialName: tenant.commercialName, logoUrl: tenant.logoUrl, brandColor: tenant.brandColor }
+                : JSON.parse(JSON.stringify(tenant));
         }
 
-        try {
-            lockedDbIds = await provisionLockedDatabases(tenantId, prisma);
-        } catch (provErr) {
-            console.error('[workhub layout] Provisioning failed:', provErr);
-            lockedDbIds = (tenant?.lockedDbIds as Record<string, string> | null) || {};
+        // The tenant's database ids are ERP plumbing. A crew phone never needs them (no crew screen
+        // reads the ERP store), and holding them let a crafted request aim at an ERP database.
+        if (!crew) {
+            try {
+                lockedDbIds = await provisionLockedDatabases(tenantId, prisma);
+            } catch (provErr) {
+                console.error('[workhub layout] Provisioning failed:', provErr);
+                lockedDbIds = (tenant?.lockedDbIds as Record<string, string> | null) || {};
+            }
         }
 
         return (

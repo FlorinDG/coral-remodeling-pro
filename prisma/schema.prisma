@@ -746,6 +746,7 @@ model GlobalPage {
   assignedTo    String[]
   database      GlobalDatabase @relation(fields: [databaseId], references: [id], onDelete: Cascade)
   taskNotes     TaskNote[]
+  contactShifts ScheduledShift[] @relation("ShiftContact")
 
   @@index([databaseId])
   @@index([createdAt])
@@ -796,6 +797,9 @@ model ScheduledShift {
   shiftEnd     String
   shiftName    String?
   projectId    String?
+  /// WB-A: the order giver when no project supplies one — a page in the tenant's CLIENTS system
+  /// database (93 in production; the `Contact` table is empty and unused — measured 2026-09-30).
+  contactPageId String?
   role         String?
   notes        String?
   status       String   @default("scheduled")
@@ -808,8 +812,10 @@ model ScheduledShift {
   tasks        ShiftTask[]
   attachments  ShiftAttachment[]
   clockEntries ClockEntry[]
+  contactPage  GlobalPage?       @relation("ShiftContact", fields: [contactPageId], references: [id], onDelete: SetNull)
 
   @@index([seriesId])
+  @@index([contactPageId])
 }
 
 model ShiftTemplate {

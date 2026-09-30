@@ -290,3 +290,13 @@ recipient  =  project's contact   ??   shift's contact
 | **`WB-E`** | the cron send + unsent visibility |
 
 🔴 **`WB-D` must not land after `WB-C` in production.** **A signed document that is still editable is worse than no signature at all**, because it looks authoritative and is not.
+
+---
+
+# 13 · 🔴 CORRECTION TO 11d — MEASURED 2026-09-30 · and the phasing is decided
+**`Contact` rows: 0. Client pages (clients system database): 93.** §11d's *"`Contact` already exists"* was inferred from the model's shape (PLANNER-HANDOVER §9) — nothing in the code ever creates a `Contact`. The order giver is a **client page** — the same concept a project's `Klant` relation points at, and it carries `email`, `phone` and `language` (`lang-nl|fr|en`) — everything the mail needs.
+- [x] **`ScheduledShift.contactPageId String?` → `GlobalPage` (relation `ShiftContact`), `ON DELETE SET NULL`, indexed.** Migration `20260930101000_shift_contact_page` — written, **Florin runs it**.
+- [ ] The picker validates server-side that the page belongs to the tenant's **clients** system database (`GlobalPage` is polymorphic — the FK only proves "a page").
+- [ ] `Contact` (empty, one reader: `get-contacts.ts`) is a retirement candidate — recorded, not touched.
+
+**Phasing (Florin): `A → B → C+D together → E`.** Signing and the route-level freeze ship as ONE release.

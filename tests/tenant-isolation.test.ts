@@ -123,6 +123,20 @@ describe('A · Schema Exhaustiveness & Census (TSC-9 §2A)', () => {
             }
         }
     });
+
+    test('every via parent is itself DIRECT — a via-of-via needs a chained clause, built on purpose (R1-4)', () => {
+        for (const [model, rule] of Object.entries(SCOPE)) {
+            if (rule.kind !== 'via') continue;
+            const body = schemaModels.get(model)!;
+            const m = body.match(new RegExp(`^\\s+${rule.through}\\s+(\\w+)`, 'm'));
+            assert.ok(m, `${model}.${rule.through}: relation type not found`);
+            const parent = m![1];
+            assert.equal(
+                SCOPE[parent]?.kind, 'direct',
+                `${model} scopes via ${rule.through} → ${parent}, which is "${SCOPE[parent]?.kind}". scopeWhere builds ONE level; extend it to chain before adding this.`
+            );
+        }
+    });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -131,7 +145,7 @@ describe('A · Schema Exhaustiveness & Census (TSC-9 §2A)', () => {
 
 // TODO(R1-4): remove the `todo` marker when scopeWhere is implemented.
 // Removing it is what turns these 13 assertions into a build gate.
-describe('B · Where-Builder Contract (TSC-9 §2B)', { todo: 'R1-4: scopeWhere not implemented' }, () => {
+describe('B · Where-Builder Contract (TSC-9 §2B)', () => {
     test('Class A: merges { tenantId } into where clause', () => {
         const where = scopeWhere('Invoice', 'tenant-alpha');
         assert.deepEqual(where, { tenantId: 'tenant-alpha' });
@@ -193,7 +207,7 @@ describe('B · Where-Builder Contract (TSC-9 §2B)', { todo: 'R1-4: scopeWhere n
 
 // TODO(R1-4): remove the `todo` marker when scopeWhere is implemented.
 // Removing it is what turns these 13 assertions into a build gate.
-describe('C · Regression Pins — this week\'s holes, named (TSC-9 §2C)', { todo: 'R1-4: scopeWhere not implemented' }, () => {
+describe('C · Regression Pins — this week\'s holes, named (TSC-9 §2C)', () => {
     // TSC-4a (read) & TSC-4b (write): missing relation allowed cross-tenant access to shift tasks
     test('ShiftTask → { shift: { tenantId } } (TSC-4a, TSC-4b read/write holes)', () => {
         const where = scopeWhere('ShiftTask', 'tenant-alpha');

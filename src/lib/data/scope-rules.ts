@@ -19,7 +19,7 @@ export class PlatformModelError extends Error {
 
 /**
  * Pure scope classification table for all 56 models in schema.prisma.
- * 33 Direct (Class A) · 20 Via (Class B) · 2 Platform (Class D) · 0 Undeclared (Class C)
+ * 34 Direct (Class A) · 20 Via (Class B) · 2 Platform (Class D) · 0 Undeclared (Class C)
  */
 export const SCOPE: Readonly<Record<string, ScopeRule>> = {
   // Class D: Platform models (2)
@@ -85,11 +85,37 @@ export const SCOPE: Readonly<Record<string, ScopeRule>> = {
   HrDocumentAcknowledgment: { kind: 'via', through: 'document' },
 };
 
+type Where = Record<string, unknown>;
+const isPlainObject = (v: unknown): v is Where => !!v && typeof v === 'object' && !Array.isArray(v);
+
+/** The tenant constraint for a model — `{ tenantId }` (direct) or `{ [parentRelation]: { tenantId } }` (via).
+ *  Every via parent is direct today; tests/tenant-isolation.test.ts fails the build if a via-of-via
+ *  appears, because it would need a chained clause built on purpose, not inferred. */
+function tenantClause(model: string, tenantId: string): Where {
+  const rule = SCOPE[model];
+  if (!rule) throw new UnclassifiedModelError(model);
+  if (rule.kind === 'platform') throw new PlatformModelError(model);
+  if (rule.kind === 'direct') return { tenantId };
+  return { [rule.through]: { tenantId } };
+}
+
+/** The scope WINS at every key it names; the caller's other filters are kept beside it. A user
+ *  where cannot overwrite the tenant, and anything it adds (OR, NOT, AND) is ANDed with the scope
+ *  at top level by Prisma — it can narrow the result, never widen it past the tenant. */
+function mergeScope(user: Where, scope: Where): Where {
+  const out: Where = { ...user };
+  for (const [k, v] of Object.entries(scope)) {
+    out[k] = isPlainObject(v) && isPlainObject(user[k]) ? mergeScope(user[k] as Where, v) : v;
+  }
+  return out;
+}
+
 /**
- * Pure. Returns the where-clause a scoped query must carry.
- * Throws for unknown/platform models.
- * RED for R1-4: throws NOT_IMPLEMENTED until R1-4 lands.
+ * Pure. The where-clause a scoped query must carry (R1-4 — the core of the TenantScopedClient).
+ * Throws UnclassifiedModelError (absent from SCOPE → fails closed) or PlatformModelError.
  */
-export function scopeWhere(_model: string, _tenantId: string, _userWhere?: object): object {
-  throw new Error('NOT_IMPLEMENTED');
+export function scopeWhere(model: string, tenantId: string, userWhere?: object): object {
+  if (!tenantId) throw new Error(`scopeWhere(${model}): no tenant — refusing to build an unscoped where`);
+  const clause = tenantClause(model, tenantId);
+  return userWhere && isPlainObject(userWhere) ? mergeScope(userWhere, clause) : clause;
 }

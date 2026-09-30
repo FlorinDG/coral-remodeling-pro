@@ -1,7 +1,18 @@
 # CoralOS Feature Matrix — Authoritative Tier Map
 
 > Product-owner approved. Update after every product decision.
-> Last confirmed: 2026-04-21
+> Last confirmed: 2026-04-21 · **amended 2026-09-30 (Florin) — see the decisions log below**
+
+## 🟢 DECISIONS LOG
+**2026-09-30 (Florin):**
+- **FREE caps Peppol, not invoicing.** Peppol **5 sent / 20 received** per month. Invoice creation is **unlimited**; an invoice above the send cap **stays a draft** — it cannot be sent until the next month or an upgrade.
+- 🟨 **Received above the cap — "held" vs "blocked" is OPEN.** `pd.md` says receipt is never blocked; Florin said "can't receive". Planner recommends **held**: stored, locked, visible ("1 invoice waiting — upgrade to open").
+- **Basic branding is NOT gated on any tier** — stationery, brand colour, templates, logo. *"It's a selling point, and frankly people expect to customise."* The "Powered by CoralOS" watermark / white-label is a separate row and unchanged.
+- **Batiprix = an add-on, Enterprise only** (not a tier; `ENTERPRISE_BATIPRIX` €199 in `stripe.ts` becomes Enterprise + add-on).
+- **The dead quota table goes:** `PLAN_PEPPOL_LIMITS` (50/250/1000, zero readers) is deleted; `PLAN_LIMITS` (sent/received) is the one source.
+- **Upgrade pressure = limits + smart pushes** (in-context nudges at the moment a limit is felt), never a crippled core.
+- **FOUNDER is removed** (decided 2026-09-26); its column below is historical.
+- PRO remains undefined — draft: `coral-draft-pro-tier.md`.
 
 ---
 
@@ -66,16 +77,16 @@ _Core module. Always enabled at signup._
 
 | Feature | FREE | PRO | ENTERPRISE | FOUNDER |
 |---|---|---|---|---|
-| **Facturen** (outgoing invoices) | ✅ 5/mo | ✅ 50/mo | ✅ unlimited | ✅ unlimited |
+| **Facturen** (outgoing invoices) | ✅ unlimited *(above the Peppol cap: draft only)* | ✅ unlimited | ✅ unlimited | ✅ unlimited |
 | **Offertes** (quotations) | ✅ 5/mo | ✅ 50/mo | ✅ unlimited | ✅ unlimited |
 | **Aankoopfacturen** (purchase invoices) | ✅ | ✅ | ✅ | ✅ |
 | **Onkostenfiches** (expense tickets) | ✅ | ✅ | ✅ | ✅ |
 | **Creditnota aankoop** | ✅ | ✅ | ✅ | ✅ |
 | **Creditnota verkoop** | 🔒 | ✅ | ✅ | ✅ |
 | **Peppol sent** | 5/mo | 20/mo | unlimited | unlimited |
-| **Peppol received** | 10/mo | 30/mo | unlimited | unlimited |
+| **Peppol received** | **20/mo** *(above: held vs blocked — OPEN)* | 30/mo | unlimited | unlimited |
 | PDF generation (auto, as-needed) | ✅ | ✅ | ✅ | ✅ |
-| PDF branding (tenant logo) | 🔒 | ✅ | ✅ | ✅ |
+| PDF branding — logo · stationery · brand colour · templates | ✅ **never gated** (2026-09-30) | ✅ | ✅ | ✅ |
 | Remove "Powered by CoralOS" watermark | 🔒 | 🔒 | ✅ | ✅ |
 | Multi-currency | 🔒 | 🔒 | ✅ | ✅ |
 | Email dispatch (transactional via Resend) | ✅ | ✅ | ✅ | ✅ |
@@ -88,8 +99,7 @@ _Articles (knowledge base) + Bestek/Posten (price book). Both gated by plan._
 | Feature | FREE | PRO | ENTERPRISE | FOUNDER |
 |---|---|---|---|---|
 | **Articles** (kennisbank — read) | 🔒 | ✅ manual add + import | ✅ advanced | ✅ advanced |
-| **Batiprix integration** (1 module) | 🔒 | 🔒 | ✅ 1 module included | ✅ 1 module included |
-| **Batiprix extra modules** | 🔒 | 🔒 | 💶 extra cost per module | 💶 extra cost |
+| **Batiprix** — **add-on, Enterprise only** (2026-09-30) | 🔒 | 🔒 | 💶 opt-in add-on | — |
 | **Bestek / Posten** (price book items) | 🔒 | ✅ hardcoded catalog | ✅ editable + personalized | ✅ editable + personalized |
 
 > **Bestek detail**:
@@ -233,7 +243,7 @@ _No toggle. Every tenant sees Settings. Depth grows by active modules + plan tie
 | Relations settings | 🔒 | if CRM | ✅ | ✅ |
 | Tasks settings | 🔒 | if TASKS | ✅ | ✅ |
 | Website settings | 🔒 | if WEBSITES | ✅ | ✅ |
-| **Branding / Logo** | 🔒 | ✅ | ✅ | ✅ |
+| **Branding / Logo / stationery / colour / templates** | ✅ never gated | ✅ | ✅ | ✅ |
 | **Custom domain** | 🔒 | 🔒 | ✅ | ✅ |
 | **API access** | 🔒 | 🔒 | ✅ | ✅ |
 | **User management** | 🔒 | ✅ (3 max) | ✅ unlimited | ✅ unlimited |

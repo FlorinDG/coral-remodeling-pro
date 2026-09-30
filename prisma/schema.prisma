@@ -132,6 +132,7 @@ model Tenant {
   hrDocuments                HrDocument[]
   hrApprovalRequests         HrApprovalRequest[]
   hrSupportMessages          HrSupportMessage[]
+  taskNotes                  TaskNote[]
 }
 
 model Lead {
@@ -744,6 +745,7 @@ model GlobalPage {
   updatedAt     DateTime       @updatedAt
   assignedTo    String[]
   database      GlobalDatabase @relation(fields: [databaseId], references: [id], onDelete: Cascade)
+  taskNotes     TaskNote[]
 
   @@index([databaseId])
   @@index([createdAt])
@@ -1076,4 +1078,29 @@ model AuditLog {
 
   @@index([tenantId, entityType, entityId])
   @@index([tenantId, createdAt])
+}
+
+/// TASK-CREW-1 (Florin 2026-09-30): a crew member's notes and photos about a task.
+/// Editable while `draft`; FROZEN at `submitted` (or by a werkbon signature). Corrections after
+/// submit go through the supervisor, outside the app (future: an in-app correction request).
+/// Every change is also written to AuditLog (immutable, read-only for every role).
+/// The task is an attribute of the note, not its owner (D-B precedent): deleting the task page
+/// keeps the note — `taskId` goes null and `taskTitle` still says what it was about.
+model TaskNote {
+  id          String      @id @default(cuid())
+  tenantId    String
+  taskId      String?
+  taskTitle   String
+  authorId    String
+  text        String      @default("")
+  photos      Json        @default("[]")
+  status      String      @default("draft")
+  submittedAt DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  task        GlobalPage? @relation(fields: [taskId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, taskId])
+  @@index([authorId])
 }

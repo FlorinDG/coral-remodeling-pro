@@ -695,7 +695,6 @@
     "tasks_demote_to_subtask": "Transformer en sous-tâche de...",
     "tasks_subtasks_promoted": "{count} sous-tâche(s) promue(s)",
     "tasks_inherited_from_parent": "Hérité de la tâche parente",
-    "tasks_no_project": "Aucun projet",
     "tasks_ready_to_close": "Prête à clôturer",
     "tasks_parent_task": "Tâche parente",
     "tasks_settings_title": "Paramètres du Gestionnaire de Tâches",
@@ -928,6 +927,17 @@
     "emptyState": {
       "title": "Aucune tâche ici",
       "description": "Tout est clair ! Vous n'avez aucune tâche dans cette vue."
+    },
+    "crewRecord": {
+      "notes": "Notes de l’équipe",
+      "history": "Historique",
+      "readOnly": "Lecture seule — chaque modification est enregistrée.",
+      "status": "statut → {stage}",
+      "stageTodo": "À faire",
+      "stageBusy": "En cours",
+      "stageDone": "Terminé",
+      "noteSubmitted": "a envoyé une note",
+      "loadFailed": "Les données de l’équipe n’ont pas pu être chargées"
     }
   },
   "Hr": {
@@ -1075,4 +1085,3 @@
     "documentArchivedCannotReplace": "Ce document est archivé et ne peut pas être remplacé."
   }
 }
-

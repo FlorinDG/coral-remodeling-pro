@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { CustomDatePicker } from '@/components/ui/CustomDatePicker';
 import FileViewer from '@/components/files/FileViewer';
+import { TaskCrewRecord } from './TaskCrewRecord';
 import { resolveFileUrl } from '@/lib/files';
 
 
@@ -590,6 +591,9 @@ export function TaskDetailPanel({ page, onClose, onUpdate, onDelete, onOpenFullP
                         </div>
                     </div>
                 )}
+
+                {/* TASK-CREW-1: the crew's notes and the change log — read-only for every role */}
+                <TaskCrewRecord taskId={page.id} />
 
                 {/* Completed timestamp */}
                 {completedAt && (

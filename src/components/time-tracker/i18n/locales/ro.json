@@ -276,7 +276,36 @@
     "done_one": "{{count}} finalizată",
     "done_few": "{{count}} finalizate",
     "done_other": "{{count}} de finalizate",
-    "noDetails": "Fără note sau atașamente"
+    "noDetails": "Fără note sau atașamente",
+    "status": "Stare",
+    "stage": {
+      "todo": "De făcut",
+      "busy": "În lucru",
+      "done": "Gata"
+    },
+    "notes": "Note",
+    "myNote": "Nota mea",
+    "notePlaceholder": "Ce ai lucrat, ce ai constatat? Adaugă fotografii.",
+    "addPhoto": "Foto",
+    "submitNote": "Trimite",
+    "submitNoteConfirm": "Trimiți această notă? După trimitere nu mai poate fi modificată.",
+    "submitHint": "Se păstrează ca ciornă până o trimiți. După trimitere este blocată — pentru corecturi, contactează șeful tău.",
+    "noteSubmitted": "Notă trimisă",
+    "discard": "Șterge ciorna",
+    "photoFailed": "Fotografia nu a putut fi adăugată",
+    "log": {
+      "title": "Istoric",
+      "status": "stare → {{stage}}",
+      "note": "a trimis o notă"
+    },
+    "error": {
+      "unauthorized": "Nu ești autentificat",
+      "not_found": "Sarcina nu a fost găsită",
+      "forbidden": "Doar echipa atribuită poate modifica această sarcină",
+      "frozen": "Această notă este trimisă și blocată",
+      "empty": "Scrie ceva sau adaugă o fotografie mai întâi",
+      "failed": "Ceva nu a mers bine"
+    }
   },
   "documents": {
     "title": "Documente",

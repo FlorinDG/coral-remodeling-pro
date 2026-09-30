@@ -273,7 +273,36 @@
     "empty": "No tasks assigned to you",
     "done_one": "{{count}} done",
     "done_other": "{{count}} done",
-    "noDetails": "No notes or attachments"
+    "noDetails": "No notes or attachments",
+    "status": "Status",
+    "stage": {
+      "todo": "To do",
+      "busy": "Busy",
+      "done": "Done"
+    },
+    "notes": "Notes",
+    "myNote": "My note",
+    "notePlaceholder": "What did you do, what did you find? Add photos.",
+    "addPhoto": "Photo",
+    "submitNote": "Submit",
+    "submitNoteConfirm": "Submit this note? After submitting it can no longer be changed.",
+    "submitHint": "Saved as a draft until you submit. After submitting it is locked — for changes, contact your supervisor.",
+    "noteSubmitted": "Note submitted",
+    "discard": "Discard draft",
+    "photoFailed": "The photo could not be added",
+    "log": {
+      "title": "History",
+      "status": "status → {{stage}}",
+      "note": "submitted a note"
+    },
+    "error": {
+      "unauthorized": "You are not signed in",
+      "not_found": "Task not found",
+      "forbidden": "Only the assigned crew can change this task",
+      "frozen": "This note is submitted and locked",
+      "empty": "Write something or add a photo first",
+      "failed": "Something went wrong"
+    }
   },
   "documents": {
     "title": "Documents",

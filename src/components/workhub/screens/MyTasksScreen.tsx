@@ -2,9 +2,8 @@
 /**
  * WH-2 · WorkHub — My tasks. Replaces the full admin task manager the crew was shown.
  *
- * READ-ONLY by design (useTasks.ts architecture): management owns and closes a task; the crew
- * reports progress on the shift assignment (Shift Brief → tasks). This screen answers
- * "what is on my plate, by when, and what do I need to know".
+ * Florin 2026-09-30 (TASK-CREW-1): the crew CAN change a task's status and write notes with photos;
+ * every change lands in a read-only log for every role (TaskRecordPanel → lib/data/task-crew.ts).
  *
  * Data: /api/hr/erp-tasks (server-scoped to the caller's reach) — not the ERP database store,
  * so this screen does not need the full ERP dataset on the phone.
@@ -20,6 +19,7 @@ import { hrList } from '@/lib/hr-api';
 import { resolveFileUrl } from '@/lib/files';
 import { describeError } from '@/lib/describe-error';
 import { formatWeekdayDayMonth, parseDateInput } from '@/lib/format/date';
+import { TaskRecordPanel } from '@/components/workhub/TaskRecordPanel';
 
 interface ErpTask {
   id: string;
@@ -219,9 +219,12 @@ export function MyTasksScreen() {
                     </div>
                   </section>
                 )}
-                {!notes && media.length === 0 && (
-                  <p className="text-base text-muted-foreground text-center py-4">{t('tasks.noDetails')}</p>
-                )}
+                {/* TASK-CREW-1: status · crew notes (draft → submit, frozen) · read-only log */}
+                <TaskRecordPanel
+                  taskId={open.id}
+                  onOpenMedia={(files, index) => setViewer({ files, index })}
+                  onStageChanged={() => tasksQ.refetch()}
+                />
               </div>
             </>
           )}

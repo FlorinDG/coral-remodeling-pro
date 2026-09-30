@@ -641,7 +641,7 @@
     "tasks_my_day": "Ziua Mea",
     "tasks_flagged": "Marcat",
     "tasks_assign_project": "Proiect",
-    "tasks_no_project": "Niciun proiect",
+    "tasks_no_project": "Fără proiect",
     "tasks_select_project": "Selectează proiect",
     "tasks_search_projects": "Caută proiecte...",
     "tasks_remove_project": "Elimină proiectul",
@@ -696,7 +696,6 @@
     "tasks_demote_to_subtask": "Fă sub-sarcină pentru...",
     "tasks_subtasks_promoted": "{count} sub-sarcini promovate la nivel principal",
     "tasks_inherited_from_parent": "Moștenit de la sarcina părinte",
-    "tasks_no_project": "Fără proiect",
     "tasks_ready_to_close": "Gata de finalizat",
     "tasks_parent_task": "Sarcină părinte",
     "tasks_settings_title": "Setări Gestionar Sarcini",
@@ -929,6 +928,17 @@
     "emptyState": {
       "title": "Nicio sarcină aici",
       "description": "Totul este clar! Nu ai nicio sarcină în această vizualizare."
+    },
+    "crewRecord": {
+      "notes": "Notele echipei",
+      "history": "Istoric",
+      "readOnly": "Doar citire — fiecare modificare este înregistrată.",
+      "status": "stare → {stage}",
+      "stageTodo": "De făcut",
+      "stageBusy": "În lucru",
+      "stageDone": "Gata",
+      "noteSubmitted": "a trimis o notă",
+      "loadFailed": "Datele echipei nu au putut fi încărcate"
     }
   },
   "Hr": {

@@ -696,7 +696,6 @@
     "tasks_demote_to_subtask": "Maak subtaak van...",
     "tasks_subtasks_promoted": "{count} subtaak/taken gepromoveerd naar hoofdtaak",
     "tasks_inherited_from_parent": "Overgenomen van hoofdtaak",
-    "tasks_no_project": "Geen project",
     "tasks_ready_to_close": "Klaar om af te sluiten",
     "tasks_parent_task": "Hoofdtaak",
     "tasks_settings_title": "Instellingen Taakbeheer",
@@ -929,6 +928,17 @@
     "emptyState": {
       "title": "Geen taken hier",
       "description": "Alles is duidelijk! Je hebt geen taken in deze weergave."
+    },
+    "crewRecord": {
+      "notes": "Notities van de ploeg",
+      "history": "Geschiedenis",
+      "readOnly": "Alleen-lezen — elke wijziging wordt gelogd.",
+      "status": "status → {stage}",
+      "stageTodo": "Te doen",
+      "stageBusy": "Bezig",
+      "stageDone": "Klaar",
+      "noteSubmitted": "diende een notitie in",
+      "loadFailed": "De gegevens van de ploeg konden niet geladen worden"
     }
   },
   "Hr": {
@@ -1076,4 +1086,3 @@
     "documentArchivedCannotReplace": "Dit document is gearchiveerd en kan niet worden vervangen."
   }
 }
-

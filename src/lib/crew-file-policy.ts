@@ -8,8 +8,8 @@
  * Office roles are unchanged (recorded as FILES-GATE-1 for Florin).
  */
 
-/** Where crew uploads land: clock-out photos, late entries, shift attachments. */
-export const CREW_UPLOAD_RECORD_TYPES: ReadonlySet<string> = new Set(['hr', 'shifts', 'hr-shift', 'schedules']);
+/** Where crew uploads land: clock-out photos, late entries, shift attachments, task-note photos (TASK-CREW-1). */
+export const CREW_UPLOAD_RECORD_TYPES: ReadonlySet<string> = new Set(['hr', 'shifts', 'hr-shift', 'schedules', 'task-notes']);
 
 /** The one shared folder the crew may browse (WorkHub → Documents). */
 export const CREW_SHARED_DOCS = { recordType: 'global', recordId: 'workhub-shared' } as const;

@@ -273,7 +273,36 @@
     "empty": "Aucune tâche ne vous est assignée",
     "done_one": "{{count}} terminée",
     "done_other": "{{count}} terminées",
-    "noDetails": "Pas de notes ni de pièces jointes"
+    "noDetails": "Pas de notes ni de pièces jointes",
+    "status": "Statut",
+    "stage": {
+      "todo": "À faire",
+      "busy": "En cours",
+      "done": "Terminé"
+    },
+    "notes": "Notes",
+    "myNote": "Ma note",
+    "notePlaceholder": "Qu’avez-vous fait, qu’avez-vous constaté ? Ajoutez des photos.",
+    "addPhoto": "Photo",
+    "submitNote": "Envoyer",
+    "submitNoteConfirm": "Envoyer cette note ? Ensuite elle ne pourra plus être modifiée.",
+    "submitHint": "Enregistrée comme brouillon jusqu’à l’envoi. Après l’envoi elle est verrouillée — pour une correction, contactez votre responsable.",
+    "noteSubmitted": "Note envoyée",
+    "discard": "Supprimer le brouillon",
+    "photoFailed": "La photo n’a pas pu être ajoutée",
+    "log": {
+      "title": "Historique",
+      "status": "statut → {{stage}}",
+      "note": "a envoyé une note"
+    },
+    "error": {
+      "unauthorized": "Vous n’êtes pas connecté",
+      "not_found": "Tâche introuvable",
+      "forbidden": "Seule l’équipe assignée peut modifier cette tâche",
+      "frozen": "Cette note est envoyée et verrouillée",
+      "empty": "Écrivez d’abord quelque chose ou ajoutez une photo",
+      "failed": "Une erreur s’est produite"
+    }
   },
   "documents": {
     "title": "Documents",

@@ -273,7 +273,36 @@
     "empty": "Geen taken aan jou toegewezen",
     "done_one": "{{count}} klaar",
     "done_other": "{{count}} klaar",
-    "noDetails": "Geen notities of bijlagen"
+    "noDetails": "Geen notities of bijlagen",
+    "status": "Status",
+    "stage": {
+      "todo": "Te doen",
+      "busy": "Bezig",
+      "done": "Klaar"
+    },
+    "notes": "Notities",
+    "myNote": "Mijn notitie",
+    "notePlaceholder": "Wat heb je gedaan, wat heb je vastgesteld? Voeg foto’s toe.",
+    "addPhoto": "Foto",
+    "submitNote": "Indienen",
+    "submitNoteConfirm": "Deze notitie indienen? Daarna kan ze niet meer gewijzigd worden.",
+    "submitHint": "Bewaard als klad tot je indient. Na indienen is ze vergrendeld — voor wijzigingen contacteer je je leidinggevende.",
+    "noteSubmitted": "Notitie ingediend",
+    "discard": "Klad verwijderen",
+    "photoFailed": "De foto kon niet toegevoegd worden",
+    "log": {
+      "title": "Geschiedenis",
+      "status": "status → {{stage}}",
+      "note": "diende een notitie in"
+    },
+    "error": {
+      "unauthorized": "Je bent niet aangemeld",
+      "not_found": "Taak niet gevonden",
+      "forbidden": "Enkel de toegewezen ploeg kan deze taak wijzigen",
+      "frozen": "Deze notitie is ingediend en vergrendeld",
+      "empty": "Schrijf eerst iets of voeg een foto toe",
+      "failed": "Er ging iets mis"
+    }
   },
   "documents": {
     "title": "Documenten",

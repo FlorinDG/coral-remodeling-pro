@@ -696,7 +696,6 @@
     "tasks_demote_to_subtask": "Make subtask of...",
     "tasks_subtasks_promoted": "{count} subtask(s) promoted to top level",
     "tasks_inherited_from_parent": "Inherited from parent",
-    "tasks_no_project": "No project",
     "tasks_ready_to_close": "Ready to close",
     "tasks_parent_task": "Parent task",
     "tasks_settings_title": "Task Manager Settings",
@@ -929,6 +928,17 @@
     "emptyState": {
       "title": "No tasks here",
       "description": "All clear! You don't have any tasks in this view."
+    },
+    "crewRecord": {
+      "notes": "Crew notes",
+      "history": "History",
+      "readOnly": "Read-only record — every change is logged.",
+      "status": "status → {stage}",
+      "stageTodo": "To do",
+      "stageBusy": "Busy",
+      "stageDone": "Done",
+      "noteSubmitted": "submitted a note",
+      "loadFailed": "Crew record could not be loaded"
     }
   },
   "Hr": {
@@ -1076,4 +1086,3 @@
     "documentArchivedCannotReplace": "This document is archived and cannot be replaced."
   }
 }
-

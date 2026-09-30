@@ -7,6 +7,7 @@ test('crew call paths keep working', () => {
     assert.equal(crewFileRefusal('upload', 'shifts'), null);                 // late entry (LateEntryCard)
     assert.equal(crewFileRefusal('upload', 'hr-shift', 's1'), null);         // shift attachments
     assert.equal(crewFileRefusal('list', 'global', 'workhub-shared'), null); // WorkHub → Documents
+    assert.equal(crewFileRefusal('upload', 'task-notes', 'task-1'), null);   // task note photos (TASK-CREW-1)
 });
 
 test('crew cannot reach the office files', () => {

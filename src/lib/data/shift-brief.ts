@@ -115,15 +115,12 @@ export async function shiftBrief(
                 }
             }
         } else {
-            // Fallback to HrProject
-            const hrProj = await prisma.hrProject.findFirst({
+            // PROJ-SSOT-1: not a project page → the other source, InternalProject (was HrProject — empty).
+            const internal = await prisma.internalProject.findFirst({
                 where: { id: shift.projectId, tenantId },
-                select: { name: true, address: true },
+                select: { name: true, projectCode: true },
             });
-            if (hrProj) {
-                projectName = hrProj.name.replace(/^\[ERP\]\s*/i, '').trim() || null;
-                address = hrProj.address?.trim() || null;
-            }
+            if (internal) projectName = `${internal.projectCode}: ${internal.name}`;
         }
     }
 

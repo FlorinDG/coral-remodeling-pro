@@ -43,7 +43,8 @@ export function ManualEntryModal({ open, onOpenChange, onSuccess }: Props) {
                 hrList<Employee>('employees').then(data => setEmployees(data)).catch(console.error);
             }
             if (projects.length === 0) {
-                hrList<any>('projects').then(data => setProjects(data)).catch(console.error);
+                // PROJ-SSOT-1: the one project source (was the empty HrProject list → no project to pick).
+                hrList<any>('erp-projects').then(data => setProjects(data)).catch(err => console.error('[ManualEntryModal] projects could not be loaded:', err));
             }
         }
     }, [open]);

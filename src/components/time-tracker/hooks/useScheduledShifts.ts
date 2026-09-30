@@ -123,17 +123,17 @@ export function useScheduledShifts() {
 
     const results = await Promise.allSettled([
       withTimeout(hrList<ScheduledShift>('shifts'), 9000, 'shifts'),
-      withTimeout(hrList<Project>('projects'), 9000, 'projects'),
+      // PROJ-SSOT-1: the HrProject list ('projects') is gone — one project source, one fewer call to fail.
       withTimeout(hrList<{ id: string; name: string; address?: string; latitude?: number; longitude?: number }>('erp-projects'), 9000, 'erp-projects'),
       withTimeout(hrList<{ id: string; userId?: string | null; firstName: string; lastName: string }>('employees'), 9000, 'employees'),
       withTimeout(hrList<any>('time-off'), 9000, 'time-off'),
     ]);
 
-    const [shiftsRes, projectsRes, erpProjectsRes, employeesRes] = results;
+    const [shiftsRes, erpProjectsRes, employeesRes] = results;
 
     const currentErrors: Record<string, Error> = {};
     const failed: string[] = [];
-    const endpointNames = ['shifts', 'projects', 'erp-projects', 'employees', 'time-off'] as const;
+    const endpointNames = ['shifts', 'erp-projects', 'employees', 'time-off'] as const;
 
     results.forEach((res, i) => {
       if (res.status === 'rejected') {
@@ -155,12 +155,11 @@ export function useScheduledShifts() {
     }
 
     // Projects: graceful degradation
-    const projectsData: Project[] = projectsRes.status === 'fulfilled' ? projectsRes.value : [];
     const erpProjectsData = erpProjectsRes.status === 'fulfilled' ? erpProjectsRes.value : [];
 
     const normalizedErpProjects: Project[] = erpProjectsData.map(p => ({
       id: p.id,
-      name: `[ERP] ${p.name}`,
+      name: p.name,   // PROJ-SSOT-1: no "[ERP] " prefix — there is one kind of project
       address: p.address || null,
       latitude: p.latitude || null,
       longitude: p.longitude || null,
@@ -171,7 +170,7 @@ export function useScheduledShifts() {
       isErp: true,
     }));
 
-    const allProjects = [...projectsData, ...normalizedErpProjects];
+    const allProjects = normalizedErpProjects;
     const projectMap = new Map(allProjects.map(p => [p.id, p]));
 
     // Employees lookup: graceful degradation

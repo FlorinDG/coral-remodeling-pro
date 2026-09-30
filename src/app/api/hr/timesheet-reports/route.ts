@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
 import { resolveReach } from '@/app/api/hr/lib/actor-reach';
+import { resolveProjects } from '@/lib/data/projects';
 import { computeWorkedDuration } from '@/lib/computeWorkedDuration';
 import { resolveWorkerUserId } from '@/lib/resolveWorkerIdentity';
 import { ClockEntry } from '@prisma/client';
@@ -119,10 +120,8 @@ export async function GET(req: Request) {
     const userMap = new Map(users.map(u => [u.id, u]));
 
     // We need projects for names
-    const projects = await prisma.hrProject.findMany({
-        where: { tenantId: ctx.tenantId }
-    });
-    const projMap = new Map(projects.map((p: any) => [p.id, p]));
+    // PROJ-SSOT-1: the one resolver (was HrProject — zero rows → the by-project rollup grouped nothing).
+    const projMap = new Map((await resolveProjects(ctx.tenantId)).map(p => [p.id, p]));
 
     // Process entries and build rollups
     const processedEntries = [];

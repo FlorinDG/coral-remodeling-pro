@@ -18,6 +18,7 @@ import { resolveReach } from '../lib/actor-reach';
 import { hrWriteRefusal } from '../lib/write-policy';
 import { describeError } from '@/lib/describe-error';
 import { isShiftSubmitted, zonedParts } from '@/lib/kernel/shift-time';
+import { resolveProjects, projectNameMap } from '@/lib/data/projects';
 import crypto from 'crypto';
 import { Resend } from 'resend';
 import React from 'react';
@@ -207,58 +208,19 @@ export async function GET(
             const locked = (tenant?.lockedDbIds as Record<string, string>) || {};
 
             if (entity === 'erp-projects') {
-                const projectDbId = locked['projects'] || 'db-1';
-
-                let projectWhere: any = { databaseId: projectDbId, database: { tenantId: ctx.tenantId } };
-                let internalProjectWhere: any = { tenantId: ctx.tenantId };
-
+                // PROJ-SSOT-1: the ONE resolver (lib/data/projects.ts). The non-admin filter stays
+                // HERE, with the caller's reach — the resolver never widens or narrows on its own.
+                let onlyIds: string[] | undefined;
                 if (!isAdminRole) {
                     const accessibleIds = Array.from(reach.userIds ?? []);
                     const shifts = await prisma.scheduledShift.findMany({
                         where: { userId: { in: accessibleIds }, tenantId: ctx.tenantId },
                         select: { projectId: true }
                     });
-                    const allowedProjectIds = Array.from(new Set(shifts.map(s => s.projectId).filter(Boolean))) as string[];
-                    projectWhere.id = { in: allowedProjectIds };
-                    internalProjectWhere.id = { in: allowedProjectIds };
+                    onlyIds = Array.from(new Set(shifts.map(s => s.projectId).filter(Boolean))) as string[];
                 }
-
-                // Fetch from GlobalPage (Dynamic DB)
-                const dynamicProjects = await prisma.globalPage.findMany({
-                    where: projectWhere,
-                    select: { id: true, properties: true, createdAt: true }
-                });
-
-                // Fetch from InternalProject (Specialized Model)
-                const internalProjects = await prisma.internalProject.findMany({
-                    where: internalProjectWhere,
-                    select: { id: true, name: true, projectCode: true, createdAt: true }
-                });
-
-                // Merge
-                const merged = [
-                    ...dynamicProjects.map(p => {
-                        const props = p.properties as Record<string, unknown>;
-                        const loc = props['location'] as { address?: string; lat?: number; lng?: number } | undefined;
-                        return {
-                            id: p.id,
-                            name: String(props?.title || props?.name || 'Untitled'),
-                            address: loc?.address || null,
-                            latitude: loc?.lat || null,
-                            longitude: loc?.lng || null,
-                            source: 'dynamic',
-                            createdAt: p.createdAt,
-                        };
-                    }),
-                    ...internalProjects.map(p => ({
-                        id: p.id,
-                        name: `${p.projectCode}: ${p.name}`,
-                        source: 'internal',
-                        createdAt: p.createdAt,
-                    }))
-                ];
-
-                return NextResponse.json(merged);
+                const projects = await resolveProjects(ctx.tenantId, onlyIds ? { onlyIds } : undefined);
+                return NextResponse.json(projects);
             }
 
             if (entity === 'erp-tasks') {
@@ -405,18 +367,12 @@ export async function GET(
             if (entity === 'shifts') {
                 const projectIds = [...new Set(records.map((r: any) => r.projectId).filter(Boolean))] as string[];
                 if (projectIds.length > 0) {
-                    const projects = await prisma.hrProject.findMany({
-                        where: { id: { in: projectIds } },
-                        select: { id: true, name: true }
-                    });
-                    const projectMap = new Map(projects.map((p: any) => [p.id, p.name]));
-                    records = records.map((r: any) => {
-                        let projectName = (r.projectId ? projectMap.get(r.projectId) : undefined) as string | undefined;
-                        if (projectName && projectName.startsWith('[ERP] ')) {
-                            projectName = projectName.replace('[ERP] ', '');
-                        }
-                        return { ...r, projectName };
-                    });
+                    // PROJ-SSOT-1: names from the one resolver (was HrProject — empty, and unscoped by tenant).
+                    const projectMap = await projectNameMap(ctx.tenantId, projectIds);
+                    records = records.map((r: any) => ({
+                        ...r,
+                        projectName: r.projectId ? projectMap.get(r.projectId) : undefined,
+                    }));
                 }
             }
 

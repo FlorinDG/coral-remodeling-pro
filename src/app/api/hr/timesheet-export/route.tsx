@@ -6,6 +6,7 @@ import { computeWorkedDuration } from '@/lib/computeWorkedDuration';
 import * as XLSX from 'xlsx';
 import { ClockEntry } from '@prisma/client';
 import { zonedParts } from '@/lib/kernel/shift-time';
+import { resolveProjects } from '@/lib/data/projects';
 import { isSelfApproved } from '@/lib/provenance';
 import { Document, Page, Text, View, StyleSheet, renderToBuffer } from '@react-pdf/renderer';
 
@@ -103,10 +104,8 @@ export async function GET(req: Request) {
     });
     const empMap = new Map(employees.map(e => [e.userId, e]));
 
-    const projects = await prisma.hrProject.findMany({
-        where: { tenantId: ctx.tenantId }
-    });
-    const projMap = new Map(projects.map((p: any) => [p.id, p]));
+    // PROJ-SSOT-1: the one resolver (was HrProject — zero rows → "Unknown Project" on every attributed line).
+    const projMap = new Map((await resolveProjects(ctx.tenantId)).map(p => [p.id, p]));
 
     const users = await prisma.user.findMany({
         where: { tenantId: ctx.tenantId },

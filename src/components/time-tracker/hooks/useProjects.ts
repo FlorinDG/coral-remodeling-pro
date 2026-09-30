@@ -22,7 +22,8 @@ export function useProjects() {
   const fetchProjects = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await hrList<Project>('projects');
+      // PROJ-SSOT-1: the one project source (was the empty HrProject list).
+      const data = await hrList<Project>('erp-projects');
       setProjects(data);
     } catch (err) {
       console.error('[useProjects] error:', err);

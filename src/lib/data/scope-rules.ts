@@ -18,7 +18,7 @@ export class PlatformModelError extends Error {
 }
 
 /**
- * Pure scope classification table for all 55 models in schema.prisma.
+ * Pure scope classification table for all 56 models in schema.prisma.
  * 33 Direct (Class A) · 20 Via (Class B) · 2 Platform (Class D) · 0 Undeclared (Class C)
  */
 export const SCOPE: Readonly<Record<string, ScopeRule>> = {
@@ -49,6 +49,7 @@ export const SCOPE: Readonly<Record<string, ScopeRule>> = {
   GlobalDatabase: { kind: 'direct' },
   ClockEntry: { kind: 'direct' },
   ScheduledShift: { kind: 'direct' },
+  TaskNote: { kind: 'direct' },       // TASK-CREW-1: carries its own tenantId (FK, cascade)
   ShiftTemplate: { kind: 'direct' },
   HrTeam: { kind: 'direct' },
   TimeOffRequest: { kind: 'direct' },

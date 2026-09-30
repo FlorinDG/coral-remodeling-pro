@@ -255,7 +255,7 @@ export async function submitLateEntry(params: {
                     shiftDate,
                     shiftStart,
                     shiftEnd,
-                    status: 'completed',
+                    // not 'completed': only the crew member's submit completes a shift (2026-09-30)
                     createdBy: session.user.id,
                 }
             });

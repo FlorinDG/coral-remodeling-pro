@@ -16,6 +16,7 @@ import prisma from '@/lib/prisma';
 import { buildAuditLogData, buildAuditLogOperation } from '@/lib/audit';
 import { resolveReach } from '../lib/actor-reach';
 import { hrWriteRefusal } from '../lib/write-policy';
+import { isShiftSubmitted } from '@/lib/kernel/shift-time';
 import crypto from 'crypto';
 import { Resend } from 'resend';
 import React from 'react';
@@ -527,7 +528,7 @@ export async function POST(
     }
 
     // ── PRE-CREATE Automations ───────────────────────────────────────
-    let parentShift: { id: string; projectId: string | null } | null = null;
+    let parentShift: { id: string; projectId: string | null; status?: string } | null = null;
     if (entity === 'clock-entries') {
         // Seraph (checklist item 8): the worker an entry is FOR must be a user of THIS tenant.
         // ClockEntry.userId has no FK; without this a foreign user's id was accepted as-is.
@@ -581,8 +582,12 @@ export async function POST(
                 // TODO(R1-4): Class-B parent check — TenantScopedClient makes this automatic (TSC-0 D7). Delete this block when R1-4 lands.
                 parentShift = await prisma.scheduledShift.findFirst({
                     where: { id: data.shiftId as string, tenantId: ctx.tenantId },
-                    select: { id: true, projectId: true },
+                    select: { id: true, projectId: true, status: true },
                 });
+                // A SUBMITTED shift is closed: the crew member attested it complete.
+                if (parentShift && isShiftSubmitted(parentShift.status) && !writeReach.mayApprove) {
+                    return NextResponse.json({ error: 'shift_submitted' }, { status: 409 });
+                }
                 if (!parentShift) {
                     // 🔴 NOT a 404. The entry is real work and is always recorded.
                     warnings.push('shift_not_found');   // surfaced on the response
@@ -852,7 +857,7 @@ export async function PATCH(
                                     shiftDate,
                                     shiftStart,
                                     shiftEnd,
-                                    status: 'completed',
+                                    // not 'completed': only the crew member's submit completes a shift
                                     createdBy: approval.reviewedBy || ctx.userId,
                                 }
                             });
@@ -868,42 +873,12 @@ export async function PATCH(
             }
         }
 
-        // Clock-out (clockOutTime set) → set shift status to 'completed' (HRA-3)
-        const patchShiftId = (record as { shiftId?: string })?.shiftId;
-        if (entity === 'clock-entries' && data.clockOutTime && patchShiftId) {
-            try {
-                const result = await prisma.scheduledShift.updateMany({
-                    where: { id: patchShiftId, tenantId: ctx.tenantId },
-                    data: { status: 'completed' },
-                });
-                if (result.count === 0) {
-                    console.error(`[HR API] PATCH clock-entries: shift ${patchShiftId} not found for tenant ${ctx.tenantId}`);
-                    warnings.push('shift_status_not_updated');
-                }
-            } catch (err) {
-                console.error('[HR API] Failed to update shift status on clock-out:', err);
-                warnings.push('shift_status_not_updated');
-            }
-        }
+        // HRA-3 REMOVED (Florin 2026-09-30): clock-out no longer completes the shift. A shift is
+        // completed ONLY when the crew member submits it (lib/data/shift-submit.ts) — a shift can be
+        // worked more than once, and submitting is the crew's accountable act.
 
-        // Shift task completed → check if all sibling tasks are done
-        if (entity === 'shift-tasks' && data.status === 'completed' && (record as { shiftId?: string }).shiftId) {
-            try {
-                const shiftId = (record as { shiftId: string }).shiftId;
-                const allTasks = await prisma.shiftTask.findMany({
-                    where: { shiftId },
-                });
-                const allDone = allTasks.every(t => t.status === 'completed');
-                if (allDone && allTasks.length > 0) {
-                    await prisma.scheduledShift.update({
-                        where: { id: shiftId },
-                        data: { status: 'completed' },
-                    });
-                }
-            } catch (err) {
-                console.error('[HR API] Failed to update shift status when all tasks completed:', err);
-            }
-        }
+        // (Removed 2026-09-30: finishing every shift task no longer completes the shift — only the
+        //  crew member's submit does.)
 
         return NextResponse.json(
             warnings.length > 0 ? { ...(typeof record === 'object' && record !== null ? record : {}), warnings } : record

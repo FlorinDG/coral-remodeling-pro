@@ -171,7 +171,21 @@
     "markDone": "Gata",
     "taskFallback": "Sarcină",
     "taskUpdateFailed": "Sarcina nu a putut fi actualizată",
-    "clockInAgain": "Pontează din nou"
+    "clockInAgain": "Pontează din nou",
+    "submitted": "Trimisă",
+    "toSubmit": "De trimis",
+    "submittedLong": "Tură trimisă",
+    "submitShift": "Trimite tura",
+    "submitConfirm": "Trimiți această tură? După trimitere nu mai poți ponta pe ea și nici s-o modifici.",
+    "submittedToast": "Tură trimisă",
+    "submitError": {
+      "unauthorized": "Nu ești autentificat",
+      "not_found": "Tura nu a fost găsită",
+      "already_submitted": "Această tură a fost deja trimisă",
+      "clock_out_first": "Mai întâi depontează",
+      "nothing_recorded": "Nu s-au înregistrat ore pe această tură",
+      "failed": "Tura nu a putut fi trimisă"
+    }
   },
   "timeOff": {
     "title": "Concediu",

@@ -170,7 +170,21 @@
     "markDone": "Done",
     "taskFallback": "Task",
     "taskUpdateFailed": "Could not update the task",
-    "clockInAgain": "Clock in again"
+    "clockInAgain": "Clock in again",
+    "submitted": "Submitted",
+    "toSubmit": "To submit",
+    "submittedLong": "Shift submitted",
+    "submitShift": "Submit shift",
+    "submitConfirm": "Submit this shift? After submitting you can no longer clock into it or change it.",
+    "submittedToast": "Shift submitted",
+    "submitError": {
+      "unauthorized": "You are not signed in",
+      "not_found": "Shift not found",
+      "already_submitted": "This shift was already submitted",
+      "clock_out_first": "Clock out first",
+      "nothing_recorded": "No hours were recorded on this shift",
+      "failed": "The shift could not be submitted"
+    }
   },
   "timeOff": {
     "title": "Time Off",

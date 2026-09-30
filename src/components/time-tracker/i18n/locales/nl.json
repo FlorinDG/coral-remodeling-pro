@@ -170,7 +170,21 @@
     "markDone": "Klaar",
     "taskFallback": "Taak",
     "taskUpdateFailed": "De taak kon niet bijgewerkt worden",
-    "clockInAgain": "Opnieuw inklokken"
+    "clockInAgain": "Opnieuw inklokken",
+    "submitted": "Ingediend",
+    "toSubmit": "In te dienen",
+    "submittedLong": "Dienst ingediend",
+    "submitShift": "Dienst indienen",
+    "submitConfirm": "Deze dienst indienen? Daarna kun je er niet meer op inklokken of iets aan wijzigen.",
+    "submittedToast": "Dienst ingediend",
+    "submitError": {
+      "unauthorized": "Je bent niet aangemeld",
+      "not_found": "Dienst niet gevonden",
+      "already_submitted": "Deze dienst is al ingediend",
+      "clock_out_first": "Eerst uitklokken",
+      "nothing_recorded": "Er zijn geen uren geregistreerd op deze dienst",
+      "failed": "De dienst kon niet ingediend worden"
+    }
   },
   "timeOff": {
     "title": "Verlof",

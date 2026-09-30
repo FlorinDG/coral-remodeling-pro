@@ -76,7 +76,7 @@ export function LateEntryForm({ open, onClose }: LateEntryFormProps) {
           shiftDate: date,
           shiftStart: clockIn,
           shiftEnd: clockOut,
-          status: 'Completed',
+          // not 'Completed': the worker submits the shift from the Shift Brief (2026-09-30)
           createdBy: user.id,
         });
         shiftId = shift?.id || null;

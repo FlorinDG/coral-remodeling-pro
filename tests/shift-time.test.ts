@@ -36,3 +36,12 @@ test('overnight shift', () => {
     const night = { shiftDate: day, shiftStart: '22:00', shiftEnd: '06:00' };
     assert.equal(shiftTemporalState(night, new Date(2026, 9, 1, 3, 0)), 'current');
 });
+
+test('a shift is submitted only when its status says so — both spellings in production', async () => {
+    const { isShiftSubmitted } = await import('../src/lib/kernel/shift-time.ts');
+    assert.equal(isShiftSubmitted('completed'), true);
+    assert.equal(isShiftSubmitted('Completed'), true);      // legacy LateEntryForm rows
+    assert.equal(isShiftSubmitted('in-progress'), false);   // clocked in, not submitted
+    assert.equal(isShiftSubmitted('scheduled'), false);
+    assert.equal(isShiftSubmitted(null), false);
+});

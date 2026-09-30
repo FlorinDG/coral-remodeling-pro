@@ -19,7 +19,8 @@ import { describeError } from '@/lib/describe-error';
 import { shiftBrief, type ShiftBriefResult } from '@/lib/data/shift-brief';
 import { ShiftBriefDetails } from '@/components/workhub/ShiftBriefDetails';
 import FileViewer, { type ViewableFile } from '@/components/files/FileViewer';
-import { shiftTemporalState, compareShifts } from '@/lib/kernel/shift-time';
+import { shiftTemporalState, compareShifts, isShiftSubmitted } from '@/lib/kernel/shift-time';
+import { submitShift } from '@/lib/data/shift-submit';
 
 // Shift time is kernel (kernel/shift-time): built from parts, local, one definition for list + clock.
 const getShiftTemporalState = (shiftDate: string, shiftStart: string, shiftEnd: string, now: Date) =>
@@ -112,6 +113,16 @@ function ShiftCard({ shift, isNextShift, activeEntry, elapsedTime, now, onClick 
                     <Badge variant="outline" className="text-sm font-normal py-0 px-2">{t('schedule.next')}</Badge>
                   )}
                 </div>
+                {/* Accountability: a worked shift waits for its worker to submit it */}
+                {isShiftSubmitted(shift.status) ? (
+                  <span className="text-sm font-semibold px-2 py-0.5 rounded-full bg-[var(--persian-green)]/10 text-[var(--persian-green)]">
+                    ✓ {t('schedule.submitted')}
+                  </span>
+                ) : (shift.clockEntries || []).some((e: { clockOutTime?: string | null }) => e.clockOutTime != null) ? (
+                  <span className="text-sm font-semibold px-2 py-0.5 rounded-full bg-[var(--tawny)]/10 text-[var(--tawny)]">
+                    {t('schedule.toSubmit')}
+                  </span>
+                ) : null}
               </div>
             </div>
           </div>
@@ -126,7 +137,8 @@ export function MySchedule() {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const { isManager } = useUserRoles();
-  const { shifts, loading, error, failedEndpoints } = useScheduledShifts();
+  const { shifts, loading, error, failedEndpoints, refetch: refetchShifts } = useScheduledShifts();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { activeEntry, clockIn, clockOut } = useClockEntries();
   const { location, requestLocation } = useGeolocation();
   const [isClockingIn, setIsClockingIn] = useState(false);
@@ -283,6 +295,27 @@ export function MySchedule() {
       toast.error('Failed to clock in');
     } finally {
       setIsClockingIn(false);
+    }
+  };
+
+  const handleSubmitShift = async (shiftId: string) => {
+    if (!window.confirm(t('schedule.submitConfirm'))) return;
+    setIsSubmitting(true);
+    try {
+      const res = await submitShift(shiftId);
+      if (res.ok) {
+        toast.success(t('schedule.submittedToast'));
+        setSelectedShift((s: any) => (s && s.id === shiftId ? { ...s, status: 'completed' } : s));
+        await refetchShifts();
+      } else {
+        console.error('[MySchedule] submit refused:', res);
+        toast.error(`${t(`schedule.submitError.${res.error}`)}${res.detail ? ` — ${res.detail}` : ''}`);
+      }
+    } catch (err) {
+      console.error('[MySchedule] submit failed:', err);
+      toast.error(`${t('schedule.submitError.failed')} — ${describeError(err)}`);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -460,7 +493,11 @@ export function MySchedule() {
 
                 {/* Clock Action Surface */}
                 <div className="p-4 border-t border-neutral-100 dark:border-white/10 bg-neutral-50/50 dark:bg-neutral-900/50 flex flex-col items-center">
-                  {activeEntry && activeEntry.shiftId === selectedShift.id ? (
+                  {isShiftSubmitted(selectedShift.status) ? (
+                    <p className="w-full text-center py-3 text-base font-semibold text-[var(--persian-green)]">
+                      ✓ {t('schedule.submittedLong')}
+                    </p>
+                  ) : activeEntry && activeEntry.shiftId === selectedShift.id ? (
                     <>
                       <div className="text-3xl font-mono font-bold text-[var(--tawny)] mb-3 tracking-wider">
                         {elapsedTime}
@@ -488,6 +525,18 @@ export function MySchedule() {
                           ? t('schedule.clockInAgain')
                           : t('schedule.clockIntoShift')}
                       </Button>
+                      {/* THE ONE DOOR that completes a shift — the worker's own accountable act */}
+                      {(selectedShift.clockEntries?.some((e: { clockOutTime?: string | null }) => e.clockOutTime != null) ?? false) && (
+                        <Button
+                          variant="outline"
+                          className="w-full h-14 mt-3 text-base font-bold rounded-xl border-2 border-[var(--persian-green)] text-[var(--persian-green)]"
+                          onClick={() => handleSubmitShift(selectedShift.id)}
+                          disabled={isSubmitting || !!activeEntry}
+                        >
+                          {isSubmitting && <Loader2 className="w-5 h-5 animate-spin mr-2" />}
+                          {t('schedule.submitShift')}
+                        </Button>
+                      )}
                     </>
                   )}
                 </div>

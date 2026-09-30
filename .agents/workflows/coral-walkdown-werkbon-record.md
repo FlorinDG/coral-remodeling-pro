@@ -300,3 +300,9 @@ recipient  =  project's contact   ??   shift's contact
 - [ ] `Contact` (empty, one reader: `get-contacts.ts`) is a retirement candidate — recorded, not touched.
 
 **Phasing (Florin): `A → B → C+D together → E`.** Signing and the route-level freeze ship as ONE release.
+
+## 13a · 🔴 THE FREEZE HAS THE GRAIN OF THE WORK ORDER, NOT THE DAY — Florin 2026-09-30
+> *"even if a client form is signed, that locks the work order, not the entire work day. think field service"*
+- A worker may do **several jobs in one day**. Signing one werkbon locks **that work order's** entries, photos and notes — **nothing else of that day**.
+- 🛑 **`WB-D` must never freeze by date or by worker.** The lock key is the werkbon's **recorded membership** (its entries), never "everything on that date".
+- Same grain as the crew's **shift submit** (`lib/data/shift-submit.ts`): per shift, never per day.

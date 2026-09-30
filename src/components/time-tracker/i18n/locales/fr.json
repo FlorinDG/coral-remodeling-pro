@@ -170,7 +170,21 @@
     "markDone": "Terminé",
     "taskFallback": "Tâche",
     "taskUpdateFailed": "La tâche n’a pas pu être mise à jour",
-    "clockInAgain": "Pointer à nouveau"
+    "clockInAgain": "Pointer à nouveau",
+    "submitted": "Envoyé",
+    "toSubmit": "À envoyer",
+    "submittedLong": "Service envoyé",
+    "submitShift": "Envoyer le service",
+    "submitConfirm": "Envoyer ce service ? Ensuite vous ne pourrez plus pointer dessus ni le modifier.",
+    "submittedToast": "Service envoyé",
+    "submitError": {
+      "unauthorized": "Vous n’êtes pas connecté",
+      "not_found": "Service introuvable",
+      "already_submitted": "Ce service a déjà été envoyé",
+      "clock_out_first": "Dépointez d’abord",
+      "nothing_recorded": "Aucune heure n’a été enregistrée sur ce service",
+      "failed": "Le service n’a pas pu être envoyé"
+    }
   },
   "timeOff": {
     "title": "Congés",

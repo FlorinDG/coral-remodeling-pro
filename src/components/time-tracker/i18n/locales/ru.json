@@ -158,7 +158,21 @@
     "markDone": "Готово",
     "taskFallback": "Задача",
     "taskUpdateFailed": "Не удалось обновить задачу",
-    "clockInAgain": "Отметиться снова"
+    "clockInAgain": "Отметиться снова",
+    "submitted": "Отправлена",
+    "toSubmit": "Отправить",
+    "submittedLong": "Смена отправлена",
+    "submitShift": "Отправить смену",
+    "submitConfirm": "Отправить эту смену? После отправки нельзя будет отметиться на ней или изменить её.",
+    "submittedToast": "Смена отправлена",
+    "submitError": {
+      "unauthorized": "Вы не вошли в систему",
+      "not_found": "Смена не найдена",
+      "already_submitted": "Эта смена уже отправлена",
+      "clock_out_first": "Сначала отметьте уход",
+      "nothing_recorded": "На этой смене не записано часов",
+      "failed": "Не удалось отправить смену"
+    }
   },
   "timeOff": {
     "title": "Отпуск",

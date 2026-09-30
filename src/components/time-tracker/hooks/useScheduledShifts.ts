@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { hrList, hrCreate, hrUpdate, hrDelete } from '@/lib/hr-api';
 import { useDatabaseStore } from '@/components/admin/database/store';
 import { useUserRoles } from '@/components/time-tracker/hooks/useUserRoles';
-import { pickShiftNow, localDateKey } from '@/lib/kernel/shift-time';
+import { pickShiftNow, localDateKey, isShiftSubmitted } from '@/lib/kernel/shift-time';
 
 export const NOTION_COLORS = [
   { name: 'blue',    value: '#3b82f6', bg: '#dbeafe' },
@@ -270,7 +270,8 @@ export function useScheduledShifts() {
   // Was `.find()` over createdAt order — with two shifts in a day it returned the later-created one —
   // and "today" was toISOString() (UTC), i.e. yesterday between 00:00 and 02:00 in Belgium.
   const getTodayShift = useCallback(() => {
-    return pickShiftNow(shifts.filter(s => s.userId === userId), new Date());
+    // A SUBMITTED shift is closed to clocking — it is never "now".
+    return pickShiftNow(shifts.filter(s => s.userId === userId && !isShiftSubmitted(s.status)), new Date());
   }, [shifts, userId]);
 
   const createUserShift = useCallback(async () => {
@@ -289,7 +290,8 @@ export function useScheduledShifts() {
   const completeUserShift = useCallback(async (shiftId: string) => {
     const now = new Date();
     const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-    return updateShift(shiftId, { shiftEnd: timeStr, status: 'completed' });
+    // Sets the ad-hoc shift's END TIME only — it is not completed until the worker submits it.
+    return updateShift(shiftId, { shiftEnd: timeStr });
   }, [updateShift]);
 
   const createProject = useCallback(async (nameOrData: string | Partial<Project>, address?: string | null, color?: string) => {

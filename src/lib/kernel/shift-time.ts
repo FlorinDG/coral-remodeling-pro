@@ -46,7 +46,8 @@ export function compareShifts(a: ShiftTimes, b: ShiftTimes): number {
 /**
  * "The shift that is NOW" among today's shifts: the one running; else the next one to start today;
  * else the last one that ended today (so you can clock back into where you just were).
- * Status is deliberately ignored — a completed shift can be worked again (Florin: twice at one site).
+ * Status is not consulted here — callers that CLOCK decide which shifts are eligible (a submitted
+ * shift is closed; one worked earlier today but not yet submitted can be worked again).
  */
 export function pickShiftNow<T extends ShiftTimes>(shifts: T[], now: Date): T | null {
     const today = localDateKey(now);
@@ -57,4 +58,14 @@ export function pickShiftNow<T extends ShiftTimes>(shifts: T[], now: Date): T | 
     const next = todays.find(s => shiftTemporalState(s, now) === 'upcoming');
     if (next) return next;
     return todays[todays.length - 1];
+}
+
+/**
+ * Florin, 2026-09-30: "no shift should be completed until manually submitted by crew member.
+ * this guarantees complete capture and accountability." A shift is completed ONLY by the
+ * submit action (lib/data/shift-submit.ts) — never by clock-out, tasks, or creation.
+ * Legacy rows carry 'Completed' (capitalised) — both spellings read as submitted.
+ */
+export function isShiftSubmitted(status: string | null | undefined): boolean {
+    return (status || '').toLowerCase() === 'completed';
 }

@@ -6,10 +6,17 @@
 ## 🟢 DECISIONS LOG
 **2026-09-30 (Florin):**
 - **FREE caps Peppol, not invoicing.** Peppol **5 sent / 20 received** per month. Invoice creation is **unlimited**; an invoice above the send cap **stays a draft** — it cannot be sent until the next month or an upgrade.
-- 🔴 **Peppol RECEIVE is NEVER blocked — "TRUE and stays holy" (Florin, 2026-09-30).** The 20 received is a **soft cap**: every incoming document arrives and is fully usable (not held, not locked — bookkeeping always continues). Above 20 the tenant is in **billable territory**: the flag says so (each further document is charged as overage), and **if no payment method is on file, the tenant is asked to add one.** The document is still delivered and usable either way. The above-cap draft rule applies to **sending** only.
+- 🔴 **Peppol RECEIVE is NEVER blocked — "TRUE and stays holy" (Florin, 2026-09-30).** The 20 received is a **soft cap**: every incoming document arrives and is fully usable (not held, not locked — bookkeeping always continues). Above 20 the tenant is in **billable territory** — see **THE PAYMENT-METHOD CASE** below. The above-cap draft rule applies to **sending** only.
 - **Basic branding is NOT gated on any tier** — stationery, brand colour, templates, logo. *"It's a selling point, and frankly people expect to customise."* The "Powered by CoralOS" watermark / white-label is a separate row and unchanged.
 - **Batiprix = an add-on, Enterprise only** (not a tier; `ENTERPRISE_BATIPRIX` €199 in `stripe.ts` becomes Enterprise + add-on).
 - 🔴 **CORRECTION (Planner, same day): `PLAN_PEPPOL_LIMITS` is NOT dead** — the feature-matrix artifact's "zero readers" was wrong. It is the **billing** table: `calculatePeppolOverage()` (read by `tenant/cancel`, `stripe/cancel`, superadmin billing) bills sent+received **combined** above 50/250/1000, while enforcement (`PLAN_LIMITS`) counts them **separately** at 5/10, 20/30. **One quota, two definitions.** Under Florin's rules it becomes ONE table: billing reads the enforcement table (FREE: sends stop at 5 → never billed; received above 20 billed at `PEPPOL_OVERAGE_PRICE` €0.99). 🟨 Open: PRO above-cap sending (draft vs billed) · ENTERPRISE truly unlimited vs billable above 1000.
+- 🔴 **THE PAYMENT-METHOD CASE — FREE, Peppol received above 20 in a month (Florin 2026-09-30):**
+  - **Receipt never stops.** Every document keeps arriving (`pd.md`: bookkeeping always continues).
+  - **The one thing always allowed: sending it to the accountant** (accountant export / forward). Bookkeeping is never held hostage.
+  - **Every other operation on the documents above 20** — opening, consulting, editing, booking, linking — **is gated until a payment method is on file.**
+  - **Honesty is the key.** The tenant gets a notification with the **full explanation**: they are over the free 20 received this month; these documents keep coming in and can be sent to the accountant; each one beyond 20 is billable at the Peppol overage price; to work with them in CoralOS, add a payment method. No vague "upgrade" wall.
+  - **With a payment method on file:** full use, overage billed per document.
+  - **Only Peppol counts.** Scanned tickets (onkostenfiches / OCR scans) are free and are NOT in this counter.
 - **Upgrade pressure = limits + smart pushes** (in-context nudges at the moment a limit is felt), never a crippled core.
 - **FOUNDER is removed** (decided 2026-09-26); its column below is historical.
 - PRO remains undefined — draft: `coral-draft-pro-tier.md`.
@@ -84,7 +91,7 @@ _Core module. Always enabled at signup._
 | **Creditnota aankoop** | ✅ | ✅ | ✅ | ✅ |
 | **Creditnota verkoop** | 🔒 | ✅ | ✅ | ✅ |
 | **Peppol sent** | 5/mo | 20/mo | unlimited | unlimited |
-| **Peppol received** — 🔴 never blocked | **20/mo soft cap** *(above: billable overage, flagged; no payment method → ask for one; always usable)* | 30/mo soft | unlimited | unlimited |
+| **Peppol received** — 🔴 never blocked | **20/mo soft cap** *(above: always arrives + always to accountant; other use needs a payment method — see the payment-method case)* | 30/mo soft | unlimited | unlimited |
 | PDF generation (auto, as-needed) | ✅ | ✅ | ✅ | ✅ |
 | PDF branding — logo · stationery · brand colour · templates | ✅ **never gated** (2026-09-30) | ✅ | ✅ | ✅ |
 | Remove "Powered by CoralOS" watermark | 🔒 | 🔒 | ✅ | ✅ |

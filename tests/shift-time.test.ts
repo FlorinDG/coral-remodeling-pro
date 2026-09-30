@@ -45,3 +45,11 @@ test('a shift is submitted only when its status says so — both spellings in pr
     assert.equal(isShiftSubmitted('scheduled'), false);
     assert.equal(isShiftSubmitted(null), false);
 });
+
+test('server-side local time — Brussels wall clock from a UTC instant (DST both sides)', async () => {
+    const { zonedParts } = await import('../src/lib/kernel/shift-time.ts');
+    assert.deepEqual(zonedParts('2026-09-30T07:51:00Z'), { date: '2026-09-30', time: '09:51' }); // CEST, the HR-TS-6 case
+    assert.deepEqual(zonedParts('2026-12-15T07:00:00Z'), { date: '2026-12-15', time: '08:00' }); // CET
+    assert.deepEqual(zonedParts('2026-09-29T23:30:00Z'), { date: '2026-09-30', time: '01:30' }); // before 02:00 → the right day
+    assert.deepEqual(zonedParts('2026-10-25T00:30:00Z'), { date: '2026-10-25', time: '02:30' }); // DST end night
+});

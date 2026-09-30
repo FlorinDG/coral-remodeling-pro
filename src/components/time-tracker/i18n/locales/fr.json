@@ -260,7 +260,9 @@
       "pending": "En attente d’approbation",
       "rejected": "Refusé",
       "unreviewed": "Pas encore vérifié"
-    }
+    },
+    "exportTitle": "Ma feuille de temps",
+    "exportMonth": "Mois"
   },
   "tasks": {
     "title": "Mes tâches",

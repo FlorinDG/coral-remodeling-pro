@@ -1,5 +1,7 @@
 "use server";
 
+import { isTenantHrRole } from '@/lib/roles';
+import { zonedParts } from '@/lib/kernel/shift-time';
 import prisma from "@/lib/prisma";
 import { auth } from "@/auth";
 
@@ -241,12 +243,24 @@ export async function submitLateEntry(params: {
 
     const { targetUserId, clockInTime, clockOutTime, includeLocation, location, taskDescription, projectId, taskId, filesData } = params;
 
+    // Gate 2 (same rule as write-policy.ts, second door): a late entry is filed for YOURSELF unless
+    // you hold a tenant HR role — and the worker must be a user of THIS tenant (seraph, item 8).
+    const role = (session.user as { role?: string }).role;
+    if (targetUserId !== session.user.id && !isTenantHrRole(role)) {
+        throw new Error("Forbidden: own_records_only");
+    }
+    const subject = await prisma.user.findFirst({ where: { id: targetUserId, tenantId }, select: { id: true } });
+    if (!subject) throw new Error("Not found");
+
     try {
         let shiftId: string | null = null;
         if (projectId) {
-            const shiftDate = new Date(clockInTime).toISOString().split('T')[0];
-            const shiftStart = new Date(clockInTime).toISOString().split('T')[1].slice(0, 5);
-            const shiftEnd = new Date(clockOutTime).toISOString().split('T')[1].slice(0, 5);
+            // Wall-clock parts in the business zone — toISOString() here was UTC (2h early, wrong day
+            // before 02:00). Kernel: zonedParts (Intl + named zone, no offset arithmetic).
+            const inLocal = zonedParts(clockInTime);
+            const shiftDate = inLocal.date;
+            const shiftStart = inLocal.time;
+            const shiftEnd = zonedParts(clockOutTime).time;
             const shift = await prisma.scheduledShift.create({
                 data: {
                     tenantId,

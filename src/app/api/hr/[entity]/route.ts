@@ -16,7 +16,7 @@ import prisma from '@/lib/prisma';
 import { buildAuditLogData, buildAuditLogOperation } from '@/lib/audit';
 import { resolveReach } from '../lib/actor-reach';
 import { hrWriteRefusal } from '../lib/write-policy';
-import { isShiftSubmitted } from '@/lib/kernel/shift-time';
+import { isShiftSubmitted, zonedParts } from '@/lib/kernel/shift-time';
 import crypto from 'crypto';
 import { Resend } from 'resend';
 import React from 'react';
@@ -846,9 +846,11 @@ export async function PATCH(
                             }
                         });
                         if (reqData.projectId) {
-                            const shiftDate = new Date(reqData.clockInTime).toISOString().split('T')[0];
-                            const shiftStart = new Date(reqData.clockInTime).toISOString().split('T')[1].slice(0, 5);
-                            const shiftEnd = new Date(reqData.clockOutTime).toISOString().split('T')[1].slice(0, 5);
+                            // Wall-clock parts in the business zone (was UTC via toISOString — 2h early).
+                            const inLocal = zonedParts(reqData.clockInTime);
+                            const shiftDate = inLocal.date;
+                            const shiftStart = inLocal.time;
+                            const shiftEnd = zonedParts(reqData.clockOutTime).time;
                             const shift = await prisma.scheduledShift.create({
                                 data: {
                                     tenantId: approval.tenantId,

@@ -7,12 +7,13 @@
  */
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ChevronLeft, ChevronRight, Clock } from 'lucide-react';
-import { startOfWeek, addDays, isSameDay } from 'date-fns';
+import { ChevronLeft, ChevronRight, Clock, FileSpreadsheet, FileText } from 'lucide-react';
+import { LateEntryCard } from '@/components/time-tracker/components/LateEntryCard';
+import { startOfWeek, addDays, isSameDay, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import { useClockEntries, type ClockEntry } from '@/components/time-tracker/hooks/useClockEntries';
 import { useAuth } from '@/components/time-tracker/contexts/AuthContext';
 import { computeWorkedDuration, formatWorkDuration } from '@/lib/computeWorkedDuration';
-import { formatTime, formatWeekdayDayMonth, formatDayMonth, WEEK_STARTS_ON } from '@/lib/format/date';
+import { formatTime, formatWeekdayDayMonth, formatDayMonth, formatMonthYear, WEEK_STARTS_ON } from '@/lib/format/date';
 import { describeError } from '@/lib/describe-error';
 
 type Review = 'approved' | 'pending' | 'rejected' | 'unreviewed';
@@ -43,6 +44,16 @@ export function MyHoursScreen() {
   const { user } = useAuth();
   const { entries, loading, error, refetch } = useClockEntries();
   const [weekOffset, setWeekOffset] = useState(0);
+  const [exportMonth, setExportMonth] = useState(0); // 0 = this month, 1 = last month, …
+
+  // Export = the ONE official sheet (/api/hr/timesheet-export — WH-EXPORT-1). Month boundaries are
+  // the phone's LOCAL midnight, sent as instants; workerIds[]=me keeps a team lead's sheet personal.
+  const exportHref = (fmt: 'xlsx' | 'pdf') => {
+    const m = subMonths(new Date(), exportMonth);
+    const qs = new URLSearchParams({ format: fmt, from: startOfMonth(m).toISOString(), to: endOfMonth(m).toISOString() });
+    if (user?.id) qs.append('workerIds[]', user.id);
+    return `/api/hr/timesheet-export?${qs.toString()}`;
+  };
 
   const weekStart = useMemo(
     () => addDays(startOfWeek(new Date(), { weekStartsOn: WEEK_STARTS_ON }), weekOffset * 7),
@@ -82,6 +93,11 @@ export function MyHoursScreen() {
     <div className="pb-6">
       <div className="px-4 pt-4 pb-2">
         <h1 className="text-xl font-bold text-foreground">{t('hours.title')}</h1>
+      </div>
+
+      {/* Forgot to clock? — the crew's late-entry flow, unchanged (pending approval). */}
+      <div className="px-3 pb-3">
+        <LateEntryCard />
       </div>
 
       {/* Week navigator */}
@@ -160,6 +176,29 @@ export function MyHoursScreen() {
           ))}
         </div>
       )}
+
+      {/* My performance sheet — month export, restored from the old Performance page */}
+      <section className="mx-3 mt-6 p-4 rounded-2xl border border-border bg-card shadow-sm space-y-3">
+        <h2 className="text-lg font-semibold text-foreground">{t('hours.exportTitle')}</h2>
+        <select
+          value={exportMonth}
+          onChange={e => setExportMonth(Number(e.target.value))}
+          className="w-full h-12 px-3 rounded-xl border border-border bg-background text-base capitalize"
+          aria-label={t('hours.exportMonth')}
+        >
+          {Array.from({ length: 12 }, (_, i) => (
+            <option key={i} value={i}>{formatMonthYear(subMonths(new Date(), i), lang)}</option>
+          ))}
+        </select>
+        <div className="grid grid-cols-2 gap-2">
+          <a href={exportHref('xlsx')} className="h-12 rounded-xl border border-border flex items-center justify-center gap-2 text-base font-semibold">
+            <FileSpreadsheet className="w-5 h-5 text-[var(--persian-green)]" />Excel
+          </a>
+          <a href={exportHref('pdf')} className="h-12 rounded-xl border border-border flex items-center justify-center gap-2 text-base font-semibold">
+            <FileText className="w-5 h-5 text-[var(--tawny)]" />PDF
+          </a>
+        </div>
+      </section>
     </div>
   );
 }

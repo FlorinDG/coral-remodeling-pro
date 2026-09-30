@@ -250,7 +250,9 @@
       "pending": "Ожидает одобрения",
       "rejected": "Отклонено",
       "unreviewed": "Ещё не проверено"
-    }
+    },
+    "exportTitle": "Мой табель",
+    "exportMonth": "Месяц"
   },
   "tasks": {
     "title": "Мои задачи",

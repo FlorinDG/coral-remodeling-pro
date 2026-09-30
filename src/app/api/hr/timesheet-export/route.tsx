@@ -5,7 +5,7 @@ import { resolveReach } from '@/app/api/hr/lib/actor-reach';
 import { computeWorkedDuration } from '@/lib/computeWorkedDuration';
 import * as XLSX from 'xlsx';
 import { ClockEntry } from '@prisma/client';
-import { format as formatLocal } from 'date-fns';
+import { zonedParts } from '@/lib/kernel/shift-time';
 import { isSelfApproved } from '@/lib/provenance';
 import { Document, Page, Text, View, StyleSheet, renderToBuffer } from '@react-pdf/renderer';
 
@@ -158,9 +158,10 @@ export async function GET(req: Request) {
             'ID': entry.id,
             'Medewerker': workerName,
             'Project': projectName,
-            'Datum': formatLocal(entry.clockInTime, 'yyyy-MM-dd'),
-            'In': formatLocal(entry.clockInTime, 'HH:mm'),
-            'Uit': entry.clockOutTime ? formatLocal(entry.clockOutTime, 'HH:mm') : '',
+            // Business wall clock — date-fns format() on the server is UTC (every time 2h early).
+            'Datum': zonedParts(entry.clockInTime).date,
+            'In': zonedParts(entry.clockInTime).time,
+            'Uit': entry.clockOutTime ? zonedParts(entry.clockOutTime).time : '',
             'Uren (Decimaal)': hoursDecimal,
             'Pauze Afgetrokken': duration.breakDeducted ? 'Ja' : 'Nee',
             'Status': statusDisplay,
@@ -169,8 +170,8 @@ export async function GET(req: Request) {
             'Goedgekeurd door': approverDisplay,
             'Notities': (entry as any).notes || '',
             'Facturabel': entry.billable ? 'Ja' : 'Nee',
-            'Kosten per uur': costRate,
-            'Totale kosten': totalCost
+            // Employer cost rates are HR data (tenant checklist item 5) — only on an HR role's export.
+            ...(reach.mayApprove ? { 'Kosten per uur': costRate, 'Totale kosten': totalCost } : {}),
         };
     });
 

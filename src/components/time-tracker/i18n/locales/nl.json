@@ -260,7 +260,9 @@
       "pending": "Wacht op goedkeuring",
       "rejected": "Afgewezen",
       "unreviewed": "Nog niet nagekeken"
-    }
+    },
+    "exportTitle": "Mijn urenstaat",
+    "exportMonth": "Maand"
   },
   "tasks": {
     "title": "Mijn taken",

@@ -69,3 +69,26 @@ export function pickShiftNow<T extends ShiftTimes>(shifts: T[], now: Date): T | 
 export function isShiftSubmitted(status: string | null | undefined): boolean {
     return (status || '').toLowerCase() === 'completed';
 }
+
+// ── SERVER-SIDE LOCAL TIME ────────────────────────────────────────────────────
+/**
+ * The business's wall clock. The server runs in UTC (Vercel); any "date" or "HH:mm" it derives
+ * from an instant with toISOString() or date-fns format() is UTC — two hours early in a Belgian
+ * summer, and the previous day before 02:00. Both tenants are Belgian today.
+ * Next step (recorded): a per-tenant timezone setting.
+ */
+export const BUSINESS_TIME_ZONE = 'Europe/Brussels';
+
+/**
+ * An instant → its wall-clock date and time IN A NAMED ZONE. Uses Intl with the zone, never an
+ * offset (pd.md: no offset arithmetic) — daylight saving is the zone database's job.
+ */
+export function zonedParts(instant: Date | string, timeZone: string = BUSINESS_TIME_ZONE): { date: string; time: string } {
+    const d = typeof instant === 'string' ? new Date(instant) : instant;
+    const parts = new Intl.DateTimeFormat('en-GB', {
+        timeZone, year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+    }).formatToParts(d);
+    const get = (type: string) => parts.find(p => p.type === type)?.value || '00';
+    return { date: `${get('year')}-${get('month')}-${get('day')}`, time: `${get('hour')}:${get('minute')}` };
+}

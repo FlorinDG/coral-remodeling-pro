@@ -262,7 +262,9 @@
       "pending": "Așteaptă aprobarea",
       "rejected": "Respins",
       "unreviewed": "Încă neverificat"
-    }
+    },
+    "exportTitle": "Foaia mea de pontaj",
+    "exportMonth": "Luna"
   },
   "tasks": {
     "title": "Sarcinile mele",

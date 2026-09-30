@@ -260,7 +260,9 @@
       "pending": "Waiting for approval",
       "rejected": "Rejected",
       "unreviewed": "Not yet reviewed"
-    }
+    },
+    "exportTitle": "My timesheet",
+    "exportMonth": "Month"
   },
   "tasks": {
     "title": "My tasks",

@@ -10,7 +10,7 @@
  * `Murgu, Catalin` at 6 of 16 roles indefinitely.
  *
  * DO NOT import this file from client components — it imports PrismaClient.
- * For client-safe utilities, use @/lib/lockedDbUtils instead.
+ * For resolving a binding, use resolveDatabaseId in @/lib/kernel/system-databases (fail-closed).
  */
 
 import type { PrismaClient } from '@prisma/client';
@@ -18,11 +18,10 @@ import {
     SYSTEM_DATABASE_ROLES,
     SYSTEM_DATABASE_NAMES,
 } from '@/lib/kernel/system-databases';
-import type { LockedDbKey, LockedDbIds } from '@/lib/lockedDbUtils';
-import { getLockedDbId } from '@/lib/lockedDbUtils';
+import type { SystemDatabaseRole } from '@/lib/kernel/system-databases';
 
-export type { LockedDbKey, LockedDbIds };
-export { getLockedDbId };
+export type LockedDbKey = SystemDatabaseRole;
+export type LockedDbIds = Partial<Record<LockedDbKey, string>>;
 
 /**
  * Provisions the 16 locked GlobalDatabase rows for a tenant.

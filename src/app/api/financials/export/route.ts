@@ -120,12 +120,12 @@ export async function GET(req: Request) {
             return NextResponse.json({ error: 'Tenant not found' }, { status: 404 });
         }
 
-        const { getLockedDbId } = await import('@/lib/lockedDbUtils');
+        const { resolveDatabaseId } = await import('@/lib/kernel/system-databases');
         const lockedDbIds = (tenant.lockedDbIds as Record<string, string>) || {};
-        const invoicesDbId = getLockedDbId('db-invoices', lockedDbIds);
-        const expensesDbId = getLockedDbId('db-expenses', lockedDbIds);
-        const clientsDbId = getLockedDbId('db-clients', lockedDbIds);
-        const suppliersDbId = getLockedDbId('db-suppliers', lockedDbIds);
+        const invoicesDbId = resolveDatabaseId('db-invoices', lockedDbIds);
+        const expensesDbId = resolveDatabaseId('db-expenses', lockedDbIds);
+        const clientsDbId = resolveDatabaseId('db-clients', lockedDbIds);
+        const suppliersDbId = resolveDatabaseId('db-suppliers', lockedDbIds);
 
         // Fetch database pages
         const [invoices, expenses, clients, suppliers] = await Promise.all([

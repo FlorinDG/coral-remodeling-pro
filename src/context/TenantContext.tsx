@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, ReactNode, useMemo, useState, useCallback, useEffect } from "react";
-import { getLockedDbId } from "@/lib/lockedDbUtils";
+import { resolveDatabaseId } from "@/lib/kernel/system-databases";
 
 interface TenantContextProps {
     activeModules: string[];
@@ -23,7 +23,9 @@ const TenantContext = createContext<TenantContextProps>({
     planType: 'FREE',
     lockedDbIds: {},
     tenant: null,
-    resolveDbId: (base) => base, // safe default — falls back to bare ID
+    // R1-2: no pass-through default. Outside a TenantProvider there is no tenant, so there is no
+    // binding to read — a system base asked for here is a bug, and it says so (was: "safe default").
+    resolveDbId: (base) => resolveDatabaseId(base, {}),
     isPro: false,
     isEnterprise: false,
     refreshTenant: async () => {},
@@ -75,7 +77,7 @@ export const TenantProvider = ({
             .catch(() => {}); // Non-critical — layout still works without logo
     }, []);
 
-    const resolveDbId = (base: string) => getLockedDbId(base, lockedDbIds);
+    const resolveDbId = (base: string) => resolveDatabaseId(base, lockedDbIds);
     const isPro = useMemo(() => ['PRO', 'ENTERPRISE', 'FOUNDER', 'CUSTOM'].includes(planType), [planType]);
     const isEnterprise = useMemo(() => ['ENTERPRISE', 'FOUNDER', 'CUSTOM'].includes(planType), [planType]);
 

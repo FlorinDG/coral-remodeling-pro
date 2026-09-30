@@ -1,6 +1,6 @@
 import { useMemo, useEffect } from 'react';
 import type { Database, PageIndexEntry, Page } from '@/components/admin/database/types';
-import { BASE_TO_KEY, getLockedDbId } from '@/lib/lockedDbUtils';
+import { BASE_TO_KEY, resolveDatabaseId, UnboundSystemDatabaseError } from '@/lib/kernel/system-databases';
 
 export interface RelationOption {
     id: string;
@@ -87,37 +87,23 @@ export function resolveRelationTarget(
     const loadingDatabaseIds: string[] = options?.loadingDatabaseIds ?? storeState?.loadingDatabaseIds ?? [];
 
     const lockedDbIds = options?.lockedDbIds ?? {};
-    const resolveDbId = options?.resolveDbId ?? ((base: string) => getLockedDbId(base, lockedDbIds));
+    const resolveDbId = options?.resolveDbId ?? ((base: string) => resolveDatabaseId(base, lockedDbIds));
     const displayPropertyId = options?.displayPropertyId || 'title';
 
+    // R1-2 / KERN-8: the binding is READ, never guessed. The prefix searches that used to follow
+    // (any database whose id starts with `${base}-`) inferred a tenant from string shape — deleted.
+    // An unbound system base is a provisioning defect: reported as 'unknown-database', not guessed.
     let resolvedId = trimmedId;
     const isLogicalKey = Boolean(BASE_TO_KEY[trimmedId]);
-
     if (isLogicalKey) {
-        // Resolve logicalKey through the book
-        const bookResolved = resolveDbId(trimmedId);
-        if (bookResolved && bookResolved !== trimmedId) {
-            resolvedId = bookResolved;
-        } else {
-            // If resolveDbId returned bare ID (e.g. empty lockedDbIds), find tenant suffix in store
-            const prefixMatch = databases.find(d => d.id.startsWith(trimmedId + '-'));
-            if (prefixMatch) {
-                resolvedId = prefixMatch.id;
-            } else {
-                const indexMatch = Object.values(pageIndex).find(e => e.databaseId.startsWith(trimmedId + '-'));
-                if (indexMatch) {
-                    resolvedId = indexMatch.databaseId;
-                }
+        try {
+            resolvedId = resolveDbId(trimmedId);
+        } catch (err) {
+            if (err instanceof UnboundSystemDatabaseError) {
+                console.error('[resolveRelationTarget]', err.message);
+                return { status: 'unknown-database', databaseId: trimmedId, options: [] };
             }
-        }
-    } else {
-        // Scoped ID or custom database
-        const isKnownScoped = Object.keys(BASE_TO_KEY).some(base => trimmedId.startsWith(base + '-'));
-        if (isKnownScoped) {
-            // R1-1b tracking: report scoped ID until R1-1b schema migration lands
-            if (process.env.NODE_ENV === 'development') {
-                console.info(`[resolveRelationTarget] Scoped ID encountered before R1-1b migration: ${trimmedId}`);
-            }
+            throw err;
         }
     }
 

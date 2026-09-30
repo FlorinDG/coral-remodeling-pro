@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import prisma from "@/lib/prisma";
 import { auth } from "@/auth";
-import { getLockedDbId } from '@/lib/lockedDbUtils';
+import { resolveDatabaseId } from '@/lib/kernel/system-databases';
 import { Link } from "@/i18n/routing";
 import {
     Plus, Camera, Users, Clock, FolderOpen,
@@ -55,10 +55,10 @@ export default async function MobileDashboard({ params }: { params: Promise<{ lo
     });
 
     const ldb = (tenant?.lockedDbIds as Record<string, string>) || {};
-    const dbInvoices    = getLockedDbId('db-invoices', ldb);
-    const dbPaymentsIn  = getLockedDbId('db-payments-in', ldb);
-    const dbPaymentsOut = getLockedDbId('db-payments-out', ldb);
-    const dbTickets     = getLockedDbId('db-tickets', ldb);
+    const dbInvoices    = resolveDatabaseId('db-invoices', ldb);
+    const dbPaymentsIn  = resolveDatabaseId('db-payments-in', ldb);
+    const dbPaymentsOut = resolveDatabaseId('db-payments-out', ldb);
+    const dbTickets     = resolveDatabaseId('db-tickets', ldb);
 
     // Date calculations
     const now = new Date();

@@ -3,7 +3,7 @@ import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
 import { getInboxDocument, getDocumentUbl, parseUBLToInvoice, getDocumentSupplierPdf } from '@/lib/e-invoice-inbox';
 import { storage } from '@/lib/storage';
-import { getLockedDbId } from '@/lib/lockedDbUtils';
+import { resolveDatabaseId } from '@/lib/kernel/system-databases';
 import { v4 as uuidv4 } from 'uuid';
 import { describeError } from '@/lib/describe-error';
 
@@ -44,7 +44,7 @@ export async function GET(req: Request) {
         }
 
         const lockedDbIds = (tenant.lockedDbIds as Record<string, string>) || {};
-        const expensesDbId = getLockedDbId('db-expenses', lockedDbIds);
+        const expensesDbId = resolveDatabaseId('db-expenses', lockedDbIds);
 
         // Fetch all peppol expense pages
         const pages = await prisma.globalPage.findMany({
@@ -85,7 +85,7 @@ export async function GET(req: Request) {
         const errors: any[] = [];
 
         // Pre-load suppliers for matching from db-suppliers
-        const suppliersDbId = getLockedDbId('db-suppliers', lockedDbIds);
+        const suppliersDbId = resolveDatabaseId('db-suppliers', lockedDbIds);
         const suppliers = await prisma.globalPage.findMany({
             where: { databaseId: suppliersDbId },
             select: { id: true, properties: true },

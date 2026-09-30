@@ -18,7 +18,7 @@ import { Link } from "@/i18n/routing";
 import { OverviewAreaChart, StatusBarChart, CashFlowChart } from "@/components/admin/dashboard/DashboardCharts";
 import { auth } from "@/auth";
 import { getTranslations } from 'next-intl/server';
-import { getLockedDbId } from '@/lib/lockedDbUtils';
+import { resolveDatabaseId } from '@/lib/kernel/system-databases';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -121,13 +121,13 @@ export default async function AdminDashboard({ params }: { params: Promise<{ loc
 
     // Resolve tenant-scoped DB IDs (falls back to bare IDs for legacy tenants)
     const ldb = (tenant?.lockedDbIds as Record<string, string>) || {};
-    const dbInvoices    = getLockedDbId('db-invoices', ldb);
-    const dbExpenses    = getLockedDbId('db-expenses', ldb);
-    const dbClients     = getLockedDbId('db-clients', ldb);
-    const dbSuppliers   = getLockedDbId('db-suppliers', ldb);
-    const dbQuotations  = getLockedDbId('db-quotations', ldb);
-    const dbPaymentsIn  = getLockedDbId('db-payments-in', ldb);
-    const dbPaymentsOut = getLockedDbId('db-payments-out', ldb);
+    const dbInvoices    = resolveDatabaseId('db-invoices', ldb);
+    const dbExpenses    = resolveDatabaseId('db-expenses', ldb);
+    const dbClients     = resolveDatabaseId('db-clients', ldb);
+    const dbSuppliers   = resolveDatabaseId('db-suppliers', ldb);
+    const dbQuotations  = resolveDatabaseId('db-quotations', ldb);
+    const dbPaymentsIn  = resolveDatabaseId('db-payments-in', ldb);
+    const dbPaymentsOut = resolveDatabaseId('db-payments-out', ldb);
     // Tasks and projects are not locked DBs — use bare IDs
 
     const t = await getTranslations('Admin');

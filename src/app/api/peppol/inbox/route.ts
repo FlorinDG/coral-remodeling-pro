@@ -120,9 +120,9 @@ export async function GET(req: Request) {
         await maybeResetMonthlyCounters(tenantId);
         const quotaInfo = await checkPeppolReceivedQuota(tenantId);
 
-        const { getLockedDbId } = await import('@/lib/lockedDbUtils');
+        const { resolveDatabaseId } = await import('@/lib/kernel/system-databases');
         const lockedDbIds = (tenant.lockedDbIds as Record<string, string>) || {};
-        const suppliersDbId = getLockedDbId('db-suppliers', lockedDbIds);
+        const suppliersDbId = resolveDatabaseId('db-suppliers', lockedDbIds);
 
         // Pre-load supplier contacts for auto-matching by VAT
         const suppliers = await prisma.globalPage.findMany({
@@ -214,7 +214,7 @@ export async function GET(req: Request) {
         }
 
         // ── AUTOMATIC SERVER-SIDE DATABASE SYNC ─────────────────────────────────
-        const expensesDbId = getLockedDbId('db-expenses', lockedDbIds);
+        const expensesDbId = resolveDatabaseId('db-expenses', lockedDbIds);
 
         // Ensure database exists
         const existingDb = await prisma.globalDatabase.findUnique({

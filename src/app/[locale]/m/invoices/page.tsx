@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import prisma from "@/lib/prisma";
 import { auth } from "@/auth";
-import { getLockedDbId } from "@/lib/lockedDbUtils";
+import { resolveDatabaseId } from '@/lib/kernel/system-databases';
 import { Link } from "@/i18n/routing";
 import { FileText, Plus, Clock, CheckCircle, Send, AlertTriangle } from "lucide-react";
 import { getTranslations } from 'next-intl/server';
@@ -31,7 +31,7 @@ export default async function MobileInvoicesPage({ params }: { params: Promise<{
     });
 
     const ldb = (tenant?.lockedDbIds as Record<string, string>) || {};
-    const dbInvoices = getLockedDbId('db-invoices', ldb);
+    const dbInvoices = resolveDatabaseId('db-invoices', ldb);
 
     const db = await prisma.globalDatabase.findUnique({
         where: { id: dbInvoices },

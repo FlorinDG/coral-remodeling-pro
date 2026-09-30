@@ -169,3 +169,35 @@ export const SERVER_PROVISIONED_BASES: Set<string> = new Set(
 export const DB_ID_MODULE_MAP: Array<[string, string | null]> = SYSTEM_DATABASE_ROLES.map(
     role => [SYSTEM_DATABASES[role].legacyBase, SYSTEM_DATABASES[role].module]
 );
+
+// ── R1-2 · ONE CANONICAL RESOLVER, FAIL-CLOSED ─────────────────────────────────
+/**
+ * A system database was asked for, and this tenant has no binding for it. That is a PROVISIONING
+ * defect and it surfaces as one (ERROR-SURFACING) — never as a guess. The guess it replaces
+ * (getLockedDbId) invented `${base}-${suffix}` from a sibling's id, or returned the bare base id —
+ * which is Florin's own tenant's database for a tenant whose map was empty.
+ */
+export class UnboundSystemDatabaseError extends Error {
+    readonly base: string;
+    readonly role: SystemDatabaseRole;
+    constructor(base: string, role: SystemDatabaseRole) {
+        super(`unbound_system_database: this tenant has no binding for "${role}" (${base}) — a provisioning defect`);
+        this.name = 'UnboundSystemDatabaseError';
+        this.base = base;
+        this.role = role;
+    }
+}
+
+/**
+ * The forward binding, READ — nothing inferred (pd.md: "an id is never parsed; the binding is read").
+ *   - a system base ('db-invoices') → this tenant's bound id, or THROW;
+ *   - anything else (an already-bound id, a minted custom database id) → returned unchanged.
+ *     Ownership of a supplied id is verified server-side (R1-3), not guessed here.
+ */
+export function resolveDatabaseId(idOrBase: string, lockedDbIds: Partial<Record<string, string>>): string {
+    const role = BASE_TO_KEY[idOrBase];
+    if (!role) return idOrBase;
+    const bound = lockedDbIds[role];
+    if (!bound) throw new UnboundSystemDatabaseError(idOrBase, role);
+    return bound;
+}

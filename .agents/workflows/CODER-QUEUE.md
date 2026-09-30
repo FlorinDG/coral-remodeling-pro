@@ -21,10 +21,20 @@
 🟢 **Census done (2026-09-30):** 27 clock entries (Coral only) — 26 unattributed *by design* (Florin tests clock-in without shift; `pd.md` 4x), 1 dangling (27 Jul) → **cleared by Florin, hours kept.** **No row is broken today; it goes off the first time hours are attributed with the HR-TS-5 picker and exported.** Land before that.
 🟨 §1 correction: unresolved `projectId` prints `Unknown Project`, not blank.
 
-## 3 · `FILES-GATE-1` — the office side of the file fence 🟨 **Florin decides scope**
-Tonight's fence (`crew-file-policy.ts`) covers **workforce roles only**. Every other role can still list every tenant file, delete any file, and overwrite any path. Which roles may do which is an entitlement question (`access-control.ts` / `ENT-*`), not a guess.
+## 3 · `FILES-GATE-1` → folds into `ENT` — 🟢 **Florin decided the model (2026-09-30)**
+> *"roles are to be confined by their function. hr will not work with financials and vice versa … director, owner have full oversight, project manager to his own. all roles can be granted access to other modules/submodules … in the tenant app settings, gated, accessible to the owner role."*
+- **Inside one tenant (the seraph has already scoped it), a role reaches only its FUNCTION by default:** HR → HR; bookkeeping → financials; project manager → **their own** projects; director + owner → everything.
+- **The owner grants extra modules / submodules to a role** in tenant settings (owner-only, gated).
+- **Files follow the module they belong to** — an invoice PDF is financials, a clock photo is HR. `crew-file-policy.ts` is the first instance; this generalises it.
+- 🟨 Open: grants **per role** (Florin's words) vs the existing **per person** `User.moduleAccess` (Settings → Team) — see chat 2026-09-30.
 
-## 4 · `GATE-2b` — crew self-service on shifts, tasks, attachments
+## 4 · `TASK-CREW-1` — 🟢 **Florin decided (2026-09-30):** the crew updates task status and writes notes with photos; the app keeps a detailed log of changes, **read-only for every role**
+- Crew may change the status of a task **assigned to them**. Management still sees and can override.
+- Crew notes: details + photos, in reference to the task.
+- **Every change** (status, note) → an immutable log entry (who, when, before → after), shown read-only on the task in the ERP and the WorkHub. *(AuditLog is already immutable — `POST /api/hr/audit-logs` is refused.)*
+- 🟨 Open: notes append-only vs editable · storage (new table + Florin's migration vs task JSON property) — see chat.
+
+## 5 · `GATE-2b` — crew self-service on shifts, tasks, attachments
 `write-policy.ts` does not yet cover `shifts`, `shift-tasks`, `shift-attachments` (crew writes those legitimately: user-initiated shifts, task progress, uploads). Needs reach-on-parent — **rides with `R1-4`.**
 
 ---

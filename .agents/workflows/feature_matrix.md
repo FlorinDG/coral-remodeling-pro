@@ -6,7 +6,7 @@
 ## 🟢 DECISIONS LOG
 **2026-09-30 (Florin):**
 - **FREE caps Peppol, not invoicing.** Peppol **5 sent / 20 received** per month. Invoice creation is **unlimited**; an invoice above the send cap **stays a draft** — it cannot be sent until the next month or an upgrade.
-- 🔴 **Peppol RECEIVE is NEVER blocked — "TRUE and stays holy" (Florin, 2026-09-30).** The 20 received is a **soft cap**: every incoming document arrives and is fully usable (not held, not locked — bookkeeping always continues). Above 20: **flagged + a smart push**, nothing more. The "can't send or receive" above-cap rule applies to **sending** only.
+- 🔴 **Peppol RECEIVE is NEVER blocked — "TRUE and stays holy" (Florin, 2026-09-30).** The 20 received is a **soft cap**: every incoming document arrives and is fully usable (not held, not locked — bookkeeping always continues). Above 20 the tenant is in **billable territory**: the flag says so (each further document is charged as overage), and **if no payment method is on file, the tenant is asked to add one.** The document is still delivered and usable either way. The above-cap draft rule applies to **sending** only.
 - **Basic branding is NOT gated on any tier** — stationery, brand colour, templates, logo. *"It's a selling point, and frankly people expect to customise."* The "Powered by CoralOS" watermark / white-label is a separate row and unchanged.
 - **Batiprix = an add-on, Enterprise only** (not a tier; `ENTERPRISE_BATIPRIX` €199 in `stripe.ts` becomes Enterprise + add-on).
 - **The dead quota table goes:** `PLAN_PEPPOL_LIMITS` (50/250/1000, zero readers) is deleted; `PLAN_LIMITS` (sent/received) is the one source.
@@ -84,7 +84,7 @@ _Core module. Always enabled at signup._
 | **Creditnota aankoop** | ✅ | ✅ | ✅ | ✅ |
 | **Creditnota verkoop** | 🔒 | ✅ | ✅ | ✅ |
 | **Peppol sent** | 5/mo | 20/mo | unlimited | unlimited |
-| **Peppol received** — 🔴 never blocked | **20/mo soft cap** *(above: flagged + nudge, fully usable)* | 30/mo soft | unlimited | unlimited |
+| **Peppol received** — 🔴 never blocked | **20/mo soft cap** *(above: billable overage, flagged; no payment method → ask for one; always usable)* | 30/mo soft | unlimited | unlimited |
 | PDF generation (auto, as-needed) | ✅ | ✅ | ✅ | ✅ |
 | PDF branding — logo · stationery · brand colour · templates | ✅ **never gated** (2026-09-30) | ✅ | ✅ | ✅ |
 | Remove "Powered by CoralOS" watermark | 🔒 | 🔒 | ✅ | ✅ |

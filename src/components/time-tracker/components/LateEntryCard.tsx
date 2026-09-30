@@ -27,6 +27,8 @@ import { useGeolocation } from '@/components/time-tracker/hooks/useGeolocation';
 import { useTasks, Task } from '@/components/time-tracker/hooks/useTasks';
 
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
+import { describeError } from '@/lib/describe-error';
 import { format, parseISO, isAfter, startOfDay } from 'date-fns';
 import { validateFile, validateFiles, getSafeFileType, generateSafeFilePath, ALLOWED_EXTENSIONS } from '@/components/time-tracker/lib/fileValidation';
 
@@ -35,6 +37,7 @@ function getNotionColor(colorName: string) {
 }
 
 export function LateEntryCard() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { projects } = useScheduledShifts();
   const { createRequest } = useApprovalRequests();
@@ -92,7 +95,7 @@ export function LateEntryCard() {
 
     const entryDate = parseISO(date);
     if (isAfter(entryDate, today)) {
-      toast.error('Entries cannot be for future dates');
+      toast.error(t('lateEntry.futureDate'));
       return;
     }
 
@@ -135,7 +138,7 @@ export function LateEntryCard() {
         throw new Error('Failed to submit late entry');
       }
 
-      toast.success('Late entry submitted for approval');
+      toast.success(t('lateEntry.submitted'));
       
       // Reset form
       setDate('');
@@ -151,7 +154,7 @@ export function LateEntryCard() {
       
     } catch (error) {
       console.error('Error submitting late entry:', error);
-      toast.error('Failed to submit late entry');
+      toast.error(`${t('lateEntry.submitFailed')} — ${describeError(error)}`);
     } finally {
       setLoading(false);
     }
@@ -170,7 +173,7 @@ export function LateEntryCard() {
     // Validate files before adding
     const validation = validateFiles(selectedFiles);
     if (!validation.valid) {
-      toast.error(validation.error);
+      toast.error(`${t('lateEntry.invalidFiles')}${validation.error ? ` — ${validation.error}` : ''}`);
       return;
     }
     
@@ -204,8 +207,8 @@ export function LateEntryCard() {
                 <Clock className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <h3 className="font-semibold text-foreground">Submit Late Entry</h3>
-                <p className="text-sm text-muted-foreground">Add hours for a past date (requires approval)</p>
+                <h3 className="font-semibold text-foreground">{t('lateEntry.title')}</h3>
+                <p className="text-sm text-muted-foreground">{t('lateEntry.subtitle')}</p>
               </div>
             </div>
             {isOpen ? (
@@ -221,15 +224,15 @@ export function LateEntryCard() {
             <form onSubmit={handleSubmit} className="space-y-4">
               {isAdmin && (
                 <div>
-                  <Label>Worker (Optional)</Label>
+                  <Label>{t('lateEntry.worker')}</Label>
                   <Select value={selectedUserId || 'none'} onValueChange={handleUserChange}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select user (optional)" />
+                      <SelectValue placeholder={t('lateEntry.selectWorker')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">Current user</SelectItem>
+                      <SelectItem value="none">{t('lateEntry.currentUser')}</SelectItem>
                       {usersLoading ? (
-                        <SelectItem value="loading" disabled>Loading users...</SelectItem>
+                        <SelectItem value="loading" disabled>{t('lateEntry.loadingUsers')}</SelectItem>
                       ) : (
                         allUsers.map(u => (
                           <SelectItem key={u.userId} value={u.userId}>
@@ -243,7 +246,7 @@ export function LateEntryCard() {
               )}
 
               <div>
-                <Label htmlFor="entryDate">Date</Label>
+                <Label htmlFor="entryDate">{t('lateEntry.date')}</Label>
                 <Input
                   id="entryDate"
                   type="date"
@@ -253,13 +256,13 @@ export function LateEntryCard() {
                   required
                 />
                 <p className="text-sm text-muted-foreground mt-1">
-                  Select today or a past date for this entry
+                  {t('lateEntry.dateHint')}
                 </p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="clockIn">Clock In</Label>
+                  <Label htmlFor="clockIn">{t('lateEntry.clockIn')}</Label>
                   <Input
                     id="clockIn"
                     type="time"
@@ -269,7 +272,7 @@ export function LateEntryCard() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="clockOut">Clock Out</Label>
+                  <Label htmlFor="clockOut">{t('lateEntry.clockOut')}</Label>
                   <Input
                     id="clockOut"
                     type="time"
@@ -281,13 +284,13 @@ export function LateEntryCard() {
               </div>
 
               <div>
-                <Label>Project (Optional)</Label>
+                <Label>{t('lateEntry.project')}</Label>
                 <Select value={projectId || 'none'} onValueChange={handleProjectChange}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select project" />
+                    <SelectValue placeholder={t('lateEntry.selectProject')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">No project</SelectItem>
+                    <SelectItem value="none">{t('lateEntry.noProject')}</SelectItem>
                     {projects.map(project => {
                       const color = getNotionColor(project.color);
                       return (
@@ -308,13 +311,13 @@ export function LateEntryCard() {
 
               {projectId && pendingTasks.length > 0 && (
                 <div>
-                  <Label>Assigned Task (Optional)</Label>
+                  <Label>{t('lateEntry.task')}</Label>
                   <Select value={taskId || 'none'} onValueChange={handleTaskChange}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select task" />
+                      <SelectValue placeholder={t('lateEntry.selectTask')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">No specific task</SelectItem>
+                      <SelectItem value="none">{t('lateEntry.noTask')}</SelectItem>
                       {pendingTasks.map(task => (
                         <SelectItem key={task.id} value={task.id}>
                           {task.title}
@@ -326,19 +329,19 @@ export function LateEntryCard() {
               )}
 
               <div>
-                <Label htmlFor="taskDesc">Task Description</Label>
+                <Label htmlFor="taskDesc">{t('lateEntry.description')}</Label>
                 <Textarea
                   id="taskDesc"
                   value={taskDescription}
                   onChange={(e) => setTaskDescription(e.target.value)}
-                  placeholder="What did you work on?"
+                  placeholder={t('lateEntry.descriptionPlaceholder')}
                   rows={3}
                 />
               </div>
 
               {/* File Upload */}
               <div>
-                <Label>Attachments (Optional)</Label>
+                <Label>{t('lateEntry.attachments')}</Label>
                 <div className="mt-2 space-y-2">
                   <input
                     ref={fileInputRef}
@@ -356,7 +359,7 @@ export function LateEntryCard() {
                     className="w-full"
                   >
                     <FileUp className="h-4 w-4 mr-2" />
-                    Add Files
+                    {t('lateEntry.addFiles')}
                   </Button>
                   
                   {files.length > 0 && (
@@ -387,8 +390,8 @@ export function LateEntryCard() {
                 <div className="flex items-center gap-2">
                   <MapPin className="h-4 w-4 text-muted-foreground" />
                   <div>
-                    <p className="text-sm font-medium">Include Location</p>
-                    <p className="text-sm text-muted-foreground">Optional for late entries</p>
+                    <p className="text-sm font-medium">{t('lateEntry.includeLocation')}</p>
+                    <p className="text-sm text-muted-foreground">{t('lateEntry.locationOptional')}</p>
                   </div>
                 </div>
                 <Switch
@@ -400,7 +403,7 @@ export function LateEntryCard() {
 
               {includeLocation && location && (
                 <p className="text-sm text-muted-foreground">
-                  Location: {location.latitude.toFixed(4)}, {location.longitude.toFixed(4)}
+                  {t('lateEntry.location')}: {location.latitude.toFixed(4)}, {location.longitude.toFixed(4)}
                 </p>
               )}
 
@@ -411,11 +414,11 @@ export function LateEntryCard() {
                   onClick={() => setIsOpen(false)}
                   className="flex-1"
                 >
-                  Cancel
+                  {t('lateEntry.cancel')}
                 </Button>
                 <Button type="submit" disabled={loading || !date} className="flex-1">
                   {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                  Submit for Approval
+                  {t('lateEntry.submit')}
                 </Button>
               </div>
             </form>

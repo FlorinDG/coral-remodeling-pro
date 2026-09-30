@@ -1078,6 +1078,11 @@
       "stillClockedIn": "Still clocked in",
       "system": "System",
       "timeOptions": "Time Options"
+    },
+    "shiftForm": {
+      "orderGiver": "Order giver (receives the signed work order)",
+      "noOrderGiver": "— From the project —",
+      "searchClients": "Search clients…"
     }
   },
   "Errors": {

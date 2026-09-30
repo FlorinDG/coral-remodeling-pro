@@ -16,6 +16,7 @@ import prisma from '@/lib/prisma';
 import { buildAuditLogData, buildAuditLogOperation } from '@/lib/audit';
 import { resolveReach } from '../lib/actor-reach';
 import { hrWriteRefusal } from '../lib/write-policy';
+import { describeError } from '@/lib/describe-error';
 import { isShiftSubmitted, zonedParts } from '@/lib/kernel/shift-time';
 import crypto from 'crypto';
 import { Resend } from 'resend';
@@ -88,6 +89,18 @@ function sanitize(data: Record<string, unknown>) {
     return clean;
 }
 
+/** WB-A: a shift's order giver must be a page of THIS tenant's clients database — the FK alone only
+ *  proves "some page" (GlobalPage is polymorphic). null/'' clears it. Returns an error response or null. */
+async function contactPageRefusal(tenantId: string, data: Record<string, unknown>): Promise<NextResponse | null> {
+    if (!('contactPageId' in data)) return null;
+    if (data.contactPageId === '' || data.contactPageId === null) { data.contactPageId = null; return null; }
+    const page = await prisma.globalPage.findFirst({
+        where: { id: String(data.contactPageId), database: { tenantId, logicalKey: 'clients' } },
+        select: { id: true },
+    });
+    return page ? null : NextResponse.json({ error: 'contact_page_not_a_client' }, { status: 400 });
+}
+
 /** Gate 2 refusal → a named 403 (ERROR-SURFACING: the code says what was refused). */
 function hrWriteGate(
     entity: string, method: 'POST' | 'PATCH' | 'DELETE', mayApprove: boolean, actorId: string,
@@ -109,7 +122,7 @@ export async function GET(
     const { entity } = await params;
 
     const model = getModel(entity);
-    if (!model && entity !== 'erp-projects' && entity !== 'erp-tasks') {
+    if (!model && entity !== 'erp-projects' && entity !== 'erp-tasks' && entity !== 'erp-clients') {
         return NextResponse.json({ error: `Unknown entity: ${entity}` }, { status: 400 });
     }
 
@@ -156,6 +169,32 @@ export async function GET(
         if (entityId) where.entityId = entityId;
         const entityType = url.searchParams.get('entityType');
         if (entityType) where.entityType = entityType;
+    }
+
+    // ── VIRTUAL ENTITY: ERP Clients (WB-A — the order giver picker in the shift form) ──
+    // Pages of the tenant's CLIENTS system database (binding read via logicalKey, never parsed).
+    // Planning is an HR act: only tenant HR roles list clients here.
+    if (entity === 'erp-clients') {
+        if (!reach.mayApprove) return NextResponse.json([]);
+        try {
+            const pages = await prisma.globalPage.findMany({
+                where: { database: { tenantId: ctx.tenantId, logicalKey: 'clients' } },
+                select: { id: true, properties: true },
+            });
+            return NextResponse.json(pages.map(p => {
+                const props = (p.properties || {}) as Record<string, unknown>;
+                const name = String(props.title || props.company || '').trim() || '—';
+                const company = String(props.company || '').trim();
+                return {
+                    id: p.id,
+                    name: company && company !== name ? `${name} · ${company}` : name,
+                    email: String(props.email || '').trim() || null,
+                };
+            }).sort((a, b) => a.name.localeCompare(b.name)));
+        } catch (error: unknown) {
+            console.error('[HR API] GET erp-clients error:', error);
+            return NextResponse.json({ error: `erp-clients — ${describeError(error)}` }, { status: 500 });
+        }
     }
 
     // ── VIRTUAL ENTITIES: ERP Projects & Tasks ───────────────────────────
@@ -465,6 +504,10 @@ export async function POST(
     const writeReach = await resolveReach(ctx);
     const gate2 = hrWriteGate(entity, 'POST', writeReach.mayApprove, ctx.userId, data, null);
     if (gate2) return gate2;
+    if (entity === 'shifts') {
+        const bad = await contactPageRefusal(ctx.tenantId, data);
+        if (bad) return bad;
+    }
     if (entity === 'clock-entries') {
         // Facts the server records about an act — never values a client supplies (any role).
         delete data.approvedBy;
@@ -723,6 +766,10 @@ export async function PATCH(
     const warnings: string[] = [];
 
     // ── GATE 2 · WRITE POLICY (PATCH) ──
+    if (entity === 'shifts') {
+        const bad = await contactPageRefusal(ctx.tenantId, data);
+        if (bad) return bad;
+    }
     const patchReach = await resolveReach(ctx);
     if (!patchReach.mayApprove) {
         const selfServiceEntity = entity === 'clock-entries' || entity === 'time-off';

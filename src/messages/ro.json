@@ -1078,6 +1078,11 @@
       "stillClockedIn": "Încă pontat",
       "system": "Sistem",
       "timeOptions": "Opțiuni timp"
+    },
+    "shiftForm": {
+      "orderGiver": "Beneficiar (primește fișa de lucru semnată)",
+      "noOrderGiver": "— Din proiect —",
+      "searchClients": "Caută clienți…"
     }
   },
   "Errors": {

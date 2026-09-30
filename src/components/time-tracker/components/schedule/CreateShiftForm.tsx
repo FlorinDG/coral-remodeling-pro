@@ -39,6 +39,8 @@ import {
 import { Project, NOTION_COLORS } from '@/components/time-tracker/hooks/useScheduledShifts';
 import { useTasks, Task } from '@/components/time-tracker/hooks/useTasks';
 import { hrList, hrCreate, hrDelete as hrDeleteEntity } from '@/lib/hr-api';
+import { shiftMoment, localDateKey } from '@/lib/kernel/shift-time';
+import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { listRecordFiles, uploadFileAction } from '@/app/actions/files';
 import { WorkerOption } from '@/components/time-tracker/types/timesheet';
@@ -161,6 +163,10 @@ export function CreateShiftForm({
   const [shiftEnd, setShiftEnd] = useState('17:00');
   const [role, setRole] = useState('');
   const [notes, setNotes] = useState('');
+  // WB-A: the order giver when no project supplies one — a page of the tenant's clients database.
+  const [contactPageId, setContactPageId] = useState('');
+  const [clients, setClients] = useState<{ id: string; name: string }[]>([]);
+  const tShift = useTranslations('Hr.shiftForm');
 
   // Recurring options
   const [isRecurring, setIsRecurring] = useState(false);
@@ -223,6 +229,14 @@ export function CreateShiftForm({
     if (open) fetchTemplates();
   }, [open]);
 
+  // WB-A: clients for the order-giver picker (server returns [] for non-HR roles).
+  useEffect(() => {
+    if (!open) return;
+    hrList<{ id: string; name: string }>('erp-clients')
+      .then(data => setClients(data || []))
+      .catch(err => console.error('[CreateShiftForm] clients could not be loaded:', err));
+  }, [open]);
+
   // Fetch project attachments when project changes (graceful — table may not exist)
   useEffect(() => {
     const fetchProjectAttachments = async () => {
@@ -252,6 +266,7 @@ export function CreateShiftForm({
   const resetForm = () => {
     setUserIds([]);
     setProjectId('');
+    setContactPageId('');
     setShiftDate('');
     setShiftStart('08:00');
     setShiftEnd('17:00');
@@ -433,7 +448,9 @@ export function CreateShiftForm({
       }
 
       if (useRecurring) {
-        const startDate = new Date(shiftDate);
+        // Built from parts at local noon (kernel/shift-time) — `new Date('YYYY-MM-DD')` is UTC midnight,
+        // which becomes the PREVIOUS day once a series crosses the spring clock change.
+        const startDate = shiftMoment(shiftDate, '12:00');
         const shiftsToCreate: Array<any> = [];
         const seriesId = Math.random().toString(36).substring(2, 9);
 
@@ -453,7 +470,9 @@ export function CreateShiftForm({
               shiftsToCreate.push({
                 user_id: uid,
                 project_id: projectId || null,
-                shift_date: date.toISOString().split('T')[0],
+                contactPageId: contactPageId || null,
+                // Local date — toISOString() is UTC and slips a day across the spring clock change.
+                shift_date: localDateKey(date),
                 shift_start: shiftStart,
                 shift_end: shiftEnd,
                 role: role || null,
@@ -474,8 +493,8 @@ export function CreateShiftForm({
         toast.success(`Created ${shiftsToCreate.length} recurring shifts across ${userIds.length} employee(s)`);
       } else {
         // Multi-day consecutive (single) or leave
-        const start = new Date(shiftDate);
-        const end = shiftEndDate ? new Date(shiftEndDate) : new Date(shiftDate);
+        const start = shiftMoment(shiftDate, '12:00');
+        const end = shiftMoment(shiftEndDate || shiftDate, '12:00');
         
         // Normalize time so end >= start is safe
         start.setHours(0,0,0,0);
@@ -501,7 +520,8 @@ export function CreateShiftForm({
               shiftsToCreate.push({
                 user_id: uid,
                 project_id: scheduleType === 'leave' ? null : (projectId || null),
-                shift_date: d.toISOString().split('T')[0],
+                contactPageId: scheduleType === 'leave' ? null : (contactPageId || null),
+                shift_date: localDateKey(d),
                 shift_start: scheduleType === 'leave' ? '08:00' : shiftStart,
                 shift_end: scheduleType === 'leave' ? '17:00' : shiftEnd,
                 role: scheduleType === 'leave' ? null : (role || null),
@@ -840,6 +860,22 @@ export function CreateShiftForm({
                           value={projectId}
                           onChange={setProjectId}
                           placeholder="Search projects..."
+                        />
+                      </div>
+                    )}
+
+                    {/* WB-A: who ordered the work (receives the signed werkbon) — used when the project has none */}
+                    {scheduleType !== 'leave' && clients.length > 0 && (
+                      <div>
+                        <Label>{tShift('orderGiver')}</Label>
+                        <SearchableSelect
+                          options={[
+                            { value: '', label: tShift('noOrderGiver') },
+                            ...clients.map(c => ({ value: c.id, label: c.name }))
+                          ]}
+                          value={contactPageId}
+                          onChange={setContactPageId}
+                          placeholder={tShift('searchClients')}
                         />
                       </div>
                     )}

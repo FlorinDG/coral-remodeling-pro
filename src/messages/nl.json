@@ -1078,6 +1078,11 @@
       "stillClockedIn": "Loopt nog",
       "system": "Systeem",
       "timeOptions": "Tijd Opties"
+    },
+    "shiftForm": {
+      "orderGiver": "Opdrachtgever (ontvangt de getekende werkbon)",
+      "noOrderGiver": "— Van het project —",
+      "searchClients": "Klanten zoeken…"
     }
   },
   "Errors": {

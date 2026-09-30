@@ -1077,6 +1077,11 @@
       "stillClockedIn": "Toujours pointé",
       "system": "Système",
       "timeOptions": "Options de temps"
+    },
+    "shiftForm": {
+      "orderGiver": "Donneur d’ordre (reçoit le bon de travail signé)",
+      "noOrderGiver": "— Depuis le projet —",
+      "searchClients": "Rechercher des clients…"
     }
   },
   "Errors": {

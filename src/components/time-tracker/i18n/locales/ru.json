@@ -116,7 +116,9 @@
     "todaysShift": "Сегодняшняя Смена",
     "noScheduledShift": "Нет Запланированной Смены",
     "userInitiatedEntry": "Отметка прихода создаст пользовательскую запись",
-    "locationRecorded": "Местоположение сохранено"
+    "locationRecorded": "Местоположение сохранено",
+    "alreadyClockedInSince": "Вы уже отметились в {{time}}.",
+    "statusUnconfirmed": "Не удалось подтвердить ваш статус. Отметиться всё равно безопасно."
   },
   "schedule": {
     "title": "Расписание",
@@ -172,6 +174,18 @@
       "clock_out_first": "Сначала отметьте уход",
       "nothing_recorded": "На этой смене не записано часов",
       "failed": "Не удалось отправить смену"
+    },
+    "shiftsUnavailableNotice": "Смены недоступны — отметка без смены",
+    "shiftsLoadFailed": "Не удалось загрузить ваши смены с сервера.",
+    "shiftsLoadFailedHint": "Вы всё равно можете отметиться без смены кнопкой ниже.",
+    "partialDataNotice": "Некоторые данные расписания не загрузились.",
+    "unloadedEndpoints": "Недоступно",
+    "partialDataExplanation": "Время смен показано, но некоторые данные о проектах или коллегах могут отсутствовать.",
+    "endpoint": {
+      "projects": "Проекты",
+      "erp-projects": "Проекты ERP",
+      "employees": "Имена коллег",
+      "time-off": "Отпуска"
     }
   },
   "timeOff": {

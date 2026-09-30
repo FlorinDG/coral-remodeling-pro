@@ -5,6 +5,16 @@
 
 ---
 
+# 0a · NIGHT OF 30 SEP → 1 OCT — unattended run (Florin: "work unattended … then follow the roadmap")
+**Live in production (WorkHub scope, promoted green):** TASK-CREW-1 (crew task status, notes draft→submit frozen, read-only log in WorkHub + ERP) · WB-A (order giver = client page) + SHIFT-DST-1 · I18N-TT-1 (crew i18n guard, Russian completed) · CREW-ERP-1 (12 ERP database doors closed to workforce; crew phones no longer get db ids or tenant financials) · PROJ-SSOT-1 phase 1 (one project resolver).
+**On branch `track-b/r1-2-kern-8` (worktree `~/Documents/GitHub/coral-trackb`, NOT on develop):** R1-2 + KERN-8 (fail-closed resolver, getLockedDbId deleted) · R1-4 scopeWhere (contract now a build gate) · the TenantScopedClient (built, 14 tests, **not adopted**).
+**Florin, in the morning:**
+1. Run `.agents/workflows/r1-2-binding-census.sql` (on the branch) — R1-2 ships only if no tenant reads a system role that is MISSING/DANGLING.
+2. Decide the R1-5 rollout (adopting scopeFromSession file by file).
+3. Verify the reseller rate (fair use numbers in `feature_matrix.md`).
+4. PRO shape (A/B/C) in `coral-draft-pro-tier.md`; PROJ-SSOT-1 phase 2 (drop HrProject — after a snapshot).
+**Process lessons, saved to memory:** zsh `$S:refs` pushes nowhere (brace it) · a new model needs the SCOPE table + TSC-9 census · run the full suite after a schema change.
+
 # 0 · UPDATE — 2026-09-30 (read this first; the sections below are the 29 Sep baseline)
 - **The Planner now works in Claude Code, on the repo directly.** It implements judgement-heavy items itself; the Antigravity coder takes mechanical items under a file fence and reports in `.agents/reports/<ITEM>.md` (`coder-report-protocol.md`, `pd.md` 5g).
 - **Promotion to `main`:** during the WorkHub iteration phase the Planner promotes green commits (CI + Vercel preview green, no `prisma/`/package change, rollback hash noted). Florin ends the phase.

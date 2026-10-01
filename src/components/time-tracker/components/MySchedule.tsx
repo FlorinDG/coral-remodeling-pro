@@ -467,6 +467,7 @@ export function MySchedule() {
                     title={displayTitle}
                     userId={user?.id}
                     onOpenMedia={(files, index) => setViewer({ files, index })}
+                    loading={briefLoading && !brief}
                   />
 
                   {/* Worked duration (only when clock entry exists) */}
@@ -484,11 +485,7 @@ export function MySchedule() {
                     </div>
                   )}
 
-                  {briefLoading && !brief && (
-                    <div className="flex items-center justify-center p-6">
-                      <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-                    </div>
-                  )}
+                  {/* (loading state is shown by ShiftBriefDetails' placeholders — no spinner that pops away) */}
                 </div>
 
                 {/* Clock Action Surface */}

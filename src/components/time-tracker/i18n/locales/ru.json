@@ -186,7 +186,12 @@
       "erp-projects": "Проекты ERP",
       "employees": "Имена коллег",
       "time-off": "Отпуска"
-    }
+    },
+    "noAddress": "Нет адреса",
+    "noContact": "Нет контакта",
+    "noNotes": "Нет заметок",
+    "noTasks": "Нет задач",
+    "noAttachments": "Нет вложений"
   },
   "timeOff": {
     "title": "Отпуск",
@@ -266,7 +271,8 @@
       "unreviewed": "Ещё не проверено"
     },
     "exportTitle": "Мой табель",
-    "exportMonth": "Месяц"
+    "exportMonth": "Месяц",
+    "exportFailed": "Не удалось скачать выгрузку"
   },
   "tasks": {
     "title": "Мои задачи",

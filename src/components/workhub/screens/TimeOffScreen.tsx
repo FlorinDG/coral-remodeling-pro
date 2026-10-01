@@ -13,6 +13,7 @@ import { Loader2, Plus, X, CalendarOff } from 'lucide-react';
 import { useTimeOffRequests, type TimeOffRequest } from '@/components/time-tracker/hooks/useTimeOffRequests';
 import { formatDayMonth, parseDateInput } from '@/lib/format/date';
 import { describeError } from '@/lib/describe-error';
+import { CustomDatePicker } from '@/components/ui/CustomDatePicker';
 
 /** The values the server already stores — unchanged, so both surfaces keep reading the same data. */
 const REQUEST_TYPES = [
@@ -194,23 +195,25 @@ export function TimeOffScreen() {
           <div className="grid grid-cols-2 gap-3">
             <label className="block">
               <span className="block text-sm text-muted-foreground mb-1">{t('timeOff.startDate')}</span>
-              <input
-                type="date"
-                required
+              <CustomDatePicker
                 value={startDate}
-                onChange={e => { setStartDate(e.target.value); if (!endDate || e.target.value > endDate) setEndDate(e.target.value); }}
-                className="w-full h-12 px-3 rounded-xl border border-border bg-background text-base"
+                onChange={v => { setStartDate(v); if (!endDate || v > endDate) setEndDate(v); }}
+                locale={lang}
+                placeholder={t('timeOff.startDate')}
+                clearable={false}
+                triggerClassName="w-full"
               />
             </label>
             <label className="block">
               <span className="block text-sm text-muted-foreground mb-1">{t('timeOff.endDate')}</span>
-              <input
-                type="date"
-                required
-                min={startDate || undefined}
+              <CustomDatePicker
                 value={endDate}
-                onChange={e => setEndDate(e.target.value)}
-                className="w-full h-12 px-3 rounded-xl border border-border bg-background text-base"
+                onChange={setEndDate}
+                min={startDate || undefined}
+                locale={lang}
+                placeholder={t('timeOff.endDate')}
+                clearable={false}
+                triggerClassName="w-full"
               />
             </label>
           </div>

@@ -28,6 +28,8 @@ import { useTasks, Task } from '@/components/time-tracker/hooks/useTasks';
 
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
+import { CustomDatePicker } from '@/components/ui/CustomDatePicker';
+import { TimeSelect } from '@/components/ui/TimeSelect';
 import { describeError } from '@/lib/describe-error';
 import { format, parseISO, isAfter, startOfDay } from 'date-fns';
 import { validateFile, validateFiles, getSafeFileType, generateSafeFilePath, ALLOWED_EXTENSIONS } from '@/components/time-tracker/lib/fileValidation';
@@ -37,7 +39,7 @@ function getNotionColor(colorName: string) {
 }
 
 export function LateEntryCard() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const { projects } = useScheduledShifts();
   const { createRequest } = useApprovalRequests();
@@ -247,13 +249,15 @@ export function LateEntryCard() {
 
               <div>
                 <Label htmlFor="entryDate">{t('lateEntry.date')}</Label>
-                <Input
-                  id="entryDate"
-                  type="date"
+                {/* Belgian date display, Monday-first — a native date input follows the phone's region (US). */}
+                <CustomDatePicker
                   value={date}
-                  onChange={(e) => setDate(e.target.value)}
+                  onChange={setDate}
                   max={format(today, 'yyyy-MM-dd')}
-                  required
+                  locale={i18n.language}
+                  placeholder={t('lateEntry.date')}
+                  clearable={false}
+                  triggerClassName="w-full"
                 />
                 <p className="text-sm text-muted-foreground mt-1">
                   {t('lateEntry.dateHint')}
@@ -263,23 +267,11 @@ export function LateEntryCard() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="clockIn">{t('lateEntry.clockIn')}</Label>
-                  <Input
-                    id="clockIn"
-                    type="time"
-                    value={clockIn}
-                    onChange={(e) => setClockIn(e.target.value)}
-                    required
-                  />
+                  <TimeSelect id="clockIn" value={clockIn} onChange={setClockIn} minuteStep={5} ariaLabel={t('lateEntry.clockIn')} />
                 </div>
                 <div>
                   <Label htmlFor="clockOut">{t('lateEntry.clockOut')}</Label>
-                  <Input
-                    id="clockOut"
-                    type="time"
-                    value={clockOut}
-                    onChange={(e) => setClockOut(e.target.value)}
-                    required
-                  />
+                  <TimeSelect id="clockOut" value={clockOut} onChange={setClockOut} minuteStep={5} ariaLabel={t('lateEntry.clockOut')} />
                 </div>
               </div>
 

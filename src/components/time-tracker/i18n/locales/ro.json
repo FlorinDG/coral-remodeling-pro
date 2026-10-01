@@ -185,7 +185,12 @@
       "clock_out_first": "Mai întâi depontează",
       "nothing_recorded": "Nu s-au înregistrat ore pe această tură",
       "failed": "Tura nu a putut fi trimisă"
-    }
+    },
+    "noAddress": "Fără adresă",
+    "noContact": "Fără contact",
+    "noNotes": "Fără note",
+    "noTasks": "Fără sarcini",
+    "noAttachments": "Fără atașamente"
   },
   "timeOff": {
     "title": "Concediu",
@@ -264,7 +269,8 @@
       "unreviewed": "Încă neverificat"
     },
     "exportTitle": "Foaia mea de pontaj",
-    "exportMonth": "Luna"
+    "exportMonth": "Luna",
+    "exportFailed": "Exportul nu a putut fi descărcat"
   },
   "tasks": {
     "title": "Sarcinile mele",

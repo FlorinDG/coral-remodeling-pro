@@ -47,12 +47,14 @@ interface Props {
   fallbackAddress: string | null;
   title: string;
   userId?: string;
+  /** The brief is still loading — every section shows a placeholder bar at its final height. */
+  loading?: boolean;
   /** The carousel is rendered by the PARENT, outside the dialog: Radix's dialog content is
    *  transformed, which would trap a `fixed` full-screen viewer inside the modal's box. */
   onOpenMedia: (files: ViewableFile[], index: number) => void;
 }
 
-export function ShiftBriefDetails({ shiftId, brief, fallbackAddress, title, userId, onOpenMedia }: Props) {
+export function ShiftBriefDetails({ shiftId, brief, fallbackAddress, title, userId, onOpenMedia, loading = false }: Props) {
   const { t } = useTranslation();
   const [busyTask, setBusyTask] = useState<string | null>(null);
   const {
@@ -90,17 +92,21 @@ export function ShiftBriefDetails({ shiftId, brief, fallbackAddress, title, user
 
   return (
     <div className="space-y-4">
-      {/* ── Where and who ── */}
-      {(address || brief?.contactPhone || brief?.contactEmail) && (
+      {/* ── Where and who — ALWAYS rendered (Florin: placeholders, not elements that pop in and vanish) ── */}
         <div className="space-y-2">
-          {address && mapUrl && (
+          {loading && !address ? <Skeleton /> : !address ? (
+            <div className={`${ROW} text-muted-foreground`}><MapPin className="w-6 h-6 shrink-0 opacity-50" /><span className="text-base">{t('schedule.noAddress')}</span></div>
+          ) : mapUrl && (
             <a href={mapUrl} target="_blank" rel="noopener noreferrer" className={LINK_ROW}>
               <MapPin className="w-6 h-6 text-[var(--persian-green)] shrink-0" />
               <span className="flex-1 min-w-0 text-base font-medium text-foreground break-words">{address}</span>
               <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
             </a>
           )}
-          {brief?.contactPhone && (
+          {loading ? <Skeleton /> : !brief?.contactPhone && !brief?.contactEmail ? (
+            <div className={`${ROW} text-muted-foreground`}><Phone className="w-6 h-6 shrink-0 opacity-50" /><span className="text-base">{t('schedule.noContact')}</span></div>
+          ) : null}
+          {!loading && brief?.contactPhone && (
             <a href={telHref(brief.contactPhone)} className={LINK_ROW}>
               <Phone className="w-6 h-6 text-[var(--persian-green)] shrink-0" />
               <span className="flex-1 min-w-0">
@@ -110,7 +116,7 @@ export function ShiftBriefDetails({ shiftId, brief, fallbackAddress, title, user
               <span className="shrink-0 text-sm font-semibold text-[var(--persian-green)]">{t('schedule.call')}</span>
             </a>
           )}
-          {brief?.contactEmail && (
+          {!loading && brief?.contactEmail && (
             <a href={`mailto:${brief.contactEmail}`} className={LINK_ROW}>
               <Mail className="w-6 h-6 text-[var(--persian-green)] shrink-0" />
               <span className="flex-1 min-w-0 text-base font-medium text-foreground break-all">{brief.contactEmail}</span>
@@ -118,20 +124,18 @@ export function ShiftBriefDetails({ shiftId, brief, fallbackAddress, title, user
             </a>
           )}
         </div>
-      )}
 
-      {/* ── Notes from the planner ── */}
-      {notes && (
+      {/* ── Notes from the planner — always rendered ── */}
         <section className="space-y-2">
           <h3 className={SECTION_LABEL}><StickyNote className="w-4 h-4" />{t('schedule.notes')}</h3>
-          <p className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200/70 dark:border-amber-900/50 text-base text-foreground whitespace-pre-wrap break-words">
-            {notes}
-          </p>
+          {loading ? <Skeleton /> : notes ? (
+            <p className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200/70 dark:border-amber-900/50 text-base text-foreground whitespace-pre-wrap break-words">
+              {notes}
+            </p>
+          ) : <p className="px-1 text-base text-muted-foreground">{t('schedule.noNotes')}</p>}
         </section>
-      )}
 
       {/* ── Tasks — the worker reports progress; management closes the task itself ── */}
-      {(tasksLoading || shiftTasks.length > 0 || tasksError) && (
         <section className="space-y-2">
           <h3 className={SECTION_LABEL}>
             <CheckSquare className="w-4 h-4" />{t('schedule.tasks')}
@@ -143,7 +147,9 @@ export function ShiftBriefDetails({ shiftId, brief, fallbackAddress, title, user
           </h3>
           {tasksError && <p className="text-sm text-amber-700 dark:text-amber-300">{tasksError}</p>}
           {tasksLoading && shiftTasks.length === 0 ? (
-            <div className="h-16 rounded-xl bg-muted/60 animate-pulse" />
+            <Skeleton />
+          ) : shiftTasks.length === 0 ? (
+            <p className="px-1 text-base text-muted-foreground">{t('schedule.noTasks')}</p>
           ) : (
             <ul className="space-y-2">
               {shiftTasks.map(st => {
@@ -216,12 +222,13 @@ export function ShiftBriefDetails({ shiftId, brief, fallbackAddress, title, user
             </ul>
           )}
         </section>
-      )}
 
-      {/* ── Attachments — thumbnails, tap to open the carousel ── */}
-      {media.length > 0 && (
+      {/* ── Attachments — always rendered; thumbnails open the carousel ── */}
         <section className="space-y-2">
-          <h3 className={SECTION_LABEL}><Paperclip className="w-4 h-4" />{t('schedule.attachments')} · {media.length}</h3>
+          <h3 className={SECTION_LABEL}><Paperclip className="w-4 h-4" />{t('schedule.attachments')}{media.length > 0 ? ` · ${media.length}` : ''}</h3>
+          {loading ? <Skeleton /> : media.length === 0 ? (
+            <p className="px-1 text-base text-muted-foreground">{t('schedule.noAttachments')}</p>
+          ) : (
           <div className="grid grid-cols-3 gap-2">
             {media.map((m, i) => (
               <button
@@ -244,8 +251,13 @@ export function ShiftBriefDetails({ shiftId, brief, fallbackAddress, title, user
               </button>
             ))}
           </div>
+          )}
         </section>
-      )}
     </div>
   );
+}
+
+/** A placeholder at the final height of a row — the modal never jumps while the brief loads. */
+function Skeleton() {
+  return <div className="h-[3.25rem] rounded-xl bg-muted/60 animate-pulse" aria-hidden />;
 }

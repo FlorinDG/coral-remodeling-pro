@@ -184,7 +184,12 @@
       "clock_out_first": "Dépointez d’abord",
       "nothing_recorded": "Aucune heure n’a été enregistrée sur ce service",
       "failed": "Le service n’a pas pu être envoyé"
-    }
+    },
+    "noAddress": "Pas d’adresse",
+    "noContact": "Pas de contact",
+    "noNotes": "Pas de notes",
+    "noTasks": "Pas de tâches",
+    "noAttachments": "Pas de pièces jointes"
   },
   "timeOff": {
     "title": "Congés",
@@ -262,7 +267,8 @@
       "unreviewed": "Pas encore vérifié"
     },
     "exportTitle": "Ma feuille de temps",
-    "exportMonth": "Mois"
+    "exportMonth": "Mois",
+    "exportFailed": "L’export n’a pas pu être téléchargé"
   },
   "tasks": {
     "title": "Mes tâches",

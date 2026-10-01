@@ -184,7 +184,12 @@
       "clock_out_first": "Clock out first",
       "nothing_recorded": "No hours were recorded on this shift",
       "failed": "The shift could not be submitted"
-    }
+    },
+    "noAddress": "No address",
+    "noContact": "No contact",
+    "noNotes": "No notes",
+    "noTasks": "No tasks",
+    "noAttachments": "No attachments"
   },
   "timeOff": {
     "title": "Time Off",
@@ -262,7 +267,8 @@
       "unreviewed": "Not yet reviewed"
     },
     "exportTitle": "My timesheet",
-    "exportMonth": "Month"
+    "exportMonth": "Month",
+    "exportFailed": "The export could not be downloaded"
   },
   "tasks": {
     "title": "My tasks",

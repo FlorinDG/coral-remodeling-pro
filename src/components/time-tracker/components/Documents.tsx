@@ -15,6 +15,8 @@ import {
 import { useAuth } from '@/components/time-tracker/contexts/AuthContext';
 import { getHrDocuments, acknowledgeHrDocument } from '@/app/actions/hr-documents';
 import { format, parseISO, formatDistanceToNow } from 'date-fns';
+import { formatDateLong, formatTime } from '@/lib/format/date';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 interface Document {
@@ -150,6 +152,8 @@ function SignaturePad({
 // ── Main Documents Component ─────────────────────────────────────────
 
 export function Documents() {
+  // Dates in the crew's language (Belgium) — not date-fns' English defaults.
+  const { i18n } = useTranslation();
   const { user } = useAuth();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
@@ -265,7 +269,7 @@ export function Documents() {
               <div className="flex-1 min-w-0">
                 <h3 className="text-base font-medium text-muted-foreground truncate">{doc.title}</h3>
                 <p className="text-sm text-muted-foreground mt-0.5">
-                  Acknowledged {doc.acknowledgedAt ? format(parseISO(doc.acknowledgedAt), 'MMM d, yyyy') : ''}
+                  Acknowledged {doc.acknowledgedAt ? formatDateLong(doc.acknowledgedAt, i18n.language) : ''}
                 </p>
               </div>
               <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
@@ -319,7 +323,7 @@ export function Documents() {
                     <p className="text-sm font-semibold text-secondary">Acknowledged</p>
                     <p className="text-sm text-muted-foreground">
                       {selectedDoc.acknowledgedAt
-                        ? format(parseISO(selectedDoc.acknowledgedAt), 'd MMMM yyyy HH:mm')
+                        ? `${formatDateLong(selectedDoc.acknowledgedAt, i18n.language)} ${formatTime(new Date(selectedDoc.acknowledgedAt))}`
                         : ''}
                     </p>
                   </div>

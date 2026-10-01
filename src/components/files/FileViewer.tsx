@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useMemo } from 'react';
 import { X, ExternalLink, ChevronLeft, ChevronRight, Download, FileText, File as FileIcon } from 'lucide-react';
 import { useScrollLock } from '@/components/mobile/useScrollLock';
+import { saveFile } from '@/lib/save-file';
 
 export interface ViewableFile {
     id: string;
@@ -61,6 +62,14 @@ export default function FileViewer({
         }
         return displayUrl;
     }, [displayUrl, isHttpUrl]);
+
+    // Never let a download NAVIGATE the app: in the installed WorkHub there is no way back from a
+    // file screen. saveFile fetches it and hands it to the share sheet / a blob download.
+    const onDownload = (e: React.MouseEvent) => {
+        e.preventDefault();
+        if (!downloadUrl || !file) return;
+        saveFile(downloadUrl, file.name).catch(err => console.error('[FileViewer] download failed:', err));
+    };
 
     const mime = (file?.mimeType || file?.type || '').toLowerCase();
     const fileName = (file?.name || '').toLowerCase();
@@ -125,6 +134,7 @@ export default function FileViewer({
                             <a
                                 href={downloadUrl}
                                 download={file.name}
+                                onClick={onDownload}
                                 className="min-w-[44px] min-h-[44px] flex items-center justify-center text-neutral-300 hover:text-white hover:bg-white/10 rounded-xl transition-colors"
                                 title="Download"
                                 aria-label="Download file"
@@ -194,6 +204,7 @@ export default function FileViewer({
                                 <a
                                     href={downloadUrl}
                                     download={file.name}
+                                    onClick={onDownload}
                                     className="min-h-[44px] px-5 py-2.5 bg-orange-600 hover:bg-orange-500 text-white rounded-xl text-xs font-semibold flex items-center gap-2 shadow-lg shadow-orange-600/20 transition-colors"
                                 >
                                     <Download className="w-4 h-4" />

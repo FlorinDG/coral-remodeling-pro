@@ -998,7 +998,7 @@
       "sourceClocked": "Clocked",
       "sourceManual": "Manual",
       "sourceAdjusted": "Adjusted",
-      "sourceLateEntry": "Late entry",
+      "sourceLateEntry": "Hours added manually",
       "sourceAdminEntry": "Admin entry",
       "sourceExplanationClocked": "Recorded live via mobile app",
       "sourceExplanationLateEntry": "Submitted afterwards by worker",

@@ -139,7 +139,7 @@ export function TimesheetEntryDetail({ entry, onUpdate, unlockTokenValid }: Time
             case 'clocked':
                 return t('sourceClocked', { fallback: 'Geklokt' });
             case 'late_entry':
-                return t('sourceLateEntry', { fallback: 'Nageleverd' });
+                return t('sourceLateEntry', { fallback: 'Uren manueel toevoegen' });
             case 'Aangepast':
             case 'adjusted':
                 return t('sourceAdjusted', { fallback: 'Aangepast' });

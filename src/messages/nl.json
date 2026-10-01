@@ -998,7 +998,7 @@
       "sourceClocked": "Geklokt",
       "sourceManual": "Handmatig",
       "sourceAdjusted": "Aangepast",
-      "sourceLateEntry": "Nageleverd",
+      "sourceLateEntry": "Uren manueel toevoegen",
       "sourceAdminEntry": "Beheerdersinvoer",
       "sourceExplanationClocked": "Live via mobiele app geregistreerd",
       "sourceExplanationLateEntry": "Naderhand ingediend door medewerker",

@@ -997,7 +997,7 @@
       "sourceClocked": "Pointé",
       "sourceManual": "Manuel",
       "sourceAdjusted": "Ajusté",
-      "sourceLateEntry": "Saisie tardive",
+      "sourceLateEntry": "Heures ajoutées manuellement",
       "sourceAdminEntry": "Saisie admin",
       "sourceExplanationClocked": "Enregistré en direct via l'application mobile",
       "sourceExplanationLateEntry": "Soumis a posteriori par l'employé",

@@ -11,12 +11,15 @@ export function SignaturePad({
   label = 'Your Signature',
   clearLabel = 'Clear',
   hint = 'Draw your signature above to acknowledge',
+  large = false,
 }: {
   onSign: (dataUrl: string) => void;
   onClear: () => void;
   label?: string;
   clearLabel?: string;
   hint?: string;
+  /** A finger signature is imprecise: a tall pad (≈ half the screen, at least 16rem) with a thicker line. */
+  large?: boolean;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
@@ -55,7 +58,7 @@ export function SignaturePad({
     const ctx = canvasRef.current?.getContext('2d');
     if (!ctx) return;
     const { x, y } = getCoords(e);
-    ctx.lineWidth = 2;
+    ctx.lineWidth = large ? 3 : 2;
     ctx.lineCap = 'round';
     ctx.strokeStyle = '#111827';
     ctx.lineTo(x, y);
@@ -80,13 +83,27 @@ export function SignaturePad({
     onClear();
   };
 
-  // Set canvas size on mount
+  // The drawing surface matches the box on screen — on mount, and again when the box changes size
+  // (turning the phone). Resizing clears a canvas, so a half-drawn signature is cleared visibly
+  // and the parent told, rather than kept at the wrong scale.
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width;
-    canvas.height = rect.height;
+    const fit = () => {
+      const rect = canvas.getBoundingClientRect();
+      const w = Math.round(rect.width), h = Math.round(rect.height);
+      if (canvas.width === w && canvas.height === h) return;
+      const hadContent = canvas.width > 0 && canvas.height > 0;
+      canvas.width = w;
+      canvas.height = h;
+      if (hadContent) { setHasSignature(false); onClear(); }
+    };
+    canvas.width = 0; canvas.height = 0;
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(canvas);
+    return () => ro.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
@@ -109,7 +126,7 @@ export function SignaturePad({
       <div className="border-2 border-dashed border-border rounded-xl overflow-hidden bg-white">
         <canvas
           ref={canvasRef}
-          className="w-full h-32 cursor-crosshair touch-none"
+          className={`w-full ${large ? 'h-[max(16rem,45vh)]' : 'h-32'} cursor-crosshair touch-none`}
           onMouseDown={startDrawing}
           onMouseMove={draw}
           onMouseUp={stopDrawing}

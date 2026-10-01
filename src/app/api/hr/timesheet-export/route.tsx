@@ -140,7 +140,7 @@ export async function GET(req: Request) {
         const sourceDisplay = entry.source === 'clocked'
             ? 'Geklokt'
             : entry.source === 'late_entry'
-                ? 'Nageleverd'
+                ? 'Uren manueel toevoegen'
                 : entry.source === 'admin_entry'
                     ? 'Beheerdersinvoer'
                     : entry.source === 'Aangepast' || entry.source === 'adjusted'

@@ -240,7 +240,7 @@ function SignTab({ shiftId, onSigned }: { shiftId: string; onSigned: () => void 
             <input id="signer" value={name} onChange={e => setName(e.target.value)} autoComplete="name"
               className="w-full h-12 px-3 rounded-xl border border-border bg-background text-base" />
           </div>
-          <SignaturePad onSign={setPng} onClear={() => setPng(null)}
+          <SignaturePad large onSign={setPng} onClear={() => setPng(null)}
             label={t('workOrder.signHere')} clearLabel={t('workOrder.clear')} hint={t('workOrder.signHint')} />
           <button type="button" onClick={sign} disabled={busy || !png || name.trim().length < 2}
             className="w-full h-14 rounded-xl bg-[var(--persian-green)] text-white text-base font-bold inline-flex items-center justify-center gap-2 disabled:opacity-40">

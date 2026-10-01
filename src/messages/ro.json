@@ -998,7 +998,7 @@
       "sourceClocked": "Pontat",
       "sourceManual": "Manual",
       "sourceAdjusted": "Ajustat",
-      "sourceLateEntry": "Introducere tardivă",
+      "sourceLateEntry": "Ore adăugate manual",
       "sourceAdminEntry": "Intrare admin",
       "sourceExplanationClocked": "Înregistrat live prin aplicația mobilă",
       "sourceExplanationLateEntry": "Trimis ulterior de către angajat",

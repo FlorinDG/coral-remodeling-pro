@@ -20,6 +20,11 @@ import { workOrderMembers } from './work-order-lock';
 
 type Fail = { ok: false; error: string; detail?: string };
 
+class SignRefused extends Error {
+    code: string;
+    constructor(code: string) { super(code); this.code = code; }
+}
+
 export interface WorkOrderSummary {
     members: Array<{ shiftId: string; workerName: string | null; entries: Array<{ in: string; out: string | null; minutes: number }> }>;
     totalMinutes: number;
@@ -114,20 +119,36 @@ export async function signWorkOrder(input: { shiftId: string; signerName: string
                 in: e.clockInTime.toISOString(), out: e.clockOutTime ? e.clockOutTime.toISOString() : null,
             })),
         };
-        const ops = [];
+        const audits: Array<Awaited<ReturnType<typeof buildAuditLogData>>> = [];
         for (const mb of d.wo.members) {
-            const audit = await buildAuditLogData({ tenantId: a.tenantId, userId: a.userId }, {
+            audits.push(await buildAuditLogData({ tenantId: a.tenantId, userId: a.userId }, {
                 entityType: 'shift', entityId: mb.id, action: 'sign', field: null,
                 before: null, after: evidence, reason: 'client signature',
-            });
-            ops.push(buildAuditLogOperation(prisma, audit));
-            ops.push(prisma.shiftAttachment.create({
-                data: { shiftId: mb.id, name: `Handtekening — ${signerName}.png`, url: signatureKey, type: 'image/png', size: png.length },
             }));
         }
-        await prisma.$transaction(ops);
+        const ids = d.wo.members.map(mb => mb.id);
+        // Re-checked INSIDE a serializable transaction: two phones signing at once, or a clock-in
+        // landing between the check above and this write, make one of them fail — never two
+        // signatures, never hours outside the signed evidence.
+        await prisma.$transaction(async tx => {
+            const [already, open] = await Promise.all([
+                tx.auditLog.findFirst({ where: { tenantId: a.tenantId, entityType: 'shift', entityId: { in: ids }, action: 'sign' }, select: { id: true } }),
+                tx.clockEntry.count({ where: { tenantId: a.tenantId, shiftId: { in: ids }, clockOutTime: null } }),
+            ]);
+            if (already) throw new SignRefused('already_signed');
+            if (open) throw new SignRefused('still_clocked_in');
+            for (const [i, mb] of d.wo.members.entries()) {
+                await buildAuditLogOperation(tx, audits[i]);
+                await tx.shiftAttachment.create({
+                    data: { shiftId: mb.id, name: `Handtekening — ${signerName}.png`, url: signatureKey, type: 'image/png', size: png.length },
+                });
+            }
+        }, { isolationLevel: 'Serializable' });
         return { ok: true };
     } catch (err) {
+        if (err instanceof SignRefused) return { ok: false, error: err.code };
+        // Postgres serialization failure (P2034): another signature or clock-in won the race.
+        if ((err as { code?: string })?.code === 'P2034') return { ok: false, error: 'already_signed' };
         console.error('[signWorkOrder] failed:', err);
         return { ok: false, error: 'failed', detail: err instanceof Error ? err.message : String(err) };
     }

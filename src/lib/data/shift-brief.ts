@@ -29,6 +29,8 @@ export interface ShiftBriefResult {
     crewNote: string | null;
     /** WO-2: the address is the shift's execution address (not the project's). */
     siteAddressOverride: boolean;
+    /** WO-3: the client signed this work order — it is closed for every role. */
+    signed: boolean;
 }
 
 /**
@@ -203,6 +205,9 @@ export async function shiftBrief(
         })),
         crewNote: shift.crewNote?.trim() || null,
         siteAddressOverride: !!siteAddress,
+        signed: !!(await prisma.auditLog.findFirst({
+            where: { tenantId, entityType: 'shift', entityId: shift.id, action: 'sign' }, select: { id: true },
+        })),
     };
 }
 

@@ -17,6 +17,7 @@ import { auth } from '@/auth';
 import { isTenantHrRole } from '@/lib/roles';
 import { buildAuditLogData, buildAuditLogOperation } from '@/lib/audit';
 import { entrySpan, matchSpanToShifts, isShiftSubmitted, overlapMinutes } from '@/lib/kernel/shift-time';
+import { isShiftSigned } from '@/lib/data/work-order-lock';
 
 export interface ShiftOption { id: string; label: string; start: string; end: string; overlap: number; submitted: boolean }
 export interface ShiftLinkItem {
@@ -117,7 +118,11 @@ export async function linkEntryToShift(entryId: string, shiftId: string | null):
         select: { id: true, userId: true, shiftId: true, projectId: true },
     });
     if (!entry || (!a.hr && entry.userId !== a.userId)) return { ok: false, error: 'not_found' };
-    const keep = (entry.shiftId ?? null) === shiftId;   // "this is right as it is" — recorded, nothing changes
+    const keep = (entry.shiftId ?? null) === shiftId;
+    // WO-3: hours on a signed work order stay where they were signed; none move into one either.
+    if (!keep && (await isShiftSigned(a.tenantId, entry.shiftId) || await isShiftSigned(a.tenantId, shiftId))) {
+        return { ok: false, error: 'work_order_signed' };
+    }   // "this is right as it is" — recorded, nothing changes
 
     let next: { id: string; projectId: string | null } | null = null;
     if (shiftId && !keep) {

@@ -375,11 +375,33 @@
     "running": "running",
     "pending": "awaiting approval",
     "signTitle": "Client signature",
-    "signSoon": "Coming soon: the client signs here, with their name, and the work order is locked.",
     "myNote": "My note",
     "notePlaceholder": "What was done, what is left, anything the office should know…",
     "saveNote": "Save note",
     "noteSaved": "Note saved",
-    "noteFailed": "Could not save the note"
+    "noteFailed": "Could not save the note",
+    "signIntro": "The client checks the hours below and signs. Signing locks this work order — hours, notes and files can no longer be changed.",
+    "total": "Total",
+    "noHoursShort": "no hours",
+    "signerName": "Name of the person signing",
+    "signHere": "Client signature",
+    "clear": "Clear",
+    "signHint": "Sign with your finger in the box",
+    "signButton": "Sign and lock",
+    "signConfirm": "Sign now? After signing, this work order can no longer be changed.",
+    "signedToast": "Signed — the work order is locked",
+    "signedBy": "Signed by {{name}}",
+    "signLoadFailed": "Could not load the work order",
+    "signedClosed": "Signed by the client — closed",
+    "signError": {
+      "signer_name_required": "Enter the name of the person signing",
+      "signature_required": "A signature is required",
+      "signature_invalid": "The signature could not be read — sign again",
+      "not_found": "Work order not found",
+      "already_signed": "This work order is already signed",
+      "still_clocked_in": "Someone is still clocked in on this work order — clock out first",
+      "failed": "Signing failed",
+      "unauthorized": "Please sign in again"
+    }
   }
 }

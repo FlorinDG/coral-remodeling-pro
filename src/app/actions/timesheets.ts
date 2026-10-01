@@ -3,6 +3,7 @@
 import { isTenantHrRole } from '@/lib/roles';
 import { zonedParts, isShiftSubmitted } from '@/lib/kernel/shift-time';
 import { autoLinkIfUnique } from '@/lib/data/entry-shift-match';
+import { isShiftSigned } from '@/lib/data/work-order-lock';
 import prisma from "@/lib/prisma";
 import { auth } from "@/auth";
 
@@ -274,6 +275,7 @@ export async function submitLateEntry(params: {
         });
         if (!s) throw new Error("Not found: shift");
         if (isShiftSubmitted(s.status) && !isTenantHrRole(role)) throw new Error("shift_submitted");
+        if (await isShiftSigned(tenantId, s.id)) throw new Error("work_order_signed: the client signed this work order");
         boundShift = s;
     }
 

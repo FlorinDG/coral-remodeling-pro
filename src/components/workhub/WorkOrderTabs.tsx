@@ -20,6 +20,9 @@ import { LateEntryCard } from '@/components/time-tracker/components/LateEntryCar
 import type { ViewableFile } from '@/components/files/FileViewer';
 import type { ShiftBriefResult } from '@/lib/data/shift-brief';
 import { saveCrewNote } from '@/lib/data/shift-files';
+import { getWorkOrderSummary, signWorkOrder, type WorkOrderSummary } from '@/lib/data/work-order';
+import { SignaturePad } from '@/components/ui/SignaturePad';
+import { resolveFileUrl } from '@/lib/files';
 import { formatTime } from '@/lib/format/date';
 import { describeError } from '@/lib/describe-error';
 
@@ -52,6 +55,8 @@ export function WorkOrderTabs(p: Props) {
     { id: 'sign', icon: PenLine, label: t('workOrder.tabSign') },
   ];
 
+  // A signed work order is closed like a submitted shift — more strictly: for every role.
+  const closed = p.submitted || !!p.brief?.signed;
   const common = {
     shiftId: p.shiftId, brief: p.brief, fallbackAddress: p.fallbackAddress, title: p.title,
     userId: p.userId, onOpenMedia: p.onOpenMedia, loading: p.briefLoading && !p.brief,
@@ -94,24 +99,18 @@ export function WorkOrderTabs(p: Props) {
                 ))}
               </ul>
             )}
-            {!p.submitted && (
+            {!closed && (
               <LateEntryCard shiftId={p.shiftId} shiftDate={p.shiftDate} onSubmitted={p.onChanged} />
             )}
           </div>
         )}
         {tab === 'files' && (
           <div className="space-y-4">
-            <CrewNote shiftId={p.shiftId} initial={p.brief?.crewNote ?? ''} disabled={p.submitted} loading={p.briefLoading && !p.brief} />
-            <ShiftBriefDetails {...common} section="files" canAddFiles={!p.submitted} onFilesAdded={p.onChanged} />
+            <CrewNote shiftId={p.shiftId} initial={p.brief?.crewNote ?? ''} disabled={closed} loading={p.briefLoading && !p.brief} />
+            <ShiftBriefDetails {...common} section="files" canAddFiles={!closed} onFilesAdded={p.onChanged} />
           </div>
         )}
-        {tab === 'sign' && (
-          <div className="p-4 rounded-xl border border-dashed border-border text-center space-y-1">
-            <PenLine className="w-8 h-8 mx-auto text-muted-foreground" />
-            <p className="text-base font-semibold text-foreground">{t('workOrder.signTitle')}</p>
-            <p className="text-sm text-muted-foreground">{t('workOrder.signSoon')}</p>
-          </div>
-        )}
+        {tab === 'sign' && <SignTab shiftId={p.shiftId} onSigned={p.onChanged} />}
       </div>
     </div>
   );
@@ -152,5 +151,103 @@ function CrewNote({ shiftId, initial, disabled, loading }: { shiftId: string; in
         </button>
       )}
     </section>
+  );
+}
+
+/** WO-3 · the client signs the work order on this phone — the whole visit, every crew member on it. */
+function SignTab({ shiftId, onSigned }: { shiftId: string; onSigned: () => void }) {
+  const { t, i18n } = useTranslation();
+  const [summary, setSummary] = useState<WorkOrderSummary | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [name, setName] = useState('');
+  const [png, setPng] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [version, setVersion] = useState(0);
+
+  useEffect(() => {
+    let live = true;
+    getWorkOrderSummary(shiftId).then(r => {
+      if (!live) return;
+      if (r.ok) { setSummary(r.summary); setLoadError(null); } else setLoadError(r.error);
+    }).catch(err => live && setLoadError(describeError(err)));
+    return () => { live = false; };
+  }, [shiftId, version]);
+
+  const sign = async () => {
+    if (!png || name.trim().length < 2) return;
+    if (!window.confirm(t('workOrder.signConfirm'))) return;
+    setBusy(true);
+    try {
+      const r = await signWorkOrder({ shiftId, signerName: name, signaturePng: png });
+      if (!r.ok) throw new Error(t(`workOrder.signError.${r.error}`, { defaultValue: r.detail ? `${r.error} — ${r.detail}` : r.error }));
+      toast.success(t('workOrder.signedToast'));
+      setVersion(v => v + 1);
+      onSigned();
+    } catch (err) {
+      toast.error(describeError(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (loadError) return <p className="text-sm text-amber-700 dark:text-amber-300">{t('workOrder.signLoadFailed')} — {loadError}</p>;
+  if (!summary) return <div className="h-40 rounded-xl bg-muted/60 animate-pulse" aria-hidden />;
+
+  const lines = (
+    <ul className="space-y-1.5">
+      {summary.members.map(m => (
+        <li key={m.shiftId} className="flex justify-between gap-3 text-base">
+          <span className="font-medium truncate">{m.workerName || '—'}</span>
+          <span className="tabular-nums text-muted-foreground shrink-0">
+            {m.entries.length
+              ? m.entries.map(e => `${formatTime(new Date(e.in), i18n.language)}–${e.out ? formatTime(new Date(e.out), i18n.language) : '…'}`).join(', ')
+              : t('workOrder.noHoursShort')}
+          </span>
+        </li>
+      ))}
+      <li className="flex justify-between pt-1.5 border-t border-border text-base font-semibold">
+        <span>{t('workOrder.total')}</span><span className="tabular-nums">{hm(summary.totalMinutes)}</span>
+      </li>
+    </ul>
+  );
+
+  if (summary.signed) {
+    return (
+      <div className="space-y-3">
+        <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900 space-y-1">
+          <p className="text-base font-semibold text-emerald-800 dark:text-emerald-300">✓ {t('workOrder.signedBy', { name: summary.signed.signerName })}</p>
+          <p className="text-sm text-muted-foreground">{new Date(summary.signed.signedAt).toLocaleString(i18n.language, { dateStyle: 'medium', timeStyle: 'short', hour12: false })}</p>
+        </div>
+        {summary.signed.signatureUrl && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={resolveFileUrl(summary.signed.signatureUrl)} alt={t('workOrder.signTitle')} className="w-full h-32 object-contain rounded-xl border border-border bg-white" />
+        )}
+        {lines}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-muted-foreground">{t('workOrder.signIntro')}</p>
+      {lines}
+      {summary.openEntries > 0 ? (
+        <p className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 text-sm">{t('workOrder.signError.still_clocked_in')}</p>
+      ) : (
+        <>
+          <div className="space-y-1.5">
+            <label htmlFor="signer" className="text-sm font-semibold">{t('workOrder.signerName')}</label>
+            <input id="signer" value={name} onChange={e => setName(e.target.value)} autoComplete="name"
+              className="w-full h-12 px-3 rounded-xl border border-border bg-background text-base" />
+          </div>
+          <SignaturePad onSign={setPng} onClear={() => setPng(null)}
+            label={t('workOrder.signHere')} clearLabel={t('workOrder.clear')} hint={t('workOrder.signHint')} />
+          <button type="button" onClick={sign} disabled={busy || !png || name.trim().length < 2}
+            className="w-full h-14 rounded-xl bg-[var(--persian-green)] text-white text-base font-bold inline-flex items-center justify-center gap-2 disabled:opacity-40">
+            {busy && <Loader2 className="w-5 h-5 animate-spin" />}{t('workOrder.signButton')}
+          </button>
+        </>
+      )}
+    </div>
   );
 }

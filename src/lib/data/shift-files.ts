@@ -11,6 +11,7 @@ import prisma from '@/lib/prisma';
 import { auth } from '@/auth';
 import { isTenantHrRole } from '@/lib/roles';
 import { isShiftSubmitted } from '@/lib/kernel/shift-time';
+import { isShiftSigned } from '@/lib/data/work-order-lock';
 
 export async function addShiftFile(input: { shiftId: string; key: string; name: string; type: string; size: number | null }):
     Promise<{ ok: true; id: string } | { ok: false; error: string }> {
@@ -27,6 +28,7 @@ export async function addShiftFile(input: { shiftId: string; key: string; name: 
     const hr = isTenantHrRole(role);
     if (!shift || (!hr && shift.userId !== userId)) return { ok: false, error: 'not_found' };
     if (isShiftSubmitted(shift.status) && !hr) return { ok: false, error: 'shift_submitted' };
+    if (await isShiftSigned(tenantId, shift.id)) return { ok: false, error: 'work_order_signed' };
     // The key must be one our upload produced for this tenant — never a URL from elsewhere.
     // Key scheme of uploadFileAction: t_{tenantId}/{recordType}/{recordId}/{filename}.
     if (!String(input.key || '').startsWith(`t_${tenantId}/hr-shift/${shift.id}/`)) return { ok: false, error: 'bad_file' };
@@ -55,6 +57,7 @@ export async function saveCrewNote(shiftId: string, text: string): Promise<{ ok:
     const hr = isTenantHrRole(role);
     if (!shift || (!hr && shift.userId !== userId)) return { ok: false, error: 'not_found' };
     if (isShiftSubmitted(shift.status) && !hr) return { ok: false, error: 'shift_submitted' };
+    if (await isShiftSigned(tenantId, shift.id)) return { ok: false, error: 'work_order_signed' };
     await prisma.scheduledShift.update({ where: { id: shift.id }, data: { crewNote: String(text || '').slice(0, 10_000).trim() || null } });
     return { ok: true };
 }

@@ -27,6 +27,8 @@ import { syncSeatQuantities } from '@/lib/stripe';
 import { autoLinkIfUnique } from '@/lib/data/entry-shift-match';
 import { shiftTaskIdsFor } from '@/lib/data/task-reach';
 import { parseScope, seriesData, seriesWhere } from '@/lib/data/shift-series';
+import { isShiftSigned, SIGNED_REFUSAL } from '@/lib/data/work-order-lock';
+import type { Prisma } from '@prisma/client';
 import { isTenantHrRole } from '@/lib/roles';
 
 const resend = new Resend(process.env.RESEND_API_KEY || 're_dummy_fallback');
@@ -114,6 +116,43 @@ function hrWriteGate(
     const refusal = hrWriteRefusal(entity, method, mayApprove, actorId, data, existing);
     if (!refusal) return null;
     return NextResponse.json({ error: refusal.detail ? `${refusal.code}: ${refusal.detail}` : refusal.code }, { status: 403 });
+}
+
+/**
+ * WO-3 / WB-D · the lock. Which shift does this write touch? A signed work order is closed for
+ * EVERY role — no unlock exists. Returns a 409 naming the refusal, or null.
+ */
+async function signedRefusal(
+    tenantId: string, entity: string, id: string | null, data: Record<string, unknown>,
+): Promise<NextResponse | null> {
+    const touched = new Set<string>();
+    if (entity === 'shifts' && id) touched.add(id);
+    if (entity === 'clock-entries' || entity === 'shift-tasks' || entity === 'shift-attachments') {
+        if (typeof data.shiftId === 'string' && data.shiftId) touched.add(data.shiftId);   // moving INTO / creating on
+        if (id) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const row = await (getModel(entity) as any)?.findUnique({ where: { id }, select: { shiftId: true } });
+            if (row?.shiftId) touched.add(row.shiftId);                                      // already ON
+        }
+    }
+    for (const shiftId of touched) {
+        if (await isShiftSigned(tenantId, shiftId)) {
+            return NextResponse.json({ error: `${SIGNED_REFUSAL}: the client signed this work order — it can no longer be changed` }, { status: 409 });
+        }
+    }
+    return null;
+}
+
+/** A series action never reaches a signed shift. */
+async function withoutSigned(tenantId: string, where: Prisma.ScheduledShiftWhereInput | null): Promise<Prisma.ScheduledShiftWhereInput | null> {
+    if (!where) return null;
+    const ids = (await prisma.scheduledShift.findMany({ where, select: { id: true } })).map(r => r.id);
+    if (!ids.length) return where;
+    const signed = await prisma.auditLog.findMany({
+        where: { tenantId, entityType: 'shift', action: 'sign', entityId: { in: ids } },
+        select: { entityId: true },
+    });
+    return signed.length ? { AND: [where, { id: { notIn: signed.map(r => r.entityId) } }] } : where;
 }
 
 // ── GET ────────────────────────────────────────────────────────────────────
@@ -467,6 +506,8 @@ export async function POST(
     const writeReach = await resolveReach(ctx);
     const gate2 = hrWriteGate(entity, 'POST', writeReach.mayApprove, ctx.userId, data, null);
     if (gate2) return gate2;
+    const locked = await signedRefusal(ctx.tenantId, entity, null, data);
+    if (locked) return locked;
     if (entity === 'shifts') {
         const bad = await contactPageRefusal(ctx.tenantId, data);
         if (bad) return bad;
@@ -740,6 +781,12 @@ export async function PATCH(
     const data = sanitize(body);
     const warnings: string[] = [];
 
+    // ── WO-3 · a signed work order is closed for every role ──
+    {
+        const locked = await signedRefusal(ctx.tenantId, entity, id, data);
+        if (locked) return locked;
+    }
+
     // ── GATE 2 · WRITE POLICY (PATCH) ──
     if (entity === 'shifts') {
         const bad = await contactPageRefusal(ctx.tenantId, data);
@@ -834,7 +881,7 @@ export async function PATCH(
             if (scope !== 'occurrence') {
                 if (!patchReach.mayApprove) return NextResponse.json({ error: 'forbidden: series edits are for planners' }, { status: 403 });
                 const anchor = await prisma.scheduledShift.findFirst({ where: { id, tenantId: ctx.tenantId }, select: { id: true, seriesId: true, shiftDate: true } });
-                const where = anchor ? seriesWhere(ctx.tenantId, anchor, scope) : null;
+                const where = anchor ? await withoutSigned(ctx.tenantId, seriesWhere(ctx.tenantId, anchor, scope)) : null;
                 const fields = seriesData(data);
                 if (where && Object.keys(fields).length) {
                     const res = await prisma.scheduledShift.updateMany({ where, data: { ...fields, lastEditedBy: ctx.userId } });
@@ -981,6 +1028,12 @@ export async function DELETE(
         return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
 
+    // ── WO-3 · a signed work order is closed for every role ──
+    {
+        const locked = await signedRefusal(ctx.tenantId, entity, id, {});
+        if (locked) return locked;
+    }
+
     // ── GATE 2 · WRITE POLICY (DELETE) ──
     const deleteReach = await resolveReach(ctx);
     const gate2 = hrWriteGate(entity, 'DELETE', deleteReach.mayApprove, ctx.userId, {}, null);
@@ -993,7 +1046,7 @@ export async function DELETE(
         if (scope !== 'occurrence') {
             if (!deleteReach.mayApprove) return NextResponse.json({ error: 'forbidden: series deletes are for planners' }, { status: 403 });
             const anchor = await prisma.scheduledShift.findFirst({ where: { id, tenantId: ctx.tenantId }, select: { id: true, seriesId: true, shiftDate: true } });
-            const where = anchor ? seriesWhere(ctx.tenantId, anchor, scope) : null;
+            const where = anchor ? await withoutSigned(ctx.tenantId, seriesWhere(ctx.tenantId, anchor, scope)) : null;
             let deleted = 0, kept = 0;
             if (where) {
                 const [res, withHours] = await prisma.$transaction([

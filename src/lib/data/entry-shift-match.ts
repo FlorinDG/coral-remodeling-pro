@@ -11,6 +11,7 @@ import prisma from '@/lib/prisma';
 import { buildAuditLogData, buildAuditLogOperation } from '@/lib/audit';
 import { entrySpan, matchSpanToShifts, isShiftSubmitted } from '@/lib/kernel/shift-time';
 
+
 export async function autoLinkIfUnique(entryId: string, actor: { tenantId: string; userId: string }): Promise<string | null> {
     const entry = await prisma.clockEntry.findFirst({
         where: { id: entryId, tenantId: actor.tenantId },
@@ -23,7 +24,11 @@ export async function autoLinkIfUnique(entryId: string, actor: { tenantId: strin
         where: { tenantId: actor.tenantId, userId: entry.userId, shiftDate: span.date },
         select: { id: true, shiftDate: true, shiftStart: true, shiftEnd: true, status: true, projectId: true },
     });
-    const open = shifts.filter(s => !isShiftSubmitted(s.status));
+    const signed = new Set((await prisma.auditLog.findMany({
+        where: { tenantId: actor.tenantId, entityType: 'shift', action: 'sign', entityId: { in: shifts.map(s => s.id) } },
+        select: { entityId: true },
+    })).map(r => r.entityId));
+    const open = shifts.filter(s => !isShiftSubmitted(s.status) && !signed.has(s.id));   // WO-3: never into a signed work order
     const { unique } = matchSpanToShifts(span, open);
     if (!unique) return null;
 

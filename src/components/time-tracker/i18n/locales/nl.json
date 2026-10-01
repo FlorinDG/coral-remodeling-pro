@@ -375,11 +375,33 @@
     "running": "loopt",
     "pending": "wacht op goedkeuring",
     "signTitle": "Handtekening klant",
-    "signSoon": "Binnenkort: de klant tekent hier, met naam, en de werkbon wordt vergrendeld.",
     "myNote": "Mijn notitie",
     "notePlaceholder": "Wat is gedaan, wat blijft, wat het kantoor moet weten…",
     "saveNote": "Notitie opslaan",
     "noteSaved": "Notitie opgeslagen",
-    "noteFailed": "Notitie opslaan mislukt"
+    "noteFailed": "Notitie opslaan mislukt",
+    "signIntro": "De klant controleert de uren hieronder en tekent. Tekenen vergrendelt deze werkbon — uren, notities en bestanden kunnen niet meer gewijzigd worden.",
+    "total": "Totaal",
+    "noHoursShort": "geen uren",
+    "signerName": "Naam van de ondertekenaar",
+    "signHere": "Handtekening klant",
+    "clear": "Wissen",
+    "signHint": "Teken met je vinger in het vak",
+    "signButton": "Tekenen en vergrendelen",
+    "signConfirm": "Nu tekenen? Daarna kan deze werkbon niet meer gewijzigd worden.",
+    "signedToast": "Getekend — de werkbon is vergrendeld",
+    "signedBy": "Getekend door {{name}}",
+    "signLoadFailed": "Werkbon laden mislukt",
+    "signedClosed": "Getekend door de klant — afgesloten",
+    "signError": {
+      "signer_name_required": "Vul de naam van de ondertekenaar in",
+      "signature_required": "Een handtekening is verplicht",
+      "signature_invalid": "De handtekening kon niet gelezen worden — teken opnieuw",
+      "not_found": "Werkbon niet gevonden",
+      "already_signed": "Deze werkbon is al getekend",
+      "still_clocked_in": "Iemand is nog ingeklokt op deze werkbon — eerst uitklokken",
+      "failed": "Tekenen mislukt",
+      "unauthorized": "Meld je opnieuw aan"
+    }
   }
 }

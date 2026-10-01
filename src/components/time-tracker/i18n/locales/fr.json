@@ -375,11 +375,33 @@
     "running": "en cours",
     "pending": "en attente d'approbation",
     "signTitle": "Signature du client",
-    "signSoon": "Bientôt : le client signe ici, avec son nom, et le bon de travail est verrouillé.",
     "myNote": "Ma note",
     "notePlaceholder": "Ce qui a été fait, ce qui reste, ce que le bureau doit savoir…",
     "saveNote": "Enregistrer la note",
     "noteSaved": "Note enregistrée",
-    "noteFailed": "Impossible d'enregistrer la note"
+    "noteFailed": "Impossible d'enregistrer la note",
+    "signIntro": "Le client vérifie les heures ci-dessous et signe. La signature verrouille ce bon de travail — heures, notes et fichiers ne peuvent plus être modifiés.",
+    "total": "Total",
+    "noHoursShort": "aucune heure",
+    "signerName": "Nom du signataire",
+    "signHere": "Signature du client",
+    "clear": "Effacer",
+    "signHint": "Signez avec le doigt dans le cadre",
+    "signButton": "Signer et verrouiller",
+    "signConfirm": "Signer maintenant ? Ensuite, ce bon de travail ne pourra plus être modifié.",
+    "signedToast": "Signé — le bon de travail est verrouillé",
+    "signedBy": "Signé par {{name}}",
+    "signLoadFailed": "Impossible de charger le bon de travail",
+    "signedClosed": "Signé par le client — clôturé",
+    "signError": {
+      "signer_name_required": "Indiquez le nom du signataire",
+      "signature_required": "Une signature est requise",
+      "signature_invalid": "La signature n'a pas pu être lue — signez à nouveau",
+      "not_found": "Bon de travail introuvable",
+      "already_signed": "Ce bon de travail est déjà signé",
+      "still_clocked_in": "Quelqu'un est encore pointé sur ce bon — pointez la sortie d'abord",
+      "failed": "La signature a échoué",
+      "unauthorized": "Veuillez vous reconnecter"
+    }
   }
 }

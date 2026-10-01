@@ -474,7 +474,23 @@ export function MySchedule() {
 
                 {/* Clock Action Surface */}
                 <div className="p-4 border-t border-neutral-100 dark:border-white/10 bg-neutral-50/50 dark:bg-neutral-900/50 flex flex-col items-center">
-                  {isShiftSubmitted(selectedShift.status) ? (
+                  {brief?.signed && !isShiftSubmitted(selectedShift.status) ? (
+                    <>
+                      <p className="w-full text-center pb-3 text-base font-semibold text-[var(--persian-green)]">
+                        ✓ {t('workOrder.signedClosed')}
+                      </p>
+                      {/* Signed by the client; the shift is still completed only by the worker's own submit. */}
+                      <Button
+                        variant="outline"
+                        className="w-full h-14 text-base font-bold rounded-xl border-2 border-[var(--persian-green)] text-[var(--persian-green)]"
+                        onClick={() => handleSubmitShift(selectedShift.id)}
+                        disabled={isSubmitting}
+                      >
+                        {isSubmitting && <Loader2 className="w-5 h-5 animate-spin mr-2" />}
+                        {t('schedule.submitShift')}
+                      </Button>
+                    </>
+                  ) : isShiftSubmitted(selectedShift.status) ? (
                     <p className="w-full text-center py-3 text-base font-semibold text-[var(--persian-green)]">
                       ✓ {t('schedule.submittedLong')}
                     </p>

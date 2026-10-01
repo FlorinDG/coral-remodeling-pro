@@ -378,11 +378,33 @@
     "running": "în curs",
     "pending": "așteaptă aprobare",
     "signTitle": "Semnătura clientului",
-    "signSoon": "În curând: clientul semnează aici, cu numele, iar fișa de lucru se blochează.",
     "myNote": "Notița mea",
     "notePlaceholder": "Ce s-a făcut, ce a rămas, ce trebuie să știe biroul…",
     "saveNote": "Salvează notița",
     "noteSaved": "Notiță salvată",
-    "noteFailed": "Notița nu a putut fi salvată"
+    "noteFailed": "Notița nu a putut fi salvată",
+    "signIntro": "Clientul verifică orele de mai jos și semnează. Semnătura blochează această fișă de lucru — orele, notițele și fișierele nu mai pot fi modificate.",
+    "total": "Total",
+    "noHoursShort": "fără ore",
+    "signerName": "Numele semnatarului",
+    "signHere": "Semnătura clientului",
+    "clear": "Șterge",
+    "signHint": "Semnați cu degetul în chenar",
+    "signButton": "Semnează și blochează",
+    "signConfirm": "Semnați acum? După semnare, fișa de lucru nu mai poate fi modificată.",
+    "signedToast": "Semnat — fișa de lucru este blocată",
+    "signedBy": "Semnat de {{name}}",
+    "signLoadFailed": "Fișa de lucru nu a putut fi încărcată",
+    "signedClosed": "Semnat de client — închis",
+    "signError": {
+      "signer_name_required": "Introduceți numele semnatarului",
+      "signature_required": "Semnătura este obligatorie",
+      "signature_invalid": "Semnătura nu a putut fi citită — semnați din nou",
+      "not_found": "Fișa de lucru nu a fost găsită",
+      "already_signed": "Această fișă este deja semnată",
+      "still_clocked_in": "Cineva este încă pontat pe această fișă — pontați ieșirea întâi",
+      "failed": "Semnarea a eșuat",
+      "unauthorized": "Autentificați-vă din nou"
+    }
   }
 }

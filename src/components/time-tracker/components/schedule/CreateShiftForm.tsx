@@ -736,7 +736,7 @@ export function CreateShiftForm({
                 Schedule Shift
               </Button>
             </DialogTrigger>
-            <DialogContent ref={dialogContentRef} className="max-w-lg max-h-[90vh] overflow-y-auto">
+            <DialogContent ref={dialogContentRef} className="max-w-3xl max-h-[92vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Schedule New Shift</DialogTitle>
               </DialogHeader>
@@ -1394,7 +1394,7 @@ export function CreateShiftForm({
       {/* Controlled mode - dialog without trigger */}
       {isControlled && (
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogContent ref={controlledDialogContentRef} className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogContent ref={controlledDialogContentRef} className="max-w-3xl max-h-[92vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Schedule New Shift</DialogTitle>
             </DialogHeader>

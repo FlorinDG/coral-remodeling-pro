@@ -266,6 +266,10 @@ export function TimesheetEntryDetail({ entry, onUpdate, unlockTokenValid }: Time
                             <Place address={entry.clockOutAddress} lat={entry.clockOutLatitude} lng={entry.clockOutLongitude} distance={entry.clockOutDistanceM} locale={locale} farLabel={(km: string) => t('farFromSite', { km })} />
                         </div>
                     </div>
+                    {/* Geoapify free tier: attribution where its addresses are shown (GEO-1). Update if Google takes over. */}
+                    {(entry.clockInAddress || entry.clockOutAddress) && (
+                        <p className="text-[11px] text-muted-foreground">Geoapify · © OpenStreetMap contributors</p>
+                    )}
                 </div>
 
                 {/* ATTRIBUTION & CONTENT */}

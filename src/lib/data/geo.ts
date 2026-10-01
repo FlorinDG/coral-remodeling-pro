@@ -5,15 +5,17 @@
  * coordinates into a street address and measures the distance to the work site. Hours are always
  * recorded; the office sees "clocked 1.2 km from site". Position is read only at clock events.
  *
- * Google Geocoding with a SERVER key (`GOOGLE_GEOCODING_API_KEY`, never NEXT_PUBLIC). No key, a
- * timeout or a Google error → nothing is recorded and the reason is logged; the clock event itself
- * is never affected.
+ * Provider, by server key (never NEXT_PUBLIC): Google (`GOOGLE_GEOCODING_API_KEY`) when set, else
+ * Geoapify (`GEOAPIFY_API_KEY`, free tier, OpenStreetMap data — Florin 2026-10-01 until the Google
+ * account is unlocked). No key, a timeout or a refusal → nothing is recorded and the reason is
+ * logged; the clock event itself is never affected.
  */
 import prisma from '@/lib/prisma';
 import { resolveProjects } from '@/lib/data/projects';
 
-const KEY = () => process.env.GOOGLE_GEOCODING_API_KEY || '';
-const ENDPOINT = 'https://maps.googleapis.com/maps/api/geocode/json';
+type Hit = { address: string; lat: number; lng: number } | null;
+const GOOGLE_KEY = () => process.env.GOOGLE_GEOCODING_API_KEY || '';
+const GEOAPIFY_KEY = () => process.env.GEOAPIFY_API_KEY || '';
 
 /** Great-circle distance in metres (haversine). */
 export function distanceMeters(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
@@ -25,11 +27,9 @@ export function distanceMeters(a: { lat: number; lng: number }, b: { lat: number
     return Math.round(2 * R * Math.asin(Math.sqrt(h)));
 }
 
-async function google(params: Record<string, string>): Promise<{ address: string; lat: number; lng: number } | null> {
-    const key = KEY();
-    if (!key) { console.warn('[geo] GOOGLE_GEOCODING_API_KEY not set — skipped'); return null; }
-    const qs = new URLSearchParams({ ...params, key, language: 'nl', region: 'be' });
-    const res = await fetch(`${ENDPOINT}?${qs}`, { signal: AbortSignal.timeout(4000), cache: 'no-store' });
+async function google(params: Record<string, string>): Promise<Hit> {
+    const qs = new URLSearchParams({ ...params, key: GOOGLE_KEY(), language: 'nl', region: 'be' });
+    const res = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?${qs}`, { signal: AbortSignal.timeout(4000), cache: 'no-store' });
     const body = await res.json().catch(() => null) as { status?: string; error_message?: string; results?: Array<{ formatted_address: string; geometry: { location: { lat: number; lng: number } } }> } | null;
     if (!res.ok || !body || (body.status !== 'OK' && body.status !== 'ZERO_RESULTS')) {
         console.error('[geo] Google geocoding refused:', res.status, body?.status, body?.error_message);
@@ -39,8 +39,34 @@ async function google(params: Record<string, string>): Promise<{ address: string
     return r ? { address: r.formatted_address, lat: r.geometry.location.lat, lng: r.geometry.location.lng } : null;
 }
 
-export const reverseGeocode = (lat: number, lng: number) => google({ latlng: `${lat},${lng}` });
-export const geocode = (address: string) => google({ address });
+async function geoapify(path: 'search' | 'reverse', params: Record<string, string>): Promise<Hit> {
+    const qs = new URLSearchParams({ ...params, lang: 'nl', format: 'json', apiKey: GEOAPIFY_KEY() });
+    const res = await fetch(`https://api.geoapify.com/v1/geocode/${path}?${qs}`, { signal: AbortSignal.timeout(4000), cache: 'no-store' });
+    const body = await res.json().catch(() => null) as { message?: string; results?: Array<{ formatted: string; lat: number; lon: number }> } | null;
+    if (!res.ok || !body) {
+        console.error('[geo] Geoapify refused:', res.status, body?.message);
+        return null;
+    }
+    const r = body.results?.[0];
+    return r ? { address: r.formatted, lat: r.lat, lng: r.lon } : null;
+}
+
+function noProvider(): null {
+    console.warn('[geo] no geocoding key (GOOGLE_GEOCODING_API_KEY / GEOAPIFY_API_KEY) — skipped');
+    return null;
+}
+
+export async function reverseGeocode(lat: number, lng: number): Promise<Hit> {
+    if (GOOGLE_KEY()) return google({ latlng: `${lat},${lng}` });
+    if (GEOAPIFY_KEY()) return geoapify('reverse', { lat: String(lat), lon: String(lng) });
+    return noProvider();
+}
+
+export async function geocode(address: string): Promise<Hit> {
+    if (GOOGLE_KEY()) return google({ address });
+    if (GEOAPIFY_KEY()) return geoapify('search', { text: address, filter: 'countrycode:be,nl,fr,lu,de' });
+    return noProvider();
+}
 
 /** The work site of a shift: siteAddress (geocoded, kept) ?? project coordinates ?? project address (geocoded, kept). */
 export async function siteOf(tenantId: string, shiftId: string): Promise<{ lat: number; lng: number } | null> {

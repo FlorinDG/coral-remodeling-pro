@@ -118,7 +118,8 @@
     "userInitiatedEntry": "Inklokken creëert een door gebruiker geïnitieerde registratie",
     "locationRecorded": "Locatie geregistreerd",
     "alreadyClockedInSince": "Je was al ingeklokt sinds {{time}}.",
-    "statusUnconfirmed": "Je klokstatus kon niet bevestigd worden. Inklokken blijft veilig."
+    "statusUnconfirmed": "Je klokstatus kon niet bevestigd worden. Inklokken blijft veilig.",
+    "locationNotice": "Je locatie wordt enkel vastgelegd bij in- en uitklokken — nooit daartussen."
   },
   "schedule": {
     "title": "Rooster",

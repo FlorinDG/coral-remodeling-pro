@@ -525,6 +525,8 @@ export function MySchedule() {
                           ? t('schedule.clockInAgain')
                           : t('schedule.clockIntoShift')}
                       </Button>
+                      {/* GEO-1 · GDPR: say what is recorded, and when */}
+                      <p className="mt-2 text-xs text-muted-foreground text-center">{t('clock.locationNotice')}</p>
                       {/* THE ONE DOOR that completes a shift — the worker's own accountable act */}
                       {(selectedShift.clockEntries?.some((e: { clockOutTime?: string | null }) => e.clockOutTime != null) ?? false) && (
                         <Button

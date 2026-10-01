@@ -118,7 +118,8 @@
     "userInitiatedEntry": "Clocking in will create a user-initiated entry",
     "locationRecorded": "Location recorded",
     "alreadyClockedInSince": "You were already clocked in since {{time}}.",
-    "statusUnconfirmed": "Your clock status could not be confirmed. Clocking in is still safe."
+    "statusUnconfirmed": "Your clock status could not be confirmed. Clocking in is still safe.",
+    "locationNotice": "Your location is recorded only when you clock in and out — never in between."
   },
   "schedule": {
     "title": "Schedule",

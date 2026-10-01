@@ -256,14 +256,14 @@ export function TimesheetEntryDetail({ entry, onUpdate, unlockTokenValid }: Time
                         <MapPin className="w-3 h-3 mt-1 text-green-600" />
                         <div>
                             <span className="font-medium text-neutral-500 block">{t('start', { fallback: 'Start' })}</span>
-                            {entry.clockInLatitude ? `${entry.clockInLatitude}, ${entry.clockInLongitude}` : '-'}
+                            <Place address={entry.clockInAddress} lat={entry.clockInLatitude} lng={entry.clockInLongitude} distance={entry.clockInDistanceM} locale={locale} farLabel={(km: string) => t('farFromSite', { km })} />
                         </div>
                     </div>
                     <div className="text-sm flex items-start gap-1">
                         <MapPin className="w-3 h-3 mt-1 text-red-600" />
                         <div>
                             <span className="font-medium text-neutral-500 block">{t('end', { fallback: 'End' })}</span>
-                            {entry.clockOutLatitude ? `${entry.clockOutLatitude}, ${entry.clockOutLongitude}` : '-'}
+                            <Place address={entry.clockOutAddress} lat={entry.clockOutLatitude} lng={entry.clockOutLongitude} distance={entry.clockOutDistanceM} locale={locale} farLabel={(km: string) => t('farFromSite', { km })} />
                         </div>
                     </div>
                 </div>
@@ -487,5 +487,28 @@ export function TimesheetEntryDetail({ entry, onUpdate, unlockTokenValid }: Time
             </div>
             
         </div>
+    );
+}
+
+/** GEO-1: the street address (raw coordinates only when no address was recorded), a map link, and a
+ *  flag when the clock event was more than 300 m from the work site — recorded, never blocking. */
+function Place({ address, lat, lng, distance, locale, farLabel }: {
+    address?: string | null; lat?: number | null; lng?: number | null; distance?: number | null; locale: string;
+    farLabel: (km: string) => string;
+}) {
+    if (lat == null || lng == null) return <>-</>;
+    const href = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+    const far = distance != null && distance > 300;
+    return (
+        <>
+            <a href={href} target="_blank" rel="noopener noreferrer" className="underline decoration-dotted break-words">
+                {address || `${lat.toFixed(5)}, ${lng.toFixed(5)}`}
+            </a>
+            {far && (
+                <span className="mt-1 inline-block px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 dark:bg-amber-950/50 dark:text-amber-200 text-xs font-semibold">
+                    {farLabel((distance! / 1000).toLocaleString(locale, { maximumFractionDigits: 1 }))}
+                </span>
+            )}
+        </>
     );
 }

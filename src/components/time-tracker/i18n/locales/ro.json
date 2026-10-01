@@ -118,7 +118,8 @@
     "userInitiatedEntry": "Pontarea va crea o înregistrare inițiată de utilizator",
     "locationRecorded": "Locație înregistrată",
     "alreadyClockedInSince": "Erai deja pontat din {{time}}.",
-    "statusUnconfirmed": "Starea pontajului nu a putut fi confirmată. Pontajul rămâne sigur."
+    "statusUnconfirmed": "Starea pontajului nu a putut fi confirmată. Pontajul rămâne sigur.",
+    "locationNotice": "Locația ta este înregistrată doar la pontarea intrării și ieșirii — niciodată între ele."
   },
   "schedule": {
     "title": "Program",

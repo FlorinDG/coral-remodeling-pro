@@ -1090,7 +1090,8 @@
         "noOverlap": "geen overlap",
         "submitted": "ingediend",
         "failed": "Opslaan mislukt"
-      }
+      },
+      "farFromSite": "{km} km van de werf"
     },
     "shiftForm": {
       "orderGiver": "Opdrachtgever (ontvangt de getekende werkbon)",

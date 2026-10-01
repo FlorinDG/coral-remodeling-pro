@@ -1089,7 +1089,8 @@
         "noOverlap": "aucun chevauchement",
         "submitted": "soumis",
         "failed": "Échec de l'enregistrement"
-      }
+      },
+      "farFromSite": "à {km} km du chantier"
     },
     "shiftForm": {
       "orderGiver": "Donneur d’ordre (reçoit le bon de travail signé)",

@@ -118,7 +118,8 @@
     "userInitiatedEntry": "Le pointage créera une entrée initiée par l'utilisateur",
     "locationRecorded": "Emplacement enregistré",
     "alreadyClockedInSince": "Vous étiez déjà pointé depuis {{time}}.",
-    "statusUnconfirmed": "Votre statut de pointage n’a pas pu être confirmé. Pointer reste sûr."
+    "statusUnconfirmed": "Votre statut de pointage n’a pas pu être confirmé. Pointer reste sûr.",
+    "locationNotice": "Votre position est enregistrée uniquement au pointage d'entrée et de sortie — jamais entre les deux."
   },
   "schedule": {
     "title": "Planning",

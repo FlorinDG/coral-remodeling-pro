@@ -28,6 +28,8 @@ import { autoLinkIfUnique } from '@/lib/data/entry-shift-match';
 import { shiftTaskIdsFor } from '@/lib/data/task-reach';
 import { parseScope, seriesData, seriesWhere } from '@/lib/data/shift-series';
 import { isShiftSigned, SIGNED_REFUSAL } from '@/lib/data/work-order-lock';
+import { recordClockPlace } from '@/lib/data/geo';
+import { after } from 'next/server';
 import type { Prisma } from '@prisma/client';
 import { isTenantHrRole } from '@/lib/roles';
 
@@ -657,6 +659,12 @@ export async function POST(
         const record = await model.create({ data });
 
         // ── POST Automations ───────────────────────────────────────────
+        // GEO-1: where the clock-in happened (address + distance to site) — after the response,
+        // never delaying or blocking the clock event.
+        if (entity === 'clock-entries' && (record as { clockInLatitude?: number | null }).clockInLatitude != null) {
+            const entryId = (record as { id: string }).id;
+            after(() => recordClockPlace(ctx.tenantId, entryId, 'in'));
+        }
         // SHIFT-LINK-1: a RECORDED entry (manual / late, has clockOutTime) with no shift is linked when
         // exactly one of the worker's shifts that day overlaps it. Live clock-ins without a shift are a
         // deliberate choice and stay unlinked. Ambiguous → surfaced in the review, never guessed.
@@ -892,6 +900,10 @@ export async function PATCH(
         }
 
         // ── PATCH Automations ──────────────────────────────────────────
+        // GEO-1: the clock-out's place, recorded after the response.
+        if (entity === 'clock-entries' && data.clockOutLatitude != null) {
+            after(() => recordClockPlace(ctx.tenantId, id, 'out'));
+        }
         // Approval / rejection of clock entry requests (late_entry, manual_hours)
         if (entity === 'approval-requests' && (data.status === 'approved' || data.status === 'rejected')) {
             try {

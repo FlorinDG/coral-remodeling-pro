@@ -10,23 +10,18 @@ import path from 'node:path';
 const SRC = path.resolve(import.meta.dirname, '..', 'src');
 
 export async function resolve(specifier, context, nextResolve) {
-    if (specifier === 'zustand/middleware' && (!context.parentURL || !context.parentURL.includes('zustand-middleware.ts'))) {
-        return nextResolve(pathToFileURL(path.resolve(import.meta.dirname, 'stubs/zustand-middleware.ts')).href, context);
-    }
-    if (specifier === 'idb-keyval') {
-        return nextResolve(pathToFileURL(path.resolve(import.meta.dirname, 'stubs/idb-keyval.ts')).href, context);
-    }
-    if (specifier === 'sonner') {
-        return nextResolve(pathToFileURL(path.resolve(import.meta.dirname, 'stubs/sonner.ts')).href, context);
-    }
-    if (specifier === '@/app/actions/global-databases') {
-        return nextResolve(pathToFileURL(path.resolve(import.meta.dirname, 'stubs/global-databases.ts')).href, context);
-    }
-    if (specifier === '@/app/actions/pages') {
-        return nextResolve(pathToFileURL(path.resolve(import.meta.dirname, 'stubs/pages.ts')).href, context);
-    }
-    if (specifier === '@/components/admin/database/types' || (specifier === './types' && context.parentURL && context.parentURL.includes('/database/'))) {
-        return nextResolve(pathToFileURL(path.resolve(import.meta.dirname, 'stubs/types.ts')).href, context);
+    // R2-5 stubs — ONLY for modules imported from the client database store and its folder
+    // (src/components/admin/database/**). Any other test keeps the real modules: a stub must never
+    // silently stand in for code another test means to exercise.
+    const fromStore = !!context.parentURL && context.parentURL.includes('/src/components/admin/database/');
+    const stub = (file) => nextResolve(pathToFileURL(path.resolve(import.meta.dirname, 'stubs', file)).href, context);
+    if (fromStore) {
+        if (specifier === 'zustand/middleware') return stub('zustand-middleware.ts');
+        if (specifier === 'idb-keyval') return stub('idb-keyval.ts');
+        if (specifier === 'sonner') return stub('sonner.ts');
+        if (specifier === '@/app/actions/global-databases') return stub('global-databases.ts');
+        if (specifier === '@/app/actions/pages') return stub('pages.ts');
+        if (specifier === '@/components/admin/database/types' || specifier === './types') return stub('types.ts');
     }
     if (specifier.startsWith('next/') && !specifier.endsWith('.js')) {
         return nextResolve(`${specifier}.js`, context);

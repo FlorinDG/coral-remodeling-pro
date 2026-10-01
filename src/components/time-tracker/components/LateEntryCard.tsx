@@ -123,14 +123,19 @@ export function LateEntryCard({ shiftId, shiftDate, onSubmitted }: { shiftId?: s
         }
       }
 
+      // An end at or before the start is the NEXT day (night work: 22:00 → 02:00).
+      const inAt = new Date(`${date}T${clockIn}`);
+      const outAt = new Date(`${date}T${clockOut}`);
+      if (outAt.getTime() <= inAt.getTime()) outAt.setDate(outAt.getDate() + 1);
+
       // Submit the entry
       const { submitLateEntry } = await import('@/app/actions/timesheets');
       const result = await submitLateEntry({
         targetUserId: targetUserId || user.id,
         // The phone's own clock: `new Date('YYYY-MM-DDTHH:mm')` is the phone's LOCAL time; sent as
         // an exact instant, so the (UTC) server never guesses the zone.
-        clockInTime: new Date(`${date}T${clockIn}`).toISOString(),
-        clockOutTime: new Date(`${date}T${clockOut}`).toISOString(),
+        clockInTime: inAt.toISOString(),
+        clockOutTime: outAt.toISOString(),
         shiftId: shiftId || null,
         includeLocation,
         location: location ? { lat: location.latitude, lng: location.longitude, address: '' } : undefined,

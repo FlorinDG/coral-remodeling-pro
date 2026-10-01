@@ -60,8 +60,13 @@ export function ManualEntryModal({ open, onOpenChange, onSuccess }: Props) {
         
         setLoading(true);
         try {
-            const clockInTime = new Date(`${date}T${startTime}:00`).toISOString();
-            const clockOutTime = new Date(`${date}T${endTime}:00`).toISOString();
+            // An end at or before the start is the NEXT day (night work: 22:00 → 02:00) — it was
+            // stored with a negative duration.
+            const inAt = new Date(`${date}T${startTime}:00`);
+            const outAt = new Date(`${date}T${endTime}:00`);
+            if (outAt.getTime() <= inAt.getTime()) outAt.setDate(outAt.getDate() + 1);
+            const clockInTime = inAt.toISOString();
+            const clockOutTime = outAt.toISOString();
             
             await hrCreate('clock-entries', {
                 userId,

@@ -892,11 +892,16 @@ export async function PATCH(
                 const where = anchor ? await withoutSigned(ctx.tenantId, seriesWhere(ctx.tenantId, anchor, scope)) : null;
                 const fields = seriesData(data);
                 if (where && Object.keys(fields).length) {
-                    const res = await prisma.scheduledShift.updateMany({ where, data: { ...fields, lastEditedBy: ctx.userId } });
+                    // ONE transaction: the series and the edited shift change together or not at all.
+                    const [res, anchorRow] = await prisma.$transaction([
+                        prisma.scheduledShift.updateMany({ where, data: { ...fields, lastEditedBy: ctx.userId } }),
+                        prisma.scheduledShift.update({ where: { id }, data: data as Prisma.ScheduledShiftUncheckedUpdateInput }),
+                    ]);
                     seriesCount = res.count;
+                    record = anchorRow;
                 }
             }
-            record = await model.update({ where: { id }, data });
+            if (record === undefined) record = await model.update({ where: { id }, data });
         }
 
         // ── PATCH Automations ──────────────────────────────────────────
@@ -1061,13 +1066,16 @@ export async function DELETE(
             const where = anchor ? await withoutSigned(ctx.tenantId, seriesWhere(ctx.tenantId, anchor, scope)) : null;
             let deleted = 0, kept = 0;
             if (where) {
+                // ONE transaction: the series and the shift itself are deleted together or not at all.
                 const [res, withHours] = await prisma.$transaction([
                     prisma.scheduledShift.deleteMany({ where: { ...where, clockEntries: { none: {} } } }),
                     prisma.scheduledShift.count({ where }),
+                    prisma.scheduledShift.delete({ where: { id } }),
                 ]);
                 deleted = res.count; kept = withHours;
+            } else {
+                await model.delete({ where: { id } });
             }
-            await model.delete({ where: { id } });
             return NextResponse.json({ success: true, seriesDeleted: deleted + 1, seriesKept: kept });
         }
         await model.delete({ where: { id } });

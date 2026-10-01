@@ -500,17 +500,20 @@ export const useDatabaseStore = create<DatabaseState>()(
                                         pages: d.pages.map((p: Page) => {
                                             if (p.id !== entry.pageId) return p;
                                             
-                                            // OCC-8: Re-base dirty fields that were successfully saved
-                                            const newDirtyBase = { ...(p.dirtyBase || {}) };
-                                            if (page.dirtyBase) {
-                                                for (const key of Object.keys(page.dirtyBase)) {
-                                                    if (JSON.stringify(p.properties[key]) === JSON.stringify(page.properties[key])) {
-                                                        delete newDirtyBase[key];
-                                                    } else {
-                                                        newDirtyBase[key] = page.properties[key];
-                                                    }
-                                                }
+                                            // The server kept another user's newer value for fields this
+                                            // client had not touched — adopt them, unless edited since.
+                                            const kept = (result as { keptServer?: Record<string, PropertyValue> }).keptServer || {};
+                                            const properties = { ...p.properties };
+                                            for (const [key, value] of Object.entries(kept)) {
+                                                if (JSON.stringify(p.properties[key]) === JSON.stringify(page.properties[key])) properties[key] = value;
                                             }
+                                            // OCC-8 re-base: the base is now the row AS SAVED (all fields). When
+                                            // nothing changed during the flight the page is clean (no base) —
+                                            // the next edit snapshots a full base. A leftover `{}` base made
+                                            // every later concurrent edit a false conflict.
+                                            const savedRow = { ...(page.properties as Record<string, PropertyValue>), ...kept };
+                                            const stillDirty = Object.keys(properties).some(k => JSON.stringify(properties[k]) !== JSON.stringify(savedRow[k]));
+                                            const newDirtyBase = stillDirty ? savedRow : undefined;
                                             
                                             // Reset dirtyBaseBlocks if it was set
                                             let newDirtyBaseBlocks = p.dirtyBaseBlocks;
@@ -524,6 +527,7 @@ export const useDatabaseStore = create<DatabaseState>()(
 
                                             return { 
                                                 ...p, 
+                                                properties,
                                                 baseUpdatedAt: result.updatedAt,
                                                 dirtyBase: newDirtyBase,
                                                 dirtyBaseBlocks: newDirtyBaseBlocks
@@ -551,7 +555,7 @@ export const useDatabaseStore = create<DatabaseState>()(
                                                     blocks: (result.serverBlocks as unknown as Block[]) || p.blocks,
                                                     baseUpdatedAt: result.serverUpdatedAt || p.baseUpdatedAt,
                                                     blocksVersion: result.serverBlocksVersion !== undefined ? result.serverBlocksVersion : p.blocksVersion,
-                                                    dirtyBase: {},
+                                                    dirtyBase: undefined,   // clean: the next edit snapshots a full base
                                                     dirtyBaseBlocks: false
                                                 };
                                             })

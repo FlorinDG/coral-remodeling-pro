@@ -7,6 +7,7 @@ import type { SystemDatabaseRole } from '@/lib/kernel/system-databases';
 import { revalidatePath } from 'next/cache';
 
 import { auth } from '@/auth';
+import { mergeStaleWrite } from '@/lib/records/occ-merge';
 import { checkExportLock, isWipeHazard } from '@/lib/records/export-lock';
 
 /**
@@ -499,6 +500,9 @@ export async function saveGlobalPage(page: Page) {
         }
 
         let finalProperties = page.properties;
+        // Fields where the merge KEPT another user's newer value — returned so the client adopts them
+        // (otherwise its next save, now on the current version, would write the stale value back).
+        let keptServer: Record<string, unknown> | undefined;
         const finalBlocks = page.blocks !== undefined ? page.blocks : (existingPage?.blocks ?? []);
 
         if (existingPage && page.baseUpdatedAt) {
@@ -515,52 +519,18 @@ export async function saveGlobalPage(page: Page) {
 
                 // 2. Merge properties
                 if (!hasHardConflict) {
-                    const serverProps = (existingPage.properties as Record<string, unknown>) || {};
-                    const clientProps = page.properties;
-                    const dirtyBase = page.dirtyBase || {};
-                    const mergedProps = { ...serverProps } as any;
-
-                    const DERIVED_PROPERTY_KEYS = new Set(['totalVat', 'totalExVat', 'totalIncVat', 'margin', 'totalCost', 'totalProfit']);
-
-                    const isDeepEqual = (a: any, b: any): boolean => {
-                        if (a === b) return true;
-                        if (a && b && typeof a === 'object' && typeof b === 'object') {
-                            if (Array.isArray(a)) {
-                                if (!Array.isArray(b) || a.length !== b.length) return false;
-                                for (let i = 0; i < a.length; i++) {
-                                    if (!isDeepEqual(a[i], b[i])) return false;
-                                }
-                                return true;
-                            }
-                            const keysA = Object.keys(a);
-                            const keysB = Object.keys(b);
-                            if (keysA.length !== keysB.length) return false;
-                            for (const key of keysA) {
-                                if (!keysB.includes(key) || !isDeepEqual(a[key], b[key])) return false;
-                            }
-                            return true;
-                        }
-                        return false;
-                    };
-
-                    for (const key of Object.keys(clientProps)) {
-                        const isClientSameAsServer = isDeepEqual(clientProps[key], serverProps[key]);
-                        const isServerSameAsBase = isDeepEqual(serverProps[key], dirtyBase[key]);
-                        const isClientSameAsBase = isDeepEqual(clientProps[key], dirtyBase[key]);
-
-                        if (!isClientSameAsServer) {
-                            if (!isServerSameAsBase && !isClientSameAsBase && !DERIVED_PROPERTY_KEYS.has(key)) {
-                                // Both changed this property differently -> hard conflict
-                                hasHardConflict = true;
-                                break;
-                            } else {
-                                // Only client changed this key (or server changed it to what client wants), or it's a derived key
-                                mergedProps[key] = clientProps[key];
-                            }
-                        }
-                    }
-                    if (!hasHardConflict) {
-                        finalProperties = mergedProps;
+                    // One merge rule for every door (lib/records/occ-merge.ts): the other user's edit to a
+                    // field this client did not touch is KEPT — it was overwritten with the stale value.
+                    const merge = mergeStaleWrite(
+                        (existingPage.properties as Record<string, unknown>) || {},
+                        page.properties as Record<string, unknown>,
+                        page.dirtyBase as Record<string, unknown> | undefined,
+                    );
+                    if (merge.conflict) {
+                        hasHardConflict = true;
+                    } else {
+                        finalProperties = merge.merged as typeof finalProperties;
+                        if (merge.tookServer.length) keptServer = Object.fromEntries(merge.tookServer.map(k => [k, merge.merged[k]]));
                     }
                 }
 
@@ -615,7 +585,7 @@ export async function saveGlobalPage(page: Page) {
         });
 
         revalidatePath('/admin', 'layout');
-        return { success: true, updatedAt: saved.updatedAt.toISOString(), blocksVersion: saved.blocksVersion };
+        return { success: true, updatedAt: saved.updatedAt.toISOString(), blocksVersion: saved.blocksVersion, keptServer };
     } catch (e: any) {
         console.error(`[saveGlobalPage] Failed to save page ${page.id} (db: ${page.databaseId}):`, e?.message ?? e);
         return { success: false, error: e?.message ?? String(e) };
@@ -721,48 +691,17 @@ export async function saveGlobalPagesBatch(pages: Page[]) {
                         }
                         
                         if (!hasHardConflict) {
-                            const serverProps = (existingPage.properties as Record<string, unknown>) || {};
-                            const clientProps = page.properties;
-                            const dirtyBase = page.dirtyBase || {};
-                            const mergedProps = { ...serverProps } as any;
-                            
-                            const isDeepEqual = (a: any, b: any): boolean => {
-                                if (a === b) return true;
-                                if (a && b && typeof a === 'object' && typeof b === 'object') {
-                                    if (Array.isArray(a)) {
-                                        if (!Array.isArray(b) || a.length !== b.length) return false;
-                                        for (let i = 0; i < a.length; i++) {
-                                            if (!isDeepEqual(a[i], b[i])) return false;
-                                        }
-                                        return true;
-                                    }
-                                    const keysA = Object.keys(a);
-                                    const keysB = Object.keys(b);
-                                    if (keysA.length !== keysB.length) return false;
-                                    for (const key of keysA) {
-                                        if (!keysB.includes(key) || !isDeepEqual(a[key], b[key])) return false;
-                                    }
-                                    return true;
-                                }
-                                return false;
-                            };
-
-                            for (const key of Object.keys(clientProps)) {
-                                const isClientSameAsServer = isDeepEqual(clientProps[key], serverProps[key]);
-                                const isServerSameAsBase = isDeepEqual(serverProps[key], dirtyBase[key]);
-                                const isClientSameAsBase = isDeepEqual(clientProps[key], dirtyBase[key]);
-
-                                if (!isClientSameAsServer) {
-                                    if (!isServerSameAsBase && !isClientSameAsBase) {
-                                        hasHardConflict = true;
-                                        break;
-                                    } else {
-                                        mergedProps[key] = clientProps[key];
-                                    }
-                                }
-                            }
-                            if (!hasHardConflict) {
-                                finalProperties = mergedProps;
+                            // One merge rule for every door (lib/records/occ-merge.ts): the other user's edit to a
+                            // field this client did not touch is KEPT — it was overwritten with the stale value.
+                            const merge = mergeStaleWrite(
+                                (existingPage.properties as Record<string, unknown>) || {},
+                                page.properties as Record<string, unknown>,
+                                page.dirtyBase as Record<string, unknown> | undefined,
+                            );
+                            if (merge.conflict) {
+                                hasHardConflict = true;
+                            } else {
+                                finalProperties = merge.merged as typeof finalProperties;
                             }
                         }
 

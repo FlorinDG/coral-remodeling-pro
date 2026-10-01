@@ -281,7 +281,9 @@ describe('4 · Sync queue retry / backoff', () => {
         // 2. Reverted optimistic state to server baseline
         const pageAfter = useDatabaseStore.getState().databases[0].pages[0];
         assert.equal(pageAfter.properties.title, 'Server Final Title');
-        assert.deepEqual(pageAfter.dirtyBase, {});
+        // OCC-MERGE-1 (deliberate change): clean = NO base. A leftover `{}` base made the next edit keep
+        // an empty base, and every later concurrent edit became a false conflict.
+        assert.equal(pageAfter.dirtyBase, undefined);
         assert.equal(pageAfter.dirtyBaseBlocks, false);
     });
 

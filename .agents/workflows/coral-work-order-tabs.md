@@ -43,3 +43,11 @@ many entries, membership proposed by shift assignment** — i.e. a team on one j
 `GRID-REPLACE` (TanStack, `coral-r3-grid.md`) and the project cockpit stay where the execution order
 puts them: after R1 (track-b, waiting on the binding census) and R2. Building the cockpit on today's
 grid is the "fix it twice" case.
+
+## GEO-1 · geofencing, barebone — 🟢 Florin 2026-10-01: "yessir" (Google)
+- **Record, never block:** at clock-in/out the server computes the distance to the site and stores it with the entry, plus the reverse-geocoded address. Timesheets flag "clocked 1.2 km from site". Hours are always recorded.
+- **Coordinates → addresses** for display; raw lat/lng stay as evidence.
+- **Site point:** `ScheduledShift.siteAddress ?? project location`, geocoded server-side once and kept.
+- **Google Geocoding, server-side key** (Florin sets it in Vercel, restricted to the Geocoding API). Nominatim rejected for production (1 req/s, no SLA, usage policy).
+- **GDPR:** position only at clock events, never tracked between; one line telling the crew.
+- Needs a second additive migration (entry address + distance, shift site coordinates). After WO-1.

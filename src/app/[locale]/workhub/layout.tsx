@@ -1,8 +1,6 @@
 import AuthProvider from "@/components/AuthProvider";
-import { getGlobalDatabases, getGlobalDatabaseSchemas, getGlobalPageIndex } from "@/app/actions/global-databases";
-import { IS_LAZY_DATA_ENABLED } from "@/lib/feature-flags";
-import GlobalDatabaseSyncer from "@/components/admin/database/GlobalDatabaseSyncer";
 import WorkHubShell from "@/components/workhub/WorkHubShell";
+import CrewStoreCleanup from "@/components/workhub/CrewStoreCleanup";
 import { WorkHubProviders } from "@/components/workhub/WorkHubProviders";
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
@@ -24,10 +22,10 @@ export default async function WorkHubLayout({ children }: { children: React.Reac
 
     const tenantId = session.user.tenantId;
 
-    // FILES-CREW-1 / WH-2: the crew's screens read the HR API, never the ERP database store.
-    // Loading it shipped EVERY ERP database (invoices, expenses, clients, quotes — only projects
-    // were filtered) to the crew phone and persisted it in the browser. Office roles using the
-    // WorkHub keep it (the admin "Record Site Visit" needs it).
+    // FILES-CREW-1 / WH-2 / WH-LEAN-1: the WorkHub's screens read the HR API, never the ERP database
+    // store. Loading it shipped every ERP database to the phone at start-up (every PAGE while the lazy
+    // flag is off) — for office roles too, only for "Record Site Visit", which now loads what it needs
+    // when it is opened (SiteVisitLauncher).
     const crew = isWorkforceRole((session.user as { role?: string }).role);
 
     // ── Fetch tenant data + databases ──
@@ -36,7 +34,7 @@ export default async function WorkHubLayout({ children }: { children: React.Reac
     let lockedDbIds: Record<string, string> = {};
 
     try {
-        const [tenant, databases, pageIndex] = await Promise.all([
+        const [tenant] = await Promise.all([
             prisma.tenant.findUnique({
                 where: { id: tenantId },
                 select: {
@@ -85,8 +83,6 @@ export default async function WorkHubLayout({ children }: { children: React.Reac
                     creditnoteNextNumber: true,
                 },
             }),
-            crew ? Promise.resolve([]) : (IS_LAZY_DATA_ENABLED ? getGlobalDatabaseSchemas() : getGlobalDatabases()),
-            crew ? Promise.resolve([]) : getGlobalPageIndex()
         ]);
 
         let fullTenant = null;
@@ -114,9 +110,7 @@ export default async function WorkHubLayout({ children }: { children: React.Reac
         return (
             <AuthProvider>
                 <WorkHubProviders>
-                    {!crew && (
-                        <GlobalDatabaseSyncer databases={databases} pageIndex={pageIndex} tenantId={tenantId} userId={session?.user?.id} />
-                    )}
+                    {crew && <CrewStoreCleanup />}
                     <WorkHubShell activeModules={activeModules} planType={planType} lockedDbIds={lockedDbIds} tenant={fullTenant}>
                         {children}
                     </WorkHubShell>

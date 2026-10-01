@@ -45,7 +45,8 @@ export function SiteVisitModal({ open, onClose, projectId, projectName }: SiteVi
   const quotesDbId = resolveDbId('db-quotations');
   
   const clients = useMemo(() => {
-    return databases[clientsDbId as any]?.pages || [];
+    // `databases` is an ARRAY — indexing it by id always gave undefined, so the list was always empty.
+    return databases.find(d => d.id === clientsDbId)?.pages || [];
   }, [databases, clientsDbId]);
 
   const handleCaptureLocation = async () => {

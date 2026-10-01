@@ -65,6 +65,8 @@ interface EditShiftDialogProps {
     role?: string | null;
     notes?: string | null;
     seriesId?: string;
+    siteAddress?: string | null;
+    materialsEnabled?: boolean;
   }, scope?: EditScope) => Promise<void>;
   onCreateShift?: (shift: any) => Promise<any>;
   onDeleteShift: (shiftId: string, scope?: EditScope) => Promise<void>;
@@ -125,6 +127,8 @@ export function EditShiftDialog({
   const [shiftEnd, setShiftEnd] = useState('');
   const [role, setRole] = useState('');
   const [notes, setNotes] = useState('');
+  const [siteAddress, setSiteAddress] = useState('');
+  const [materialsEnabled, setMaterialsEnabled] = useState(false);
   const [status, setStatus] = useState('');
   const [activeTab, setActiveTab] = useState('details');
   const [editScope, setEditScope] = useState<EditScope>('occurrence');
@@ -165,6 +169,8 @@ export function EditShiftDialog({
       setShiftEnd(shift.shiftEnd);
       setRole(shift.role || '');
       setNotes(shift.notes || '');
+      setSiteAddress((shift as { siteAddress?: string | null }).siteAddress || '');
+      setMaterialsEnabled(!!(shift as { materialsEnabled?: boolean }).materialsEnabled);
       setStatus(shift.status);
       setEditScope('occurrence');
       setActiveTab('details');
@@ -338,6 +344,8 @@ export function EditShiftDialog({
               shift_end: shiftEnd,
               role: role || null,
               notes: notes || null,
+              siteAddress: siteAddress.trim() || null,
+              materialsEnabled,
               seriesId,
               status
             });
@@ -357,6 +365,8 @@ export function EditShiftDialog({
         shift_end: shiftEnd,
         role: role || null,
         notes: notes || null,
+        siteAddress: siteAddress.trim() || null,
+        materialsEnabled,
         ...(seriesId ? { seriesId } : {})
       }, editScope);
 
@@ -538,6 +548,19 @@ export function EditShiftDialog({
                   disabled={!canManage}
                 />
               </div>
+                    {/* WO-2: where the work happens when it is not the project's address; Materials tab on/off */}
+                    {(<>
+                    <div>
+                      <Label htmlFor="siteAddressEdit">Execution address (if not the project's)</Label>
+                      <Input id="siteAddressEdit" value={siteAddress} onChange={(e) => setSiteAddress(e.target.value)}
+                        placeholder="Leave empty to use the project address" disabled={!canManage} />
+                    </div>
+                    <label className="flex items-center gap-2 text-sm">
+                      <input type="checkbox" checked={materialsEnabled} onChange={(e) => setMaterialsEnabled(e.target.checked)} disabled={!canManage} />
+                      Crew records materials used on this shift
+                    </label>
+                    </>)}
+
 
               {canManage && !shift?.seriesId && !isConvertingToRecurring && (
                 <div className="pt-4 border-t mt-6">

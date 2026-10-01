@@ -1091,7 +1091,16 @@
         "submitted": "ingediend",
         "failed": "Opslaan mislukt"
       },
-      "farFromSite": "{km} km van de werf"
+      "farFromSite": "{km} km van de werf",
+      "adminNotes": "Notities beheerder",
+      "shiftNote": "Shiftnotitie (planner)",
+      "crewNote": "Notitie medewerker",
+      "shiftTasks": "Taken van de shift",
+      "none": "—",
+      "taskDone": "klaar",
+      "taskBusy": "bezig",
+      "taskTodo": "te doen",
+      "shiftContextFailed": "Shift laden mislukt"
     },
     "shiftForm": {
       "orderGiver": "Opdrachtgever (ontvangt de getekende werkbon)",

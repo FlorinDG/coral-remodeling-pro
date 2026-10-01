@@ -1091,7 +1091,16 @@
         "submitted": "submitted",
         "failed": "Could not save"
       },
-      "farFromSite": "{km} km from the site"
+      "farFromSite": "{km} km from the site",
+      "adminNotes": "Admin notes",
+      "shiftNote": "Shift note (planner)",
+      "crewNote": "Crew member's note",
+      "shiftTasks": "Shift tasks",
+      "none": "—",
+      "taskDone": "done",
+      "taskBusy": "busy",
+      "taskTodo": "to do",
+      "shiftContextFailed": "Could not load the shift"
     },
     "shiftForm": {
       "orderGiver": "Order giver (receives the signed work order)",

@@ -1091,7 +1091,16 @@
         "submitted": "trimisă",
         "failed": "Salvarea a eșuat"
       },
-      "farFromSite": "la {km} km de șantier"
+      "farFromSite": "la {km} km de șantier",
+      "adminNotes": "Notițe administrator",
+      "shiftNote": "Notița turei (planificator)",
+      "crewNote": "Notița lucrătorului",
+      "shiftTasks": "Sarcinile turei",
+      "none": "—",
+      "taskDone": "gata",
+      "taskBusy": "în lucru",
+      "taskTodo": "de făcut",
+      "shiftContextFailed": "Tura nu a putut fi încărcată"
     },
     "shiftForm": {
       "orderGiver": "Beneficiar (primește fișa de lucru semnată)",

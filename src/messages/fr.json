@@ -1090,7 +1090,16 @@
         "submitted": "soumis",
         "failed": "Échec de l'enregistrement"
       },
-      "farFromSite": "à {km} km du chantier"
+      "farFromSite": "à {km} km du chantier",
+      "adminNotes": "Notes de l'administrateur",
+      "shiftNote": "Note du service (planificateur)",
+      "crewNote": "Note de l'ouvrier",
+      "shiftTasks": "Tâches du service",
+      "none": "—",
+      "taskDone": "fait",
+      "taskBusy": "en cours",
+      "taskTodo": "à faire",
+      "shiftContextFailed": "Impossible de charger le service"
     },
     "shiftForm": {
       "orderGiver": "Donneur d’ordre (reçoit le bon de travail signé)",

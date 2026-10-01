@@ -10,6 +10,24 @@ import path from 'node:path';
 const SRC = path.resolve(import.meta.dirname, '..', 'src');
 
 export async function resolve(specifier, context, nextResolve) {
+    if (specifier === 'zustand/middleware' && (!context.parentURL || !context.parentURL.includes('zustand-middleware.ts'))) {
+        return nextResolve(pathToFileURL(path.resolve(import.meta.dirname, 'stubs/zustand-middleware.ts')).href, context);
+    }
+    if (specifier === 'idb-keyval') {
+        return nextResolve(pathToFileURL(path.resolve(import.meta.dirname, 'stubs/idb-keyval.ts')).href, context);
+    }
+    if (specifier === 'sonner') {
+        return nextResolve(pathToFileURL(path.resolve(import.meta.dirname, 'stubs/sonner.ts')).href, context);
+    }
+    if (specifier === '@/app/actions/global-databases') {
+        return nextResolve(pathToFileURL(path.resolve(import.meta.dirname, 'stubs/global-databases.ts')).href, context);
+    }
+    if (specifier === '@/app/actions/pages') {
+        return nextResolve(pathToFileURL(path.resolve(import.meta.dirname, 'stubs/pages.ts')).href, context);
+    }
+    if (specifier === '@/components/admin/database/types' || (specifier === './types' && context.parentURL && context.parentURL.includes('/database/'))) {
+        return nextResolve(pathToFileURL(path.resolve(import.meta.dirname, 'stubs/types.ts')).href, context);
+    }
     if (specifier.startsWith('next/') && !specifier.endsWith('.js')) {
         return nextResolve(`${specifier}.js`, context);
     }

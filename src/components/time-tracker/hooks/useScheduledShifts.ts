@@ -1,7 +1,6 @@
 "use client";
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { hrList, hrCreate, hrUpdate, hrDelete } from '@/lib/hr-api';
-import { useDatabaseStore } from '@/components/admin/database/store';
 import { useUserRoles } from '@/components/time-tracker/hooks/useUserRoles';
 import { pickShiftNow, localDateKey, isShiftSubmitted } from '@/lib/kernel/shift-time';
 
@@ -113,8 +112,19 @@ export function useScheduledShifts() {
 
   const canManage = isAdmin || isManager;
 
-  const fetchAll = useCallback(async () => {
-    setLoading(true);
+  // The project list, readable from the save callbacks: a saved shift is re-joined to its project so
+  // the scheduler shows the new project at once (it kept the old one until a reload — Florin 2026-10-01).
+  const projectsRef = useRef<Project[]>([]);
+  projectsRef.current = projects;
+  const withProject = useCallback((s: ScheduledShift): ScheduledShift => {
+    const pid = s.projectId ?? null;
+    const project = pid ? projectsRef.current.find(p => p.id === pid) || null : null;
+    return { ...s, project, projectName: project?.name } as ScheduledShift;
+  }, []);
+
+  /** `silent`: refresh without the loading state (no flash) — used when the tab regains focus. */
+  const fetchAll = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     const withTimeout = <T>(p: Promise<T>, ms = 9000, name: string): Promise<T> =>
       Promise.race([
         p,
@@ -203,6 +213,20 @@ export function useScheduledShifts() {
     fetchAll();
   }, [fetchAll]);
 
+  // Another screen (the WorkHub, another tab, a colleague) may have changed shifts: refresh quietly
+  // when this tab comes back into view, instead of waiting for a manual reload.
+  useEffect(() => {
+    let last = Date.now();
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible' || Date.now() - last < 15_000) return;
+      last = Date.now();
+      void fetchAll(true);
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', onVisible);
+    return () => { document.removeEventListener('visibilitychange', onVisible); window.removeEventListener('focus', onVisible); };
+  }, [fetchAll]);
+
   // Legacy alias
   const shifts = rawShifts;
 
@@ -218,13 +242,13 @@ export function useScheduledShifts() {
 
     try {
       const shift = await hrCreate<ScheduledShift>('shifts', normalized);
-      setRawShifts(prev => [addSnakeCase(shift), ...prev]);
+      setRawShifts(prev => [addSnakeCase(withProject(shift)), ...prev]);
       // Removed void fetchAll() to prevent matrix flash
       return { data: addSnakeCase(shift), error: null };
     } catch (err: any) {
       return { data: null, error: err };
     }
-  }, [fetchAll]);
+  }, [withProject, fetchAll]);
 
   const updateShift = useCallback(async (id: string, data: Partial<ScheduledShift>) => {
     const normalized: Record<string, any> = { ...data };
@@ -237,10 +261,10 @@ export function useScheduledShifts() {
 
     try {
       // Optimistic update
-      setRawShifts(prev => prev.map(s => s.id === id ? { ...s, ...normalized } : s));
-      
+      setRawShifts(prev => prev.map(s => s.id === id ? addSnakeCase(withProject({ ...s, ...normalized })) : s));
+
       const shift = await hrUpdate<ScheduledShift>('shifts', id, normalized);
-      setRawShifts(prev => prev.map(s => s.id === id ? addSnakeCase({ ...s, ...shift }) : s));
+      setRawShifts(prev => prev.map(s => s.id === id ? addSnakeCase(withProject({ ...s, ...shift })) : s));
       // Removing fetchAll() here to prevent full redraws. The background sync or other hooks will handle refresh if needed.
       // void fetchAll();
       return { data: addSnakeCase(shift), error: null };
@@ -249,7 +273,7 @@ export function useScheduledShifts() {
       void fetchAll();
       return { data: null, error: err };
     }
-  }, [fetchAll]);
+  }, [withProject, fetchAll]);
 
   const updateShiftStatus = useCallback(async (id: string, status: string) => {
     return updateShift(id, { status });
@@ -352,6 +376,6 @@ export function useScheduledShifts() {
     createProject,
     updateProject,
     deleteProject,
-    refetch: fetchAll,
+    refetch: () => fetchAll(),
   };
 }

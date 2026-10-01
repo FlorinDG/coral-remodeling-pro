@@ -198,8 +198,9 @@ export function useShiftTasks(shiftId?: string | null) {
         fetchShiftTasks();
     }, [fetchShiftTasks]);
 
-    /** Assign an existing db-tasks task to this shift */
-    const assignTask = useCallback(async (taskId: string) => {
+    /** Assign an existing db-tasks task to this shift. Pass the task the caller already holds, so the
+     *  new row shows its title at once (without it the row rendered "Unknown task" until a reload). */
+    const assignTask = useCallback(async (taskId: string, task?: Pick<Task, 'title'> & Partial<Task>) => {
         if (!shiftId) return;
         const res = await hrCreate<ShiftTask>('shift-tasks', {
             shiftId,
@@ -208,9 +209,14 @@ export function useShiftTasks(shiftId?: string | null) {
             subtasks: [],
             workerNotes: null,
         });
-        setShiftTasks(prev => [...prev, { ...res, subtasks: res.subtasks || [], workerNotes: res.workerNotes || null }]);
+        const hydrated: Task | undefined = task ? {
+            id: taskId, projectId: task.projectId ?? null, title: task.title, description: null,
+            status: task.status ?? 'opt-todo', priority: task.priority ?? null, createdAt: '', updatedAt: '',
+        } : undefined;
+        setShiftTasks(prev => [...prev, { ...res, subtasks: res.subtasks || [], workerNotes: res.workerNotes || null, task: hydrated }]);
+        if (!task) fetchShiftTasks();   // no details in hand → read them back rather than show a blank
         return res;
-    }, [shiftId]);
+    }, [shiftId, fetchShiftTasks]);
 
     /** Remove a task assignment from this shift */
     const removeTask = useCallback(async (shiftTaskId: string) => {

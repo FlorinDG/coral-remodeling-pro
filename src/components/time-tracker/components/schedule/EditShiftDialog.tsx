@@ -244,7 +244,7 @@ export function EditShiftDialog({
   // Task handlers
   const handleAssignTask = async (taskId: string) => {
     try {
-      await assignTask(taskId);
+      await assignTask(taskId, projectTasks.find(t => t.id === taskId));
       setTaskPopoverOpen(false);
       toast.success('Task assigned to shift');
     } catch {
@@ -282,7 +282,7 @@ export function EditShiftDialog({
         priority: newTaskPriority,
       });
       if (result?.data?.id) {
-        await assignTask(result.data.id);
+        await assignTask(result.data.id, result.data);
         setNewTaskTitle('');
         setNewTaskPriority('normal');
         toast.success('Task created and assigned');

@@ -190,7 +190,10 @@
     "noContact": "Fără contact",
     "noNotes": "Fără note",
     "noTasks": "Fără sarcini",
-    "noAttachments": "Fără atașamente"
+    "noAttachments": "Fără atașamente",
+    "addFiles": "Adaugă poze sau fișiere",
+    "filesAdded": "{{count}} fișier(e) adăugat(e)",
+    "fileAddFailed": "Fișierul nu a putut fi adăugat"
   },
   "timeOff": {
     "title": "Concediu",
@@ -364,5 +367,22 @@
     "submitted": "Orele au fost trimise spre aprobare",
     "submitFailed": "Orele nu au putut fi trimise",
     "invalidFiles": "Aceste fișiere nu pot fi adăugate"
+  },
+  "workOrder": {
+    "tabInfo": "Info",
+    "tabHours": "Ore",
+    "tabTasks": "Sarcini",
+    "tabFiles": "Notițe",
+    "tabSign": "Semnează",
+    "noHours": "Încă nu sunt ore pe această tură.",
+    "running": "în curs",
+    "pending": "așteaptă aprobare",
+    "signTitle": "Semnătura clientului",
+    "signSoon": "În curând: clientul semnează aici, cu numele, iar fișa de lucru se blochează.",
+    "myNote": "Notița mea",
+    "notePlaceholder": "Ce s-a făcut, ce a rămas, ce trebuie să știe biroul…",
+    "saveNote": "Salvează notița",
+    "noteSaved": "Notiță salvată",
+    "noteFailed": "Notița nu a putut fi salvată"
   }
 }

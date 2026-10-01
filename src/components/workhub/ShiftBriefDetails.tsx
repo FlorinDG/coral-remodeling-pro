@@ -8,13 +8,15 @@
  *   notes   → plain text, wraps, never cut    tasks → worker progress (start / done / checklist)
  *   files   → thumbnails; tap opens the shared FileViewer carousel (swipe/arrows), not a new tab
  */
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import {
   MapPin, Phone, Mail, StickyNote, CheckSquare, Paperclip, ChevronRight,
-  FileText, Loader2, Check, Circle, PlayCircle,
+  FileText, Loader2, Check, Circle, PlayCircle, Camera,
 } from 'lucide-react';
+import { uploadFileAction } from '@/app/actions/files';
+import { addShiftFile } from '@/lib/data/shift-files';
 import type { ViewableFile } from '@/components/files/FileViewer';
 import { resolveFileUrl } from '@/lib/files';
 import { describeError } from '@/lib/describe-error';
@@ -52,10 +54,43 @@ interface Props {
   /** The carousel is rendered by the PARENT, outside the dialog: Radix's dialog content is
    *  transformed, which would trap a `fixed` full-screen viewer inside the modal's box. */
   onOpenMedia: (files: ViewableFile[], index: number) => void;
+  /** WO-1 tabs: render one part only. Omitted → everything (the pre-tab layout). */
+  section?: 'info' | 'tasks' | 'files';
+  /** Files tab: the crew may add photos/documents (own, open shift). Called after a successful add. */
+  onFilesAdded?: () => void;
+  canAddFiles?: boolean;
 }
 
-export function ShiftBriefDetails({ shiftId, brief, fallbackAddress, title, userId, onOpenMedia, loading = false }: Props) {
+export function ShiftBriefDetails({ shiftId, brief, fallbackAddress, title, userId, onOpenMedia, loading = false, section, onFilesAdded, canAddFiles = false }: Props) {
   const { t } = useTranslation();
+  const show = (k: 'info' | 'tasks' | 'files') => !section || section === k;
+  const fileInput = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const addFiles = async (list: FileList | null) => {
+    if (!list?.length) return;
+    setUploading(true);
+    let added = 0;
+    try {
+      for (const file of Array.from(list)) {
+        const fd = new FormData();
+        fd.append('file', file);
+        const up = await uploadFileAction(fd, 'hr-shift', shiftId);
+        if (!up?.success || !up.key) throw new Error(up?.error || 'upload failed');
+        const res = await addShiftFile({ shiftId, key: up.key, name: file.name, type: file.type, size: file.size });
+        if (!res.ok) throw new Error(res.error);
+        added++;
+      }
+      toast.success(t('schedule.filesAdded', { count: added }));
+    } catch (err) {
+      console.error('[ShiftBrief] add file failed:', err);
+      toast.error(`${t('schedule.fileAddFailed')} — ${describeError(err)}`);
+    } finally {
+      setUploading(false);
+      if (fileInput.current) fileInput.current.value = '';
+      if (added) onFilesAdded?.();
+    }
+  };
   const [busyTask, setBusyTask] = useState<string | null>(null);
   const {
     shiftTasks, loading: tasksLoading, error: tasksError,
@@ -92,6 +127,7 @@ export function ShiftBriefDetails({ shiftId, brief, fallbackAddress, title, user
 
   return (
     <div className="space-y-4">
+      {show('info') && (<>
       {/* ── Where and who — ALWAYS rendered (Florin: placeholders, not elements that pop in and vanish) ── */}
         <div className="space-y-2">
           {loading && !address ? <Skeleton /> : !address ? (
@@ -135,6 +171,9 @@ export function ShiftBriefDetails({ shiftId, brief, fallbackAddress, title, user
           ) : <p className="px-1 text-base text-muted-foreground">{t('schedule.noNotes')}</p>}
         </section>
 
+      </>)}
+
+      {show('tasks') && (<>
       {/* ── Tasks — the worker reports progress; management closes the task itself ── */}
         <section className="space-y-2">
           <h3 className={SECTION_LABEL}>
@@ -223,9 +262,23 @@ export function ShiftBriefDetails({ shiftId, brief, fallbackAddress, title, user
           )}
         </section>
 
+      </>)}
+
+      {show('files') && (<>
       {/* ── Attachments — always rendered; thumbnails open the carousel ── */}
         <section className="space-y-2">
           <h3 className={SECTION_LABEL}><Paperclip className="w-4 h-4" />{t('schedule.attachments')}{media.length > 0 ? ` · ${media.length}` : ''}</h3>
+          {canAddFiles && (
+            <>
+              <input ref={fileInput} type="file" multiple accept="image/*,application/pdf" className="hidden"
+                onChange={e => addFiles(e.target.files)} />
+              <button type="button" disabled={uploading} onClick={() => fileInput.current?.click()}
+                className="w-full h-12 rounded-xl border-2 border-dashed border-[var(--persian-green)] text-[var(--persian-green)] text-base font-semibold inline-flex items-center justify-center gap-2 disabled:opacity-50">
+                {uploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Camera className="w-5 h-5" />}
+                {t('schedule.addFiles')}
+              </button>
+            </>
+          )}
           {loading ? <Skeleton /> : media.length === 0 ? (
             <p className="px-1 text-base text-muted-foreground">{t('schedule.noAttachments')}</p>
           ) : (
@@ -253,6 +306,7 @@ export function ShiftBriefDetails({ shiftId, brief, fallbackAddress, title, user
           </div>
           )}
         </section>
+      </>)}
     </div>
   );
 }

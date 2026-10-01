@@ -17,7 +17,7 @@ import { useTranslation } from 'react-i18next';
 import { formatTime, formatWeekdayDayMonth } from '@/lib/format/date';
 import { describeError } from '@/lib/describe-error';
 import { shiftBrief, type ShiftBriefResult } from '@/lib/data/shift-brief';
-import { ShiftBriefDetails } from '@/components/workhub/ShiftBriefDetails';
+import { WorkOrderTabs } from '@/components/workhub/WorkOrderTabs';
 import FileViewer, { type ViewableFile } from '@/components/files/FileViewer';
 import { shiftTemporalState, compareShifts, isShiftSubmitted } from '@/lib/kernel/shift-time';
 import { submitShift } from '@/lib/data/shift-submit';
@@ -148,6 +148,7 @@ export function MySchedule() {
   const [brief, setBrief] = useState<ShiftBriefResult | null>(null);
   const [viewer, setViewer] = useState<{ files: ViewableFile[]; index: number } | null>(null);
   const [briefLoading, setBriefLoading] = useState(false);
+  const [briefVersion, setBriefVersion] = useState(0);   // bump → reload the brief (hours/files added)
   const [elapsedTime, setElapsedTime] = useState('00:00:00');
   const [now, setNow] = useState(() => new Date());
   const nextShiftRef = useRef<HTMLDivElement>(null);
@@ -202,7 +203,7 @@ export function MySchedule() {
     return () => {
       active = false;
     };
-  }, [selectedShift?.id]);
+  }, [selectedShift?.id, briefVersion]);
 
   // Date range: 1 week behind to 2 weeks ahead
   const today = startOfDay(new Date());
@@ -441,7 +442,6 @@ export function MySchedule() {
             const displayTitle = brief?.title || projectName || description || t('schedule.shiftFallback');
 
             const addressText = brief?.address || selectedShift.project?.address?.trim() || selectedShift.projectAddress?.trim() || null;
-            const mapUrl = brief?.mapUrl || (addressText ? `https://maps.google.com/?q=${encodeURIComponent(addressText)}` : null);
 
             return (
               <>
@@ -458,35 +458,19 @@ export function MySchedule() {
                   </div>
                 </DialogHeader>
 
-                <div className="p-4 space-y-3 max-h-[60vh] overflow-y-auto">
-                  {/* WH-2: address · contact · notes · tasks · attachments — each rendered by what it is */}
-                  <ShiftBriefDetails
-                    shiftId={selectedShift.id}
-                    brief={brief}
-                    fallbackAddress={addressText}
-                    title={displayTitle}
-                    userId={user?.id}
-                    onOpenMedia={(files, index) => setViewer({ files, index })}
-                    loading={briefLoading && !brief}
-                  />
-
-                  {/* Worked duration (only when clock entry exists) */}
-                  {brief?.worked && (
-                    <div className="flex items-center justify-between p-3.5 bg-neutral-50 dark:bg-neutral-900/60 rounded-xl border border-neutral-100 dark:border-white/5">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <Clock className="w-5 h-5 text-[var(--persian-green)] shrink-0" />
-                        <div className="flex flex-col">
-                          <span className="text-sm font-medium text-muted-foreground">{t('schedule.worked')}</span>
-                          <span className="text-base font-semibold text-foreground">
-                            {formatTime(brief.worked.in)} – {brief.worked.out ? formatTime(brief.worked.out) : '…'} · {Math.floor(brief.worked.minutes / 60)}h {brief.worked.minutes % 60}m
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* (loading state is shown by ShiftBriefDetails' placeholders — no spinner that pops away) */}
-                </div>
+                {/* WO-1: the shift opens as a work order — Info · Hours · Tasks · Files · Sign */}
+                <WorkOrderTabs
+                  shiftId={selectedShift.id}
+                  shiftDate={selectedShift.shiftDate}
+                  submitted={isShiftSubmitted(selectedShift.status)}
+                  brief={brief}
+                  briefLoading={briefLoading}
+                  fallbackAddress={addressText}
+                  title={displayTitle}
+                  userId={user?.id}
+                  onOpenMedia={(files, index) => setViewer({ files, index })}
+                  onChanged={() => { setBriefVersion(v => v + 1); void refetchShifts(); }}
+                />
 
                 {/* Clock Action Surface */}
                 <div className="p-4 border-t border-neutral-100 dark:border-white/10 bg-neutral-50/50 dark:bg-neutral-900/50 flex flex-col items-center">

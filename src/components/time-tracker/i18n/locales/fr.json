@@ -189,7 +189,10 @@
     "noContact": "Pas de contact",
     "noNotes": "Pas de notes",
     "noTasks": "Pas de tâches",
-    "noAttachments": "Pas de pièces jointes"
+    "noAttachments": "Pas de pièces jointes",
+    "addFiles": "Ajouter des photos ou fichiers",
+    "filesAdded": "{{count}} fichier(s) ajouté(s)",
+    "fileAddFailed": "Impossible d'ajouter le fichier"
   },
   "timeOff": {
     "title": "Congés",
@@ -361,5 +364,22 @@
     "submitted": "Heures envoyées pour approbation",
     "submitFailed": "Les heures n’ont pas pu être envoyées",
     "invalidFiles": "Ces fichiers ne peuvent pas être ajoutés"
+  },
+  "workOrder": {
+    "tabInfo": "Infos",
+    "tabHours": "Heures",
+    "tabTasks": "Tâches",
+    "tabFiles": "Notes",
+    "tabSign": "Signer",
+    "noHours": "Pas encore d'heures sur ce service.",
+    "running": "en cours",
+    "pending": "en attente d'approbation",
+    "signTitle": "Signature du client",
+    "signSoon": "Bientôt : le client signe ici, avec son nom, et le bon de travail est verrouillé.",
+    "myNote": "Ma note",
+    "notePlaceholder": "Ce qui a été fait, ce qui reste, ce que le bureau doit savoir…",
+    "saveNote": "Enregistrer la note",
+    "noteSaved": "Note enregistrée",
+    "noteFailed": "Impossible d'enregistrer la note"
   }
 }

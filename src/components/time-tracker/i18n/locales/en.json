@@ -189,7 +189,10 @@
     "noContact": "No contact",
     "noNotes": "No notes",
     "noTasks": "No tasks",
-    "noAttachments": "No attachments"
+    "noAttachments": "No attachments",
+    "addFiles": "Add photos or files",
+    "filesAdded": "{{count}} file(s) added",
+    "fileAddFailed": "Could not add the file"
   },
   "timeOff": {
     "title": "Time Off",
@@ -361,5 +364,22 @@
     "submitted": "Late entry sent for approval",
     "submitFailed": "The late entry could not be sent",
     "invalidFiles": "These files cannot be added"
+  },
+  "workOrder": {
+    "tabInfo": "Info",
+    "tabHours": "Hours",
+    "tabTasks": "Tasks",
+    "tabFiles": "Notes",
+    "tabSign": "Sign",
+    "noHours": "No hours on this shift yet.",
+    "running": "running",
+    "pending": "awaiting approval",
+    "signTitle": "Client signature",
+    "signSoon": "Coming soon: the client signs here, with their name, and the work order is locked.",
+    "myNote": "My note",
+    "notePlaceholder": "What was done, what is left, anything the office should know…",
+    "saveNote": "Save note",
+    "noteSaved": "Note saved",
+    "noteFailed": "Could not save the note"
   }
 }

@@ -23,6 +23,12 @@ export interface ShiftBriefResult {
     /** Photos from EVERY clock entry on this shift; `key` is a storage key or URL — resolve with resolveFileUrl. */
     photos: { key: string; name: string; type: string }[];
     files: { id: string; name: string; url: string; type: string }[];
+    /** WO-1 Hours tab: every entry on this shift, oldest first. Instants as ISO (transport only). */
+    entries: { id: string; in: string; out: string | null; minutes: number; source: string | null; approvalStatus: string | null }[];
+    /** WO-2: the crew member's own note on the work order. */
+    crewNote: string | null;
+    /** WO-2: the address is the shift's execution address (not the project's). */
+    siteAddressOverride: boolean;
 }
 
 /**
@@ -129,6 +135,9 @@ export async function shiftBrief(
         || shift.notes?.trim() 
         || '';
 
+    // WO-2: the execution address set on the shift wins over the project's address.
+    const siteAddress = shift.siteAddress?.trim() || null;
+    if (siteAddress) address = siteAddress;
     const mapUrl = address ? `https://maps.google.com/?q=${encodeURIComponent(address)}` : null;
 
     let worked: { in: string; out: string | null; minutes: number } | null = null;
@@ -184,6 +193,16 @@ export async function shiftBrief(
         worked,
         photos,
         files,
+        entries: [...shift.clockEntries].reverse().map(e => ({
+            id: e.id,
+            in: e.clockInTime.toISOString(),
+            out: e.clockOutTime ? e.clockOutTime.toISOString() : null,
+            minutes: computeWorkedDuration(e.clockInTime, e.clockOutTime, e.noBreak).totalMinutes,
+            source: e.source ?? null,
+            approvalStatus: e.approvalStatus ?? null,
+        })),
+        crewNote: shift.crewNote?.trim() || null,
+        siteAddressOverride: !!siteAddress,
     };
 }
 

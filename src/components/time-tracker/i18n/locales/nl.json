@@ -189,7 +189,10 @@
     "noContact": "Geen contact",
     "noNotes": "Geen notities",
     "noTasks": "Geen taken",
-    "noAttachments": "Geen bijlagen"
+    "noAttachments": "Geen bijlagen",
+    "addFiles": "Foto's of bestanden toevoegen",
+    "filesAdded": "{{count}} bestand(en) toegevoegd",
+    "fileAddFailed": "Bestand toevoegen mislukt"
   },
   "timeOff": {
     "title": "Verlof",
@@ -361,5 +364,22 @@
     "submitted": "Uren verstuurd ter goedkeuring",
     "submitFailed": "De uren konden niet verstuurd worden",
     "invalidFiles": "Deze bestanden kunnen niet toegevoegd worden"
+  },
+  "workOrder": {
+    "tabInfo": "Info",
+    "tabHours": "Uren",
+    "tabTasks": "Taken",
+    "tabFiles": "Notities",
+    "tabSign": "Tekenen",
+    "noHours": "Nog geen uren op deze shift.",
+    "running": "loopt",
+    "pending": "wacht op goedkeuring",
+    "signTitle": "Handtekening klant",
+    "signSoon": "Binnenkort: de klant tekent hier, met naam, en de werkbon wordt vergrendeld.",
+    "myNote": "Mijn notitie",
+    "notePlaceholder": "Wat is gedaan, wat blijft, wat het kantoor moet weten…",
+    "saveNote": "Notitie opslaan",
+    "noteSaved": "Notitie opgeslagen",
+    "noteFailed": "Notitie opslaan mislukt"
   }
 }

@@ -1,7 +1,7 @@
 "use server";
 
 import { isTenantHrRole } from '@/lib/roles';
-import { zonedParts } from '@/lib/kernel/shift-time';
+import { zonedParts, isShiftSubmitted } from '@/lib/kernel/shift-time';
 import { autoLinkIfUnique } from '@/lib/data/entry-shift-match';
 import prisma from "@/lib/prisma";
 import { auth } from "@/auth";
@@ -236,6 +236,8 @@ export async function submitLateEntry(params: {
     taskId?: string | null;
     filesCount?: number;
     filesData?: any;
+    /** WO-1: hours added from inside a shift (the Hours tab) belong to THAT shift. */
+    shiftId?: string | null;
 }) {
     const session = await auth();
     if (!session?.user?.id) throw new Error("Unauthorized");
@@ -243,6 +245,16 @@ export async function submitLateEntry(params: {
     if (!tenantId) throw new Error("No tenant context");
 
     const { targetUserId, clockInTime, clockOutTime, includeLocation, location, taskDescription, projectId, taskId, filesData } = params;
+
+    // The client sends INSTANTS (with Z or an offset). A bare "2026-09-28T09:00" was read by this
+    // UTC server as 09:00 UTC = 11:00 in Belgium — every late entry landed two hours late.
+    const hasZone = (v: string) => /(?:[zZ]|[+-]\d{2}:?\d{2})$/.test(v);
+    if (!hasZone(clockInTime) || !hasZone(clockOutTime)) {
+        throw new Error("Out of date app: please reload and enter the hours again (times arrived without a time zone)");
+    }
+    if (new Date(clockOutTime).getTime() <= new Date(clockInTime).getTime()) {
+        throw new Error("Clock-out must be after clock-in");
+    }
 
     // Gate 2 (same rule as write-policy.ts, second door): a late entry is filed for YOURSELF unless
     // you hold a tenant HR role — and the worker must be a user of THIS tenant (seraph, item 8).
@@ -253,9 +265,21 @@ export async function submitLateEntry(params: {
     const subject = await prisma.user.findFirst({ where: { id: targetUserId, tenantId }, select: { id: true } });
     if (!subject) throw new Error("Not found");
 
+    // WO-1: the shift is named — it must be this worker's, in this tenant, and still open.
+    let boundShift: { id: string; projectId: string | null } | null = null;
+    if (params.shiftId) {
+        const s = await prisma.scheduledShift.findFirst({
+            where: { id: params.shiftId, tenantId, userId: targetUserId },
+            select: { id: true, projectId: true, status: true },
+        });
+        if (!s) throw new Error("Not found: shift");
+        if (isShiftSubmitted(s.status) && !isTenantHrRole(role)) throw new Error("shift_submitted");
+        boundShift = s;
+    }
+
     try {
-        let shiftId: string | null = null;
-        if (projectId) {
+        let shiftId: string | null = boundShift?.id ?? null;
+        if (projectId && !boundShift) {
             // Wall-clock parts in the business zone — toISOString() here was UTC (2h early, wrong day
             // before 02:00). Kernel: zonedParts (Intl + named zone, no offset arithmetic).
             const inLocal = zonedParts(clockInTime);
@@ -284,7 +308,7 @@ export async function submitLateEntry(params: {
                 clockInTime: new Date(clockInTime),
                 clockOutTime: new Date(clockOutTime),
                 taskDescription,
-                projectId: projectId || null,
+                projectId: projectId || boundShift?.projectId || null,
                 shiftId: shiftId,
                 requiresApproval: true,
                 approvalStatus: 'pending',

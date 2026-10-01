@@ -38,7 +38,9 @@ function getNotionColor(colorName: string) {
   return NOTION_COLORS.find(c => c.name === colorName) || NOTION_COLORS[6];
 }
 
-export function LateEntryCard() {
+/** `shiftId` + `shiftDate`: hours added from inside a shift (WO-1 Hours tab) — the date is the
+ *  shift's, no project is asked (the shift has it), and the form starts open. */
+export function LateEntryCard({ shiftId, shiftDate, onSubmitted }: { shiftId?: string; shiftDate?: string; onSubmitted?: () => void } = {}) {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const { projects } = useScheduledShifts();
@@ -47,9 +49,9 @@ export function LateEntryCard() {
   const { location, loading: geoLoading, requestLocation } = useGeolocation();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(!!shiftId);
   const [loading, setLoading] = useState(false);
-  const [date, setDate] = useState('');
+  const [date, setDate] = useState(shiftDate || '');
   const [clockIn, setClockIn] = useState('09:00');
   const [clockOut, setClockOut] = useState('17:00');
   const [projectId, setProjectId] = useState('');
@@ -125,8 +127,11 @@ export function LateEntryCard() {
       const { submitLateEntry } = await import('@/app/actions/timesheets');
       const result = await submitLateEntry({
         targetUserId: targetUserId || user.id,
-        clockInTime: `${date}T${clockIn}`,
-        clockOutTime: `${date}T${clockOut}`,
+        // The phone's own clock: `new Date('YYYY-MM-DDTHH:mm')` is the phone's LOCAL time; sent as
+        // an exact instant, so the (UTC) server never guesses the zone.
+        clockInTime: new Date(`${date}T${clockIn}`).toISOString(),
+        clockOutTime: new Date(`${date}T${clockOut}`).toISOString(),
+        shiftId: shiftId || null,
         includeLocation,
         location: location ? { lat: location.latitude, lng: location.longitude, address: '' } : undefined,
         taskDescription,
@@ -143,7 +148,7 @@ export function LateEntryCard() {
       toast.success(t('lateEntry.submitted'));
       
       // Reset form
-      setDate('');
+      setDate(shiftDate || '');
       setClockIn('09:00');
       setClockOut('17:00');
       setProjectId('');
@@ -152,7 +157,8 @@ export function LateEntryCard() {
       setIncludeLocation(false);
       setFiles([]);
       setSelectedUserId('');
-      setIsOpen(false);
+      setIsOpen(!!shiftId);
+      onSubmitted?.();
       
     } catch (error) {
       console.error('Error submitting late entry:', error);
@@ -224,7 +230,7 @@ export function LateEntryCard() {
         <CollapsibleContent>
           <CardContent className="border-t pt-4">
             <form onSubmit={handleSubmit} className="space-y-4">
-              {isAdmin && (
+              {isAdmin && !shiftId && (
                 <div>
                   <Label>{t('lateEntry.worker')}</Label>
                   <Select value={selectedUserId || 'none'} onValueChange={handleUserChange}>
@@ -247,6 +253,7 @@ export function LateEntryCard() {
                 </div>
               )}
 
+              {!shiftId && (
               <div>
                 <Label htmlFor="entryDate">{t('lateEntry.date')}</Label>
                 {/* Belgian date display, Monday-first — a native date input follows the phone's region (US). */}
@@ -263,6 +270,7 @@ export function LateEntryCard() {
                   {t('lateEntry.dateHint')}
                 </p>
               </div>
+              )}
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -275,6 +283,7 @@ export function LateEntryCard() {
                 </div>
               </div>
 
+              {!shiftId && (
               <div>
                 <Label>{t('lateEntry.project')}</Label>
                 <Select value={projectId || 'none'} onValueChange={handleProjectChange}>
@@ -300,6 +309,7 @@ export function LateEntryCard() {
                   </SelectContent>
                 </Select>
               </div>
+              )}
 
               {projectId && pendingTasks.length > 0 && (
                 <div>

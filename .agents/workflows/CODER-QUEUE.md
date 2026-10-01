@@ -1,5 +1,5 @@
 # CORAL — CODER QUEUE
-**Current as of 2026-09-30 (night).** This file is always the live queue — superseded items are removed, not renamed.
+**Current as of 2026-10-01.** This file is always the live queue — superseded items are removed, not renamed.
 🛑 **The filename never carries a date.** `PLANNER-HANDOVER.md` §7 points here permanently.
 
 **Work top to bottom. Each item is a separate commit set. Report after each.**
@@ -12,29 +12,19 @@
 
 ---
 
-## 1 · `SCH-8` / `HR-TS-8` — the series scope; the manual-entry project select
-📄 `coder-directive-sch-8-series-and-manual-entry.md`
-"Save for all" on a recurring series does nothing; `ManualEntryModal` project select → `SearchableSelect` over `erp-projects`.
+## 1 · `LOC-SWEEP-1` — Belgian dates, times and numbers in the ERP screens
+📄 `coder-directive-loc-sweep-1.md` — 38 sites, mechanical, hard fence (no WorkHub / time-tracker / kernel / cockpit).
 
-## 2 · `PROJ-SSOT-1` — one project resolver, `HrProject` retired
-📄 `coder-directive-proj-ssot-1-retire-hrproject.md`
-🟢 **Census done (2026-09-30):** 27 clock entries (Coral only) — 26 unattributed *by design* (Florin tests clock-in without shift; `pd.md` 4x), 1 dangling (27 Jul) → **cleared by Florin, hours kept.** **No row is broken today; it goes off the first time hours are attributed with the HR-TS-5 picker and exported.** Land before that.
-🟨 §1 correction: unresolved `projectId` prints `Unknown Project`, not blank.
+🟦 **Taken by the Planner (2026-10-01), do NOT pick up:** `SCH-8` / `HR-TS-8` (series scope, manual-entry project select) — it shares files with the work-order fields (`coral-work-order-tabs.md`). ✅ Done by the Planner: `PROJ-SSOT-1` phase 1 (`9ef6a6d`), `TASK-CREW-1`.
 
-## 3 · `FILES-GATE-1` → folds into `ENT` — 🟢 **Florin decided the model (2026-09-30)**
+## 2 · `FILES-GATE-1` → folds into `ENT` — 🟢 **Florin decided the model (2026-09-30)**
 > *"roles are to be confined by their function. hr will not work with financials and vice versa … director, owner have full oversight, project manager to his own. all roles can be granted access to other modules/submodules … in the tenant app settings, gated, accessible to the owner role."*
 - **Inside one tenant (the seraph has already scoped it), a role reaches only its FUNCTION by default:** HR → HR; bookkeeping → financials; project manager → **their own** projects; director + owner → everything.
 - **The owner grants extra modules / submodules to a role** in tenant settings (owner-only, gated).
 - **Files follow the module they belong to** — an invoice PDF is financials, a clock photo is HR. `crew-file-policy.ts` is the first instance; this generalises it.
 - 🟨 Open: grants **per role** (Florin's words) vs the existing **per person** `User.moduleAccess` (Settings → Team) — see chat 2026-09-30.
 
-## 4 · `TASK-CREW-1` — 🟢 **Florin decided (2026-09-30):** the crew updates task status and writes notes with photos; the app keeps a detailed log of changes, **read-only for every role**
-- Crew may change the status of a task **assigned to them**. Management still sees and can override.
-- Crew notes: details + photos, in reference to the task.
-- **Every change** (status, note) → an immutable log entry (who, when, before → after), shown read-only on the task in the ERP and the WorkHub. *(AuditLog is already immutable — `POST /api/hr/audit-logs` is refused.)*
-- 🟨 Open: notes append-only vs editable · storage (new table + Florin's migration vs task JSON property) — see chat.
-
-## 5 · `GATE-2b` — crew self-service on shifts, tasks, attachments
+## 3 · `GATE-2b` — crew self-service on shifts, tasks, attachments
 `write-policy.ts` does not yet cover `shifts`, `shift-tasks`, `shift-attachments` (crew writes those legitimately: user-initiated shifts, task progress, uploads). Needs reach-on-parent — **rides with `R1-4`.**
 
 ---

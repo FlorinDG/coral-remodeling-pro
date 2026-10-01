@@ -25,6 +25,8 @@ import React from 'react';
 import InvitationEmail from '@/emails/InvitationEmail';
 import { syncSeatQuantities } from '@/lib/stripe';
 import { autoLinkIfUnique } from '@/lib/data/entry-shift-match';
+import { shiftTaskIdsFor } from '@/lib/data/task-reach';
+import { isTenantHrRole } from '@/lib/roles';
 
 const resend = new Resend(process.env.RESEND_API_KEY || 're_dummy_fallback');
 
@@ -230,7 +232,8 @@ export async function GET(
                 // Scope filter: admin/accountant roles see all tasks.
                 // Employee/workforce role sees only tasks assigned to or created by them.
                 // Mirrors the ASSIGNED_AND_OWN rule in access-control.ts.
-                const isAdminRole = ['TENANT_ADMIN', 'SUPERADMIN', 'ACCOUNTANT'].includes(ctx.role);
+                // Office roles see all tasks (owners were filtered like crew — isTenantHrRole is the one list).
+                const isAdminRole = isTenantHrRole(ctx.role) || ctx.role === 'ACCOUNTANT';
                 const pageWhere: Record<string, unknown> = {
                     databaseId: tasksDbId,
                     database: { tenantId: ctx.tenantId },
@@ -241,6 +244,8 @@ export async function GET(
                     pageWhere.OR = [
                         { assignedTo: { hasSome: accessibleIds } },
                         { createdBy: { in: accessibleIds } },
+                        // a task the office put on one of their shifts is theirs too (task-reach.ts)
+                        { id: { in: await shiftTaskIdsFor(ctx.tenantId, accessibleIds) } },
                     ];
                 }
 

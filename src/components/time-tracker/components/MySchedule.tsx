@@ -305,7 +305,7 @@ export function MySchedule() {
       const res = await submitShift(shiftId);
       if (res.ok) {
         toast.success(t('schedule.submittedToast'));
-        setSelectedShift((s: any) => (s && s.id === shiftId ? { ...s, status: 'completed' } : s));
+        setSelectedShift(null);   // done: close — the toast and the card's status say the rest (Florin 2026-10-01)
         await refetchShifts();
       } else {
         console.error('[MySchedule] submit refused:', res);

@@ -17,6 +17,8 @@ import { auth } from "@/auth";
 import { isTenantHrRole } from "@/lib/roles";
 import { buildAuditLogData, buildAuditLogOperation } from "@/lib/audit";
 import { normalizeStoredPhotos, type StoredPhoto } from "@/lib/files";
+import { isOnMyShift } from "./task-reach";
+
 
 export type TaskStage = 'todo' | 'busy' | 'done';
 /** Canonical status option ids of the tasks database (DatabaseClone). */
@@ -44,8 +46,8 @@ function taskTitle(props: unknown): string {
     return String(p.title || p.name || '').trim() || '—';
 }
 
-const mayAct = (a: { userId: string; role?: string }, assignedTo: string[]) =>
-    assignedTo.includes(a.userId) || isTenantHrRole(a.role);
+const mayAct = async (a: { tenantId: string; userId: string; role?: string }, task: { id: string; assignedTo: string[] }) =>
+    task.assignedTo.includes(a.userId) || isTenantHrRole(a.role) || isOnMyShift(a.tenantId, a.userId, task.id);
 
 // ── Status ──────────────────────────────────────────────────────────────────
 export async function setTaskStage(taskId: string, stage: TaskStage): Promise<{ ok: true } | Fail> {
@@ -54,7 +56,7 @@ export async function setTaskStage(taskId: string, stage: TaskStage): Promise<{ 
     if (!(stage in STAGE_TO_OPTION)) return { ok: false, error: 'failed', detail: `unknown stage ${stage}` };
     const task = await findTask(a.tenantId, taskId);
     if (!task) return { ok: false, error: 'not_found' };
-    if (!mayAct(a, task.assignedTo)) return { ok: false, error: 'forbidden' };
+    if (!(await mayAct(a, task))) return { ok: false, error: 'forbidden' };
 
     const props = { ...((task.properties || {}) as Record<string, unknown>) };
     const before = { status: props['prop-task-status'] ?? null, completedAt: props['prop-task-completed-at'] ?? null };
@@ -91,7 +93,7 @@ export async function saveTaskNoteDraft(input: { taskId: string; noteId?: string
     if (!a) return { ok: false, error: 'unauthorized' };
     const task = await findTask(a.tenantId, input.taskId);
     if (!task) return { ok: false, error: 'not_found' };
-    if (!mayAct(a, task.assignedTo)) return { ok: false, error: 'forbidden' };
+    if (!(await mayAct(a, task))) return { ok: false, error: 'forbidden' };
     const photos = normalizeStoredPhotos(input.photos);
     const text = (input.text || '').slice(0, 10_000);
 
@@ -189,7 +191,7 @@ export async function getTaskRecord(taskId: string): Promise<
     return {
         ok: true,
         stage,
-        canAct: mayAct(a, task.assignedTo),
+        canAct: await mayAct(a, task),
         notes: notes.map(n => ({
             id: n.id, authorId: n.authorId, authorName: nameOf.get(n.authorId) || null, text: n.text,
             photos: normalizeStoredPhotos(n.photos), status: n.status === 'submitted' ? 'submitted' : 'draft',

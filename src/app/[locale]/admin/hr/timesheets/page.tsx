@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button';
 import { computeWorkedDuration } from '@/lib/computeWorkedDuration';
 import { Link, usePathname, useRouter } from '@/i18n/routing';
 import { useSearchParams } from 'next/navigation';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
+import { ShiftLinkReview, SHIFT_LINK_KEYS, type ShiftLinkLabels } from '@/components/shift-link/ShiftLinkReview';
 import ModuleTabs from "@/components/admin/ModuleTabs";
 import { hrTabs } from "@/config/tabs";
 import { ManualEntryModal } from './ManualEntryModal';
@@ -48,6 +49,7 @@ interface ClockEntry {
 
 function TimesheetsContent() {
     const t = useTranslations('Hr.timesheets');
+    const locale = useLocale();
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
@@ -412,6 +414,10 @@ function TimesheetsContent() {
                         </Button>
                     </div>
                 </header>
+
+                {/* SHIFT-LINK-1 — hours not (or wrongly) linked to a planned shift, editable suggestion */}
+                <ShiftLinkReview locale={locale} showWorker days={31} onLinked={fetchData}
+                    labels={Object.fromEntries(SHIFT_LINK_KEYS.map(k => [k, t(`shiftLink.${k}`)])) as unknown as ShiftLinkLabels} />
 
                 <div className="flex flex-col gap-4 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-2xl p-4 shadow-sm mb-2">
                     <TimesheetFilterBar />

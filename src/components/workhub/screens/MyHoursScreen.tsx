@@ -10,6 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { ChevronLeft, ChevronRight, Clock, FileSpreadsheet, FileText, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { saveFile } from '@/lib/save-file';
+import { ShiftLinkReview, SHIFT_LINK_KEYS, type ShiftLinkLabels } from '@/components/shift-link/ShiftLinkReview';
 import { LateEntryCard } from '@/components/time-tracker/components/LateEntryCard';
 import { startOfWeek, addDays, isSameDay, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import { useClockEntries, type ClockEntry } from '@/components/time-tracker/hooks/useClockEntries';
@@ -115,6 +116,10 @@ export function MyHoursScreen() {
       <div className="px-3 pb-3">
         <LateEntryCard />
       </div>
+
+      {/* SHIFT-LINK-1 — my hours that are not (or wrongly) linked to a planned shift */}
+      <ShiftLinkReview className="mx-3 mb-3" mine locale={lang} onLinked={() => refetch()}
+        labels={Object.fromEntries(SHIFT_LINK_KEYS.map(k => [k, t(`hours.shiftLink.${k}`)])) as unknown as ShiftLinkLabels} />
 
       {/* Week navigator */}
       <div className="flex items-center justify-between gap-2 px-3 pb-3">

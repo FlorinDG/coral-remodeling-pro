@@ -53,3 +53,20 @@ test('server-side local time — Brussels wall clock from a UTC instant (DST bot
     assert.deepEqual(zonedParts('2026-09-29T23:30:00Z'), { date: '2026-09-30', time: '01:30' }); // before 02:00 → the right day
     assert.deepEqual(zonedParts('2026-10-25T00:30:00Z'), { date: '2026-10-25', time: '02:30' }); // DST end night
 });
+
+test('SHIFT-LINK-1 — Florin\'s morning + afternoon shifts: map when unambiguous, rank otherwise', async () => {
+    const { matchSpanToShifts, entrySpan } = await import('../src/lib/kernel/shift-time.ts');
+    const am = { id: 'am', shiftDate: '2026-09-30', shiftStart: '08:00', shiftEnd: '12:00' };
+    const pm = { id: 'pm', shiftDate: '2026-09-30', shiftStart: '13:00', shiftEnd: '17:00' };
+    const day = [pm, am]; // creation order — must not matter
+    assert.equal(matchSpanToShifts({ date: '2026-09-30', start: '08:05', end: '11:50' }, day).unique?.id, 'am');
+    assert.equal(matchSpanToShifts({ date: '2026-09-30', start: '12:30', end: '16:00' }, day).unique?.id, 'pm');
+    const both = matchSpanToShifts({ date: '2026-09-30', start: '10:00', end: '15:30' }, day);
+    assert.equal(both.unique, null);                       // overlaps both → a suggestion, not a guess
+    assert.equal(both.ranked[0].shift.id, 'pm');           // 150 min with pm vs 120 with am
+    assert.equal(both.ranked.length, 2);                   // every shift of the day is offered
+    const none = matchSpanToShifts({ date: '2026-09-30', start: '18:00', end: '19:00' }, day);
+    assert.equal(none.unique, null); assert.equal(none.ranked[0].overlap, 0);
+    // UTC instants of a CEST day → Brussels wall clock
+    assert.deepEqual(entrySpan('2026-09-30T06:05:00Z', '2026-09-30T09:50:00Z'), { date: '2026-09-30', start: '08:05', end: '11:50' });
+});

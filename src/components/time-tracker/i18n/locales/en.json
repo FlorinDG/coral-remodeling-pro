@@ -268,7 +268,20 @@
     },
     "exportTitle": "My timesheet",
     "exportMonth": "Month",
-    "exportFailed": "The export could not be downloaded"
+    "exportFailed": "The export could not be downloaded",
+    "shiftLink": {
+      "title": "Hours to link to a shift",
+      "hint": "These hours are not linked to a planned shift, or overlap a different one. Pick the right shift — or none — and confirm.",
+      "unlinked": "Not linked",
+      "mismatch": "Other shift overlaps",
+      "linkedTo": "Now linked to",
+      "noShift": "No shift",
+      "link": "Link",
+      "keep": "Keep",
+      "noOverlap": "no overlap",
+      "submitted": "submitted",
+      "failed": "Could not save"
+    }
   },
   "tasks": {
     "title": "My tasks",

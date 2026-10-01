@@ -270,7 +270,20 @@
     },
     "exportTitle": "Foaia mea de pontaj",
     "exportMonth": "Luna",
-    "exportFailed": "Exportul nu a putut fi descărcat"
+    "exportFailed": "Exportul nu a putut fi descărcat",
+    "shiftLink": {
+      "title": "Ore de asociat unei ture",
+      "hint": "Aceste ore nu sunt asociate unei ture planificate sau se suprapun cu alta. Alegeți tura corectă — sau niciuna — și confirmați.",
+      "unlinked": "Neasociat",
+      "mismatch": "Altă tură se suprapune",
+      "linkedTo": "Asociat acum cu",
+      "noShift": "Nicio tură",
+      "link": "Asociază",
+      "keep": "Păstrează",
+      "noOverlap": "fără suprapunere",
+      "submitted": "trimisă",
+      "failed": "Salvarea a eșuat"
+    }
   },
   "tasks": {
     "title": "Sarcinile mele",

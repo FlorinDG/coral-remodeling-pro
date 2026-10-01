@@ -2,6 +2,7 @@
 
 import { isTenantHrRole } from '@/lib/roles';
 import { zonedParts } from '@/lib/kernel/shift-time';
+import { autoLinkIfUnique } from '@/lib/data/entry-shift-match';
 import prisma from "@/lib/prisma";
 import { auth } from "@/auth";
 
@@ -295,6 +296,15 @@ export async function submitLateEntry(params: {
                 photos: filesData || null
             }
         });
+
+        // SHIFT-LINK-1: no project picked → link to the one planned shift these hours overlap, if unique.
+        if (!shiftId) {
+            try {
+                shiftId = await autoLinkIfUnique(clockEntry.id, { tenantId, userId: session.user.id });
+            } catch (err) {
+                console.error('[submitLateEntry] SHIFT-LINK-1 auto-link failed:', err);
+            }
+        }
 
         const entry = await prisma.hrApprovalRequest.create({
             data: {

@@ -1077,7 +1077,20 @@
       "pending": "Te beoordelen",
       "stillClockedIn": "Loopt nog",
       "system": "Systeem",
-      "timeOptions": "Tijd Opties"
+      "timeOptions": "Tijd Opties",
+      "shiftLink": {
+        "title": "Uren te koppelen aan een shift",
+        "hint": "Deze uren hangen niet aan een geplande shift, of overlappen een andere. Kies de juiste shift — of geen — en bevestig.",
+        "unlinked": "Niet gekoppeld",
+        "mismatch": "Andere shift overlapt",
+        "linkedTo": "Nu gekoppeld aan",
+        "noShift": "Geen shift",
+        "link": "Koppelen",
+        "keep": "Behouden",
+        "noOverlap": "geen overlap",
+        "submitted": "ingediend",
+        "failed": "Opslaan mislukt"
+      }
     },
     "shiftForm": {
       "orderGiver": "Opdrachtgever (ontvangt de getekende werkbon)",

@@ -1076,7 +1076,20 @@
       "pending": "À évaluer",
       "stillClockedIn": "Toujours pointé",
       "system": "Système",
-      "timeOptions": "Options de temps"
+      "timeOptions": "Options de temps",
+      "shiftLink": {
+        "title": "Heures à lier à un service",
+        "hint": "Ces heures ne sont liées à aucun service planifié, ou en chevauchent un autre. Choisissez le bon service — ou aucun — et confirmez.",
+        "unlinked": "Non lié",
+        "mismatch": "Un autre service chevauche",
+        "linkedTo": "Actuellement lié à",
+        "noShift": "Aucun service",
+        "link": "Lier",
+        "keep": "Conserver",
+        "noOverlap": "aucun chevauchement",
+        "submitted": "soumis",
+        "failed": "Échec de l'enregistrement"
+      }
     },
     "shiftForm": {
       "orderGiver": "Donneur d’ordre (reçoit le bon de travail signé)",

@@ -24,6 +24,7 @@ import { Resend } from 'resend';
 import React from 'react';
 import InvitationEmail from '@/emails/InvitationEmail';
 import { syncSeatQuantities } from '@/lib/stripe';
+import { autoLinkIfUnique } from '@/lib/data/entry-shift-match';
 
 const resend = new Resend(process.env.RESEND_API_KEY || 're_dummy_fallback');
 
@@ -609,6 +610,18 @@ export async function POST(
         const record = await model.create({ data });
 
         // ── POST Automations ───────────────────────────────────────────
+        // SHIFT-LINK-1: a RECORDED entry (manual / late, has clockOutTime) with no shift is linked when
+        // exactly one of the worker's shifts that day overlaps it. Live clock-ins without a shift are a
+        // deliberate choice and stay unlinked. Ambiguous → surfaced in the review, never guessed.
+        if (entity === 'clock-entries' && !(record as { shiftId?: string | null }).shiftId && (record as { clockOutTime?: Date | null }).clockOutTime) {
+            try {
+                const linked = await autoLinkIfUnique((record as { id: string }).id, { tenantId: ctx.tenantId, userId: ctx.userId });
+                if (linked) (record as { shiftId?: string }).shiftId = linked;
+            } catch (err) {
+                console.error('[HR API] SHIFT-LINK-1 auto-link failed:', err);
+                warnings.push('shift_link_failed');
+            }
+        }
         // Clock-in with shiftId → set shift status to 'in-progress' (HRA-2)
         if (entity === 'clock-entries' && parentShift && (record as { shiftId?: string }).shiftId) {
             try {

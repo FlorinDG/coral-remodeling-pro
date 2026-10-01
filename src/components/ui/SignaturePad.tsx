@@ -123,7 +123,9 @@ export function SignaturePad({
           {clearLabel}
         </Button>
       </div>
-      <div className="border-2 border-dashed border-border rounded-xl overflow-hidden bg-white">
+      {/* The large pad leaves a 14px strip on the right: the canvas swallows touches (touch-none), so
+          without it a tall pad left no place to grab and scroll the page (Florin 2026-10-01). */}
+      <div className={`border-2 border-dashed border-border rounded-xl overflow-hidden bg-white ${large ? 'mr-3.5' : ''}`}>
         <canvas
           ref={canvasRef}
           className={`w-full ${large ? 'h-[max(16rem,45vh)]' : 'h-32'} cursor-crosshair touch-none`}

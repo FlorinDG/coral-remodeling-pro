@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+import { formatDate } from '@/lib/format/date';
 
 const RECIPIENT_EMAIL = 'info@coral-group.be';
 
@@ -62,13 +63,13 @@ export async function sendBookingNotification(booking: {
         await resend.emails.send({
             from: `Coral Remodeling <${fromEmail}>`,
             to: RECIPIENT_EMAIL,
-            subject: `Visit Confirmed: ${booking.clientName} - ${booking.date.toLocaleDateString()}`,
+            subject: `Visit Confirmed: ${booking.clientName} - ${formatDate(booking.date)}`,
             html: `
                 <h2>Site Visit Scheduled</h2>
                 <p><strong>Client:</strong> ${booking.clientName}</p>
                 <p><strong>Email:</strong> ${booking.clientEmail}</p>
                 <p><strong>Service:</strong> ${booking.serviceType}</p>
-                <p><strong>Date:</strong> ${booking.date.toLocaleDateString()}</p>
+                <p><strong>Date:</strong> ${formatDate(booking.date)}</p>
                 <p><strong>Time Slot:</strong> ${booking.timeSlot}</p>
                 <hr />
                 <p>This booking has also been saved to the database.</p>

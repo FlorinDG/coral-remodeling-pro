@@ -5,6 +5,7 @@ import { useDatabaseStore } from '@/components/admin/database/store';
 import { useRouter } from 'next/navigation';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { useTenant } from '@/context/TenantContext';
+import { useLocale } from 'next-intl';
 
 const COLOR_MAP: Record<string, string> = {
     gray: 'bg-neutral-500/10 text-neutral-600 dark:text-neutral-400',
@@ -29,6 +30,7 @@ const HEX_MAP: Record<string, string> = {
 };
 
 export default function DashboardProjectsTable() {
+    const locale = useLocale();
     const router = useRouter();
     const { resolveDbId } = useTenant();
     const db = useDatabaseStore(state => state.getDatabase(resolveDbId('db-1')));
@@ -95,7 +97,7 @@ export default function DashboardProjectsTable() {
                                             ) : '-'}
                                         </td>
                                         <td className="px-6 py-4 font-mono text-neutral-500 font-medium text-right">
-                                            {budget ? `€${budget.toLocaleString()}` : 'No Budget'}
+                                            {budget ? `€${budget.toLocaleString(locale)}` : 'No Budget'}
                                         </td>
                                     </tr>
                                 )

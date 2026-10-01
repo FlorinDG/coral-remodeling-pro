@@ -1,4 +1,5 @@
 import { Property, PropertyValue } from './types';
+import { formatDate, formatDateTime } from '@/lib/format/date';
 
 interface FormulaContext {
     rowProperties: Record<string, PropertyValue>;
@@ -116,7 +117,7 @@ export function evaluateFormula(expression: string, context: FormulaContext): st
             join: (arr: any[], sep?: string) => (Array.isArray(arr) ? arr : []).join(sep ?? ', '),
             trim: (v: any) => String(v).trim(),
             format: (v: any) => {
-                if (v instanceof Date) return v.toLocaleString();
+                if (v instanceof Date) return formatDateTime(v);
                 return String(v);
             },
 
@@ -161,7 +162,7 @@ export function evaluateFormula(expression: string, context: FormulaContext): st
             parseDate: (v: any) => new Date(String(v)),
             formatDate: (d: any, fmt?: string) => {
                 const date = d instanceof Date ? d : new Date(String(d));
-                if (!fmt) return date.toLocaleDateString();
+                if (!fmt) return formatDate(date);
                 // Simple substitution for common tokens
                 return fmt
                     .replace('YYYY', String(date.getFullYear()))
@@ -242,7 +243,7 @@ export function evaluateFormula(expression: string, context: FormulaContext): st
         const result = evaluator(...contextValues);
 
         // Format Date results back to string for display
-        if (result instanceof Date) return result.toLocaleDateString();
+        if (result instanceof Date) return formatDate(result);
 
         // Guard against NaN cascading through dependent formula chains
         if (typeof result === 'number' && isNaN(result)) return 0;

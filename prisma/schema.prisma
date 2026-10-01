@@ -762,6 +762,12 @@ model ClockEntry {
   clockInLongitude  Float?
   clockOutLatitude  Float?
   clockOutLongitude Float?
+  /// GEO-1: reverse-geocoded address of the clock-in / clock-out (raw lat/lng stay as evidence)
+  clockInAddress    String?
+  clockOutAddress   String?
+  /// GEO-1: metres from the work site at that moment — recorded, never blocking
+  clockInDistanceM  Int?
+  clockOutDistanceM Int?
   taskDescription   String?
   requiresApproval  Boolean   @default(false)
   approvalStatus    String?
@@ -806,6 +812,10 @@ model ScheduledShift {
   materialsEnabled Boolean @default(false)
   /// WO-2: the crew member's note on the work order — office instructions stay in `notes`
   crewNote         String?
+  /// GEO-1: the work site's coordinates, geocoded from `siteGeocodedFrom` (siteAddress ?? project address)
+  siteLat          Float?
+  siteLng          Float?
+  siteGeocodedFrom String?
   role         String?
   notes        String?
   status       String   @default("scheduled")

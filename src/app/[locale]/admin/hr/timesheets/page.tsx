@@ -130,7 +130,7 @@ function TimesheetsContent() {
                 await hrUpdate('clock-entries', id, { approvalStatus: action });
             }
             setSelectedEntries(new Set());
-            await fetchData();
+            await fetchData(true);
         } catch (err: any) {
             console.error('Bulk action error:', err);
             alert(err.message ? `${t('bulkActionFailed')}: ${err.message}` : t('bulkActionFailed'));
@@ -144,8 +144,10 @@ function TimesheetsContent() {
         currentParams.set('format', format);
         window.location.href = `/api/hr/timesheet-export?${currentParams.toString()}`;
     };
-    const fetchData = async () => {
-        setLoading(true);
+    /** `silent`: re-read the report without the full-page spinner — after every action, so totals,
+     *  counts, approver, project and source labels match the server (they were stale until a reload). */
+    const fetchData = async (silent = false) => {
+        if (!silent) setLoading(true);
         setError(null);
         try {
             const currentParams = new URLSearchParams(searchParams.toString());
@@ -181,9 +183,24 @@ function TimesheetsContent() {
             setLoading(false);
         }
     };
+    const refresh = () => { void fetchData(true); };
 
     useEffect(() => {
         fetchData();
+    }, [searchParams]);
+
+    // Changes made elsewhere (the WorkHub, another tab, a colleague) arrive when this tab is shown again.
+    useEffect(() => {
+        let last = Date.now();
+        const onVisible = () => {
+            if (document.visibilityState !== 'visible' || Date.now() - last < 15_000) return;
+            last = Date.now();
+            refresh();
+        };
+        document.addEventListener('visibilitychange', onVisible);
+        window.addEventListener('focus', onVisible);
+        return () => { document.removeEventListener('visibilitychange', onVisible); window.removeEventListener('focus', onVisible); };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [searchParams]);
 
     const setApprovalStatusFilter = (status: string | null) => {
@@ -199,6 +216,7 @@ function TimesheetsContent() {
         try {
             const updated = await hrUpdate('clock-entries', id, { approvalStatus: status });
             setEntries(prev => prev.map(e => e.id === id ? { ...e, ...updated, approvalStatus: status } : e));
+            refresh();
         } catch (err: any) {
             console.error('Failed to update status:', err);
             alert(`Failed to update status — ${describeError(err)}`);
@@ -329,7 +347,7 @@ function TimesheetsContent() {
                     <td colSpan={7} className="p-0">
                         <TimesheetEntryDetail 
                             entry={entry} 
-                            onUpdate={(updated) => setEntries(prev => prev.map(e => e.id === entry.id ? { ...e, ...updated } : e))} 
+                            onUpdate={(updated) => { setEntries(prev => prev.map(e => e.id === entry.id ? { ...e, ...updated } : e)); refresh(); }} 
                             unlockTokenValid={unlockState.valid && (!unlockState.expiresAt || unlockState.expiresAt > nowMs)} 
                         />
                     </td>
@@ -416,7 +434,7 @@ function TimesheetsContent() {
                 </header>
 
                 {/* SHIFT-LINK-1 — hours not (or wrongly) linked to a planned shift, editable suggestion */}
-                <ShiftLinkReview locale={locale} showWorker days={31} onLinked={fetchData}
+                <ShiftLinkReview locale={locale} showWorker days={31} onLinked={refresh}
                     labels={Object.fromEntries(SHIFT_LINK_KEYS.map(k => [k, t(`shiftLink.${k}`)])) as unknown as ShiftLinkLabels} />
 
                 <div className="flex flex-col gap-4 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-2xl p-4 shadow-sm mb-2">
@@ -466,7 +484,7 @@ function TimesheetsContent() {
                 <ManualEntryModal 
                     open={modalOpen} 
                     onOpenChange={setModalOpen} 
-                    onSuccess={fetchData} 
+                    onSuccess={refresh} 
                 />
 
                 {/* Old stat cards removed in favor of inline header stats */}

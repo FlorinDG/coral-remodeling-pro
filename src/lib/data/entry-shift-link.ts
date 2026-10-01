@@ -72,6 +72,12 @@ export async function listShiftLinkReview(days = 14, mine = false): Promise<{ ok
     const reviewedAs = new Map<string, string | null>();
     for (const r of reviews) reviewedAs.set(r.entityId, ((r.after || {}) as { shiftId?: string | null }).shiftId ?? null);
 
+    // WO-3: hours on a signed work order cannot be re-linked — never offer them.
+    const signedShiftIds = new Set((await prisma.auditLog.findMany({
+        where: { tenantId: a.tenantId, entityType: 'shift', action: 'sign', entityId: { in: shifts.map(sh => sh.id) } },
+        select: { entityId: true },
+    })).map(r => r.entityId));
+
     const users = await prisma.user.findMany({ where: { id: { in: userIds }, tenantId: a.tenantId }, select: { id: true, name: true } });
     const nameOf = new Map(users.map(u => [u.id, u.name]));
     const byId = new Map(shifts.map(s => [s.id, s]));
@@ -81,7 +87,7 @@ export async function listShiftLinkReview(days = 14, mine = false): Promise<{ ok
         const span = spans.get(e.id)!;
         const day = shifts.filter(s => s.userId === e.userId && s.shiftDate === span.date);
         const { ranked } = matchSpanToShifts(span, day);
-        const best = ranked.find(r => r.overlap > 0) || null;
+        const best = ranked.find(r => r.overlap > 0 && !signedShiftIds.has(r.shift.id)) || null;
         const cur = e.shiftId ? byId.get(e.shiftId) || null : null;
         const curOverlap = cur ? overlapMinutes(span, cur) : 0;
 
@@ -90,6 +96,7 @@ export async function listShiftLinkReview(days = 14, mine = false): Promise<{ ok
             : best && best.shift.id !== e.shiftId && curOverlap < best.overlap ? 'mismatch'
             : null;
         if (!reason) continue;
+        if (e.shiftId && signedShiftIds.has(e.shiftId)) continue;
         if (reviewedAs.has(e.id) && reviewedAs.get(e.id) === (e.shiftId ?? null)) continue;
 
         const opt = (s: typeof shifts[number], overlap: number): ShiftOption => ({
@@ -103,7 +110,7 @@ export async function listShiftLinkReview(days = 14, mine = false): Promise<{ ok
             reason,
             currentShift: cur ? { ...opt(cur, curOverlap), label: cur.shiftDate === span.date ? label(cur) : `${cur.shiftDate} ${label(cur)}`.trim() } : null,
             suggestedShiftId: best?.shift.id ?? null,
-            options: ranked.map(r => opt(r.shift, r.overlap)),
+            options: ranked.filter(r => !signedShiftIds.has(r.shift.id)).map(r => opt(r.shift, r.overlap)),
         });
     }
     return { ok: true, items: items.reverse() }; // newest first

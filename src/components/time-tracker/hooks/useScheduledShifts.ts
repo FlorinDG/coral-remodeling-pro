@@ -250,7 +250,9 @@ export function useScheduledShifts() {
     }
   }, [withProject, fetchAll]);
 
-  const updateShift = useCallback(async (id: string, data: Partial<ScheduledShift>) => {
+  /** `scope` (SCH-8): 'following' | 'series' are applied by the SERVER in one statement; the
+   *  screen then reloads, and `seriesUpdated` says how many shifts changed. */
+  const updateShift = useCallback(async (id: string, data: Partial<ScheduledShift>, scope?: 'occurrence' | 'following' | 'series') => {
     const normalized: Record<string, any> = { ...data };
     if ('user_id' in data) { if (!data.userId) normalized.userId = data.user_id; delete normalized.user_id; }
     if ('shift_date' in data) { if (!data.shiftDate) normalized.shiftDate = data.shift_date; delete normalized.shift_date; }
@@ -263,8 +265,9 @@ export function useScheduledShifts() {
       // Optimistic update
       setRawShifts(prev => prev.map(s => s.id === id ? addSnakeCase(withProject({ ...s, ...normalized })) : s));
 
-      const shift = await hrUpdate<ScheduledShift>('shifts', id, normalized);
+      const shift = await hrUpdate<ScheduledShift & { seriesUpdated?: number }>('shifts', id, normalized, scope);
       setRawShifts(prev => prev.map(s => s.id === id ? addSnakeCase(withProject({ ...s, ...shift })) : s));
+      if (scope && scope !== 'occurrence') void fetchAll(true);
       // Removing fetchAll() here to prevent full redraws. The background sync or other hooks will handle refresh if needed.
       // void fetchAll();
       return { data: addSnakeCase(shift), error: null };
@@ -279,15 +282,16 @@ export function useScheduledShifts() {
     return updateShift(id, { status });
   }, [updateShift]);
 
-  const deleteShift = useCallback(async (id: string) => {
+  const deleteShift = useCallback(async (id: string, scope?: 'occurrence' | 'following' | 'series') => {
     try {
-      await hrDelete('shifts', id);
+      const res = await hrDelete<{ seriesDeleted?: number; seriesKept?: number }>('shifts', id, scope);
       setRawShifts(prev => prev.filter(s => s.id !== id));
-      return { error: null };
+      if (scope && scope !== 'occurrence') void fetchAll(true);
+      return { error: null, deleted: res?.seriesDeleted ?? 1, kept: res?.seriesKept ?? 0 };
     } catch (err: any) {
-      return { error: err };
+      return { error: err, deleted: 0, kept: 0 };
     }
-  }, []);
+  }, [fetchAll]);
 
   // The shift that is NOW for this worker (kernel/shift-time): running, else next today, else last today.
   // Was `.find()` over createdAt order — with two shifts in a day it returned the later-created one —

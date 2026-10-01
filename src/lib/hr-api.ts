@@ -40,13 +40,13 @@ export async function hrCreate<T = any>(entity: string, data: Record<string, any
     });
 }
 
-export async function hrUpdate<T = any>(entity: string, id: string, data: Record<string, any>): Promise<T> {
-    return hrFetch<T>(`${entity}?id=${id}`, {
+export async function hrUpdate<T = any>(entity: string, id: string, data: Record<string, any>, scope?: string): Promise<T> {
+    return hrFetch<T>(`${entity}?id=${id}${scope && scope !== 'occurrence' ? `&scope=${scope}` : ''}`, {
         method: 'PATCH',
         body: JSON.stringify(data),
     });
 }
 
-export async function hrDelete(entity: string, id: string): Promise<void> {
-    await hrFetch(`${entity}?id=${id}`, { method: 'DELETE' });
+export async function hrDelete<T = unknown>(entity: string, id: string, scope?: string): Promise<T> {
+    return hrFetch<T>(`${entity}?id=${id}${scope && scope !== 'occurrence' ? `&scope=${scope}` : ''}`, { method: 'DELETE' });
 }

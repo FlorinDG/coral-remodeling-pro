@@ -26,6 +26,7 @@ import InvitationEmail from '@/emails/InvitationEmail';
 import { syncSeatQuantities } from '@/lib/stripe';
 import { autoLinkIfUnique } from '@/lib/data/entry-shift-match';
 import { shiftTaskIdsFor } from '@/lib/data/task-reach';
+import { parseScope, seriesData, seriesWhere } from '@/lib/data/shift-series';
 import { isTenantHrRole } from '@/lib/roles';
 
 const resend = new Resend(process.env.RESEND_API_KEY || 're_dummy_fallback');
@@ -767,6 +768,7 @@ export async function PATCH(
 
     try {
         let record;
+    let seriesCount: number | null = null;   // SCH-8: other shifts changed by a series edit
 
         // --- CLOCK ENTRIES INTERCEPT: Audit and Edit Guard ---
         if (entity === 'clock-entries') {
@@ -827,6 +829,18 @@ export async function PATCH(
             ]);
             record = updated;
         } else {
+            // SCH-8: "this and following" / "all in series" — the other shifts first, in ONE statement.
+            const scope = entity === 'shifts' ? parseScope(url.searchParams.get('scope')) : 'occurrence';
+            if (scope !== 'occurrence') {
+                if (!patchReach.mayApprove) return NextResponse.json({ error: 'forbidden: series edits are for planners' }, { status: 403 });
+                const anchor = await prisma.scheduledShift.findFirst({ where: { id, tenantId: ctx.tenantId }, select: { id: true, seriesId: true, shiftDate: true } });
+                const where = anchor ? seriesWhere(ctx.tenantId, anchor, scope) : null;
+                const fields = seriesData(data);
+                if (where && Object.keys(fields).length) {
+                    const res = await prisma.scheduledShift.updateMany({ where, data: { ...fields, lastEditedBy: ctx.userId } });
+                    seriesCount = res.count;
+                }
+            }
             record = await model.update({ where: { id }, data });
         }
 
@@ -903,8 +917,9 @@ export async function PATCH(
         // (Removed 2026-09-30: finishing every shift task no longer completes the shift — only the
         //  crew member's submit does.)
 
+        const withCount = seriesCount !== null ? { ...(record as object), seriesUpdated: seriesCount + 1 } : record;
         return NextResponse.json(
-            warnings.length > 0 ? { ...(typeof record === 'object' && record !== null ? record : {}), warnings } : record
+            warnings.length > 0 ? { ...(typeof withCount === 'object' && withCount !== null ? withCount : {}), warnings } : withCount
         );
     } catch (error: unknown) {
         console.error(`[HR API] PATCH ${entity} error:`, error);
@@ -972,6 +987,24 @@ export async function DELETE(
     if (gate2) return gate2;
 
     try {
+        // SCH-8: "this and following" / "all in series" — one statement; a shift that already has
+        // hours on it is never deleted by a series action (it is kept and counted).
+        const scope = entity === 'shifts' ? parseScope(url.searchParams.get('scope')) : 'occurrence';
+        if (scope !== 'occurrence') {
+            if (!deleteReach.mayApprove) return NextResponse.json({ error: 'forbidden: series deletes are for planners' }, { status: 403 });
+            const anchor = await prisma.scheduledShift.findFirst({ where: { id, tenantId: ctx.tenantId }, select: { id: true, seriesId: true, shiftDate: true } });
+            const where = anchor ? seriesWhere(ctx.tenantId, anchor, scope) : null;
+            let deleted = 0, kept = 0;
+            if (where) {
+                const [res, withHours] = await prisma.$transaction([
+                    prisma.scheduledShift.deleteMany({ where: { ...where, clockEntries: { none: {} } } }),
+                    prisma.scheduledShift.count({ where }),
+                ]);
+                deleted = res.count; kept = withHours;
+            }
+            await model.delete({ where: { id } });
+            return NextResponse.json({ success: true, seriesDeleted: deleted + 1, seriesKept: kept });
+        }
         await model.delete({ where: { id } });
         return NextResponse.json({ success: true });
     } catch (error: unknown) {

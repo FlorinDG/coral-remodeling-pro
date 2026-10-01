@@ -4,6 +4,8 @@ import { Loader2, LayoutList, LayoutGrid } from 'lucide-react';
 import { ScheduleTable } from '@/components/time-tracker/components/schedule/ScheduleTable';
 import { ScheduleMatrixView } from '@/components/time-tracker/components/schedule/ScheduleMatrixView';
 import { CreateShiftForm } from '@/components/time-tracker/components/schedule/CreateShiftForm';
+import type { EditScope } from '@/components/ui/ScopePicker';
+import { describeError } from '@/lib/describe-error';
 import { EditShiftDialog } from '@/components/time-tracker/components/schedule/EditShiftDialog';
 import { useScheduledShifts, ScheduledShift } from '@/components/time-tracker/hooks/useScheduledShifts';
 import { toast } from 'sonner';
@@ -86,13 +88,13 @@ export function ScheduleManagement() {
     fetchWorkers();
   }, []);
 
-  const handleDelete = async (shiftId: string) => {
-    try {
-      await deleteShift(shiftId);
-      toast.success('Shift deleted');
-    } catch {
-      toast.error('Failed to delete shift');
-    }
+  // SCH-8: the scope reaches the server; the count makes a silent no-op impossible.
+  const handleDelete = async (shiftId: string, scope?: EditScope) => {
+    const res = await deleteShift(shiftId, scope);
+    if (res.error) { toast.error(`Failed to delete shift — ${describeError(res.error)}`); throw res.error; }
+    toast.success(res.deleted > 1 || res.kept
+      ? `${res.deleted} shift(s) deleted${res.kept ? ` · ${res.kept} kept (hours already recorded)` : ''}`
+      : 'Shift deleted');
   };
 
   const handleStatusChange = async (shiftId: string, status: string) => {
@@ -134,8 +136,11 @@ export function ScheduleManagement() {
     setEditDialogOpen(true);
   };
 
-  const handleUpdateShift = async (shiftId: string, updates: Parameters<typeof updateShift>[1]) => {
-    await updateShift(shiftId, updates);
+  const handleUpdateShift = async (shiftId: string, updates: Parameters<typeof updateShift>[1], scope?: EditScope) => {
+    const res = await updateShift(shiftId, updates, scope);
+    if (res.error) throw res.error;   // EditShiftDialog shows the failure
+    const n = (res.data as { seriesUpdated?: number } | null)?.seriesUpdated;
+    if (n && n > 1) toast.success(`${n} shifts updated`);
   };
 
   const handleAddShift = (userId: string, date: string) => {

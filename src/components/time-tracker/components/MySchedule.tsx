@@ -429,7 +429,10 @@ export function MySchedule() {
       {/* While the carousel is open the brief steps aside (and returns when it closes): a full-screen
           viewer cannot live inside Radix's transformed dialog content. */}
       <Dialog open={!!selectedShift && !viewer} onOpenChange={(open) => { if (!open && !viewer) setSelectedShift(null); }}>
-        <DialogContent className="sm:max-w-[480px] p-0 overflow-hidden font-content">
+        <DialogContent
+          overlayClassName="p-0 sm:p-4"
+          closeClassName="top-[max(0.75rem,env(safe-area-inset-top))] right-3 h-11 w-11 flex items-center justify-center rounded-full"
+          className="p-0 gap-0 my-0 sm:my-auto overflow-hidden font-content flex flex-col w-screen max-w-none h-[100dvh] rounded-none border-0 shadow-none sm:w-full sm:max-w-[560px] sm:h-[90vh] sm:rounded-xl sm:border sm:shadow-lg">
           {selectedShift && (() => {
             const shiftDateObj = parseISO(selectedShift.shiftDate);
             const scheduledDateStr = isToday(shiftDateObj) 
@@ -445,7 +448,7 @@ export function MySchedule() {
 
             return (
               <>
-                <DialogHeader className="p-5 pb-3 border-b border-neutral-100 dark:border-white/10 text-left">
+                <DialogHeader className="shrink-0 p-5 pr-16 pb-3 pt-[max(1.25rem,env(safe-area-inset-top))] border-b border-neutral-100 dark:border-white/10 text-left">
                   <DialogTitle className="text-lg font-semibold text-foreground leading-snug">
                     {displayTitle}
                   </DialogTitle>
@@ -473,7 +476,7 @@ export function MySchedule() {
                 />
 
                 {/* Clock Action Surface */}
-                <div className="p-4 border-t border-neutral-100 dark:border-white/10 bg-neutral-50/50 dark:bg-neutral-900/50 flex flex-col items-center">
+                <div className="shrink-0 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-neutral-100 dark:border-white/10 bg-neutral-50/50 dark:bg-neutral-900/50 flex flex-col items-center">
                   {brief?.signed && !isShiftSubmitted(selectedShift.status) ? (
                     <>
                       <p className="w-full text-center pb-3 text-base font-semibold text-[var(--persian-green)]">

@@ -335,7 +335,7 @@
     "empty": "No shared documents yet"
   },
   "lateEntry": {
-    "title": "Submit late entry",
+    "title": "Manual entry",
     "subtitle": "Add hours for a past date (needs approval)",
     "worker": "Worker (optional)",
     "selectWorker": "Select a worker (optional)",
@@ -356,13 +356,13 @@
     "attachments": "Photos / files (optional)",
     "addFiles": "Add files",
     "includeLocation": "Add my location",
-    "locationOptional": "Optional for late entries",
+    "locationOptional": "Optional for manual entries",
     "location": "Location",
     "cancel": "Cancel",
     "submit": "Send for approval",
-    "futureDate": "A late entry cannot be in the future",
-    "submitted": "Late entry sent for approval",
-    "submitFailed": "The late entry could not be sent",
+    "futureDate": "A manual entry cannot be in the future",
+    "submitted": "Manual entry sent for approval",
+    "submitFailed": "The manual entry could not be sent",
     "invalidFiles": "These files cannot be added"
   },
   "workOrder": {

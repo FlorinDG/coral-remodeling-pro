@@ -335,7 +335,7 @@
     "empty": "Aucun document partagé"
   },
   "lateEntry": {
-    "title": "Saisir des heures après coup",
+    "title": "Saisie manuelle",
     "subtitle": "Ajouter des heures pour une date passée (approbation requise)",
     "worker": "Ouvrier (facultatif)",
     "selectWorker": "Choisir un ouvrier (facultatif)",
@@ -356,11 +356,11 @@
     "attachments": "Photos / fichiers (facultatif)",
     "addFiles": "Ajouter des fichiers",
     "includeLocation": "Ajouter ma position",
-    "locationOptional": "Facultatif pour une saisie après coup",
+    "locationOptional": "Facultatif pour une saisie manuelle",
     "location": "Position",
     "cancel": "Annuler",
     "submit": "Envoyer pour approbation",
-    "futureDate": "Impossible de saisir des heures dans le futur",
+    "futureDate": "Une saisie manuelle ne peut pas être dans le futur",
     "submitted": "Heures envoyées pour approbation",
     "submitFailed": "Les heures n’ont pas pu être envoyées",
     "invalidFiles": "Ces fichiers ne peuvent pas être ajoutés"

@@ -63,8 +63,8 @@ export function WorkOrderTabs(p: Props) {
   };
 
   return (
-    <div>
-      <div role="tablist" className="grid grid-cols-5 border-b border-neutral-100 dark:border-white/10">
+    <div className="flex-1 min-h-0 flex flex-col">
+      <div role="tablist" className="grid grid-cols-5 shrink-0 border-b border-neutral-100 dark:border-white/10">
         {tabs.map(({ id, icon: Icon, label }) => (
           <button key={id} type="button" role="tab" aria-selected={tab === id} onClick={() => setTab(id)}
             className={`h-14 flex flex-col items-center justify-center gap-0.5 text-xs font-semibold transition-colors ${tab === id
@@ -75,7 +75,7 @@ export function WorkOrderTabs(p: Props) {
         ))}
       </div>
 
-      <div className="p-4 space-y-3 max-h-[55vh] overflow-y-auto">
+      <div className="flex-1 min-h-0 p-4 space-y-3 overflow-y-auto overscroll-contain">
         {tab === 'info' && <ShiftBriefDetails {...common} section="info" />}
         {tab === 'tasks' && <ShiftBriefDetails {...common} section="tasks" />}
         {tab === 'hours' && (

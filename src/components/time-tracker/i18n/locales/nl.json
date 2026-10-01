@@ -335,7 +335,7 @@
     "empty": "Nog geen gedeelde documenten"
   },
   "lateEntry": {
-    "title": "Uren nadien invoeren",
+    "title": "Handmatige invoer",
     "subtitle": "Uren toevoegen voor een vroegere datum (goedkeuring nodig)",
     "worker": "Medewerker (optioneel)",
     "selectWorker": "Kies een medewerker (optioneel)",
@@ -356,11 +356,11 @@
     "attachments": "Foto’s / bestanden (optioneel)",
     "addFiles": "Bestanden toevoegen",
     "includeLocation": "Mijn locatie toevoegen",
-    "locationOptional": "Optioneel bij nadien ingevoerde uren",
+    "locationOptional": "Optioneel bij handmatige invoer",
     "location": "Locatie",
     "cancel": "Annuleren",
     "submit": "Ter goedkeuring versturen",
-    "futureDate": "Uren nadien invoeren kan niet voor de toekomst",
+    "futureDate": "Handmatige invoer kan niet in de toekomst liggen",
     "submitted": "Uren verstuurd ter goedkeuring",
     "submitFailed": "De uren konden niet verstuurd worden",
     "invalidFiles": "Deze bestanden kunnen niet toegevoegd worden"

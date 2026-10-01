@@ -338,7 +338,7 @@
     "empty": "Niciun document partajat încă"
   },
   "lateEntry": {
-    "title": "Adaugă ore ulterior",
+    "title": "Introducere manuală",
     "subtitle": "Adaugă ore pentru o dată trecută (necesită aprobare)",
     "worker": "Muncitor (opțional)",
     "selectWorker": "Alege un muncitor (opțional)",
@@ -359,7 +359,7 @@
     "attachments": "Fotografii / fișiere (opțional)",
     "addFiles": "Adaugă fișiere",
     "includeLocation": "Adaugă locația mea",
-    "locationOptional": "Opțional pentru orele adăugate ulterior",
+    "locationOptional": "Opțional pentru introducerea manuală",
     "location": "Locație",
     "cancel": "Anulează",
     "submit": "Trimite spre aprobare",

@@ -12,8 +12,10 @@
 
 ---
 
-## 1 · `LOC-SWEEP-1` — Belgian dates, times and numbers in the ERP screens
-📄 `coder-directive-loc-sweep-1.md` — 38 sites, mechanical, hard fence (no WorkHub / time-tracker / kernel / cockpit).
+## 1 · `R2-5` — characterization tests for the write path (tests only)
+📄 `coder-directive-r2-5-characterization.md` — pins OCC, field merge, single-flight, sync retry, dirty-page protection, persistence BEFORE R2 moves anything. `src/` is read-only.
+
+✅ `LOC-SWEEP-1` — done 2026-10-01 (`03ec24c`, report accepted by the Planner; live on main).
 
 🟦 **Taken by the Planner (2026-10-01), do NOT pick up:** `SCH-8` / `HR-TS-8` (series scope, manual-entry project select) — it shares files with the work-order fields (`coral-work-order-tabs.md`). ✅ Done by the Planner: `PROJ-SSOT-1` phase 1 (`9ef6a6d`), `TASK-CREW-1`.
 

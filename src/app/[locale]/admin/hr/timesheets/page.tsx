@@ -6,7 +6,7 @@ import { Loader2, FileText, Download, AlertCircle, Image as ImageIcon, Check, X,
 import { formatISO, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { computeWorkedDuration } from '@/lib/computeWorkedDuration';
+import { computeWorkedDuration, formatDecimalHours, formatHoursMinutes } from '@/lib/computeWorkedDuration';
 import { Link, usePathname, useRouter } from '@/i18n/routing';
 import { useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
@@ -52,6 +52,13 @@ interface ClockEntry {
     billable?: boolean;
     invoicedAt?: string | null;
     user?: Employee;
+}
+
+/** "7,50 u (07:30)" — decimals first (what the invoice uses), HH:mm in brackets. From hours as the
+ *  report sends them: 2-decimal hours map back to the exact minute (one minute = 0.0167 h). */
+function hoursLabel(hours: number, locale: string): string {
+    const minutes = Math.round((hours || 0) * 60);
+    return `${formatDecimalHours(minutes, locale)} u (${formatHoursMinutes(minutes)})`;
 }
 
 function TimesheetsContent() {
@@ -125,11 +132,10 @@ function TimesheetsContent() {
     const handleBulkAction = async (action: 'approved' | 'denied') => {
         const selectedHours = entries
             .filter((e: any) => selectedEntries.has(e.id))
-            .reduce((acc, e: any) => acc + (e.hoursDecimal || 0), 0)
-            .toFixed(2);
+            .reduce((acc, e: any) => acc + (e.hoursDecimal || 0), 0);
             
         const actionText = action === 'approved' ? t('approve', { fallback: 'Approve' }) : t('deny', { fallback: 'Deny' });
-        if (!window.confirm(`${actionText} ${selectedEntries.size} entries, ${selectedHours} h?`)) return;
+        if (!window.confirm(`${actionText} ${selectedEntries.size} entries, ${hoursLabel(selectedHours, locale)}?`)) return;
         
         setLoading(true);
         try {
@@ -340,7 +346,7 @@ function TimesheetsContent() {
                 <td className="px-6 py-4">
                     <div className="font-bold text-sm">
                         {entry.clockOutTime 
-                            ? `${Math.floor(duration.totalMinutes / 60)}${t('hoursShort')} ${duration.totalMinutes % 60}${t('minutesShort')}`
+                            ? hoursLabel(duration.totalMinutes / 60, locale)
                             : <span className="text-orange-500 text-xs px-2 py-1 bg-orange-50 rounded-full flex items-center w-max gap-1"><Clock className="w-3 h-3"/> {t('statusLooptNog')}</span>
                         }
                     </div>
@@ -473,23 +479,23 @@ function TimesheetsContent() {
                             <div className="flex flex-wrap items-center gap-4 xl:gap-6 text-sm">
                                 <div className="flex flex-col">
                                     <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">{t('totalHours', { fallback: 'Totaal uren' })}</span>
-                                    <span className="font-black text-lg leading-none">{summary.totalHours}u</span>
+                                    <span className="font-black text-lg leading-none">{hoursLabel(summary.totalHours, locale)}</span>
                                 </div>
                                 <div className="w-px h-8 bg-neutral-200 dark:bg-white/10 hidden xl:block"></div>
                                 <div className="flex flex-col">
                                     <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">{t('billableInternal', { fallback: 'Factureerbaar / Intern' })}</span>
-                                    <span className="font-black text-lg leading-none">{summary.billableHours}u <span className="text-neutral-400 font-normal">/ {summary.internalHours}u</span></span>
+                                    <span className="font-black text-lg leading-none">{hoursLabel(summary.billableHours, locale)} <span className="text-neutral-400 font-normal">/ {hoursLabel(summary.internalHours, locale)}</span></span>
                                 </div>
                                 <div className="w-px h-8 bg-neutral-200 dark:bg-white/10 hidden xl:block"></div>
                                 <div className="flex flex-col">
                                     <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">{t('approvedPending', { fallback: 'Goedgekeurd / Te beoordelen' })}</span>
-                                    <span className="font-black text-lg leading-none text-green-600">{summary.approvedHours}u <span className="text-orange-500 font-normal">/ {summary.pendingHours}u</span></span>
+                                    <span className="font-black text-lg leading-none text-green-600">{hoursLabel(summary.approvedHours, locale)} <span className="text-orange-500 font-normal">/ {hoursLabel(summary.pendingHours, locale)}</span></span>
                                 </div>
                                 <div className="w-px h-8 bg-neutral-200 dark:bg-white/10 hidden xl:block"></div>
                                 <div className="flex flex-col">
                                     <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">{t('unattributedHours', { fallback: 'Niet toegewezen uren' })}</span>
                                     <span className="font-black text-lg leading-none text-red-500">
-                                        {entries.filter(e => !(e as any).projectId).reduce((acc, e) => acc + ((e as any).hoursDecimal || 0), 0).toFixed(2)}u
+                                        {hoursLabel(entries.filter(e => !(e as any).projectId).reduce((acc, e) => acc + ((e as any).hoursDecimal || 0), 0), locale)}
                                     </span>
                                 </div>
                             </div>
@@ -679,7 +685,7 @@ function TimesheetsContent() {
                                                     {expandedGroups[worker.userId] ? <ChevronDown className="w-4 h-4"/> : <ChevronRight className="w-4 h-4"/>}
                                                     {worker.workerName}
                                                 </span>
-                                                <span className="font-medium bg-neutral-200 dark:bg-neutral-700 px-3 py-1 rounded-lg">{worker.hours.toFixed(2)} {t('hoursShort')}</span>
+                                                <span className="font-medium bg-neutral-200 dark:bg-neutral-700 px-3 py-1 rounded-lg">{hoursLabel(worker.hours, locale)}</span>
                                             </div>
                                         </td>
                                     </tr>
@@ -697,7 +703,7 @@ function TimesheetsContent() {
                                                     {expandedGroups[project.projectId] ? <ChevronDown className="w-4 h-4"/> : <ChevronRight className="w-4 h-4"/>}
                                                     {project.projectName}
                                                 </span>
-                                                <span className="font-medium bg-neutral-200 dark:bg-neutral-700 px-3 py-1 rounded-lg">{project.hours.toFixed(2)} {t('hoursShort')}</span>
+                                                <span className="font-medium bg-neutral-200 dark:bg-neutral-700 px-3 py-1 rounded-lg">{hoursLabel(project.hours, locale)}</span>
                                             </div>
                                         </td>
                                     </tr>
@@ -718,7 +724,7 @@ function TimesheetsContent() {
                                                 <div className="flex items-center gap-3">
                                                     <span className="text-xs text-red-600 underline hover:no-underline" onClick={(e) => { e.stopPropagation(); /* TODO Bulk assign action */ }}>Bulk Assign</span>
                                                     <span className="font-medium bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300 px-3 py-1 rounded-lg">
-                                                        {entries.filter((e: any) => !e.projectId).reduce((acc: number, e: any) => acc + (e.hoursDecimal || 0), 0).toFixed(2)} {t('hoursShort')}
+                                                        {hoursLabel(entries.filter((e: any) => !e.projectId).reduce((acc: number, e: any) => acc + (e.hoursDecimal || 0), 0), locale)}
                                                     </span>
                                                 </div>
                                             </div>

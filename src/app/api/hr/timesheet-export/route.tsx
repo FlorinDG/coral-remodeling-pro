@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
 import { resolveReach } from '@/app/api/hr/lib/actor-reach';
-import { computeWorkedDuration } from '@/lib/computeWorkedDuration';
+import { computeWorkedDuration, minutesToDecimalHours, formatHoursMinutes } from '@/lib/computeWorkedDuration';
 import * as XLSX from 'xlsx';
 import { ClockEntry } from '@prisma/client';
 import { zonedParts } from '@/lib/kernel/shift-time';
@@ -15,7 +15,7 @@ const styles = StyleSheet.create({
     title: { fontSize: 18, marginBottom: 20, fontWeight: 'bold' },
     table: { display: 'flex', width: 'auto', borderStyle: 'solid', borderWidth: 1, borderRightWidth: 0, borderBottomWidth: 0 },
     tableRow: { margin: 'auto', flexDirection: 'row' },
-    tableCol: { width: '14.28%', borderStyle: 'solid', borderWidth: 1, borderLeftWidth: 0, borderTopWidth: 0 },
+    tableCol: { width: '12.5%', borderStyle: 'solid', borderWidth: 1, borderLeftWidth: 0, borderTopWidth: 0 },
     tableCell: { margin: 5, fontSize: 10 },
     tableHeader: { margin: 5, fontSize: 10, fontWeight: 'bold' }
 });
@@ -122,11 +122,13 @@ export async function GET(req: Request) {
         const projectName = proj ? proj.name : (entry.projectId ? 'Unknown Project' : 'Unattributed');
         
         const duration = computeWorkedDuration(entry.clockInTime, entry.clockOutTime, entry.noBreak || false);
-        const hoursDecimal = duration.totalMinutes / 60;
+        // Decimal hours rounded to 2 places from MINUTES (lib/computeWorkedDuration) — the same number
+        // the invoice uses; cost from exact minutes, rounded to the cent.
+        const hoursDecimal = minutesToDecimalHours(duration.totalMinutes);
         
         // Stamped cost rate or fallback to current canonical rate
         const costRate = entry.costRateApplied ?? emp?.hourlyCost ?? 0;
-        const totalCost = hoursDecimal * costRate;
+        const totalCost = Math.round((duration.totalMinutes / 60) * costRate * 100) / 100;
 
         const isSelf = isSelfApproved(entry);
         let approverDisplay = '';
@@ -162,6 +164,7 @@ export async function GET(req: Request) {
             'In': zonedParts(entry.clockInTime).time,
             'Uit': entry.clockOutTime ? zonedParts(entry.clockOutTime).time : '',
             'Uren (Decimaal)': hoursDecimal,
+            'Uren (UU:MM)': formatHoursMinutes(duration.totalMinutes),
             'Pauze Afgetrokken': duration.breakDeducted ? 'Ja' : 'Nee',
             'Status': statusDisplay,
             'Herkomst': sourceDisplay,
@@ -173,6 +176,9 @@ export async function GET(req: Request) {
             ...(reach.mayApprove ? { 'Kosten per uur': costRate, 'Totale kosten': totalCost } : {}),
         };
     });
+
+    const totalMinutes = entries.reduce((acc, e) => acc + computeWorkedDuration(e.clockInTime, e.clockOutTime, e.noBreak || false).totalMinutes, 0);
+    const totalCostSum = rawData.reduce((acc, r) => acc + (Number((r as Record<string, unknown>)['Totale kosten']) || 0), 0);
 
     // Build a readable filter string for headers
     const filterParts = [];
@@ -208,7 +214,8 @@ export async function GET(req: Request) {
                             <View style={styles.tableCol}><Text style={styles.tableHeader}>Project</Text></View>
                             <View style={styles.tableCol}><Text style={styles.tableHeader}>In</Text></View>
                             <View style={styles.tableCol}><Text style={styles.tableHeader}>Out</Text></View>
-                            <View style={styles.tableCol}><Text style={styles.tableHeader}>Hours</Text></View>
+                            <View style={styles.tableCol}><Text style={styles.tableHeader}>Uren</Text></View>
+                            <View style={styles.tableCol}><Text style={styles.tableHeader}>UU:MM</Text></View>
                             <View style={styles.tableCol}><Text style={styles.tableHeader}>Status</Text></View>
                         </View>
                         {rawData.map((row: any, i: number) => (
@@ -218,10 +225,21 @@ export async function GET(req: Request) {
                                 <View style={styles.tableCol}><Text style={styles.tableCell}>{row['Project']}</Text></View>
                                 <View style={styles.tableCol}><Text style={styles.tableCell}>{row['In']}</Text></View>
                                 <View style={styles.tableCol}><Text style={styles.tableCell}>{row['Uit']}</Text></View>
-                                <View style={styles.tableCol}><Text style={styles.tableCell}>{row['Uren (Decimaal)'].toFixed(2)}</Text></View>
+                                <View style={styles.tableCol}><Text style={styles.tableCell}>{row['Uren (Decimaal)'].toFixed(2).replace('.', ',')}</Text></View>
+                                <View style={styles.tableCol}><Text style={styles.tableCell}>{row['Uren (UU:MM)']}</Text></View>
                                 <View style={styles.tableCol}><Text style={styles.tableCell}>{row['Status']}</Text></View>
                             </View>
                         ))}
+                        <View style={styles.tableRow}>
+                            <View style={styles.tableCol}><Text style={styles.tableHeader}>TOTAAL</Text></View>
+                            <View style={styles.tableCol}><Text style={styles.tableCell}></Text></View>
+                            <View style={styles.tableCol}><Text style={styles.tableCell}></Text></View>
+                            <View style={styles.tableCol}><Text style={styles.tableCell}></Text></View>
+                            <View style={styles.tableCol}><Text style={styles.tableCell}></Text></View>
+                            <View style={styles.tableCol}><Text style={styles.tableHeader}>{minutesToDecimalHours(totalMinutes).toFixed(2).replace('.', ',')}</Text></View>
+                            <View style={styles.tableCol}><Text style={styles.tableHeader}>{formatHoursMinutes(totalMinutes)}</Text></View>
+                            <View style={styles.tableCol}><Text style={styles.tableCell}></Text></View>
+                        </View>
                     </View>
                 </Page>
             </Document>
@@ -243,11 +261,17 @@ export async function GET(req: Request) {
         // Convert to array of arrays so we can prepend the header row easily
         const headerRow = Object.keys(rawData[0] || {});
         const dataRows = rawData.map(r => Object.values(r));
+        // Totals from summed MINUTES, converted once (a sum of rounded decimals drifts by cents).
+        const totalRow = headerRow.map(h => h === 'Medewerker' ? 'TOTAAL'
+            : h === 'Uren (Decimaal)' ? minutesToDecimalHours(totalMinutes)
+            : h === 'Uren (UU:MM)' ? formatHoursMinutes(totalMinutes)
+            : h === 'Totale kosten' ? Math.round(totalCostSum * 100) / 100 : '');
         const sheetData = [
             [filterDescription],
             [],
             headerRow,
-            ...dataRows
+            ...dataRows,
+            ...(dataRows.length ? [[], totalRow] : []),
         ];
         
         const wsRaw = XLSX.utils.aoa_to_sheet(sheetData);

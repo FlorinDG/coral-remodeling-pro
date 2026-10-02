@@ -16,7 +16,7 @@ import { buildAuditLogData, buildAuditLogOperation } from '@/lib/audit';
 import { createPageServerFirst } from '@/app/actions/pages';
 import { getNextDocumentNumber } from '@/app/actions/next-document-number';
 import { createPrismaInvoice } from '@/app/actions/create-invoice';
-import { computeWorkedDuration } from '@/lib/computeWorkedDuration';
+import { computeWorkedDuration, minutesToDecimalHours, formatHoursMinutes } from '@/lib/computeWorkedDuration';
 import { calculateInvoiceTotals } from '@/lib/invoice-totals';
 import { zonedParts } from '@/lib/kernel/shift-time';
 import type { Block, Page } from '@/components/admin/database/types';
@@ -195,11 +195,11 @@ export async function invoiceSelectedHours(entryIds: string[], hourlyRate: numbe
     const blocks: Block[] = Array.from(lines.values())
         .sort((x, y) => x.date.localeCompare(y.date) || (nameOf.get(x.userId) || '').localeCompare(nameOf.get(y.userId) || ''))
         .map(l => {
-            const hours = Math.round((l.minutes / 60) * 100) / 100;
+            const hours = minutesToDecimalHours(l.minutes);   // the same conversion as screen + export
             return {
                 id: crypto.randomUUID(),
                 type: 'line',
-                content: `${LABOUR[lang]} — ${nameOf.get(l.userId)} — ${dm(l.date)}`,
+                content: `${LABOUR[lang]} — ${nameOf.get(l.userId)} — ${dm(l.date)} (${formatHoursMinutes(l.minutes)})`,
                 quantity: hours,
                 unit: 'u',
                 unitPrice: rate,
@@ -265,3 +265,4 @@ export async function invoiceSelectedHours(entryIds: string[], hourlyRate: numbe
         return { ok: false, error: 'failed', detail: `${num.number}: ${err instanceof Error ? err.message : String(err)}` };
     }
 }
+

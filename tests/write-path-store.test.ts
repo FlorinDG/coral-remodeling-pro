@@ -8,7 +8,7 @@
  * 6. partialize: IndexedDB persistence filtering of clean pages and selective block stripping
  */
 
-import { test, describe, beforeEach } from 'node:test';
+import { test, describe, beforeEach, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import { useDatabaseStore } from '../src/components/admin/database/store.ts';
 import {
@@ -181,15 +181,80 @@ describe('4 · Sync queue retry / backoff', () => {
         assert.equal(useDatabaseStore.getState().syncStatus, 'error');
     });
 
-    test('exponential backoff delay calculation doubles with power of 2: 3000 * 2^retryCount', () => {
-        // Characterization of store.ts:610 backoff formula: 3000 * Math.pow(2, currentEntry.retryCount)
-        const calculateBackoff = (retryCount: number) => 3000 * Math.pow(2, retryCount);
+    test('exponential backoff delay calculation drives _processSyncQueue real timer waits (3000 * 2^retryCount)', async () => {
+        mock.timers.enable({ apis: ['setTimeout'] });
+        try {
+            let callCount = 0;
+            setMockSaveGlobalPage(async () => {
+                callCount++;
+                return { success: false, error: 'Network failure' };
+            });
 
-        assert.equal(calculateBackoff(0), 3000);  // 3s base
-        assert.equal(calculateBackoff(1), 6000);  // 6s
-        assert.equal(calculateBackoff(2), 12000); // 12s
-        assert.equal(calculateBackoff(3), 24000); // 24s
-        assert.equal(calculateBackoff(4), 48000); // 48s
+            useDatabaseStore.setState({
+                databases: [{
+                    id: 'db-1',
+                    name: 'DB',
+                    pages: [{ id: 'p-backoff', databaseId: 'db-1', properties: {}, blocks: [], updatedAt: '2026-10-01T10:00:00.000Z' }] as any[],
+                }],
+                syncQueue: [{ pageId: 'p-backoff', databaseId: 'db-1', retryCount: 0 }],
+                syncStatus: 'idle',
+                isProcessingQueue: false,
+            });
+
+            const processPromise = useDatabaseStore.getState()._processSyncQueue();
+            const flush = async () => {
+                for (let i = 0; i < 10; i++) await Promise.resolve();
+            };
+            await flush();
+
+            // Initial attempt 0 failed. _incrementRetry set retryCount = 1.
+            // Timer wait in store.ts:614 is 3000 * Math.pow(2, 1) = 6000ms.
+            assert.equal(callCount, 1, 'Initial attempt must execute immediately');
+
+            // Advance 4000ms (at 2000ms base this would fire; at 3000ms base it must NOT fire)
+            mock.timers.tick(4000);
+            await flush();
+            assert.equal(callCount, 1, 'At 4000ms into 6000ms wait, second attempt must not have fired');
+
+            // Advance to 5999ms total (1999ms more)
+            mock.timers.tick(1999);
+            await flush();
+            assert.equal(callCount, 1, 'At 5999ms into 6000ms wait, second attempt must still not have fired');
+
+            // Advance 1ms to reach 6000ms
+            mock.timers.tick(1);
+            await flush();
+            assert.equal(callCount, 2, 'At 6000ms, retry 1 must execute');
+
+            // Attempt 1 failed. retryCount = 2. Wait is 3000 * Math.pow(2, 2) = 12000ms.
+            mock.timers.tick(11999);
+            await flush();
+            assert.equal(callCount, 2, 'At 11999ms into 12000ms wait, retry 2 must not have fired');
+
+            mock.timers.tick(1);
+            await flush();
+            assert.equal(callCount, 3, 'At 12000ms, retry 2 must execute');
+
+            // Attempt 2 failed. retryCount = 3. Wait is 3000 * Math.pow(2, 3) = 24000ms.
+            mock.timers.tick(24000);
+            await flush();
+            assert.equal(callCount, 4, 'At 24000ms, retry 3 must execute');
+
+            // Attempt 3 failed. retryCount = 4. Wait is 3000 * Math.pow(2, 4) = 48000ms.
+            mock.timers.tick(48000);
+            await flush();
+            assert.equal(callCount, 5, 'At 48000ms, retry 4 must execute');
+
+            // Attempt 4 failed. retryCount = 5.
+            // store.ts:614 waits 3000 * Math.pow(2, 5) = 96000ms before next iteration breaks on retryCount >= 5.
+            mock.timers.tick(96000);
+            await flush();
+            await processPromise;
+            assert.equal(useDatabaseStore.getState().syncStatus, 'error');
+            assert.equal(useDatabaseStore.getState().isProcessingQueue, false);
+        } finally {
+            mock.timers.reset();
+        }
     });
 
     test('_dequeueSync removes item from syncQueue and resets syncStatus to idle when queue is empty', () => {

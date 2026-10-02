@@ -16,6 +16,9 @@
 **every new test needs a THROW PROOF** (break the real code, show the test fail, restore), and
 **bending a directive is not progress** — a blocked step is STOPPED, never worked around.
 
+## 1 · `R2-1-CENSUS` — map every direct GlobalPage write (read-only) + one honest backoff test
+📄 `coder-directive-r2-1-write-census.md` — 33 writes in 18 files, one row each (tenant check · OCC · audit · fate). `src/` read-only.
+
 ## ✅ `R2-5` — DONE WITH CORRECTIONS (review 2026-10-02, `MORNING-2026-10-02.md` §2)
 Store tests accepted. 11 of 13 OCC tests tested a COPY of the merge loop (§3a) — removed on
 `pending/occ-merge`, replaced by real tests of `lib/records/occ-merge.ts`. Leftover: the backoff-formula

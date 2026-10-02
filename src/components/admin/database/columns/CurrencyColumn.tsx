@@ -1,4 +1,5 @@
-import React, { useLayoutEffect, useRef } from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
+import { cellValue, parseCellInput } from './numberCell';
 import { CellProps, Column } from 'react-datasheet-grid';
 
 interface CurrencyComponentProps extends CellProps<any, any> {
@@ -17,9 +18,11 @@ const CurrencyComponent = ({ focus, active, rowData, setRowData, propertyId, sym
         }
     }, [focus]);
 
-    // keyColumn wraps the value: rowData can be a primitive (number) for computed/synced values,
-    // or an object { [propertyId]: value } for manually edited cells.
-    const val = rowData != null && typeof rowData === 'object' ? rowData[propertyId] : rowData;
+    // Inside keyColumn `rowData` IS the field's value (numberCell.ts). Old values the previous version
+    // stored as { [propertyId]: v } are unwrapped on read.
+    const val = cellValue(rowData, propertyId);
+    // While typing, the text stays local; the NUMBER is stored once, on blur / Enter.
+    const [draft, setDraft] = useState<string | null>(null);
 
     if (!active || readOnly) {
         if (val === undefined || val === null || val === '') {
@@ -42,16 +45,11 @@ const CurrencyComponent = ({ focus, active, rowData, setRowData, propertyId, sym
             <input
                 ref={inputRef}
                 className="w-full h-full text-sm bg-transparent outline-none focus:ring-0 text-right tabular-nums text-neutral-900 dark:text-white"
-                value={val ?? ''}
-                onChange={e => setRowData({ ...(rowData || {}), [propertyId]: e.target.value })}
+                value={draft ?? (val == null ? '' : String(val))}
+                onChange={e => setDraft(e.target.value)}
                 onBlur={(e) => {
-                    const str = e.target.value.replace(/,/g, '.'); // Auto fix euro commas
-                    if (str === '') {
-                        setRowData({ ...(rowData || {}), [propertyId]: null });
-                        return;
-                    }
-                    const parsed = parseFloat(str);
-                    setRowData({ ...(rowData || {}), [propertyId]: isNaN(parsed) ? null : parsed });
+                    setDraft(null);
+                    setRowData(parseCellInput(e.target.value));   // the number itself — never an object
                 }}
                 onKeyDown={(e) => {
                     if (e.key === 'Enter') {
@@ -69,19 +67,16 @@ export const currencyColumn = (propertyId: string, symbol: string = '€', readO
     keepFocus: !readOnly,
     deleteValue: readOnly
         ? ({ rowData }) => rowData  // No-op: don't allow deleting computed values
-        : ({ rowData }) => ({ ...(rowData || {}), [propertyId]: null }),
+        : () => null,
     pasteValue: readOnly
         ? ({ rowData }) => rowData  // No-op: don't allow pasting over computed values
-        : ({ rowData, value }) => {
-            const parsed = parseFloat(String(value).replace(/,/g, '.'));
-            return { ...(rowData || {}), [propertyId]: isNaN(parsed) ? null : parsed };
-        },
+        : ({ value }) => parseCellInput(value),
     copyValue: ({ rowData }) => {
-        const val = rowData != null && typeof rowData === 'object' ? rowData[propertyId] : rowData;
+        const val = cellValue(rowData, propertyId);
         return val !== undefined && val !== null ? String(val) : '';
     },
     isCellEmpty: ({ rowData }) => {
-        const val = rowData != null && typeof rowData === 'object' ? rowData[propertyId] : rowData;
+        const val = cellValue(rowData, propertyId);
         return val === undefined || val === null || val === '';
     },
 });

@@ -784,6 +784,11 @@ model ClockEntry {
   editedAfterApproval Boolean @default(false)
   costRateApplied   Float?
   accountantExportedAt DateTime?
+  /// TS-INV-1: these hours went onto an invoice — when, by whom, which invoice (GlobalPage id in the
+  /// tenant's invoices database; optional). Locked like approved hours.
+  invoicedAt        DateTime?
+  invoicedBy        String?
+  invoiceRef        String?
 
   costRatePrevious  Float?
   createdBy         String?

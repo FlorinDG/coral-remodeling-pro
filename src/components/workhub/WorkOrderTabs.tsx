@@ -141,6 +141,7 @@ function CrewNote({ shiftId, initial, disabled, loading }: { shiftId: string; in
   return (
     <section className="space-y-2">
       <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{t('workOrder.myNote')}</h3>
+      <p className="text-sm text-muted-foreground">{t('workOrder.myNoteHint')}</p>
       <textarea value={text} onChange={e => setText(e.target.value)} disabled={disabled || busy} rows={4}
         placeholder={t('workOrder.notePlaceholder')}
         className="w-full p-3 rounded-xl border border-border bg-background text-base resize-y disabled:opacity-60" />

@@ -306,3 +306,12 @@ recipient  =  project's contact   ??   shift's contact
 - A worker may do **several jobs in one day**. Signing one werkbon locks **that work order's** entries, photos and notes — **nothing else of that day**.
 - 🛑 **`WB-D` must never freeze by date or by worker.** The lock key is the werkbon's **recorded membership** (its entries), never "everything on that date".
 - Same grain as the crew's **shift submit** (`lib/data/shift-submit.ts`): per shift, never per day.
+
+
+## 14 · 🟢 WHAT PRINTS ON THE SIGNED COPY — Florin 2026-10-02 (settles §10d with today's fields)
+| Field | Printed | Why (Florin) |
+|---|---|---|
+| `ScheduledShift.notes` — the shift **description** | 🟢 YES | *"forces the planner to be careful, and is the good opportunity to quote the request from the client"* |
+| `ScheduledShift.crewNote` — the crew member's note | 🟢 YES | *"the note the client reads and signs"* |
+| `ClockEntry.notes` — **Admin notes** | 🛑 NEVER | internal — the office's notes on its edits |
+Per §10d's mitigation both printed fields say so **at the point of typing** (scheduler + crew Notes tab, 2026-10-02).

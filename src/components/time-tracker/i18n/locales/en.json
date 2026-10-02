@@ -376,7 +376,7 @@
     "running": "running",
     "pending": "awaiting approval",
     "signTitle": "Client signature",
-    "myNote": "My note",
+    "myNote": "My note — printed on the work order",
     "notePlaceholder": "What was done, what is left, anything the office should know…",
     "saveNote": "Save note",
     "noteSaved": "Note saved",
@@ -403,6 +403,7 @@
       "still_clocked_in": "Someone is still clocked in on this work order — clock out first",
       "failed": "Signing failed",
       "unauthorized": "Please sign in again"
-    }
+    },
+    "myNoteHint": "The client reads this note before signing."
   }
 }

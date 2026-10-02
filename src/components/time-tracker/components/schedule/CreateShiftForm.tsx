@@ -1142,12 +1142,12 @@ export function CreateShiftForm({
                     )}
 
                     <div>
-                      <Label htmlFor="notes">Notes</Label>
+                      <Label htmlFor="notes">Description — printed on the client's signed work order</Label>
                       <Textarea
                         id="notes"
                         value={notes}
                         onChange={(e) => setNotes(e.target.value)}
-                        placeholder="Any additional notes..."
+                        placeholder="What is to be done — you may quote the client's request"
                         rows={2}
                       />
                     </div>
@@ -1783,12 +1783,12 @@ export function CreateShiftForm({
                   )}
 
                   <div>
-                    <Label htmlFor="notes2">Notes</Label>
+                    <Label htmlFor="notes2">Description — printed on the client's signed work order</Label>
                     <Textarea
                       id="notes2"
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}
-                      placeholder="Any additional notes..."
+                      placeholder="What is to be done — you may quote the client's request"
                       rows={2}
                     />
                   </div>

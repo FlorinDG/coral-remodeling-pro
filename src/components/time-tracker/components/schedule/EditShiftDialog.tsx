@@ -538,12 +538,12 @@ export function EditShiftDialog({
               </div>
 
               <div>
-                <Label htmlFor="editNotes">Notes</Label>
+                <Label htmlFor="editNotes">Description — printed on the client's signed work order</Label>
                 <Textarea
                   id="editNotes"
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Any additional notes..."
+                  placeholder="What is to be done — you may quote the client's request"
                   rows={2}
                   disabled={!canManage}
                 />

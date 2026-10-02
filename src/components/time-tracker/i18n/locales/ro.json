@@ -379,7 +379,7 @@
     "running": "în curs",
     "pending": "așteaptă aprobare",
     "signTitle": "Semnătura clientului",
-    "myNote": "Notița mea",
+    "myNote": "Notița mea — apare pe fișa de lucru",
     "notePlaceholder": "Ce s-a făcut, ce a rămas, ce trebuie să știe biroul…",
     "saveNote": "Salvează notița",
     "noteSaved": "Notiță salvată",
@@ -406,6 +406,7 @@
       "still_clocked_in": "Cineva este încă pontat pe această fișă — pontați ieșirea întâi",
       "failed": "Semnarea a eșuat",
       "unauthorized": "Autentificați-vă din nou"
-    }
+    },
+    "myNoteHint": "Clientul citește această notiță înainte de a semna."
   }
 }

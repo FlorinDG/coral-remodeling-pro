@@ -376,7 +376,7 @@
     "running": "en cours",
     "pending": "en attente d'approbation",
     "signTitle": "Signature du client",
-    "myNote": "Ma note",
+    "myNote": "Ma note — imprimée sur le bon de travail",
     "notePlaceholder": "Ce qui a été fait, ce qui reste, ce que le bureau doit savoir…",
     "saveNote": "Enregistrer la note",
     "noteSaved": "Note enregistrée",
@@ -403,6 +403,7 @@
       "still_clocked_in": "Quelqu'un est encore pointé sur ce bon — pointez la sortie d'abord",
       "failed": "La signature a échoué",
       "unauthorized": "Veuillez vous reconnecter"
-    }
+    },
+    "myNoteHint": "Le client lit cette note avant de signer."
   }
 }

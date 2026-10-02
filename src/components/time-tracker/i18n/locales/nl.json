@@ -376,7 +376,7 @@
     "running": "loopt",
     "pending": "wacht op goedkeuring",
     "signTitle": "Handtekening klant",
-    "myNote": "Mijn notitie",
+    "myNote": "Mijn notitie — komt op de werkbon",
     "notePlaceholder": "Wat is gedaan, wat blijft, wat het kantoor moet weten…",
     "saveNote": "Notitie opslaan",
     "noteSaved": "Notitie opgeslagen",
@@ -403,6 +403,7 @@
       "still_clocked_in": "Iemand is nog ingeklokt op deze werkbon — eerst uitklokken",
       "failed": "Tekenen mislukt",
       "unauthorized": "Meld je opnieuw aan"
-    }
+    },
+    "myNoteHint": "De klant leest deze notitie voor hij tekent."
   }
 }

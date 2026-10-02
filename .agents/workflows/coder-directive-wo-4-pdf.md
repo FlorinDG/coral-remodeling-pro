@@ -18,6 +18,10 @@ export interface SignedWorkOrderPdfInput {
   workOrder:{ reference: string; date: string /* YYYY-MM-DD, Brussels */; siteAddress?: string | null; projectName?: string | null };
   lines:    Array<{ workerName: string; in: string /* HH:mm */; out: string /* HH:mm */; minutes: number }>;
   tasks:    Array<{ title: string; done: boolean }>;
+  /** Florin 2026-10-02: printed. The shift's description (scheduler 'Notes') — the planner may quote the client's request. */
+  description: string | null;
+  /** Florin 2026-10-02: printed. Each crew member's note — "the note the client reads and signs". */
+  crewNotes: Array<{ workerName: string; note: string }>;
   signature:{ signerName: string; signedAt: string /* ISO instant */; imagePng: Buffer };
   language: 'nl' | 'fr' | 'en';
 }
@@ -27,7 +31,9 @@ export async function renderSignedWorkOrderPdf(input: SignedWorkOrderPdfInput): 
 - Dates/times Belgian (`src/lib/format/date.ts`); labels in the three languages (a small map in the file is fine).
 - Library: `@react-pdf/renderer` (already used — see `src/app/api/hr/timesheet-export/route.tsx`, `src/components/admin/invoices/InvoicePDFTemplate.tsx` for style). Fonts: the self-hosted files in `public/fonts` if the library can load them, otherwise its built-in Helvetica — say which in the plan.
 - **Throws** (named error) on: no signer name, empty signature image, zero lines.
-- 🛑 **Prints nothing else** — no notes of any kind (§10d; which note is client-facing is an open product decision), no internal ids, no cost rates.
+- **Notes (decided by Florin 2026-10-02):** print `description` and every `crewNotes` entry (with the worker's name) —
+  both are what the client reads before signing; wrap long text, never truncate.
+- 🛑 **Prints nothing else** — never the admin notes (internal), no internal ids, no cost rates.
 
 ## Tests (`tests/work-order-pdf.test.ts`)
 Must call the REAL renderer. At minimum: returns a Buffer starting with `%PDF`; each of the three throws; output for

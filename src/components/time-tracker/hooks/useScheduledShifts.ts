@@ -122,8 +122,14 @@ export function useScheduledShifts() {
     return { ...s, project, projectName: project?.name } as ScheduledShift;
   }, []);
 
+  // Every local change (create / update / delete) bumps this. A reload that STARTED before a change
+  // carries the old list — applying it put a just-deleted shift back on screen until a refresh
+  // (Florin 2026-10-02). Such a reload is discarded and run again.
+  const mutationSeq = useRef(0);
+
   /** `silent`: refresh without the loading state (no flash) — used when the tab regains focus. */
-  const fetchAll = useCallback(async (silent = false) => {
+  const fetchAll = useCallback(async (silent = false): Promise<void> => {
+    const startedAt = mutationSeq.current;
     if (!silent) setLoading(true);
     const withTimeout = <T>(p: Promise<T>, ms = 9000, name: string): Promise<T> =>
       Promise.race([
@@ -140,6 +146,10 @@ export function useScheduledShifts() {
     ]);
 
     const [shiftsRes, erpProjectsRes, employeesRes] = results;
+    if (mutationSeq.current !== startedAt) {
+      // A change landed while this reload was on the wire — its list is stale.
+      return fetchAll(true);
+    }
 
     const currentErrors: Record<string, Error> = {};
     const failed: string[] = [];
@@ -240,6 +250,7 @@ export function useScheduledShifts() {
     if ('shift_name' in data) { if (!data.shiftName) normalized.shiftName = data.shift_name; delete normalized.shift_name; }
     if ('project_id' in data) { if (!data.projectId) normalized.projectId = data.project_id; delete normalized.project_id; }
 
+    mutationSeq.current++;
     try {
       const shift = await hrCreate<ScheduledShift>('shifts', normalized);
       setRawShifts(prev => [addSnakeCase(withProject(shift)), ...prev]);
@@ -261,6 +272,7 @@ export function useScheduledShifts() {
     if ('shift_name' in data) { if (!data.shiftName) normalized.shiftName = data.shift_name; delete normalized.shift_name; }
     if ('project_id' in data) { if (!data.projectId) normalized.projectId = data.project_id; delete normalized.project_id; }
 
+    mutationSeq.current++;
     try {
       // Optimistic update
       setRawShifts(prev => prev.map(s => s.id === id ? addSnakeCase(withProject({ ...s, ...normalized })) : s));
@@ -283,6 +295,7 @@ export function useScheduledShifts() {
   }, [updateShift]);
 
   const deleteShift = useCallback(async (id: string, scope?: 'occurrence' | 'following' | 'series') => {
+    mutationSeq.current++;
     try {
       const res = await hrDelete<{ seriesDeleted?: number; seriesKept?: number }>('shifts', id, scope);
       setRawShifts(prev => prev.filter(s => s.id !== id));

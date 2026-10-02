@@ -287,3 +287,158 @@ Declaration text — agreed: nl "Voor akkoord met de gepresteerde uren en uitgev
 
 **Milestones as proposed, with C1/C2 in M1 (view model + validation + time zone + `%PDF` + determinism).**
 **GO for M1.** Stop after M1 for the Planner's ✅.
+
+---
+
+## M1 — done
+
+**Date:** 2026-10-03  
+**Status:** ✅ M1 COMPLETE — Awaiting Planner review for M2
+
+### 1. What was built in M1
+- **Pure View Model (`buildWorkOrderView`)**:
+  - Implemented in `src/lib/documents/work-order-pdf.ts` (with re-export in `src/lib/documents/work-order-pdf.tsx`).
+  - Separates view logic from PDF layout. Computes all printed strings, labels, and formatted fields.
+  - Enforces `validateSignedWorkOrderInput` throwing named `SignedWorkOrderValidationError` on:
+    - Empty or whitespace-only signer name
+    - Empty or 0-byte signature PNG buffer
+    - Zero work order lines
+  - Formats line duration as `7,50 u (07:30)` (or `h` for `fr`/`en`).
+  - Formats TOTAAL duration from **summed minutes** (e.g. 3 × 20 min = 60 min → `1,00 u (01:00)`, never 0,99).
+  - Preserves description and crew notes verbatim without truncation.
+  - Carries Romanian and Cyrillic names through unchanged (`Ștefan Țurcanu`, `Дмитрий Иванов`).
+  - Negative test confirms no internal rates (`costRate`, `hourlyRate`), admin notes, or CUIDs leak into the view.
+- **Brussels Timezone Formatting (C2)**:
+  - Formats signature instant using `zonedParts(input.signature.signedAt)` from `src/lib/kernel/shift-time.ts`.
+  - Converts UTC timestamps (e.g. `2026-10-02T14:45:00Z`) into Belgian wall-clock time (`02/10/2026 16:45`).
+- **Logo PNG (C3)**:
+  - Supports `tenant.logoPng?: Buffer | null` directly in renderer without network I/O.
+- **Real PDF Rendering (`renderSignedWorkOrderPdf`)**:
+  - Uses `@react-pdf/renderer` with `React.createElement` (fully compatible with Node's native type-stripping ESM runner).
+  - Asserts output begins with `%PDF` magic bytes and contains valid PDF structure.
+- **Determinism (C1)**:
+  - Binds document `creationDate` and `modificationDate` to `new Date(signature.signedAtInstant)`.
+  - Verified: calling `renderSignedWorkOrderPdf` twice with identical input yields byte-for-byte identical buffers (`Buffer.compare(buf1, buf2) === 0`).
+
+### 2. Verification Commands & Outputs Verbatim
+
+#### Test Suite
+```bash
+$ node --import ./tests/register.mjs --test tests/work-order-pdf.test.ts
+✔ throws SignedWorkOrderValidationError on empty or whitespace signerName (1.528333ms)
+✔ throws SignedWorkOrderValidationError on empty signature imagePng (0.152791ms)
+✔ throws SignedWorkOrderValidationError on zero lines (0.090958ms)
+✔ formats signature timestamp strictly in Europe/Brussels wall-clock time (14.764125ms)
+✔ formats line duration as "7,50 u (07:30)" and total from summed minutes (0.277166ms)
+✔ language changes labels and unit between nl and fr (1.278208ms)
+✔ carries description and crew notes verbatim without truncation (0.244916ms)
+✔ carries Romanian and Cyrillic names through unchanged (C4) (0.19225ms)
+✔ view model never leaks internal cost rates, prices, or user ids (0.307375ms)
+✔ renderSignedWorkOrderPdf returns a Buffer starting with %PDF (99.131542ms)
+✔ renderSignedWorkOrderPdf is deterministic: same input produces identical bytes (72.978333ms)
+ℹ tests 11
+ℹ suites 0
+ℹ pass 11
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 586.269208
+exit: 0
+```
+
+#### TypeScript Check
+```bash
+$ npm run test:compile
+> coral-remodeling-pro@0.1.0 test:compile
+> NODE_OPTIONS='--max-old-space-size=4096' tsc --noEmit
+exit: 0
+```
+
+#### Lint Check
+```bash
+$ npm run test:lint
+> coral-remodeling-pro@0.1.0 test:lint
+> eslint src
+exit: 0
+```
+
+### 3. Throw Proofs (§3a)
+
+#### THROW PROOF 1 — Validation: signerName
+```bash
+$ node -e '
+const fs = require("fs");
+let code = fs.readFileSync("src/lib/documents/work-order-pdf.ts", "utf8");
+code = code.replace("!input.signature?.signerName || !input.signature.signerName.trim()", "false");
+fs.writeFileSync("src/lib/documents/work-order-pdf.ts", code);
+'; node --import ./tests/register.mjs --test tests/work-order-pdf.test.ts; echo "exit: $?"; git checkout -- src/lib/documents/work-order-pdf.ts
+
+✖ throws SignedWorkOrderValidationError on empty or whitespace signerName (16.059125ms)
+  AssertionError [ERR_ASSERTION]: Missing expected exception.
+exit: 1
+```
+
+#### THROW PROOF 2 — Brussels Wall-Clock Time (C2)
+```bash
+$ node -e '
+const fs = require("fs");
+let code = fs.readFileSync("src/lib/documents/work-order-pdf.ts", "utf8");
+code = code.replace("const signedParts = zonedParts(input.signature.signedAt);", "const signedParts = zonedParts(input.signature.signedAt, \"UTC\");");
+fs.writeFileSync("src/lib/documents/work-order-pdf.ts", code);
+'; node --import ./tests/register.mjs --test tests/work-order-pdf.test.ts; echo "exit: $?"; git checkout -- src/lib/documents/work-order-pdf.ts
+
+✖ formats signature timestamp strictly in Europe/Brussels wall-clock time (15.147833ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  + '02/10/2026 14:45'
+  - '02/10/2026 16:45'
+exit: 1
+```
+
+#### THROW PROOF 3 — Summed Minutes Total (C1)
+```bash
+$ node -e '
+const fs = require("fs");
+let code = fs.readFileSync("src/lib/documents/work-order-pdf.ts", "utf8");
+code = code.replace("const totalDec = formatDecimalHours(totalMinutes, locale);", "const totalDec = \"0,99\";");
+fs.writeFileSync("src/lib/documents/work-order-pdf.ts", code);
+'; node --import ./tests/register.mjs --test tests/work-order-pdf.test.ts; echo "exit: $?"; git checkout -- src/lib/documents/work-order-pdf.ts
+
+✖ formats line duration as "7,50 u (07:30)" and total from summed minutes (0.743291ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  + '0,99 u (01:00)'
+  - '1,00 u (01:00)'
+exit: 1
+```
+
+#### THROW PROOF 4 — Determinism (C1)
+```bash
+$ node -e '
+const fs = require("fs");
+let code = fs.readFileSync("src/lib/documents/work-order-pdf.ts", "utf8");
+code = code.replace("creationDate: signatureDate,\n        modificationDate: signatureDate,", "creationDate: new Date(),\n        modificationDate: new Date(),");
+fs.writeFileSync("src/lib/documents/work-order-pdf.ts", code);
+'; node --import ./tests/register.mjs --test tests/work-order-pdf.test.ts; echo "exit: $?"; git checkout -- src/lib/documents/work-order-pdf.ts
+
+✖ renderSignedWorkOrderPdf is deterministic: same input produces identical bytes (167.813875ms)
+  AssertionError [ERR_ASSERTION]: two renders with identical input must produce identical bytes
+  -1 !== 0
+exit: 1
+```
+
+#### THROW PROOF 5 — %PDF Magic Bytes
+```bash
+$ node -e '
+const fs = require("fs");
+let code = fs.readFileSync("src/lib/documents/work-order-pdf.ts", "utf8");
+code = code.replace("return Buffer.isBuffer(rawBuffer) ? rawBuffer : Buffer.from(rawBuffer);", "return Buffer.from(\"NOT_A_PDF\");");
+fs.writeFileSync("src/lib/documents/work-order-pdf.ts", code);
+'; node --import ./tests/register.mjs --test tests/work-order-pdf.test.ts; echo "exit: $?"; git checkout -- src/lib/documents/work-order-pdf.ts
+
+✖ renderSignedWorkOrderPdf returns a Buffer starting with %PDF (207.445917ms)
+  AssertionError [ERR_ASSERTION]: buffer must contain meaningful PDF data
+exit: 1
+```
+

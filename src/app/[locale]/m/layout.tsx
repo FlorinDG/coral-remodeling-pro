@@ -1,4 +1,5 @@
 import AuthProvider from "@/components/AuthProvider";
+import { reconcileSystemSchemas } from '@/lib/data/system-schema-reconcile';
 import { getGlobalDatabases, getGlobalDatabaseSchemas, getGlobalPageIndex } from "@/app/actions/global-databases";
 import { IS_LAZY_DATA_ENABLED } from "@/lib/feature-flags";
 import GlobalDatabaseSyncer from "@/components/admin/database/GlobalDatabaseSyncer";
@@ -87,6 +88,8 @@ export default async function MobileLayout({ children }: { children: React.React
 
                 try {
                     lockedDbIds = await provisionLockedDatabases(tenantId, prisma);
+                    // KERN-SCHEMA-1: canonical fields for every system database, before the schemas load below.
+                    await reconcileSystemSchemas(tenantId, prisma, lockedDbIds);
                 } catch (provErr) {
                     console.error('[m/layout] Provisioning failed:', provErr);
                     lockedDbIds = (tenant.lockedDbIds as Record<string, string> | null) || {};

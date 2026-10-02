@@ -13,6 +13,13 @@ import prisma from '@/lib/prisma';
 import { auth } from '@/auth';
 import { isTenantHrRole } from '@/lib/roles';
 import { buildAuditLogData, buildAuditLogOperation } from '@/lib/audit';
+import { createPageServerFirst } from '@/app/actions/pages';
+import { getNextDocumentNumber } from '@/app/actions/next-document-number';
+import { createPrismaInvoice } from '@/app/actions/create-invoice';
+import { computeWorkedDuration } from '@/lib/computeWorkedDuration';
+import { calculateInvoiceTotals } from '@/lib/invoice-totals';
+import { zonedParts } from '@/lib/kernel/shift-time';
+import type { Block, Page } from '@/components/admin/database/types';
 
 type Fail = { ok: false; error: string; detail?: string };
 
@@ -115,5 +122,146 @@ export async function unmarkHoursInvoiced(entryIds: string[], reason: string):
     } catch (err) {
         console.error('[unmarkHoursInvoiced] failed:', err);
         return { ok: false, error: 'failed', detail: err instanceof Error ? err.message : String(err) };
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────────────────────────
+// TS-INV-2 · "Factureer selectie" — the selected hours become a DRAFT invoice (Florin 2026-10-02:
+// rate typed in the dialog · one line per worker per day). One client per invoice: the hours'
+// projects must all belong to the same client. The hours are marked invoiced, linked to it, in the
+// same transaction that writes its lines; the draft opens in the invoice engine for review.
+// ─────────────────────────────────────────────────────────────────────────────────────────────────
+
+const LABOUR: Record<string, string> = { nl: 'Arbeid', fr: "Main-d'œuvre", en: 'Labour' };
+const SUBJECT: Record<string, string> = { nl: 'Werkuren', fr: 'Heures prestées', en: 'Hours worked' };
+
+export async function invoiceSelectedHours(entryIds: string[], hourlyRate: number):
+    Promise<{ ok: true; page: Page; invoiced: number; skipped: number } | Fail> {
+    const a = await office();
+    if (!a) return { ok: false, error: 'forbidden' };
+    const rate = Math.round(Number(hourlyRate) * 100) / 100;
+    if (!Number.isFinite(rate) || rate <= 0 || rate > 10_000) return { ok: false, error: 'rate_required' };
+    const ids = Array.from(new Set(entryIds)).slice(0, 2000);
+
+    const entries = await prisma.clockEntry.findMany({
+        where: { id: { in: ids }, tenantId: a.tenantId, approvalStatus: 'approved', billable: true, invoicedAt: null, clockOutTime: { not: null } },
+        select: { id: true, userId: true, projectId: true, clockInTime: true, clockOutTime: true, noBreak: true },
+        orderBy: { clockInTime: 'asc' },
+    });
+    if (!entries.length) return { ok: false, error: 'nothing_to_invoice' };
+
+    // ONE client: every entry's project → its client (projects database page, `client` relation).
+    const projectIds = Array.from(new Set(entries.map(e => e.projectId).filter(Boolean))) as string[];
+    if (entries.some(e => !e.projectId)) return { ok: false, error: 'no_project', detail: String(entries.filter(e => !e.projectId).length) };
+    const projects = await prisma.globalPage.findMany({
+        where: { id: { in: projectIds }, database: { tenantId: a.tenantId, logicalKey: 'projects' } },
+        select: { id: true, properties: true },
+    });
+    const clientOf = new Map(projects.map(p => {
+        const props = (p.properties || {}) as Record<string, unknown>;
+        const raw = props.client ?? props['prop-client'];
+        const id = Array.isArray(raw) ? String(raw[0] || '') : String(raw || '');
+        return [p.id, id];
+    }));
+    const clients = new Set(projectIds.map(pid => clientOf.get(pid) || ''));
+    if (clients.has('')) return { ok: false, error: 'no_client' };
+    if (clients.size > 1) return { ok: false, error: 'multiple_clients', detail: String(clients.size) };
+    const clientId = Array.from(clients)[0];
+    const projectName = (pid: string) => {
+        const p = projects.find(x => x.id === pid);
+        const props = (p?.properties || {}) as Record<string, unknown>;
+        return String(props.title || props.name || '').replace(/^\[ERP\]\s*/i, '').trim();
+    };
+
+    const [tenant, users] = await Promise.all([
+        prisma.tenant.findUnique({ where: { id: a.tenantId }, select: { documentLanguage: true, defaultVatRate: true } }),
+        prisma.user.findMany({ where: { tenantId: a.tenantId, id: { in: Array.from(new Set(entries.map(e => e.userId))) } }, select: { id: true, name: true } }),
+    ]);
+    const lang = ['nl', 'fr', 'en'].includes(tenant?.documentLanguage || '') ? tenant!.documentLanguage! : 'nl';
+    const vat = String(tenant?.defaultVatRate ?? 21);
+    const nameOf = new Map(users.map(u => [u.id, u.name || '—']));
+
+    // One line per worker per (Brussels) day.
+    const lines = new Map<string, { userId: string; date: string; minutes: number }>();
+    for (const e of entries) {
+        const date = zonedParts(e.clockInTime).date;
+        const key = `${date}|${e.userId}`;
+        const minutes = computeWorkedDuration(e.clockInTime, e.clockOutTime, e.noBreak).totalMinutes;
+        const l = lines.get(key) || { userId: e.userId, date, minutes: 0 };
+        l.minutes += minutes;
+        lines.set(key, l);
+    }
+    const dm = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}`;
+    const blocks: Block[] = Array.from(lines.values())
+        .sort((x, y) => x.date.localeCompare(y.date) || (nameOf.get(x.userId) || '').localeCompare(nameOf.get(y.userId) || ''))
+        .map(l => {
+            const hours = Math.round((l.minutes / 60) * 100) / 100;
+            return {
+                id: crypto.randomUUID(),
+                type: 'line',
+                content: `${LABOUR[lang]} — ${nameOf.get(l.userId)} — ${dm(l.date)}`,
+                quantity: hours,
+                unit: 'u',
+                unitPrice: rate,
+                verkoopPrice: rate,
+                vatRate: Number(vat),
+                isOptional: false,
+                children: [],
+            } as Block;
+        });
+    const totals = calculateInvoiceTotals(blocks, { vatRegime: vat });
+
+    const num = await getNextDocumentNumber('invoice');
+    if (!num.success || !num.number) return { ok: false, error: 'numbering_failed', detail: num.error };
+    const today = zonedParts(new Date()).date;
+    const lastDay = Array.from(lines.values()).map(l => l.date).sort().pop() || today;
+    const names = Array.from(new Set(projectIds.map(projectName).filter(Boolean)));
+    const created = await createPageServerFirst('db-invoices', {
+        title: num.number,
+        docType: 'opt-invoice',
+        status: 'opt-draft',
+        client: [clientId],
+        project: projectIds.length === 1 ? [projectIds[0]] : [],
+        betreft: `${SUBJECT[lang]}${names.length ? ` — ${names.join(', ')}` : ''}`,
+        invoiceDate: today,
+        deliveryDate: lastDay,
+        vatRegime: vat,
+        totalExVat: totals.subtotal,
+        totalVat: totals.totalVAT,
+        totalIncVat: totals.totalInclVAT,
+    });
+    if (!created.success) return { ok: false, error: 'invoice_create_failed', detail: created.error };
+    const invoiceId = created.page.id;
+
+    // Lines + the hours' status in ONE transaction: never an invoice whose hours look uninvoiced,
+    // never hours marked invoiced on an invoice without their lines.
+    const at = new Date();
+    try {
+        const audits = [];
+        for (const e of entries) {
+            audits.push(await buildAuditLogData({ tenantId: a.tenantId, userId: a.userId }, {
+                entityType: 'clockEntry', entityId: e.id, action: 'invoice', field: 'invoicedAt',
+                before: { invoicedAt: null }, after: { invoicedAt: at.toISOString(), invoiceRef: invoiceId, rate },
+                reason: `invoice ${num.number}`,
+            }));
+        }
+        const [saved] = await prisma.$transaction([
+            prisma.globalPage.update({ where: { id: invoiceId }, data: { blocks: blocks as never, blocksVersion: 2 }, select: { updatedAt: true } }),
+            prisma.clockEntry.updateMany({
+                where: { id: { in: entries.map(e => e.id) }, tenantId: a.tenantId, invoicedAt: null },
+                data: { invoicedAt: at, invoicedBy: a.userId, invoiceRef: invoiceId },
+            }),
+            ...audits.map(x => buildAuditLogOperation(prisma, x)),
+        ]);
+        await createPrismaInvoice(invoiceId, num.number);
+        return {
+            ok: true,
+            page: { ...created.page, blocks, blocksVersion: 2, updatedAt: (saved as { updatedAt: Date }).updatedAt.toISOString() },
+            invoiced: entries.length,
+            skipped: ids.length - entries.length,
+        };
+    } catch (err) {
+        console.error('[invoiceSelectedHours] lines/marking failed — draft invoice', invoiceId, 'left without lines:', err);
+        return { ok: false, error: 'failed', detail: `${num.number}: ${err instanceof Error ? err.message : String(err)}` };
     }
 }

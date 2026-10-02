@@ -1111,7 +1111,25 @@
       "markedInvoiced": "{marked} marked as invoiced · {skipped} skipped",
       "unmarkReason": "Why remove the invoice mark? (e.g. credit note)",
       "unmarkedInvoiced": "{count} invoice mark(s) removed",
-      "invoiceListFailed": "Could not load the invoices"
+      "invoiceListFailed": "Could not load the invoices",
+      "billButton": "Invoice selection",
+      "billSelectFirst": "Select hours first",
+      "billHint": "{count} selected. Approved, billable, closed hours of ONE client become a draft invoice — one line per worker per day. The hours are marked invoiced.",
+      "billRate": "Hourly rate",
+      "billExVat": "excl. VAT",
+      "billCreate": "Create draft invoice",
+      "billCreated": "Draft invoice created with {count} entries · {skipped} skipped",
+      "billError": {
+        "rate_required": "Enter an hourly rate",
+        "nothing_to_invoice": "None of the selected hours can be invoiced (they must be approved, billable, closed and not yet invoiced)",
+        "no_project": "{detail} of the selected hours have no project — a client can't be determined",
+        "no_client": "A project of these hours has no client",
+        "multiple_clients": "The selection spans {detail} clients — select the hours of one client",
+        "numbering_failed": "The invoice number could not be issued — {detail}",
+        "invoice_create_failed": "The invoice could not be created — {detail}",
+        "failed": "Invoice {detail}",
+        "forbidden": "Only office roles can invoice hours"
+      }
     },
     "shiftForm": {
       "orderGiver": "Order giver (receives the signed work order)",

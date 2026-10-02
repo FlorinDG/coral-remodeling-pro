@@ -1110,7 +1110,25 @@
       "markedInvoiced": "{marked} marqué(s) comme facturé(s) · {skipped} ignoré(s)",
       "unmarkReason": "Pourquoi retirer la marque facturée ? (ex. note de crédit)",
       "unmarkedInvoiced": "{count} marque(s) retirée(s)",
-      "invoiceListFailed": "Impossible de charger les factures"
+      "invoiceListFailed": "Impossible de charger les factures",
+      "billButton": "Facturer la sélection",
+      "billSelectFirst": "Sélectionnez d'abord des heures",
+      "billHint": "{count} sélectionné(s). Les heures approuvées, facturables et clôturées d'UN client deviennent une facture brouillon — une ligne par ouvrier par jour. Les heures sont marquées facturées.",
+      "billRate": "Taux horaire",
+      "billExVat": "HTVA",
+      "billCreate": "Créer la facture brouillon",
+      "billCreated": "Facture brouillon créée avec {count} prestations · {skipped} ignorée(s)",
+      "billError": {
+        "rate_required": "Indiquez un taux horaire",
+        "nothing_to_invoice": "Aucune des heures sélectionnées ne peut être facturée (approuvées, facturables, clôturées et pas encore facturées)",
+        "no_project": "{detail} des heures sélectionnées n'ont pas de projet — le client ne peut être déterminé",
+        "no_client": "Un projet de ces heures n'a pas de client",
+        "multiple_clients": "La sélection contient {detail} clients — sélectionnez les heures d'un seul client",
+        "numbering_failed": "Le numéro de facture n'a pas pu être attribué — {detail}",
+        "invoice_create_failed": "La facture n'a pas pu être créée — {detail}",
+        "failed": "Facture {detail}",
+        "forbidden": "Seuls les rôles bureau peuvent facturer des heures"
+      }
     },
     "shiftForm": {
       "orderGiver": "Donneur d’ordre (reçoit le bon de travail signé)",

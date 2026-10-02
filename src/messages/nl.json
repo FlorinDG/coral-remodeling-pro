@@ -1111,7 +1111,25 @@
       "markedInvoiced": "{marked} gemarkeerd als gefactureerd · {skipped} overgeslagen",
       "unmarkReason": "Waarom de factuurmarkering verwijderen? (bv. creditnota)",
       "unmarkedInvoiced": "{count} factuurmarkering(en) verwijderd",
-      "invoiceListFailed": "Facturen laden mislukt"
+      "invoiceListFailed": "Facturen laden mislukt",
+      "billButton": "Factureer selectie",
+      "billSelectFirst": "Selecteer eerst uren",
+      "billHint": "{count} geselecteerd. Goedgekeurde, factureerbare, afgesloten uren van ÉÉN klant worden een conceptfactuur — één lijn per medewerker per dag. De uren worden gemarkeerd als gefactureerd.",
+      "billRate": "Uurtarief",
+      "billExVat": "excl. btw",
+      "billCreate": "Conceptfactuur maken",
+      "billCreated": "Conceptfactuur gemaakt met {count} registraties · {skipped} overgeslagen",
+      "billError": {
+        "rate_required": "Vul een uurtarief in",
+        "nothing_to_invoice": "Geen van de geselecteerde uren kan gefactureerd worden (goedgekeurd, factureerbaar, afgesloten en nog niet gefactureerd)",
+        "no_project": "{detail} van de geselecteerde uren hebben geen project — de klant is niet te bepalen",
+        "no_client": "Een project van deze uren heeft geen klant",
+        "multiple_clients": "De selectie bevat {detail} klanten — selecteer de uren van één klant",
+        "numbering_failed": "Het factuurnummer kon niet worden toegekend — {detail}",
+        "invoice_create_failed": "De factuur kon niet worden aangemaakt — {detail}",
+        "failed": "Factuur {detail}",
+        "forbidden": "Enkel kantoorrollen kunnen uren factureren"
+      }
     },
     "shiftForm": {
       "orderGiver": "Opdrachtgever (ontvangt de getekende werkbon)",

@@ -1111,7 +1111,25 @@
       "markedInvoiced": "{marked} marcate ca facturate · {skipped} omise",
       "unmarkReason": "De ce eliminați marcajul? (ex. notă de credit)",
       "unmarkedInvoiced": "{count} marcaj(e) eliminate",
-      "invoiceListFailed": "Facturile nu au putut fi încărcate"
+      "invoiceListFailed": "Facturile nu au putut fi încărcate",
+      "billButton": "Facturează selecția",
+      "billSelectFirst": "Selectați mai întâi ore",
+      "billHint": "{count} selectate. Orele aprobate, facturabile și închise ale UNUI client devin o factură ciornă — o linie pe lucrător pe zi. Orele sunt marcate ca facturate.",
+      "billRate": "Tarif orar",
+      "billExVat": "fără TVA",
+      "billCreate": "Creează factura ciornă",
+      "billCreated": "Factură ciornă creată cu {count} înregistrări · {skipped} omise",
+      "billError": {
+        "rate_required": "Introduceți un tarif orar",
+        "nothing_to_invoice": "Niciuna dintre orele selectate nu poate fi facturată (aprobate, facturabile, închise și nefacturate încă)",
+        "no_project": "{detail} dintre orele selectate nu au proiect — clientul nu poate fi stabilit",
+        "no_client": "Un proiect al acestor ore nu are client",
+        "multiple_clients": "Selecția conține {detail} clienți — selectați orele unui singur client",
+        "numbering_failed": "Numărul facturii nu a putut fi alocat — {detail}",
+        "invoice_create_failed": "Factura nu a putut fi creată — {detail}",
+        "failed": "Factura {detail}",
+        "forbidden": "Doar rolurile de birou pot factura ore"
+      }
     },
     "shiftForm": {
       "orderGiver": "Beneficiar (primește fișa de lucru semnată)",

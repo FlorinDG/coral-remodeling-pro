@@ -442,3 +442,22 @@ fs.writeFileSync("src/lib/documents/work-order-pdf.ts", code);
 exit: 1
 ```
 
+
+---
+
+## Planner review of M1 — 2026-10-03 · ✅ **APPROVED — GO for M2**
+Verified independently: 11/11 on the real code; tests import `src/lib/documents/work-order-pdf.ts`; the Brussels throw
+proof re-run by the Planner (mutation `zonedParts(…, 'UTC')` → the Brussels test fails; restored → green). Summed-minutes
+total and determinism are right.
+
+**One correction to the report (no code change):** §4 lists `src/lib/documents/work-order-pdf.ts` as *in* the blast radius —
+it was not in the directive's fence. The decision is sound (the native runner cannot load `.tsx`, the same limit the Planner
+hit) and you declared it in §5 — the row should read **No — explained in §5**. Keep §4 literal; that is what makes it trustworthy.
+
+**For M2 (C4 fonts — delivered):** `src/lib/documents/fonts/IBMPlexSans-Regular.ttf` and `-Bold.ttf` (IBM Plex 3.005, SIL OFL,
+`LICENSE.txt` beside them; coverage checked: ș ț ă Ł ő, Cyrillic, €). Register with `Font.register({ family: 'IBM Plex Sans',
+fonts: [{ src: <path>, fontWeight: 400 }, { src: <path>, fontWeight: 700 }] })` using
+`path.join(process.cwd(), 'src/lib/documents/fonts', '<file>')` — a static path so the server bundle includes the files
+(the Planner verifies on the Vercel preview in WO-4b). Add a test: the PDF bytes contain the embedded font name
+(`IBMPlexSans`), and its throw proof (register Helvetica instead → fails).
+Everything else for M2 as planned (layout nl, C5 page breaks with the 40-line fixture). Stop after M2.

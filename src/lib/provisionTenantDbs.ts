@@ -20,6 +20,7 @@ import {
 } from '@/lib/kernel/system-databases';
 import type { LockedDbKey, LockedDbIds } from '@/lib/lockedDbUtils';
 import { getLockedDbId } from '@/lib/lockedDbUtils';
+import { reconcileSystemSchemas } from '@/lib/data/system-schema-reconcile';
 
 export type { LockedDbKey, LockedDbIds };
 export { getLockedDbId };
@@ -116,6 +117,10 @@ export async function provisionLockedDatabases(
             data: { lockedDbIds },
         });
     }
+
+    // KERN-SCHEMA-1: every system database gets its canonical fields here, on the server, for every
+    // tenant — not when someone happens to open the screen (Murgu had 0 fields on 10 databases).
+    await reconcileSystemSchemas(tenantId, db, lockedDbIds);
 
     return lockedDbIds;
 }

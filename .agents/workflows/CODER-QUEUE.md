@@ -19,6 +19,9 @@
 ## 0 · `WO-4a` — the signed work order PDF renderer — 🟦 PLAN FIRST (protocol §0), then milestones
 📄 `coder-directive-wo-4-pdf.md` — write `.agents/plans/WO-4a.md`, push, STOP for review. Do this BEFORE item 1.
 
+## 0b · `GEO-2` — our location explanation before the phone's prompt — 🟦 PLAN FIRST (protocol §0)
+📄 `coder-directive-geo-2.md` — write `.agents/plans/GEO-2.md`, push, STOP for review. After WO-4a's plan.
+
 ## 1 · `R2-1-CENSUS` — map every direct GlobalPage write (read-only) + one honest backoff test
 📄 `coder-directive-r2-1-write-census.md` — 33 writes in 18 files, one row each (tenant check · OCC · audit · fate). `src/` read-only.
 

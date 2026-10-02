@@ -2,7 +2,7 @@
 -- ART-DISC-1 · articles: "Discount" becomes a REAL discount (Florin 2026-10-02)
 -- Today the live NettoKost formula treats Discount as "the share you pay" (80 = 20 % off); the quote and
 -- invoice engines treat it as the discount (20 = 20 % off). Fix: flip each stored value (v → 100 − v) and
--- set the formula to  BruttoKost * (1 - Discount / 100)  IN ONE TRANSACTION — every NettoKost stays the
+-- set the formula to  round(… BruttoKost * (1 - Discount / 100), 2)  IN ONE TRANSACTION (the live one rounds — kept) — every NettoKost stays the
 -- same number. Values written back from a quote/invoice ("Save/Update Library") are ALREADY real
 -- discounts and must NOT be flipped — the preview shows them so you can decide.
 -- Run in the Neon SQL editor. Step 1 changes nothing.
@@ -50,7 +50,7 @@ WHERE d.id = p."databaseId" AND d."logicalKey" = 'articles'
 UPDATE "GlobalDatabase" d
 SET properties = (
         SELECT jsonb_agg(CASE WHEN e->>'id' = 'prop-art-netto'
-                              THEN jsonb_set(e, '{config,formulaExpression}', to_jsonb('if(empty(Discount), BruttoKost, BruttoKost * (1 - Discount / 100))'::text))
+                              THEN jsonb_set(e, '{config,formulaExpression}', to_jsonb('round(if(empty(Discount), BruttoKost, BruttoKost * (1 - Discount / 100)), 2)'::text))
                               ELSE e END ORDER BY ord)
         FROM jsonb_array_elements(d.properties::jsonb) WITH ORDINALITY t(e, ord)),
     "updatedAt" = now()

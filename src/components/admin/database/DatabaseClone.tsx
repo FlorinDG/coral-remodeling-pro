@@ -675,7 +675,7 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
       { id: 'prop-art-supplier',  name: 'Leverancier',       type: 'relation', config: { relationDatabaseId: resolveDbId('db-suppliers'), relationDisplayPropertyId: 'title' } },
       { id: 'prop-art-bruto',     name: 'BruttoKost',        type: 'currency' },
       { id: 'prop-art-remise',    name: 'Discount',          type: 'percent' },
-      { id: 'prop-art-netto',     name: 'NettoKost',         type: 'formula', config: { formulaExpression: 'if(empty(Discount), BruttoKost, BruttoKost * (1 - Discount / 100))' } },
+      { id: 'prop-art-netto',     name: 'NettoKost',         type: 'formula', config: { formulaExpression: 'round(if(empty(Discount), BruttoKost, BruttoKost * (1 - Discount / 100)), 2)' } },
       { id: 'prop-art-margin',    name: 'Marge Standard',    type: 'percent' },
       { id: 'prop-art-margin-euro', name: 'Marge€',          type: 'formula', config: { formulaExpression: 'if(empty(Marge Standard), 0, NettoKost * Marge Standard / 100)' } },
       { id: 'prop-art-verkoop',   name: 'Verkoopprijs',      type: 'formula', config: { formulaExpression: 'NettoKost + Marge€' } },

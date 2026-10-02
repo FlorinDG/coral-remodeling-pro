@@ -789,6 +789,9 @@ model ClockEntry {
   invoicedAt        DateTime?
   invoicedBy        String?
   invoiceRef        String?
+  /// TS-ARCH-1: out of the default Timesheets view, still stored; restorable any time
+  archivedAt        DateTime?
+  archivedBy        String?
 
   costRatePrevious  Float?
   createdBy         String?

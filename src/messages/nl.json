@@ -1132,7 +1132,12 @@
       },
       "editReason": "Reden van de wijziging aan goedgekeurde uren (verplicht)",
       "editReasonPlaceholder": "bv. medewerker vergat uit te klokken — telefonisch bevestigd",
-      "editReasonRequired": "Geef een reden voor de wijziging aan goedgekeurde uren"
+      "editReasonRequired": "Geef een reden voor de wijziging aan goedgekeurde uren",
+      "statusArchived": "Gearchiveerd",
+      "bulkArchive": "Archiveren",
+      "bulkRestore": "Terugzetten",
+      "archivedToast": "{count} gearchiveerd · {skipped} overgeslagen (enkel goedgekeurde / geweigerde / gefactureerde, afgesloten uren)",
+      "restoredToast": "{count} teruggezet"
     },
     "shiftForm": {
       "orderGiver": "Opdrachtgever (ontvangt de getekende werkbon)",

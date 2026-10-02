@@ -266,3 +266,40 @@ export async function invoiceSelectedHours(entryIds: string[], hourlyRate: numbe
     }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────────────────────────
+// TS-ARCH-1 · archive (Florin 2026-10-02: "store them but remove from the view, always able to bring
+// back — the list gets polluted otherwise"). Only SETTLED hours (approved / denied / invoiced, closed):
+// archiving pending or running hours would hide unfinished work. Archived hours stay in every export.
+// ─────────────────────────────────────────────────────────────────────────────────────────────────
+export async function setHoursArchived(entryIds: string[], archived: boolean):
+    Promise<{ ok: true; changed: number; skipped: number } | Fail> {
+    const a = await office();
+    if (!a) return { ok: false, error: 'forbidden' };
+    const ids = Array.from(new Set(entryIds)).slice(0, 5000);
+    const rows = await prisma.clockEntry.findMany({
+        where: archived
+            ? { id: { in: ids }, tenantId: a.tenantId, archivedAt: null, clockOutTime: { not: null }, approvalStatus: { in: ['approved', 'denied'] } }
+            : { id: { in: ids }, tenantId: a.tenantId, archivedAt: { not: null } },
+        select: { id: true },
+    });
+    if (!rows.length) return { ok: true, changed: 0, skipped: ids.length };
+    const at = new Date();
+    try {
+        const ops = [prisma.clockEntry.updateMany({
+            where: { id: { in: rows.map(r => r.id) }, tenantId: a.tenantId },
+            data: archived ? { archivedAt: at, archivedBy: a.userId } : { archivedAt: null, archivedBy: null },
+        })];
+        for (const r of rows) {
+            const audit = await buildAuditLogData({ tenantId: a.tenantId, userId: a.userId }, {
+                entityType: 'clockEntry', entityId: r.id, action: archived ? 'archive' : 'restore', field: 'archivedAt',
+                before: { archivedAt: archived ? null : 'set' }, after: { archivedAt: archived ? at.toISOString() : null },
+            });
+            ops.push(buildAuditLogOperation(prisma, audit));
+        }
+        await prisma.$transaction(ops);
+        return { ok: true, changed: rows.length, skipped: ids.length - rows.length };
+    } catch (err) {
+        console.error('[setHoursArchived] failed:', err);
+        return { ok: false, error: 'failed', detail: err instanceof Error ? err.message : String(err) };
+    }
+}

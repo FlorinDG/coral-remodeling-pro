@@ -87,8 +87,13 @@ export async function GET(req: Request) {
         where.projectId = { in: requestedProjectIds };
     }
     
+    // TS-ARCH-1: archived hours leave every view except their own chip.
+    where.archivedAt = approvalStatus === 'archived' ? { not: null } : null;
+
     // Status chips (TS-INV-1): approved = approved and NOT yet invoiced · invoiced · nonBillable.
-    if (approvalStatus === 'invoiced') {
+    if (approvalStatus === 'archived') {
+        // archived: any status
+    } else if (approvalStatus === 'invoiced') {
         where.invoicedAt = { not: null };
     } else if (approvalStatus === 'nonBillable') {
         where.billable = false;

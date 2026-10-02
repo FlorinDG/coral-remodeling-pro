@@ -23,7 +23,7 @@ import { isSelfApproved } from '@/lib/provenance';
 import { describeError } from '@/lib/describe-error';
 import { toast } from 'sonner';
 import SearchableSelect from '@/components/ui/SearchableSelect';
-import { listInvoicesForHours, markHoursInvoiced, unmarkHoursInvoiced, invoiceSelectedHours, type InvoiceOption } from '@/lib/data/timesheet-invoicing';
+import { listInvoicesForHours, markHoursInvoiced, unmarkHoursInvoiced, invoiceSelectedHours, setHoursArchived, type InvoiceOption } from '@/lib/data/timesheet-invoicing';
 import { useDatabaseStore } from '@/components/admin/database/store';
 
 interface Employee {
@@ -280,6 +280,15 @@ function TimesheetsContent() {
         } finally {
             setBilling(false);
         }
+    };
+
+    // TS-ARCH-1 · archive / restore the selection
+    const archiveSelection = async (archived: boolean) => {
+        const r = await setHoursArchived(Array.from(selectedEntries), archived);
+        if (!r.ok) { toast.error(r.detail ? `${r.error} — ${r.detail}` : r.error); return; }
+        toast.success(t(archived ? 'archivedToast' : 'restoredToast', { count: r.changed, skipped: r.skipped }));
+        setSelectedEntries(new Set());
+        refresh();
     };
 
     const unmarkInvoiced = async () => {
@@ -576,6 +585,12 @@ function TimesheetsContent() {
                             >
                                 {t('statusNonBillable')}
                             </button>
+                            <button 
+                                onClick={() => setApprovalStatusFilter('archived')}
+                                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${currentStatus === 'archived' ? 'bg-neutral-500 text-white' : 'bg-neutral-100 text-neutral-500 hover:bg-neutral-200'}`}
+                            >
+                                {t('statusArchived')}
+                            </button>
                         </div>
 
                         <div className="flex items-center gap-3">
@@ -585,6 +600,9 @@ function TimesheetsContent() {
                                     <Button size="sm" className="h-7 text-xs bg-green-600 hover:bg-green-700 text-white ml-2" onClick={() => handleBulkAction('approved')}>{t('bulkApprove')}</Button>
                                     <Button size="sm" variant="outline" className="h-7 text-xs text-red-600 border-red-200 hover:bg-red-50" onClick={() => handleBulkAction('denied')}>{t('bulkDeny')}</Button>
                                     <Button size="sm" variant="outline" className="h-7 text-xs text-blue-700 border-blue-200 hover:bg-blue-50" onClick={openInvoiceDialog}>{t('bulkInvoiced')}</Button>
+                                    {currentStatus === 'archived'
+                                        ? <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => archiveSelection(false)}>{t('bulkRestore')}</Button>
+                                        : <Button size="sm" variant="ghost" className="h-7 text-xs text-neutral-600" onClick={() => archiveSelection(true)}>{t('bulkArchive')}</Button>}
                                     {currentStatus === 'invoiced' && (
                                         <Button size="sm" variant="ghost" className="h-7 text-xs text-neutral-600" onClick={unmarkInvoiced}>{t('bulkUninvoice')}</Button>
                                     )}

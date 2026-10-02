@@ -1132,7 +1132,12 @@
       },
       "editReason": "Reason for changing approved hours (required)",
       "editReasonPlaceholder": "e.g. worker forgot to clock out — confirmed by phone",
-      "editReasonRequired": "Give a reason for changing approved hours"
+      "editReasonRequired": "Give a reason for changing approved hours",
+      "statusArchived": "Archived",
+      "bulkArchive": "Archive",
+      "bulkRestore": "Restore",
+      "archivedToast": "{count} archived · {skipped} skipped (only approved / denied / invoiced, closed hours)",
+      "restoredToast": "{count} restored"
     },
     "shiftForm": {
       "orderGiver": "Order giver (receives the signed work order)",

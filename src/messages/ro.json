@@ -1132,7 +1132,12 @@
       },
       "editReason": "Motivul modificării orelor aprobate (obligatoriu)",
       "editReasonPlaceholder": "ex. lucrătorul a uitat să ponteze ieșirea — confirmat telefonic",
-      "editReasonRequired": "Indicați un motiv pentru modificarea orelor aprobate"
+      "editReasonRequired": "Indicați un motiv pentru modificarea orelor aprobate",
+      "statusArchived": "Arhivat",
+      "bulkArchive": "Arhivează",
+      "bulkRestore": "Restaurează",
+      "archivedToast": "{count} arhivate · {skipped} omise (doar ore aprobate / respinse / facturate, închise)",
+      "restoredToast": "{count} restaurate"
     },
     "shiftForm": {
       "orderGiver": "Beneficiar (primește fișa de lucru semnată)",

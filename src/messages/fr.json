@@ -1131,7 +1131,12 @@
       },
       "editReason": "Motif de la modification d'heures approuvées (obligatoire)",
       "editReasonPlaceholder": "ex. l'ouvrier a oublié de pointer la sortie — confirmé par téléphone",
-      "editReasonRequired": "Indiquez un motif pour modifier des heures approuvées"
+      "editReasonRequired": "Indiquez un motif pour modifier des heures approuvées",
+      "statusArchived": "Archivé",
+      "bulkArchive": "Archiver",
+      "bulkRestore": "Restaurer",
+      "archivedToast": "{count} archivé(s) · {skipped} ignoré(s) (seulement les heures approuvées / refusées / facturées, clôturées)",
+      "restoredToast": "{count} restauré(s)"
     },
     "shiftForm": {
       "orderGiver": "Donneur d’ordre (reçoit le bon de travail signé)",

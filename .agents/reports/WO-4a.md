@@ -6,6 +6,7 @@ Item:            WO-4a
 Directive:       .agents/workflows/coder-directive-wo-4-pdf.md
 Directive blob:  d60eb7bef9a1ff3a3735d3c52210be809dd88f16
 Start SHA:       7521fb4
+End SHA:         433fe0a
 Branch:          develop
 Date:            2026-10-03
 Milestone:       M1 (View model + Validation + Brussels Time + %PDF + Determinism)
@@ -15,7 +16,9 @@ Milestone:       M1 (View model + Validation + Brussels Time + %PDF + Determinis
 `DONE — M1 ready for review`
 
 ### 2 · Commits
-(To be populated with commit SHA)
+| SHA | Message | Files | +/− |
+|---|---|---|---|
+| `433fe0a` | feat(wo-4a): M1 signed work order view model, validation, Brussels time, and deterministic PDF tests | 5 | +1231 |
 
 ### 3 · Checklist mirror
 | § | Item | Status | Evidence |

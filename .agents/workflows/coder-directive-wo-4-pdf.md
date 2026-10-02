@@ -13,7 +13,7 @@ generated AT SIGNING, stored once, mailed later from the stored bytes) · §10d 
 ```ts
 // src/lib/documents/work-order-pdf.tsx
 export interface SignedWorkOrderPdfInput {
-  tenant:   { name: string; vatNumber?: string | null; address?: string | null; logoUrl?: string | null; brandColor?: string | null };
+  tenant:   { name: string; vatNumber?: string | null; address?: string | null; logoPng?: Buffer | null; brandColor?: string | null };  // logoPng: review C3
   client:   { name: string; address?: string | null } | null;
   workOrder:{ reference: string; date: string /* YYYY-MM-DD, Brussels */; siteAddress?: string | null; projectName?: string | null };
   lines:    Array<{ workerName: string; in: string /* HH:mm */; out: string /* HH:mm */; minutes: number }>;

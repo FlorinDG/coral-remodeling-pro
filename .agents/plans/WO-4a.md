@@ -3,7 +3,7 @@
 **Target:** `src/lib/documents/work-order-pdf.tsx` & `tests/work-order-pdf.test.ts`  
 **Directive:** `.agents/workflows/coder-directive-wo-4-pdf.md`  
 **Protocol:** `coder-report-protocol.md` §0 (Plan First)  
-**Status:** 🟦 AWAITING PLANNER REVIEW
+**Status:** 🟢 REVIEWED — GO for M1 (see Planner review at the end)
 
 ---
 
@@ -239,3 +239,51 @@ All tests call the real `renderSignedWorkOrderPdf` function.
 1. **Logo Image Format:** If `tenant.logoUrl` is provided, is it guaranteed to be a public URL or data URI readable by `@react-pdf/renderer`? (Plan: wrap `<Image src={tenant.logoUrl} />` defensively so an unparseable or broken URL does not crash document generation).
 2. **Signature aspect ratio:** Signature PNGs from `react-signature-canvas` are typically variable aspect ratios (often ~3:1 or 2:1). We plan to render the signature image with `objectFit: 'contain'`, fixed height of 45–50pt, and max width of 160pt to keep it balanced and legible.
 3. **Empty sections:** If `tasks` is empty, or `description` is null, or `crewNotes` is empty, those sections are omitted completely rather than printing empty boxes.
+
+---
+
+## Planner review — 2026-10-02 · **GO for M1, with these corrections** (binding)
+
+Good plan: pure renderer, named error, fail-fast, sections omitted when empty, a clear layout. Corrections:
+
+### C1 · 🔴 Make the content testable — a pure VIEW MODEL between input and PDF
+Tests 5 and 6 cannot fail meaningfully: a PDF embeds its creation date, so two renders ALWAYS differ (test 5
+passes even with the language hardcoded — its throw proof would not throw), and "renders without crashing"
+(test 6) proves nothing about the notes. Split the renderer:
+```ts
+export function buildWorkOrderView(input: SignedWorkOrderPdfInput): WorkOrderView;   // pure data: every printed string
+export async function renderSignedWorkOrderPdf(input: SignedWorkOrderPdfInput): Promise<Buffer>; // validate → view → PDF
+```
+`WorkOrderView` holds every string the PDF prints (labels, rows with their formatted durations, the TOTAAL from
+**summed minutes**, task lines, the description, each crew note with its worker, the signature caption). The React-PDF
+component only lays out a view. Tests assert on the VIEW: nl vs fr labels; `7,50 u (07:30)`; the total from summed
+minutes (3 × 20 min → `1,00 u (01:00)`, never 0,99); description and every crew note present verbatim; no field of
+the input that must not print appears anywhere in the view (serialize it and search). Keep one `%PDF` test on the
+real renderer. Set the Document's `creationDate`/`modDate` from `signature.signedAt` so the same input renders the
+same bytes, and add a determinism test (same input twice → identical buffers) — its throw proof: remove the fixed date.
+
+### C2 · 🔴 Times in BRUSSELS, not the server's clock
+`formatDateTime(new Date(signedAt))` formats in the process's time zone — Vercel runs UTC, so a 16:45 signature
+prints 14:45. Use `zonedParts(signedAt)` from `src/lib/kernel/shift-time.ts` (Europe/Brussels) and format date + time
+from its parts. Test: `2026-10-02T14:45:00Z` → `02/10/2026 16:45`.
+
+### C3 · Logo — no network in a pure renderer
+Contract change (Planner's): `tenant.logoUrl` becomes `tenant.logoPng?: Buffer | null`. WO-4b fetches the logo; the
+renderer never touches a URL. Missing → no logo, no error.
+
+### C4 · Fonts — Helvetica is fine for M1, NOT for the final document
+Built-in Helvetica covers Latin-1 only: Romanian (ș ț ă), Polish, Czech and Cyrillic names — your crew's and clients'
+names — would print as missing glyphs on a signed document. Before M2 the Planner adds static IBM Plex Sans TTFs
+(Regular + Bold, full Latin-ext + Cyrillic) at `src/lib/documents/fonts/`; register them with `Font.register` from those
+local paths. Test (on the view): a worker named `Ștefan Țurcanu` and a client `Дмитрий` are carried through unchanged.
+
+### C5 · Page breaks
+Long lists must flow: repeat the table header on a new page (`fixed`), keep the TOTAAL row with the last line, keep the
+signature block in one piece (`wrap={false}`), page numbers in the footer (`render` prop). M2 fixture: 40 lines.
+
+### Answers
+1. Logo → C3. 2. Signature: `objectFit: 'contain'`, max 160 × 60 pt — agreed. 3. Empty sections omitted — agreed.
+Declaration text — agreed: nl "Voor akkoord met de gepresteerde uren en uitgevoerde werken." (fr/en in M3).
+
+**Milestones as proposed, with C1/C2 in M1 (view model + validation + time zone + `%PDF` + determinism).**
+**GO for M1.** Stop after M1 for the Planner's ✅.

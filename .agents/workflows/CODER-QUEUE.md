@@ -12,7 +12,16 @@
 
 ---
 
-## 1 · `R2-5` — characterization tests for the write path (tests only)
+🔴 **STANDING (Florin 2026-10-02) — read `coder-report-protocol.md` §3a and §3b before any item:**
+**every new test needs a THROW PROOF** (break the real code, show the test fail, restore), and
+**bending a directive is not progress** — a blocked step is STOPPED, never worked around.
+
+## ✅ `R2-5` — DONE WITH CORRECTIONS (review 2026-10-02, `MORNING-2026-10-02.md` §2)
+Store tests accepted. 11 of 13 OCC tests tested a COPY of the merge loop (§3a) — removed on
+`pending/occ-merge`, replaced by real tests of `lib/records/occ-merge.ts`. Leftover: the backoff-formula
+test in `write-path-store.test.ts` also asserts a copy — fold into the next item that touches it.
+
+## (was) 1 · `R2-5` — characterization tests for the write path (tests only)
 📄 `coder-directive-r2-5-characterization.md` — pins OCC, field merge, single-flight, sync retry, dirty-page protection, persistence BEFORE R2 moves anything. `src/` is read-only.
 
 ✅ `LOC-SWEEP-1` — done 2026-10-01 (`03ec24c`, report accepted by the Planner; live on main).

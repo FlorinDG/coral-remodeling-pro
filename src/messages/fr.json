@@ -1128,7 +1128,10 @@
         "invoice_create_failed": "La facture n'a pas pu être créée — {detail}",
         "failed": "Facture {detail}",
         "forbidden": "Seuls les rôles bureau peuvent facturer des heures"
-      }
+      },
+      "editReason": "Motif de la modification d'heures approuvées (obligatoire)",
+      "editReasonPlaceholder": "ex. l'ouvrier a oublié de pointer la sortie — confirmé par téléphone",
+      "editReasonRequired": "Indiquez un motif pour modifier des heures approuvées"
     },
     "shiftForm": {
       "orderGiver": "Donneur d’ordre (reçoit le bon de travail signé)",

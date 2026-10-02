@@ -1129,7 +1129,10 @@
         "invoice_create_failed": "Factura nu a putut fi creată — {detail}",
         "failed": "Factura {detail}",
         "forbidden": "Doar rolurile de birou pot factura ore"
-      }
+      },
+      "editReason": "Motivul modificării orelor aprobate (obligatoriu)",
+      "editReasonPlaceholder": "ex. lucrătorul a uitat să ponteze ieșirea — confirmat telefonic",
+      "editReasonRequired": "Indicați un motiv pentru modificarea orelor aprobate"
     },
     "shiftForm": {
       "orderGiver": "Beneficiar (primește fișa de lucru semnată)",

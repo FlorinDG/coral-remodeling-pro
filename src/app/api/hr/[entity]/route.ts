@@ -31,7 +31,7 @@ import { isShiftSigned, SIGNED_REFUSAL } from '@/lib/data/work-order-lock';
 import { recordClockPlace } from '@/lib/data/geo';
 import { after } from 'next/server';
 import type { Prisma } from '@prisma/client';
-import { isTenantHrRole } from '@/lib/roles';
+import { isTenantHrRole, isTenantTopRole } from '@/lib/roles';
 
 const resend = new Resend(process.env.RESEND_API_KEY || 're_dummy_fallback');
 
@@ -843,13 +843,20 @@ export async function PATCH(
                 }
             }
 
-            // Edit Guard check
+            // Edit Guard — approved hours: a written reason ALWAYS (it goes into the audit trail), and
+            // either the time-limited unlock or the tenant owner (Florin 2026-10-02: the highest authority
+            // is never locked out of a bon it approved).
+            const editReason = typeof data.editReason === 'string' ? data.editReason.trim().slice(0, 1000) : '';
+            delete data.editReason;
             if (existingEntry.approvalStatus === 'approved') {
                 const isForceClockOut = !existingEntry.clockOutTime && data.clockOutTime;
                 if (!isForceClockOut) {
                     const isUnlocked = await verifyUnlockCookie(ctx.tenantId, ctx.userId);
-                    if (!isUnlocked) {
+                    if (!isUnlocked && !isTenantTopRole(ctx.role)) {
                         return NextResponse.json({ error: 'Editing approved entries requires unlock' }, { status: 403 });
+                    }
+                    if (editReason.length < 3) {
+                        return NextResponse.json({ error: 'edit_reason_required: say why approved hours are changed' }, { status: 400 });
                     }
                     data.editedAfterApproval = true;
                 }
@@ -884,7 +891,7 @@ export async function PATCH(
                 action: auditAction,
                 before: existingEntry,
                 after: { ...existingEntry, ...data, ...(data.source ? { source: data.source } : {}) },
-                reason: data.editedAfterApproval ? 'edited-after-approval' : null,
+                reason: data.editedAfterApproval ? `edited-after-approval: ${editReason}` : (editReason || null),
             });
             const auditOp = buildAuditLogOperation(prisma, auditData);
 

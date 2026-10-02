@@ -9,6 +9,9 @@ import { resolveFileUrl } from '@/lib/files';
 import SearchableSelect from '@/components/ui/SearchableSelect';
 import { isSelfApproved } from '@/lib/provenance';
 import { describeError } from '@/lib/describe-error';
+import { useSession } from 'next-auth/react';
+import { isTenantTopRole } from '@/lib/roles';
+import { TimeSelect } from '@/components/ui/TimeSelect';
 import { getEntryShiftContext, type EntryShiftContext } from '@/lib/data/entry-shift-context';
 
 interface TimesheetEntryDetailProps {
@@ -29,6 +32,10 @@ export function TimesheetEntryDetail({ entry, onUpdate, unlockTokenValid }: Time
     const [projectId, setProjectId] = useState(entry.projectId || '');
     const [billable, setBillable] = useState(entry.billable !== false);
     const [notes, setNotes] = useState(entry.notes || '');
+    // Why approved hours are changed — required, goes into the audit trail (Florin 2026-10-02).
+    const [editReason, setEditReason] = useState('');
+    const { data: session } = useSession();
+    const isTop = isTenantTopRole((session?.user as { role?: string } | undefined)?.role);
     const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
     const [error, setError] = useState('');
     const [auditLogs, setAuditLogs] = useState<any[]>([]);
@@ -92,10 +99,12 @@ export function TimesheetEntryDetail({ entry, onUpdate, unlockTokenValid }: Time
     const allMedia = [...entryPhotos, ...shiftAttachments];
 
     const isApproved = entry.approvalStatus === 'approved';
-    const canEdit = !isApproved || unlockTokenValid;
+    // The owner is never locked out of a bon (a reason is still required); others need the unlock.
+    const canEdit = !isApproved || unlockTokenValid || isTop;
+    const needsReason = isApproved;
     const isRunning = !entry.clockOutTime;
 
-    const showUnlockWarning = isApproved && !unlockTokenValid && editing;
+    const showUnlockWarning = isApproved && !unlockTokenValid && !isTop && editing;
 
     const handleCancel = () => {
         setClockInTime(entry.clockInTime ? format(parseISO(entry.clockInTime), 'HH:mm') : '');
@@ -112,7 +121,11 @@ export function TimesheetEntryDetail({ entry, onUpdate, unlockTokenValid }: Time
         const dateBaseOut = entry.clockOutTime ? format(parseISO(entry.clockOutTime), 'yyyy-MM-dd') : dateBaseIn;
         
         const combinedIn = clockInTime ? new Date(`${dateBaseIn}T${clockInTime}:00`) : null;
-        const combinedOut = clockOutTime ? new Date(`${dateBaseOut}T${clockOutTime}:00`) : null;
+        const combinedOut = clockOutTime ? new Date(`${dateBaseIn}T${clockOutTime}:00`) : null;
+        // An end at or before the start is the next day (night work) — not the original out-date.
+        if (combinedIn && combinedOut && combinedOut.getTime() <= combinedIn.getTime()) combinedOut.setDate(combinedOut.getDate() + 1);
+        void dateBaseOut;
+        if (needsReason && editReason.trim().length < 3) { setError(t('editReasonRequired')); return; }
 
         setLoading(true);
         setError('');
@@ -123,7 +136,9 @@ export function TimesheetEntryDetail({ entry, onUpdate, unlockTokenValid }: Time
                 projectId: projectId || null,
                 billable: Boolean(billable),
                 notes: notes.trim() || null,
+                ...(needsReason ? { editReason: editReason.trim() } : {}),
             });
+            setEditReason('');
             onUpdate(updated);
             setEditing(false);
         } catch (err: any) {
@@ -222,15 +237,23 @@ export function TimesheetEntryDetail({ entry, onUpdate, unlockTokenValid }: Time
                         <div className="space-y-2 text-sm">
                             <div className="flex items-center justify-between">
                                 <span className="font-medium text-neutral-500">{t('in', { fallback: 'In' })}:</span>
-                                <input type="time" value={clockInTime} onChange={(e) => setClockInTime(e.target.value)} disabled={!canEdit} className="border rounded px-2 py-1 text-xs w-24" />
+                                <div className="w-32"><TimeSelect value={clockInTime} onChange={setClockInTime} minuteStep={1} ariaLabel={t('in', { fallback: 'In' })} /></div>
                             </div>
                             <div className="flex items-center justify-between">
                                 <span className="font-medium text-neutral-500">{t('uit', { fallback: 'Uit' })}:</span>
-                                <input type="time" value={clockOutTime} onChange={(e) => setClockOutTime(e.target.value)} disabled={!canEdit} className="border rounded px-2 py-1 text-xs w-24" />
+                                <div className="w-32"><TimeSelect value={clockOutTime} onChange={setClockOutTime} minuteStep={1} ariaLabel={t('uit', { fallback: 'Uit' })} /></div>
                             </div>
+                            {needsReason && (
+                                <label className="block space-y-1">
+                                    <span className="font-medium text-neutral-500 text-xs">{t('editReason')}</span>
+                                    <textarea value={editReason} onChange={(e) => setEditReason(e.target.value)} rows={2}
+                                        placeholder={t('editReasonPlaceholder')}
+                                        className="border rounded px-2 py-1 text-xs w-full bg-white dark:bg-neutral-800" />
+                                </label>
+                            )}
                             {error && <div className="text-red-500 text-xs">{error}</div>}
                             <div className="flex gap-2 pt-2">
-                                <Button size="sm" disabled={loading || !canEdit} onClick={handleSave}>
+                                <Button size="sm" disabled={loading || !canEdit || (needsReason && editReason.trim().length < 3)} onClick={handleSave}>
                                     {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : t('save', { fallback: 'Save' })}
                                 </Button>
                                 <Button size="sm" variant="ghost" onClick={handleCancel} title={t('cancel', { fallback: 'Annuleren' })} className="text-xs gap-1">

@@ -1129,7 +1129,10 @@
         "invoice_create_failed": "De factuur kon niet worden aangemaakt — {detail}",
         "failed": "Factuur {detail}",
         "forbidden": "Enkel kantoorrollen kunnen uren factureren"
-      }
+      },
+      "editReason": "Reden van de wijziging aan goedgekeurde uren (verplicht)",
+      "editReasonPlaceholder": "bv. medewerker vergat uit te klokken — telefonisch bevestigd",
+      "editReasonRequired": "Geef een reden voor de wijziging aan goedgekeurde uren"
     },
     "shiftForm": {
       "orderGiver": "Opdrachtgever (ontvangt de getekende werkbon)",

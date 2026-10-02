@@ -1129,7 +1129,10 @@
         "invoice_create_failed": "The invoice could not be created — {detail}",
         "failed": "Invoice {detail}",
         "forbidden": "Only office roles can invoice hours"
-      }
+      },
+      "editReason": "Reason for changing approved hours (required)",
+      "editReasonPlaceholder": "e.g. worker forgot to clock out — confirmed by phone",
+      "editReasonRequired": "Give a reason for changing approved hours"
     },
     "shiftForm": {
       "orderGiver": "Order giver (receives the signed work order)",

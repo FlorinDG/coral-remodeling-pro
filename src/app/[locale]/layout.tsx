@@ -1,25 +1,12 @@
 import type { Metadata, Viewport } from "next";
-import { Oxanium, IBM_Plex_Sans } from "next/font/google";
 import { headers } from 'next/headers';
 
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations } from 'next-intl/server';
 import { ThemeProvider } from "@/components/ThemeProvider";
 import Script from "next/script";
+import "../fonts.css";   // self-hosted fonts — no Google fetch at build time
 import "../globals.css";
-
-const oxanium = Oxanium({
-    variable: "--font-oxanium",
-    subsets: ["latin"],
-    weight: ["300", "400", "500", "600", "700", "800"],
-});
-
-const ibmPlexSans = IBM_Plex_Sans({
-    variable: "--font-content",
-    subsets: ["latin", "latin-ext"],
-    weight: ["300", "400", "500", "600", "700"],
-    display: "swap",
-});
 
 const baseUrl = 'https://coral-group.be';
 
@@ -247,7 +234,7 @@ export default async function RootLayout({
                 )}
             </head>
             <body
-                className={`${oxanium.variable} ${ibmPlexSans.variable} antialiased selection:bg-[#d75d00]/30 overflow-y-scroll`}
+                className={`antialiased selection:bg-[#d75d00]/30 overflow-y-scroll`}
                 suppressHydrationWarning
             >
                 <NextIntlClientProvider messages={messages}>

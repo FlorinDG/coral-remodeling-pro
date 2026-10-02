@@ -237,6 +237,12 @@ export function CustomDatePicker({ value, onChange, min, max, placeholder = 'Sel
             {open && pos && typeof document !== 'undefined' && createPortal(
                 <div
                     data-datepicker-popover="true"
+                    // Inside a modal Dialog the calendar must live IN the dialog: a modal blocks pointer
+                    // events everywhere else, so a calendar on <body> showed but its days could not be
+                    // clicked — the form kept today's date (Florin 2026-10-02). Same rule as SearchableSelect.
+                    data-portal-dropdown="true"
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onMouseDown={(e) => e.stopPropagation()}
                     className="fixed z-[99999] bg-white/95 dark:bg-neutral-950/95 backdrop-blur-md border border-neutral-300 dark:border-white/10 rounded-2xl shadow-2xl p-4 w-72 select-none animate-in fade-in slide-in-from-top-1 duration-150"
                     style={pos.placement === 'top'
                         ? { bottom: window.innerHeight - pos.top, left: pos.left }
@@ -312,7 +318,7 @@ export function CustomDatePicker({ value, onChange, min, max, placeholder = 'Sel
                         </div>
                     )}
                 </div>
-            , document.body)}
+            , (ref.current?.closest('[role="dialog"]') as HTMLElement | null) ?? document.body)}
         </div>
     );
 }

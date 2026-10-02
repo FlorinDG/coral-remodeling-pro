@@ -11,6 +11,7 @@ import SearchableSelect from '@/components/ui/SearchableSelect';
 import { CustomDatePicker } from '@/components/ui/CustomDatePicker';
 import { TimeSelect } from '@/components/ui/TimeSelect';
 import { useLocale } from 'next-intl';
+import { localDateKey } from '@/lib/kernel/shift-time';
 
 interface Employee {
     id: string;
@@ -42,7 +43,7 @@ export function ManualEntryModal({ open, onOpenChange, onSuccess }: Props) {
 
     useEffect(() => {
         if (open) {
-            setDate(new Date().toISOString().split('T')[0]);
+            setDate(localDateKey(new Date()));   // local date — toISOString() is UTC (yesterday before 02:00)
             
             if (employees.length === 0) {
                 hrList<Employee>('employees').then(data => setEmployees(data)).catch(console.error);

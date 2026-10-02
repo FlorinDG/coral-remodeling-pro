@@ -8,7 +8,7 @@
  *     upgrades (one so far: `accountantExportedAt` must be a checkbox — the screen's legacy fix);
  *   - custom (non-canonical) properties are kept as they are.
  */
-import type { Property } from '@/components/admin/database/types';
+import type { KernelProperty as Property } from './system-schemas';
 
 export interface SchemaPlan {
     added: string[];          // ids appended
@@ -23,7 +23,7 @@ export function planSchemaReconcile(current: Property[], canonical: Property[]):
     const patched = current.map(p => {
         if (p.id === 'accountantExportedAt' && p.type !== 'checkbox') {   // legacy fix, from the screen
             upgraded.push(p.id);
-            return { ...p, type: 'checkbox' as const };
+            return { ...p, type: 'checkbox' };
         }
         return p;
     });

@@ -10,9 +10,16 @@
  *
  * Keys are the legacy base ids ('db-articles', …) — SYSTEM_DATABASES[role].legacyBase.
  */
-import type { Property } from '@/components/admin/database/types';
+/** The kernel's own shape of a database field (L0 may not import screen types — PRE-1). Structurally a
+ *  subset of the screens' `Property`, so the screens can use these as their properties. */
+export interface KernelProperty {
+  id: string;
+  name: string;
+  type: string;
+  config?: Record<string, unknown>;
+}
 
-export function canonicalSchemas(resolveDbId: (base: string) => string): Record<string, Property[]> {
+export function canonicalSchemas(resolveDbId: (base: string) => string): Record<string, KernelProperty[]> {
   return ({
   'db-site-visits': [
     { id: 'title',        name: 'Titel',            type: 'text' },

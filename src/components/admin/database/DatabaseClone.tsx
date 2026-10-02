@@ -257,7 +257,7 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
   }, [viewMenuOpenId]);
 
   // ── Default hardcoded property schemas for free-tier CRM databases ──
-  const DEFAULT_PROPERTIES_MAP: Record<string, Property[]> = useMemo(() => canonicalSchemas(resolveDbId), [resolveDbId]);
+  const DEFAULT_PROPERTIES_MAP: Record<string, Property[]> = useMemo(() => canonicalSchemas(resolveDbId) as unknown as Record<string, Property[]>, [resolveDbId]);
 
   // ── Schema Enforcement: Ensure locked databases have the correct hardcoded properties ──
   useEffect(() => {

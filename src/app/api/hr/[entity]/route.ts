@@ -517,6 +517,8 @@ export async function POST(
     if (entity === 'clock-entries') {
         // Facts the server records about an act — never values a client supplies (any role).
         delete data.approvedBy;
+        // TS-INV-1: invoiced is set ONLY by markHoursInvoiced / unmarkHoursInvoiced (audited)
+        delete data.invoicedAt; delete data.invoicedBy; delete data.invoiceRef;
         delete data.approvedAt;
         delete data.editedAfterApproval;
         delete data.costRateApplied;
@@ -812,6 +814,8 @@ export async function PATCH(
     if (entity === 'clock-entries') {
         // Server-recorded facts — the approval branch below stamps approvedBy/approvedAt itself.
         delete data.approvedBy;
+        // TS-INV-1: invoiced is set ONLY by markHoursInvoiced / unmarkHoursInvoiced (audited)
+        delete data.invoicedAt; delete data.invoicedBy; delete data.invoiceRef;
         delete data.approvedAt;
         delete data.costRateApplied;
         // CE-TIME-1: a crew member closing their own entry clocks out NOW (server time).
@@ -830,6 +834,13 @@ export async function PATCH(
             const existingEntry = await prisma.clockEntry.findUnique({ where: { id } });
             if (!existingEntry || existingEntry.tenantId !== ctx.tenantId) {
                 return NextResponse.json({ error: 'Not found' }, { status: 404 });
+            }
+
+            // TS-INV-1: invoiced hours stay approved and billable — unmark them first (with a reason).
+            if (existingEntry.invoicedAt) {
+                if (('approvalStatus' in data && data.approvalStatus !== 'approved') || ('billable' in data && data.billable === false)) {
+                    return NextResponse.json({ error: 'invoiced: these hours are on an invoice — unmark them first' }, { status: 409 });
+                }
             }
 
             // Edit Guard check
@@ -1052,6 +1063,10 @@ export async function DELETE(
     }
 
     // ── GATE 2 · WRITE POLICY (DELETE) ──
+    if (entity === 'clock-entries') {
+        const row = await prisma.clockEntry.findFirst({ where: { id, tenantId: ctx.tenantId }, select: { invoicedAt: true } });
+        if (row?.invoicedAt) return NextResponse.json({ error: 'invoiced: these hours are on an invoice — unmark them first' }, { status: 409 });
+    }
     const deleteReach = await resolveReach(ctx);
     const gate2 = hrWriteGate(entity, 'DELETE', deleteReach.mayApprove, ctx.userId, {}, null);
     if (gate2) return gate2;

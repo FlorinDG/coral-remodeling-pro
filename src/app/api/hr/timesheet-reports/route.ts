@@ -87,7 +87,15 @@ export async function GET(req: Request) {
         where.projectId = { in: requestedProjectIds };
     }
     
-    if (approvalStatus) {
+    // Status chips (TS-INV-1): approved = approved and NOT yet invoiced · invoiced · nonBillable.
+    if (approvalStatus === 'invoiced') {
+        where.invoicedAt = { not: null };
+    } else if (approvalStatus === 'nonBillable') {
+        where.billable = false;
+    } else if (approvalStatus === 'approved') {
+        where.approvalStatus = 'approved';
+        where.invoicedAt = null;
+    } else if (approvalStatus) {
         where.approvalStatus = approvalStatus;
     }
     
@@ -129,6 +137,7 @@ export async function GET(req: Request) {
     let billableHours = 0;
     let internalHours = 0;
     let approvedHours = 0;
+    let invoicedHours = 0;
     let selfApprovedHours = 0;
     let pendingHours = 0;
     let openEntries = 0;
@@ -189,6 +198,7 @@ export async function GET(req: Request) {
 
             if (entry.approvalStatus === 'approved') {
                 approvedHours += hoursDecimal;
+                if (entry.invoicedAt) invoicedHours += hoursDecimal;
                 if (entry.approvedBy && entry.approvedBy === entry.createdBy) {
                     selfApprovedHours += hoursDecimal;
                 }
@@ -239,6 +249,7 @@ export async function GET(req: Request) {
             billableHours: Math.round(billableHours * 100) / 100,
             internalHours: Math.round(internalHours * 100) / 100,
             approvedHours: Math.round(approvedHours * 100) / 100,
+            invoicedHours: Math.round(invoicedHours * 100) / 100,
             selfApprovedHours: Math.round(selfApprovedHours * 100) / 100,
             pendingHours: Math.round(pendingHours * 100) / 100,
             openEntries,

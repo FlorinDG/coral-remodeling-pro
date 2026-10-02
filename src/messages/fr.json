@@ -1099,7 +1099,18 @@
       "taskDone": "fait",
       "taskBusy": "en cours",
       "taskTodo": "à faire",
-      "shiftContextFailed": "Impossible de charger le service"
+      "shiftContextFailed": "Impossible de charger le service",
+      "statusInvoiced": "Facturé",
+      "statusNonBillable": "Non facturable",
+      "bulkInvoiced": "Marquer comme facturé",
+      "bulkUninvoice": "Retirer la marque facturée",
+      "invoiceDialogHint": "{count} sélectionné(s). Seules les heures approuvées, facturables et clôturées sont marquées ; le reste est ignoré.",
+      "invoiceOptional": "Sur quelle facture (facultatif)",
+      "noInvoiceLink": "— aucune facture liée —",
+      "markedInvoiced": "{marked} marqué(s) comme facturé(s) · {skipped} ignoré(s)",
+      "unmarkReason": "Pourquoi retirer la marque facturée ? (ex. note de crédit)",
+      "unmarkedInvoiced": "{count} marque(s) retirée(s)",
+      "invoiceListFailed": "Impossible de charger les factures"
     },
     "shiftForm": {
       "orderGiver": "Donneur d’ordre (reçoit le bon de travail signé)",

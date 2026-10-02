@@ -1100,7 +1100,18 @@
       "taskDone": "done",
       "taskBusy": "busy",
       "taskTodo": "to do",
-      "shiftContextFailed": "Could not load the shift"
+      "shiftContextFailed": "Could not load the shift",
+      "statusInvoiced": "Invoiced",
+      "statusNonBillable": "Non billable",
+      "bulkInvoiced": "Mark as invoiced",
+      "bulkUninvoice": "Remove invoice mark",
+      "invoiceDialogHint": "{count} selected. Only approved, billable, closed hours are marked; the rest is skipped.",
+      "invoiceOptional": "On which invoice (optional)",
+      "noInvoiceLink": "— no invoice link —",
+      "markedInvoiced": "{marked} marked as invoiced · {skipped} skipped",
+      "unmarkReason": "Why remove the invoice mark? (e.g. credit note)",
+      "unmarkedInvoiced": "{count} invoice mark(s) removed",
+      "invoiceListFailed": "Could not load the invoices"
     },
     "shiftForm": {
       "orderGiver": "Order giver (receives the signed work order)",

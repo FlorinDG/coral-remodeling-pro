@@ -1100,7 +1100,18 @@
       "taskDone": "klaar",
       "taskBusy": "bezig",
       "taskTodo": "te doen",
-      "shiftContextFailed": "Shift laden mislukt"
+      "shiftContextFailed": "Shift laden mislukt",
+      "statusInvoiced": "Gefactureerd",
+      "statusNonBillable": "Niet factureerbaar",
+      "bulkInvoiced": "Markeer als gefactureerd",
+      "bulkUninvoice": "Factuurmarkering verwijderen",
+      "invoiceDialogHint": "{count} geselecteerd. Enkel goedgekeurde, factureerbare, afgesloten uren worden gemarkeerd; de rest wordt overgeslagen.",
+      "invoiceOptional": "Op welke factuur (optioneel)",
+      "noInvoiceLink": "— geen factuur gekoppeld —",
+      "markedInvoiced": "{marked} gemarkeerd als gefactureerd · {skipped} overgeslagen",
+      "unmarkReason": "Waarom de factuurmarkering verwijderen? (bv. creditnota)",
+      "unmarkedInvoiced": "{count} factuurmarkering(en) verwijderd",
+      "invoiceListFailed": "Facturen laden mislukt"
     },
     "shiftForm": {
       "orderGiver": "Opdrachtgever (ontvangt de getekende werkbon)",

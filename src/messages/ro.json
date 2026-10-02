@@ -1100,7 +1100,18 @@
       "taskDone": "gata",
       "taskBusy": "în lucru",
       "taskTodo": "de făcut",
-      "shiftContextFailed": "Tura nu a putut fi încărcată"
+      "shiftContextFailed": "Tura nu a putut fi încărcată",
+      "statusInvoiced": "Facturat",
+      "statusNonBillable": "Nefacturabil",
+      "bulkInvoiced": "Marchează ca facturat",
+      "bulkUninvoice": "Elimină marcajul de facturare",
+      "invoiceDialogHint": "{count} selectate. Doar orele aprobate, facturabile și închise sunt marcate; restul sunt omise.",
+      "invoiceOptional": "Pe ce factură (opțional)",
+      "noInvoiceLink": "— fără factură asociată —",
+      "markedInvoiced": "{marked} marcate ca facturate · {skipped} omise",
+      "unmarkReason": "De ce eliminați marcajul? (ex. notă de credit)",
+      "unmarkedInvoiced": "{count} marcaj(e) eliminate",
+      "invoiceListFailed": "Facturile nu au putut fi încărcate"
     },
     "shiftForm": {
       "orderGiver": "Beneficiar (primește fișa de lucru semnată)",

@@ -16,6 +16,9 @@
 **every new test needs a THROW PROOF** (break the real code, show the test fail, restore), and
 **bending a directive is not progress** — a blocked step is STOPPED, never worked around.
 
+## 0 · `WO-4a` — the signed work order PDF renderer — 🟦 PLAN FIRST (protocol §0), then milestones
+📄 `coder-directive-wo-4-pdf.md` — write `.agents/plans/WO-4a.md`, push, STOP for review. Do this BEFORE item 1.
+
 ## 1 · `R2-1-CENSUS` — map every direct GlobalPage write (read-only) + one honest backoff test
 📄 `coder-directive-r2-1-write-census.md` — 33 writes in 18 files, one row each (tenant check · OCC · audit · fate). `src/` read-only.
 

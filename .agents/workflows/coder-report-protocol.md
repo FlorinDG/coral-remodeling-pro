@@ -5,6 +5,19 @@
 
 ---
 
+# 0 · PLAN FIRST — for every item that writes code (Florin 2026-10-02)
+Code items run in three gates. **You stop at each gate and wait.**
+1. **PLAN** — `.agents/plans/<ITEM>.md`: your approach, the files you will create/change (must sit inside
+   the directive's fence), the functions with their signatures, the tests (and how each can fail — §3a),
+   and **milestones M1…Mn**, each small enough to review in one sitting. Open questions go in the plan.
+   Commit the plan, push, **stop**.
+2. **REVIEW** — the Planner validates or corrects the plan in the same file (`## Planner review`), and
+   brings anything that is a product decision to Florin. **Do not start code before the review says GO.**
+3. **BUILD, one milestone at a time** — implement M1, append `## M1 — done` to the report (evidence per §2
+   below), push, **stop** for the Planner's ✅. Then M2. A milestone the review sent back is redone, not
+   patched around (§3b).
+🟢 A plan that says "this cannot be done inside the fence because…" is a good plan.
+
 # 1 · WHERE
 
 ```

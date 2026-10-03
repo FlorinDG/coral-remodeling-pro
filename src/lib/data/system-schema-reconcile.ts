@@ -7,6 +7,7 @@ import type { PrismaClient, Prisma } from '@prisma/client';
 import { SYSTEM_DATABASES, BASE_TO_KEY, type SystemDatabaseRole } from '@/lib/kernel/system-databases';
 import { canonicalSchemas, type KernelProperty } from '@/lib/kernel/system-schemas';
 import { planSchemaReconcile } from '@/lib/kernel/system-schema-plan';
+import { upgradesFor } from '@/lib/kernel/system-schema-upgrades';
 import { schemaEntitled } from '@/lib/kernel/system-schema-entitlement';
 
 /** Tenants already reconciled by this server instance — the healthy path costs nothing after the first load. */
@@ -39,7 +40,7 @@ export async function reconcileSystemSchemas(
             const canonical = spec ? schemas[spec.legacyBase] : undefined;
             if (!canonical) continue;
             const current = (Array.isArray(row.properties) ? row.properties : []) as unknown as KernelProperty[];
-            const plan = planSchemaReconcile(current, canonical);
+            const plan = planSchemaReconcile(current, canonical, upgradesFor(spec.legacyBase));
             if (!plan.next) continue;
             await db.globalDatabase.update({
                 where: { id: row.id },

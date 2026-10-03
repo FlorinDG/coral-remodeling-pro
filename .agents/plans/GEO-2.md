@@ -282,3 +282,64 @@ the Continue button reads as "Clock in" and a line says location is switched off
   is false must fail it.
 - **One dialog on screen.** If ClockButton and MySchedule are mounted together, only the call site that asked may
   open it — say how in M2.
+
+---
+
+## M1 — done · 2026-10-03
+
+### 1. Scope Delivered
+- **Pure Decision Module (`src/components/workhub/location-gate.ts`):**
+  - Pure function `shouldShowLocationExplainer(input: LocationGateInput): boolean`.
+  - Implements the complete truth table with zero dependencies on `window`, `document`, `localStorage`, `sessionStorage`, or React.
+  - Satisfies all gate conditions:
+    - `granted` -> unconditionally `false`.
+    - `prompt` -> `!sessionDismissed`.
+    - `denied` -> `!alreadyShownDevice && !sessionDismissed`.
+    - No Permissions API (`hasPermissionsApi: false`) -> `!alreadyShownDevice && !sessionDismissed`.
+- **Storage Helpers (`src/components/time-tracker/hooks/useGeolocation.ts`):**
+  - Defined storage keys `STORAGE_KEY_EXPLAINER_SHOWN = 'coral:geo-explainer-shown'` (localStorage) and `STORAGE_KEY_EXPLAINER_DISMISSED = 'coral:geo-explainer-dismissed'` (sessionStorage).
+  - Implemented safe read/write helpers: `isDeviceExplainerShown()`, `markDeviceExplainerShown()`, `isSessionExplainerDismissed()`, `dismissSessionExplainer()`.
+  - Every read/write is guarded by `try/catch` and checks `typeof window !== 'undefined'`. Storage access failures (e.g. private mode) degrade gracefully (failed reads return `false`, failed writes are ignored).
+  - Cleaned up import to `import type { GeolocationCoordinates }` for Node ESM compatibility.
+- **Unit Test Suite (`tests/location-gate.test.ts`):**
+  - Six comprehensive test suites covering all truth-table branches.
+  - Table-driven test testing all $2^3 = 8$ permutations of `(hasPermissionsApi, alreadyShownDevice, sessionDismissed)` when `permissionState === 'granted'`, asserting every single combination evaluates to `false`.
+  - Direct unit test of storage helpers in Node environment asserting absence of throws when `window` is undefined.
+
+### 2. Throw Proofs
+All 5 mutations were executed and verified to fail their respective test, then restored:
+- **TP1 (Table-driven `granted` mutation):**
+  - Mutation: `if (input.permissionState === 'granted') return !input.alreadyShownDevice;`
+  - Result: Failed table-driven test on permutations where `alreadyShownDevice: false` (`AssertionError [ERR_ASSERTION]: Expected values to be strictly equal: false !== true`).
+- **TP2 (`prompt` state initial mutation):**
+  - Mutation: `if (input.permissionState === 'prompt') return false;`
+  - Result: Failed prompt state test (`AssertionError: Expected values to be strictly equal: false !== true`).
+- **TP3 (`prompt` session dismissal mutation):**
+  - Mutation: `if (input.permissionState === 'prompt') return true;`
+  - Result: Failed session dismissal test (`AssertionError: Expected values to be strictly equal: true !== false`).
+- **TP4 (Unsupported Permissions API fallback mutation):**
+  - Mutation: When `!input.hasPermissionsApi`, forced return `false`.
+  - Result: Failed fallback test (`AssertionError: Expected values to be strictly equal: false !== true`).
+- **TP5 (`denied` state acknowledged mutation):**
+  - Mutation: When `permissionState === 'denied'`, returned `true` even if `alreadyShownDevice` is true.
+  - Result: Failed acknowledged denied test (`AssertionError: Expected values to be strictly equal: true !== false`).
+
+### 3. Verification Commands & Output
+- **Unit Tests:**
+  `node --import ./tests/register.mjs --test tests/location-gate.test.ts`
+  ```text
+  ✔ never shows explainer when permission is granted, across all 8 input combinations (0.915958ms)
+  ✔ shows explainer on prompt state when session is not dismissed (0.067958ms)
+  ✔ suppresses explainer on prompt state if dismissed in current session (0.051875ms)
+  ✔ falls back to shown-once per device when Permissions API is unsupported (0.048708ms)
+  ✔ handles denied permission state (0.100459ms)
+  ✔ storage helpers handle missing window object gracefully without throwing (0.112791ms)
+  ℹ tests 6
+  ℹ suites 0
+  ℹ pass 6
+  ℹ fail 0
+  ```
+- **Type Checking:**
+  `npm run test:compile` -> Exit 0.
+- **Linting:**
+  `npm run test:lint` -> Exit 0 (0 errors, 1481 pre-existing warnings).

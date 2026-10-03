@@ -63,7 +63,11 @@ export function evaluateFormula(expression: string, context: FormulaContext): st
                 return String(formulaResult);
             }
 
-            const val = context.rowProperties[property.id];
+            let val = context.rowProperties[property.id];
+            // The old grid number cell stored { [propertyId]: v } as the value ("[object Object]") — read the number.
+            if (val !== null && typeof val === 'object' && !Array.isArray(val) && property.id in (val as Record<string, unknown>)) {
+                val = (val as Record<string, unknown>)[property.id] as typeof val;
+            }
             if (typeof val === 'string') return `"${val.replace(/"/g, '\\"')}"`;
             if (typeof val === 'number' || typeof val === 'boolean') return String(val);
             if (Array.isArray(val)) return JSON.stringify(val);

@@ -601,6 +601,17 @@
       "bordereauDeChantier": "Bordereau de chantier",
       "bestelbon": "Purchase Order (PO)",
       "werkbon": "Work Order"
+    },
+    "documentLock": {
+      "blocks_only": "{document} was sent to the client and is locked. Change its lines with \"Revise\" (new version).",
+      "properties_only": "{document} was sent to the client and is locked. These fields can no longer change: {fields}. Use \"Revise\" (new version).",
+      "both": "{document} was sent to the client and is locked. The lines and these fields can no longer change: {fields}. Use \"Revise\" (new version).",
+      "fallback_document": "This quote",
+      "title": "Locked document.",
+      "body": "This quote was sent to the client: lines, prices and texts are fixed. To change anything, create a new version with \"Revise\".",
+      "revise": "Revise — new version",
+      "revised": "New version {title} created (draft)",
+      "reviseFailed": "Revise failed"
     }
   },
   "Footer": {

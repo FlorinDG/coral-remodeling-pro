@@ -874,7 +874,6 @@ export function EditShiftDialog({
                   const fileName = attachment.name || attachment.file_name || '';
                   const filePath = attachment.url || attachment.file_path || '';
                   const fileSize = attachment.size || attachment.file_size;
-                  const fromProject = Boolean(attachment.sourceProjectId || attachment.source_project_id);
                   
                   return (
                     <div
@@ -902,9 +901,6 @@ export function EditShiftDialog({
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
                           {fileSize && (
                             <span>{formatFileSize(fileSize)}</span>
-                          )}
-                          {fromProject && (
-                            <Badge variant="outline" className="text-xs">From Project</Badge>
                           )}
                         </div>
                       </div>

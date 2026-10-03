@@ -38,6 +38,9 @@ import { Link } from '@/i18n/routing';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import InternalTasklist from './InternalTasklist';
+import { isQuoteLocked } from '@/lib/records/document-lock';
+import { reviseQuotation } from '@/lib/data/quote-revision';
+import { describeError } from '@/lib/describe-error';
 
 const FALLBACK_PAGES: Page[] = [];
 
@@ -54,6 +57,7 @@ interface TenantProfile {
 
 export default function ClientQuotationEngine({ id, locale }: { id: string, locale: string }) {
     const tPlaceholders = useTranslations('Admin.placeholders');
+    const tLock = useTranslations('Admin.documentLock');
     const t = useTranslations();
     const router = useRouter();
     const pathname = usePathname();
@@ -80,6 +84,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
         return useDatabaseStore.persist?.hasHydrated() || false;
     });
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+    const [revising, setRevising] = useState(false);   // DOC-LOCK-1 Revise (declared with the hooks — before any early return)
     const [isVorderingModalOpen, setIsVorderingModalOpen] = useState(false);
     const [isSending, setIsSending] = useState(false);
     const [isSavingToDrive, setIsSavingToDrive] = useState(false);
@@ -265,6 +270,8 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
     // Must be placed before early returns to satisfy Rules of Hooks
     useEffect(() => {
         if (!quotation || !isHydrated) return;
+        // DOC-LOCK-1: a locked quote's totals are part of what the client received — never re-saved.
+        if (isQuoteLocked(quotation.properties as Record<string, unknown>)) return;
         const currentBlocks = quotation.blocks || [];
 
         const vatIncluded = !!quotation.properties?.['vatIncluded'];
@@ -324,6 +331,8 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
     const paymentTerms = (quotation.properties?.['prop-payment-method'] as string) || 'pay-30';
     const betreft = (quotation.properties?.['betreft'] as string) || '';
     const quotationStatus = (quotation.properties?.['status'] as string) || '';
+    // DOC-LOCK-1 (core rule, enforced by the server): sent / accepted / rejected = a locked document.
+    const isLocked = isQuoteLocked(quotation.properties as Record<string, unknown>);
     const quotationDate = (quotation.properties?.['date'] as string) || '';
     const vatIncluded = !!quotation.properties?.['vatIncluded'];
     const vatRegime = (quotation.properties?.['vatRegime'] as string) || '21';
@@ -841,6 +850,22 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
         }
     };
 
+    // DOC-LOCK-1 · Revise: a new draft version (same number, -vN) of this locked quote
+    const handleRevise = async () => {
+        setRevising(true);
+        try {
+            const r = await reviseQuotation(id);
+            if (!r.ok) throw new Error(r.detail ? `${r.error} — ${r.detail}` : r.error);
+            useDatabaseStore.getState().addConfirmedPage(r.page);   // the engine reads the store
+            toast.success(tLock('revised', { title: String(r.page.properties?.title || '') }));
+            router.push(isMobileRoute ? `/${locale}/m/quotes/${r.page.id}` : `/${locale}/admin/quotations/${r.page.id}`);
+        } catch (err) {
+            toast.error(`${tLock('reviseFailed')} — ${describeError(err)}`);
+        } finally {
+            setRevising(false);
+        }
+    };
+
     // Create an addendum — independent quotation linked to the parent
     const handleCreateAddendum = () => {
         const addendumTitle = `ADD-${quotationTitle}`;
@@ -1124,7 +1149,20 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
             <div className="flex flex-1 overflow-visible md:overflow-hidden">
                 {/* Canvas */}
                 <div className="flex-1 overflow-y-visible md:overflow-y-auto p-2 sm:p-4 relative bg-neutral-50/50 dark:bg-black">
-                    <div className="w-full max-w-[1400px] mx-auto flex flex-col gap-1 pb-32">
+                    {isLocked && (
+                        <div className="w-full max-w-[1400px] mx-auto mb-3 p-3 rounded-xl border border-blue-200 bg-blue-50 text-blue-900 dark:bg-blue-950/40 dark:border-blue-900 dark:text-blue-100 text-sm">
+                            <div className="flex flex-wrap items-center justify-between gap-3">
+                                <span><strong>{tLock('title')}</strong> {tLock('body')}</span>
+                                <button type="button" onClick={handleRevise} disabled={revising}
+                                    className="shrink-0 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold disabled:opacity-50">
+                                    {revising ? '…' : tLock('revise')}
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                    {/* A locked quote is read-only: `inert` blocks every click, key and drag inside (the server refuses
+                        any write regardless — the screen only has to be honest about it). */}
+                    <div className={`w-full max-w-[1400px] mx-auto flex flex-col gap-1 pb-32 ${isLocked ? 'opacity-90' : ''}`} inert={isLocked || undefined}>
 
                         {/* Mathematical Blocks */}
                         <DndContext

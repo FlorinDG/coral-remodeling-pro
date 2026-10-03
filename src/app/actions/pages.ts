@@ -8,6 +8,7 @@ import { Prisma } from '@prisma/client';
 import { Page, PropertyValue } from '@/components/admin/database/types';
 import { generateOGM } from '@/lib/ogm';
 import { checkExportLock } from '@/lib/records/export-lock';
+import { checkDocumentLock } from '@/lib/records/document-lock';
 import { SYSTEM_DATABASES, BASE_TO_KEY, SystemDatabaseRole } from '@/lib/kernel/system-databases';
 import { systemDatabaseId } from '@/lib/data/system-databases';
 import { describeError } from '@/lib/describe-error';
@@ -203,19 +204,22 @@ export async function updatePageServerFirst(
             if (prop.id && prop.name) propertyLabels[prop.id] = prop.name;
         }
 
-        const violation = checkExportLock(
+        const exportViolation = checkExportLock(
             existing.properties,
             properties as Record<string, unknown>,
             relationPropertyIds,
             existing.blocks,
             undefined
         );
+        const documentViolation = exportViolation ? null : checkDocumentLock(   // DOC-LOCK-1
+            existing.database.logicalKey, existing.properties, properties as Record<string, unknown>, existing.blocks, undefined);
+        const violation = exportViolation ?? documentViolation;
         if (violation) {
             const docTitle = String((existing.properties as any)?.title || (properties as any)?.title || '');
             return {
                 success: false,
-                error: '[ExportLocked]',
-                errorCode: 'EXPORT_LOCKED',
+                error: documentViolation ? '[DocumentLocked]' : '[ExportLocked]',
+                errorCode: documentViolation ? 'DOCUMENT_LOCKED' : 'EXPORT_LOCKED',
                 blockedFields: violation.blockedFields,
                 docTitle,
                 propertyLabels

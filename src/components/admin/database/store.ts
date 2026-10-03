@@ -536,7 +536,7 @@ export const useDatabaseStore = create<DatabaseState>()(
                                     } : d)
                                 }));
                                 get()._dequeueSync(entry.pageId);
-                            } else if (result.errorCode === 'EXPORT_LOCKED' || result.error?.startsWith('[ExportLocked]')) {
+                            } else if (result.errorCode === 'EXPORT_LOCKED' || result.errorCode === 'DOCUMENT_LOCKED' || result.error?.startsWith('[ExportLocked]') || result.error?.startsWith('[DocumentLocked]')) {
                                 console.warn('[store] PERMANENT REFUSAL (EXPORT_LOCKED) for page', entry.pageId, result.error);
                                 
                                 // 1. Dequeue immediately — never retry a permanent refusal
@@ -572,7 +572,9 @@ export const useDatabaseStore = create<DatabaseState>()(
                                             databaseId: entry.databaseId,
                                             docTitle: (result as any).docTitle || '',
                                             blockedFields: (result as any).blockedFields || [],
-                                            propertyLabels: (result as any).propertyLabels || {}
+                                            propertyLabels: (result as any).propertyLabels || {},
+                                            // which core lock refused: the accountant export, or a sent quote (DOC-LOCK-1)
+                                            reason: result.errorCode === 'DOCUMENT_LOCKED' || result.error?.startsWith('[DocumentLocked]') ? 'document' : 'export'
                                         }
                                     }));
                                 }

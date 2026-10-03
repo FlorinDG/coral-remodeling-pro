@@ -326,3 +326,19 @@ Consistent across all 🔒 cells — design once, apply everywhere.
 
 *Confirmed by product owner: 2026-04-21*
 *Author: Florin + Antigravity*
+
+---
+
+## Decision 2026-10-03 (Florin) — what a tier GETS as databases (ENT, recorded by the Planner)
+- **FREE:** *"free tier doesn't even get the db's. at all."* A quote engine **that stores nothing**; **no access to articles
+  or bestek**. → Provisioning must not create the library / projects / tasks / CRM databases for FREE (today
+  `provisionLockedDatabases` creates all 16 for every tenant — `R1-1c` tests pin that; to be redesigned with upgrade /
+  downgrade rules).
+- **PRO:** *"the empty library to populate with their own data"* — articles + bestek databases with their **columns**, no
+  rows. (Matrix above said PRO bestek = "hardcoded catalog, select only" — Florin's 2026-10-03 wording is an empty
+  library; to reconcile in ENT.)
+- **ENTERPRISE:** the library may come **filled** (pre-populated content) — a separate feature from columns.
+- **Gap found:** `SYSTEM_DATABASES` marks `articles` / `bestek` `module: null` (ungated) and no plan has a LIBRARY module —
+  the server's module gate (`createPageServerFirst`) therefore lets a FREE tenant create articles today. ENT must close it.
+- **Done (KERN-SCHEMA-1, branch `hold/kern-schema-1`):** column reconcile is already tier-gated (`schemaEntitled`):
+  LIBRARY from PRO up, other databases by their module; never creates rows.

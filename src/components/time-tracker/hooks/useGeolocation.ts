@@ -1,6 +1,6 @@
 "use client";
 import { useState, useCallback, useEffect } from 'react';
-import { GeolocationCoordinates } from '@/components/time-tracker/types/timesheet';
+import type { GeolocationCoordinates } from '@/components/time-tracker/types/timesheet';
 
 // ── Geofence Validation ──────────────────────────────────────────────
 
@@ -56,6 +56,47 @@ export function validateGeofence(
     distanceMeters: Math.round(distanceMeters),
     radiusMeters,
   };
+}
+
+// ── Geolocation Explainer Storage Helpers (GEO-2) ───────────────────
+
+export const GEO_EXPLAINER_DEVICE_KEY = 'coral:geo-explainer-shown';
+export const GEO_EXPLAINER_SESSION_KEY = 'coral:geo-explainer-dismissed';
+
+export function isDeviceExplainerShown(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    return window.localStorage.getItem(GEO_EXPLAINER_DEVICE_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+export function markDeviceExplainerShown(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(GEO_EXPLAINER_DEVICE_KEY, 'true');
+  } catch {
+    // Ignore private mode / blocked storage throws
+  }
+}
+
+export function isSessionExplainerDismissed(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    return window.sessionStorage.getItem(GEO_EXPLAINER_SESSION_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+export function dismissSessionExplainer(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.sessionStorage.setItem(GEO_EXPLAINER_SESSION_KEY, 'true');
+  } catch {
+    // Ignore private mode / blocked storage throws
+  }
 }
 
 // ── Geolocation Hook ─────────────────────────────────────────────────

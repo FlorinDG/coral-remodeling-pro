@@ -160,6 +160,6 @@ WH-8 display layer
 
 ## FLORIN'S DECISIONS
 - [ ] **Does WorkHub need its own entitlement, or is `HR` enough?**
-- [ ] **Which "employee" is canonical** — `User`, `Employee`, or the `db-hr` projection?
+- [x] ~~**Which "employee" is canonical** — `User`, `Employee`, or the `db-hr` projection?~~ **Answered 2026-09-28 — the question was the mistake: all three are legitimate once defined (`pd.md` 4z canonical, 4y identity model; roadmap WH-12).**
 - [ ] **Is a team lead's reach a role or a team membership?** *(today: membership with `role: 'lead'` — which means reach is data, not identity. **That is the better answer**; confirm it.)*
 - [ ] **Offline scope on the phone:** clock-in only, or the full schedule? *(Determines how much the queue must carry.)*

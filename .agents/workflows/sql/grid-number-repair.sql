@@ -11,7 +11,10 @@ WHERE jsonb_typeof(e.v) = 'object' AND e.v ? e.k AND (SELECT count(*) FROM jsonb
 BEGIN;
 UPDATE "GlobalPage" p
 SET properties = (SELECT jsonb_object_agg(k, CASE WHEN jsonb_typeof(v) = 'object' AND v ? k AND (SELECT count(*) FROM jsonb_object_keys(v)) = 1
-                                                   THEN v -> k ELSE v END)
+                                                   THEN CASE WHEN jsonb_typeof(v -> k) = 'string' AND (v ->> k) ~ '^\s*-?[0-9]+([.,][0-9]+)?\s*$'
+                                                             THEN to_jsonb(replace(trim(v ->> k), ',', '.')::numeric)   -- "500" → 500
+                                                             ELSE v -> k END
+                                                   ELSE v END)
                   FROM jsonb_each(p.properties::jsonb) AS e(k, v)),
     "updatedAt" = now()
 WHERE EXISTS (SELECT 1 FROM jsonb_each(p.properties::jsonb) AS e(k, v)

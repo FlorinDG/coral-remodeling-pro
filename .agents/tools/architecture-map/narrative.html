@@ -1,0 +1,101 @@
+
+<div class="since">
+  <h4>Since 28 Sep — what reached production</h4>
+  <p>The incident closed (INC-1), and <code>develop</code> → <code>main</code> is separated again: every green commit is promoted on its own SHA after CI and the Vercel preview pass. Ranges that contain a migration are pushed by Florin.</p>
+  <ul>
+    <li><b>WorkHub work orders</b> (WO-1…3). A shift opens as a tabbed work order. The client signs once per work order per day, which freezes the evidence and locks it. Clock-in and clock-out record an address and the distance to the site, and never block (GEO-1). Late entries now land at the correct time (LATE-TZ-1).</li>
+    <li><b>Timesheets → money</b> (TS-INV-1/2, TS-ARCH-1, HOURS-FMT-1). Four hour statuses. Selected hours become a draft invoice. Settled hours can be archived. Hours show as decimals with HH:mm, in the app and in the export.</li>
+    <li><b>Documents</b> (DOC-LOCK-1, OCC-MERGE-1). A sent, accepted or rejected quote is locked; Revise creates <code>-vN</code>. A save conflict merges field by field instead of losing the edit.</li>
+    <li><b>Library</b> (ART-DISC-1, GRID-NUM-1). Discount is a real discount on the canonical net-cost formula. Grid number cells no longer store <code>[object Object]</code>; the data repair has been run.</li>
+    <li><b>Platform</b>. Fonts are self-hosted (FONTS-1). Belgian dates in 38 places (LOC-SWEEP-1). The date picker works inside dialogs. The coder works plan-first, and every test needs a throw proof.</li>
+  </ul>
+</div>
+<!-- STACK -->
+<h2>The critical path</h2>
+<div class="flow">
+  <div class="track">
+    <div class="tname">Track A — production, then the type debt</div>
+    <div class="chain">
+      <span class="step done">INC-1 bridge ✓</span><span class="arr">→</span>
+      <span class="step now">TD-0 measure</span><span class="arr">→</span>
+      <span class="step">TD-1 real bugs</span><span class="arr">→</span>
+      <span class="step you">TD-2 phantoms</span><span class="arr">→</span>
+      <span class="step">TD-3 blanket → targeted</span><span class="arr">→</span>
+      <span class="step">TD-4 convert</span><span class="arr">→</span>
+      <span class="step">TD-5 writes out</span>
+    </div>
+  </div>
+  <div class="track">
+    <div class="tname">Track B — the kernel path to the scoped client</div>
+    <div class="chain">
+      <span class="step done">KERN-7b ✓</span><span class="arr">→</span>
+      <span class="step now">R1-2 binding census</span><span class="arr">→</span>
+      <span class="step">KERN-8 delete the resolver</span><span class="arr">→</span>
+      <span class="step">R1-4 the only door</span><span class="arr">→</span>
+      <span class="step">R2-1 one saveRecord</span><span class="arr">→</span>
+      <span class="step blocked">WH-6 reach</span>
+      <span class="step blocked">PT-5 portalScope</span>
+      <span class="step blocked">TSC-5…8</span>
+    </div>
+  </div>
+  <div class="track">
+    <div class="tname">Track C — documents, library, tiers</div>
+    <div class="chain">
+      <span class="step done">WO-1…3 ✓</span><span class="arr">→</span>
+      <span class="step now">WO-4a PDF (coder, M3)</span><span class="arr">→</span>
+      <span class="step">WO-4b store + send</span><span class="arr">→</span>
+      <span class="step you">WO-LIB-1 + VARIANT-1</span><span class="arr">→</span>
+      <span class="step you">KERN-SCHEMA-1 (held)</span><span class="arr">→</span>
+      <span class="step">ENT-FREE-1</span>
+    </div>
+  </div>
+  <div class="track">
+    <div class="tname">Then — the modules, once the gate exists</div>
+    <div class="chain">
+      <span class="step blocked">PROJ-1…7 cockpit</span>
+      <span class="step blocked">WH-7 shift editor</span>
+      <span class="step blocked">ENT-1…19 entitlement</span>
+      <span class="step blocked">PT-1…4 two-party record</span>
+      <span class="step blocked">WH-17 offline queue</span>
+    </div>
+  </div>
+</div>
+
+<h2>Decided — and no longer open questions</h2>
+<table>
+<tr><th>Question</th><th>Answer</th></tr>
+<tr><td><b>What is a project?</b></td><td class="ok">The page in the projects database. <code>InternalProject</code> and <code>HrProject</code> are deleted. CMS projects live in the CMS.</td></tr>
+<tr><td><b>Who owns the tenant's databases?</b></td><td class="ok">The seraph. <code>lockedDbIds</code> forward, <code>logicalKey</code> reverse. An id is never parsed.</td></tr>
+<tr><td><b>Deleting a project vs the hours worked on it</b></td><td class="ok"><code>SetNull</code>: the project does not own the hours.</td></tr>
+<tr><td><b>Entitlement granularity</b></td><td class="ok">Module → submodule → quota. A submodule is a sidebar entry.</td></tr>
+<tr><td><b>Tier vs entitlement</b></td><td class="ok">The tier is a template of what you are <i>given</i>; entitlement is what you may <i>use</i>. No gate reads <code>planType</code>.</td></tr>
+<tr><td><b>Databases per tier</b> <i>(3 Oct)</i></td><td class="ok">FREE: invoicing only, no databases at all. PRO: the library's columns, empty. ENTERPRISE: may get it filled.</td></tr>
+<tr><td><b>The client portal's actor</b></td><td class="ok">A third scope constructor, not a user. An append-only two-party record.</td></tr>
+<tr><td><b>What is a work order?</b></td><td class="ok">The shifts created together (<code>seriesId</code>), one per day. The client signs per work order per day, and the signature is the lock.</td></tr>
+<tr><td><b>What prints on the client's signed copy?</b></td><td class="ok">The shift description and the crew note. Admin notes never print.</td></tr>
+<tr><td><b>Geofencing</b></td><td class="ok">Record, never block. An address and a distance, with no live tracking and no face recognition.</td></tr>
+<tr><td><b>A sent quote</b></td><td class="ok">Locked once sent, accepted or rejected. A change goes through Revise, which keeps the number and adds <code>-vN</code>. Expiry shows a banner and does not unlock the quote.</td></tr>
+<tr><td><b>Article discount</b></td><td class="ok">A real discount: <code>netto = bruto × (1 − discount/100)</code>, the same in the library, the quote and the invoice.</td></tr>
+<tr><td><b>Release</b></td><td class="ok">Every green commit goes to <code>main</code>. Florin pushes any range with a migration or a package change.</td></tr>
+<tr><td><b>The coder</b></td><td class="ok">Plan first, Florin approves milestones, and every test needs a throw proof. Bending a directive is not progress.</td></tr>
+<tr><td><b>WorkHub: repair or rebuild</b></td><td>Extract the plumbing (<span class="ok">done</span>), rebuild the shift editor, repair the rest. This waits on <b>TD-0's number</b>.</td></tr>
+</table>
+
+<h2>Waiting on Florin</h2>
+<table>
+<tr><th>Decision</th><th>Blocks</th></tr>
+<tr><td>Go to release <b>KERN-SCHEMA-1</b>: the system columns come from the kernel and are reconciled per tenant on load. The code is on <code>hold/kern-schema-1</code>, with 317 tests green.</td><td>ENT-FREE-1 · PRO empty library</td></tr>
+<tr><td>PRO's <b>bestek</b>: a catalog we ship, or an empty library like the articles?</td><td>KERN-SCHEMA-1 · ENT-FREE-1</td></tr>
+<tr><td>Should the <b>variant fix</b> go in with WO-LIB-1? Today a variant surcharge counts as 0 in the totals.</td><td>WO-LIB-1 · VARIANT-1</td></tr>
+<tr><td>The <b>R1-2 binding census</b>: confirm each database binding before the resolver is deleted</td><td>KERN-8 · R1-4 · all of Track B</td></tr>
+<tr><td>Late entries since June that landed 2 h late: correct them, or leave them?</td><td>Hours history</td></tr>
+<tr><td>Which &ldquo;employee&rdquo; is canonical: <code>User</code>, <code>Employee</code>, or the <code>db-hr</code> projection?</td><td>HR module, timesheets, WorkHub identity</td></tr>
+<tr><td><code>TIER_DEFAULTS</code>: PRO's module set beyond the library</td><td>All of entitlement</td></tr>
+<tr><td>Does a client mark a tenant-created task done? <i>(a response, not an edit)</i></td><td>Portal two-party record</td></tr>
+<tr><td>WEBSITES / EMAIL: make them grantable, or drop the gates?</td><td>Module vocabulary</td></tr>
+<tr><td>Phantom fields: implement or delete? <i>(<code>source_project_id</code> is the first)</i></td><td>TD-2</td></tr>
+</table>
+
+<div class="foot">
+Generated by <code>.agents/tools/architecture-map/build.py</code> from <code>.agents/coral-roadmap.xlsx</code> ({{ITEMS}} rows, <code>Map Layer</code> / <code>Map Block</code>). The spreadsheet is the record, and this view is a projection of it. The stack is computed; the text around it is kept in <code>narrative.html</code>.
+</div>

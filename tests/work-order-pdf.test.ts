@@ -201,3 +201,52 @@ test('renderSignedWorkOrderPdf is deterministic: same input produces identical b
 
     assert.equal(Buffer.compare(buf1, buf2), 0, 'two renders with identical input must produce identical bytes');
 });
+
+// ── 6. REAL RENDERER: EMBEDDED IBM PLEX SANS FONT (C4) ─────────────────────────
+
+test('renderSignedWorkOrderPdf embeds IBM Plex Sans font in PDF bytes', async () => {
+    const input = makeValidInput();
+    const buf = await renderSignedWorkOrderPdf(input);
+
+    const pdfString = buf.toString('latin1');
+    assert.ok(
+        pdfString.includes('IBMPlexSans'),
+        'PDF output must embed IBM Plex Sans font subset name'
+    );
+});
+
+// ── 7. REAL RENDERER: C5 PAGE BREAKS & 40-LINE FIXTURE ─────────────────────────
+
+test('renderSignedWorkOrderPdf handles 40-line fixture across multiple pages with intact totals', async () => {
+    // 40 lines of 8 hours (480 minutes) each = 19,200 minutes (320 hours)
+    const lines40 = Array.from({ length: 40 }, (_, i) => ({
+        workerName: `Vakman ${String(i + 1).padStart(2, '0')}`,
+        in: '08:00',
+        out: '16:30',
+        minutes: 480,
+    }));
+
+    const input40 = makeValidInput({
+        lines: lines40,
+        description: 'Grote werf renovatie fase 1: 40 prestaties verdeeld over het team.',
+        crewNotes: [
+            { workerName: 'Vakman 01', note: 'Eerste verdieping volledig gestript.' },
+            { workerName: 'Vakman 40', note: 'Afsluiting werf en sleutels overhandigd.' },
+        ],
+    });
+
+    const view = buildWorkOrderView(input40);
+    assert.equal(view.lines.length, 40);
+    assert.equal(view.totals.totalMinutes, 19200);
+    assert.equal(view.totals.formattedDuration, '320,00 u (320:00)');
+
+    const buf = await renderSignedWorkOrderPdf(input40);
+    assert.ok(Buffer.isBuffer(buf), 'result must be a Buffer');
+    assert.equal(buf.subarray(0, 4).toString('utf-8'), '%PDF');
+
+    // 40 rows + tasks + description + crew notes + signature block exceeds 1 page
+    const pageMatches = buf.toString('latin1').match(/\/Type\s*\/Page\b/g);
+    const pageCount = pageMatches ? pageMatches.length : 0;
+    assert.ok(pageCount >= 2, `expected at least 2 pages for 40 lines, got ${pageCount}`);
+});
+

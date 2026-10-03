@@ -1,9 +1,60 @@
+import path from 'node:path';
+import stream from 'node:stream';
+import zlib from 'node:zlib';
 import React from 'react';
-import { Document, Page, Text, View, Image, StyleSheet, renderToBuffer } from '@react-pdf/renderer';
+import { Document, Page, Text, View, Image, StyleSheet, Font, renderToBuffer } from '@react-pdf/renderer';
+// @ts-expect-error -- @react-pdf/pdfkit lacks bundled type definitions
+import PDFDocument from '@react-pdf/pdfkit';
 import { formatDecimalHours, formatHoursMinutes } from '@/lib/computeWorkedDuration';
 import { zonedParts } from '@/lib/kernel/shift-time';
 
 const h = React.createElement;
+
+// Register static IBM Plex Sans fonts (IBM Plex 3.005, SIL OFL, full Latin-ext + Cyrillic coverage)
+Font.register({
+    family: 'IBM Plex Sans',
+    fonts: [
+        { src: path.join(process.cwd(), 'src/lib/documents/fonts/IBMPlexSans-Regular.ttf'), fontWeight: 400 },
+        { src: path.join(process.cwd(), 'src/lib/documents/fonts/IBMPlexSans-Bold.ttf'), fontWeight: 700 },
+    ],
+});
+
+// Stabilize PDFKit reference stream compression:
+// PDFKit's default async zlib.createDeflate dispatches compression tasks across libuv threadpool workers,
+// which finish in non-deterministic order and cause race conditions in stream object ordering.
+// Patching PDFReference.initDeflate with synchronous inline deflation guarantees 100% byte determinism (C1).
+try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sampleDoc = new (PDFDocument as any)();
+    const PDFReference = sampleDoc.ref().constructor;
+    if (PDFReference && PDFReference.prototype && !PDFReference.prototype.__deterministicDeflate) {
+        PDFReference.prototype.__deterministicDeflate = true;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        PDFReference.prototype.initDeflate = function (this: any) {
+            this.data.Filter = 'FlateDecode';
+            const chunks: Buffer[] = [];
+            // eslint-disable-next-line @typescript-eslint/no-this-alias
+            const that = this;
+            const syncDeflate = new stream.Writable({
+                write(chunk: Buffer | Uint8Array | string, _enc: string, cb: () => void) {
+                    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+                    cb();
+                },
+                final(cb: () => void) {
+                    const raw = Buffer.concat(chunks);
+                    const compressed = zlib.deflateSync(raw);
+                    that.chunks.push(compressed);
+                    that.data.Length += compressed.length;
+                    that.finalize();
+                    cb();
+                },
+            });
+            this.deflate = syncDeflate;
+        };
+    }
+} catch {
+    // Defensive fallback if environment restricts internal PDFKit patching
+}
 
 export class SignedWorkOrderValidationError extends Error {
     constructor(message: string) {
@@ -312,12 +363,15 @@ const styles = StyleSheet.create({
         maxWidth: '55%',
     },
     tenantName: {
-        fontFamily: 'Helvetica-Bold',
+        fontFamily: 'IBM Plex Sans',
+        fontWeight: 700,
         fontSize: 13,
         color: '#111827',
         marginBottom: 3,
     },
     tenantText: {
+        fontFamily: 'IBM Plex Sans',
+        fontWeight: 400,
         fontSize: 8.5,
         color: '#4b5563',
     },
@@ -332,17 +386,21 @@ const styles = StyleSheet.create({
         maxWidth: '42%',
     },
     docTitle: {
-        fontFamily: 'Helvetica-Bold',
+        fontFamily: 'IBM Plex Sans',
+        fontWeight: 700,
         fontSize: 16,
         color: '#111827',
         marginBottom: 4,
     },
     metaText: {
+        fontFamily: 'IBM Plex Sans',
+        fontWeight: 400,
         fontSize: 8.5,
         color: '#374151',
     },
     metaTextBold: {
-        fontFamily: 'Helvetica-Bold',
+        fontFamily: 'IBM Plex Sans',
+        fontWeight: 700,
     },
     infoGrid: {
         flexDirection: 'row',
@@ -358,24 +416,29 @@ const styles = StyleSheet.create({
         width: '48%',
     },
     infoLabel: {
-        fontFamily: 'Helvetica-Bold',
+        fontFamily: 'IBM Plex Sans',
+        fontWeight: 700,
         fontSize: 8,
         color: '#6b7280',
         textTransform: 'uppercase',
         marginBottom: 2,
     },
     infoValueBold: {
-        fontFamily: 'Helvetica-Bold',
+        fontFamily: 'IBM Plex Sans',
+        fontWeight: 700,
         fontSize: 9.5,
         color: '#111827',
         marginBottom: 2,
     },
     infoValue: {
+        fontFamily: 'IBM Plex Sans',
+        fontWeight: 400,
         fontSize: 8.5,
         color: '#374151',
     },
     sectionTitle: {
-        fontFamily: 'Helvetica-Bold',
+        fontFamily: 'IBM Plex Sans',
+        fontWeight: 700,
         fontSize: 10,
         color: '#111827',
         textTransform: 'uppercase',
@@ -396,7 +459,8 @@ const styles = StyleSheet.create({
         marginBottom: 4,
     },
     tableHeaderCell: {
-        fontFamily: 'Helvetica-Bold',
+        fontFamily: 'IBM Plex Sans',
+        fontWeight: 700,
         fontSize: 8,
         color: '#4b5563',
         textTransform: 'uppercase',
@@ -418,11 +482,14 @@ const styles = StyleSheet.create({
     colTime: { width: '17%', textAlign: 'center' },
     colDuration: { width: '21%', textAlign: 'right' },
     tableCell: {
+        fontFamily: 'IBM Plex Sans',
+        fontWeight: 400,
         fontSize: 8.5,
         color: '#1f2937',
     },
     tableCellBold: {
-        fontFamily: 'Helvetica-Bold',
+        fontFamily: 'IBM Plex Sans',
+        fontWeight: 700,
         fontSize: 9,
         color: '#111827',
     },
@@ -448,9 +515,12 @@ const styles = StyleSheet.create({
     taskCheck: {
         color: '#FFFFFF',
         fontSize: 8,
-        fontFamily: 'Helvetica-Bold',
+        fontFamily: 'IBM Plex Sans',
+        fontWeight: 700,
     },
     taskTitle: {
+        fontFamily: 'IBM Plex Sans',
+        fontWeight: 400,
         fontSize: 8.5,
         color: '#374151',
     },
@@ -466,6 +536,8 @@ const styles = StyleSheet.create({
         marginTop: 4,
     },
     proseText: {
+        fontFamily: 'IBM Plex Sans',
+        fontWeight: 400,
         fontSize: 8.5,
         color: '#374151',
     },
@@ -473,7 +545,8 @@ const styles = StyleSheet.create({
         marginBottom: 4,
     },
     crewNoteAuthor: {
-        fontFamily: 'Helvetica-Bold',
+        fontFamily: 'IBM Plex Sans',
+        fontWeight: 700,
         fontSize: 8.5,
         color: '#111827',
     },
@@ -497,8 +570,9 @@ const styles = StyleSheet.create({
         marginVertical: 4,
     },
     declarationText: {
+        fontFamily: 'IBM Plex Sans',
+        fontWeight: 400,
         fontSize: 7.5,
-        fontStyle: 'italic',
         color: '#6b7280',
         marginTop: 6,
         borderTopWidth: 0.5,
@@ -525,7 +599,7 @@ export const WorkOrderPdfDocument: React.FC<{ view: WorkOrderView }> = ({ view }
 
     const signatureDate = new Date(signature.signedAtInstant);
 
-    // Build children of Page
+    // Build children of Page with C5 page break and repeating headers
     const pageChildren = [
         // Top accent bar
         h(View, { key: 'topBar', style: [styles.topBar, { backgroundColor: tenant.brandColor }] }),
@@ -576,24 +650,24 @@ export const WorkOrderPdfDocument: React.FC<{ view: WorkOrderView }> = ({ view }
             )
         ),
 
-        // Performances Table
+        // Performances Table (repeating header across pages: fixed=true; rows and total protected: wrap=false)
         h(View, { key: 'table', style: styles.table },
             h(Text, { style: styles.sectionTitle }, labels.performances),
-            h(View, { style: styles.tableHeaderRow },
+            h(View, { style: styles.tableHeaderRow, fixed: true },
                 h(Text, { style: [styles.tableHeaderCell, styles.colWorker] }, labels.worker),
                 h(Text, { style: [styles.tableHeaderCell, styles.colTime] }, labels.from),
                 h(Text, { style: [styles.tableHeaderCell, styles.colTime] }, labels.to),
                 h(Text, { style: [styles.tableHeaderCell, styles.colDuration] }, labels.duration)
             ),
             ...lines.map((line, idx) =>
-                h(View, { key: idx, style: styles.tableRow },
+                h(View, { key: idx, style: styles.tableRow, wrap: false },
                     h(Text, { style: [styles.tableCellBold, styles.colWorker] }, line.workerName),
                     h(Text, { style: [styles.tableCell, styles.colTime] }, line.in),
                     h(Text, { style: [styles.tableCell, styles.colTime] }, line.out),
                     h(Text, { style: [styles.tableCell, styles.colDuration] }, line.formattedDuration)
                 )
             ),
-            h(View, { style: styles.tableTotalRow },
+            h(View, { style: styles.tableTotalRow, wrap: false },
                 h(Text, { style: [styles.tableCellBold, styles.colWorker] }, labels.total),
                 h(Text, { style: styles.colTime }, ''),
                 h(Text, { style: styles.colTime }, ''),
@@ -606,7 +680,7 @@ export const WorkOrderPdfDocument: React.FC<{ view: WorkOrderView }> = ({ view }
             ? h(View, { key: 'tasks', style: styles.sectionBox },
                 h(Text, { style: styles.sectionTitle }, labels.tasks),
                 ...tasks.map((task, idx) =>
-                    h(View, { key: idx, style: styles.taskRow },
+                    h(View, { key: idx, style: styles.taskRow, wrap: false },
                         h(View, { style: task.done ? [styles.taskBox, styles.taskBoxDone] : styles.taskBox },
                             task.done ? h(Text, { style: styles.taskCheck }, 'v') : null
                         ),
@@ -626,12 +700,12 @@ export const WorkOrderPdfDocument: React.FC<{ view: WorkOrderView }> = ({ view }
             )
             : null,
 
-        // Crew Notes (if present)
+        // Crew Notes (if present, each row wrap=false)
         crewNotes.length > 0
             ? h(View, { key: 'crewNotes', style: styles.sectionBox },
                 h(Text, { style: styles.sectionTitle }, labels.crewNotes),
                 ...crewNotes.map((cn, idx) =>
-                    h(View, { key: idx, style: styles.crewNoteRow },
+                    h(View, { key: idx, style: styles.crewNoteRow, wrap: false },
                         h(Text, { style: styles.crewNoteAuthor }, `• ${cn.workerName}:`),
                         h(View, { style: styles.proseBox },
                             h(Text, { style: styles.proseText }, cn.note)
@@ -641,7 +715,7 @@ export const WorkOrderPdfDocument: React.FC<{ view: WorkOrderView }> = ({ view }
             )
             : null,
 
-        // Signature Block
+        // Signature Block (wrap=false)
         h(View, { key: 'sig', style: styles.signatureBlock, wrap: false },
             h(Text, { style: styles.sectionTitle }, labels.signature),
             h(View, { style: styles.signatureHeader },
@@ -658,7 +732,7 @@ export const WorkOrderPdfDocument: React.FC<{ view: WorkOrderView }> = ({ view }
             h(Text, { style: styles.declarationText }, signature.declaration)
         ),
 
-        // Footer
+        // Footer (fixed=true)
         h(View, { key: 'footer', style: styles.footer, fixed: true },
             h(Text, null, `${workOrder.reference} — ${signature.signedAtFormatted}`),
             h(Text, {
@@ -678,10 +752,37 @@ export const WorkOrderPdfDocument: React.FC<{ view: WorkOrderView }> = ({ view }
     }, h(Page, { size: 'A4', style: styles.page }, pageChildren));
 };
 
+let renderLock: Promise<void> = Promise.resolve();
+
 export async function renderSignedWorkOrderPdf(input: SignedWorkOrderPdfInput): Promise<Buffer> {
-    const view = buildWorkOrderView(input);
-    const element = WorkOrderPdfDocument({ view });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const rawBuffer = await renderToBuffer(element as any);
-    return Buffer.isBuffer(rawBuffer) ? rawBuffer : Buffer.from(rawBuffer);
+    // Acquire mutex lock so concurrent renders never interleave Math.random
+    const prevLock = renderLock;
+    let release!: () => void;
+    renderLock = new Promise<void>((resolve) => {
+        release = resolve;
+    });
+    await prevLock;
+
+    try {
+        const view = buildWorkOrderView(input);
+        const element = WorkOrderPdfDocument({ view });
+
+        // Stabilize PDFKit font subset prefix tag generation (Math.random) for byte determinism (C1)
+        const origRandom = Math.random;
+        let seed = 0x434f5241; // 'CORA'
+        Math.random = () => {
+            seed = (seed * 16807) % 2147483647;
+            return (seed - 1) / 2147483646;
+        };
+
+        try {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const rawBuffer = await renderToBuffer(element as any);
+            return Buffer.isBuffer(rawBuffer) ? rawBuffer : Buffer.from(rawBuffer);
+        } finally {
+            Math.random = origRandom;
+        }
+    } finally {
+        release();
+    }
 }

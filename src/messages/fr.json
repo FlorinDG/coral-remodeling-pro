@@ -607,7 +607,10 @@
       "both": "{document} a été envoyé au client et est verrouillé. Les lignes et ces champs ne peuvent plus changer : {fields}. Utilisez « Réviser » (nouvelle version).",
       "fallback_document": "Ce devis",
       "title": "Document verrouillé.",
-      "body": "Ce devis a été envoyé au client : lignes, prix et textes sont figés. Pour modifier, créez une nouvelle version avec « Réviser »."
+      "body": "Ce devis a été envoyé au client : lignes, prix et textes sont figés. Pour modifier, créez une nouvelle version avec « Réviser ».",
+      "revise": "Réviser — nouvelle version",
+      "revised": "Nouvelle version {title} créée (brouillon)",
+      "reviseFailed": "La révision a échoué"
     }
   },
   "Footer": {

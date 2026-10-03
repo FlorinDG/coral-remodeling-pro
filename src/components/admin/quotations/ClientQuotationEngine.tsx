@@ -39,6 +39,8 @@ import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import InternalTasklist from './InternalTasklist';
 import { isQuoteLocked } from '@/lib/records/document-lock';
+import { reviseQuotation } from '@/lib/data/quote-revision';
+import { describeError } from '@/lib/describe-error';
 
 const FALLBACK_PAGES: Page[] = [];
 
@@ -82,6 +84,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
         return useDatabaseStore.persist?.hasHydrated() || false;
     });
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+    const [revising, setRevising] = useState(false);   // DOC-LOCK-1 Revise (declared with the hooks — before any early return)
     const [isVorderingModalOpen, setIsVorderingModalOpen] = useState(false);
     const [isSending, setIsSending] = useState(false);
     const [isSavingToDrive, setIsSavingToDrive] = useState(false);
@@ -847,6 +850,22 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
         }
     };
 
+    // DOC-LOCK-1 · Revise: a new draft version (same number, -vN) of this locked quote
+    const handleRevise = async () => {
+        setRevising(true);
+        try {
+            const r = await reviseQuotation(id);
+            if (!r.ok) throw new Error(r.detail ? `${r.error} — ${r.detail}` : r.error);
+            useDatabaseStore.getState().addConfirmedPage(r.page);   // the engine reads the store
+            toast.success(tLock('revised', { title: String(r.page.properties?.title || '') }));
+            router.push(isMobileRoute ? `/${locale}/m/quotes/${r.page.id}` : `/${locale}/admin/quotations/${r.page.id}`);
+        } catch (err) {
+            toast.error(`${tLock('reviseFailed')} — ${describeError(err)}`);
+        } finally {
+            setRevising(false);
+        }
+    };
+
     // Create an addendum — independent quotation linked to the parent
     const handleCreateAddendum = () => {
         const addendumTitle = `ADD-${quotationTitle}`;
@@ -1132,7 +1151,13 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                 <div className="flex-1 overflow-y-visible md:overflow-y-auto p-2 sm:p-4 relative bg-neutral-50/50 dark:bg-black">
                     {isLocked && (
                         <div className="w-full max-w-[1400px] mx-auto mb-3 p-3 rounded-xl border border-blue-200 bg-blue-50 text-blue-900 dark:bg-blue-950/40 dark:border-blue-900 dark:text-blue-100 text-sm">
-                            <strong>{tLock('title')}</strong> {tLock('body')}
+                            <div className="flex flex-wrap items-center justify-between gap-3">
+                                <span><strong>{tLock('title')}</strong> {tLock('body')}</span>
+                                <button type="button" onClick={handleRevise} disabled={revising}
+                                    className="shrink-0 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold disabled:opacity-50">
+                                    {revising ? '…' : tLock('revise')}
+                                </button>
+                            </div>
                         </div>
                     )}
                     {/* A locked quote is read-only: `inert` blocks every click, key and drag inside (the server refuses

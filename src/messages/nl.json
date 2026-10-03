@@ -608,7 +608,10 @@
       "both": "{document} is verstuurd naar de klant en is vergrendeld. De regels en deze velden kunnen niet meer gewijzigd worden: {fields}. Gebruik \"Herzien\" (nieuwe versie).",
       "fallback_document": "Deze offerte",
       "title": "Vergrendeld document.",
-      "body": "Deze offerte is naar de klant verstuurd: regels, prijzen en teksten liggen vast. Om iets te wijzigen maak je een nieuwe versie met \"Herzien\"."
+      "body": "Deze offerte is naar de klant verstuurd: regels, prijzen en teksten liggen vast. Om iets te wijzigen maak je een nieuwe versie met \"Herzien\".",
+      "revise": "Herzien — nieuwe versie",
+      "revised": "Nieuwe versie {title} aangemaakt (concept)",
+      "reviseFailed": "Herzien mislukt"
     }
   },
   "Footer": {

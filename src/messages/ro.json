@@ -608,7 +608,10 @@
       "both": "{document} a fost trimisă clientului și este blocată. Liniile și aceste câmpuri nu mai pot fi modificate: {fields}. Folosiți „Revizuiește” (versiune nouă).",
       "fallback_document": "Această ofertă",
       "title": "Document blocat.",
-      "body": "Această ofertă a fost trimisă clientului: liniile, prețurile și textele sunt fixe. Pentru modificări, creați o versiune nouă cu „Revizuiește”."
+      "body": "Această ofertă a fost trimisă clientului: liniile, prețurile și textele sunt fixe. Pentru modificări, creați o versiune nouă cu „Revizuiește”.",
+      "revise": "Revizuiește — versiune nouă",
+      "revised": "Versiunea nouă {title} a fost creată (ciornă)",
+      "reviseFailed": "Revizuirea a eșuat"
     }
   },
   "Footer": {

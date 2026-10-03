@@ -171,3 +171,187 @@ None.
 
 ### 10 · Noticed, out of scope
 `src/components/time-tracker/components/LocationPermissionDialog.tsx` is still imported by `ClockButton.tsx:21`. Per Planner review Gate 1 decision 3, once `ClockButton.tsx` is rewired to `LocationExplainer` in M2, this file will have 0 importers and will be deleted.
+
+---
+
+## REVISION 1 — M2 · 2026-10-03
+
+### 0 · Header
+```
+Item:            GEO-2
+Directive:       .agents/workflows/coder-directive-geo-2.md
+Directive blob:  726ff3b1d3ee9a3f2c61c18d095299cff7edb4c3
+Start SHA:       e73b8b0
+End SHA:         065ed47
+Branch:          develop
+Date:            2026-10-03
+Milestone:       M2 (Component, Unified Hook Gate, ClockButton Integration, 5-Locale Parity)
+```
+
+### 1 · Outcome
+`DONE — M2 ready for review`
+
+### 2 · Commits
+| SHA | Message | Files | +/− |
+|---|---|---|---|
+| `065ed47` | feat(geo-2): M2 LocationExplainer component, unified hook gate, ClockButton integration, and 5-locale parity | 11 | +435/−94 |
+
+### 3 · Checklist mirror
+| § | Item | Status | Evidence |
+|---|---|---|---|
+| Review Carry 1 | Storage that throws test + throw proof | ✅ | `tests/location-gate.test.ts:161-188`; TP6 documented in §6 |
+| Review Carry 2 | Unknown permissionState (null) with API present test + throw proof | ✅ | `tests/location-gate.test.ts:190-213`; TP7 documented in §6 |
+| Directive §The need | 2 buttons (Continue / Not now) UI, phone-first, WorkHub look | ✅ | `src/components/workhub/LocationExplainer.tsx:1-120` |
+| Review M1 req | On `denied`: "Clock in" button label + settings warning line | ✅ | `src/components/workhub/LocationExplainer.tsx:88-106` |
+| Review M1 req | Every exit from dialog resolves promise (null when no location) | ✅ | `src/components/time-tracker/hooks/useGeolocation.ts:182-269` |
+| Review M1 req | One dialog on screen (per-caller hook state) | ✅ | `src/components/time-tracker/hooks/useGeolocation.ts:121, 169` |
+| Directive §Behaviour | 5 crew languages (en/nl/fr/ro/ru) | ✅ | `src/components/time-tracker/i18n/locales/*.json`; test `tests/i18n-crew.test.ts:1-74` |
+| Directive §Call sites | ClockButton.tsx call sites rewired to gate | ✅ | `src/components/time-tracker/components/ClockButton.tsx:28, 81, 313` |
+| Review Ans 3 | Delete `LocationPermissionDialog.tsx` once 0 importers | ✅ | Deleted; grep proof in §8 |
+| Directive §Call sites | MySchedule.tsx call sites | ⏭ | Deferred to M3 per approved plan |
+
+### 4 · Files vs blast radius
+Verbatim `git diff --stat e73b8b0..065ed47`:
+```
+ .agents/plans/GEO-2.md                             |  68 ++++++++++
+ .../time-tracker/components/ClockButton.tsx        |  22 +---
+ .../components/LocationPermissionDialog.tsx        |  67 ----------
+ .../time-tracker/hooks/useGeolocation.ts           | 144 ++++++++++++++++++++-
+ src/components/time-tracker/i18n/locales/en.json   |  11 ++
+ src/components/time-tracker/i18n/locales/fr.json   |  11 ++
+ src/components/time-tracker/i18n/locales/nl.json   |  11 ++
+ src/components/time-tracker/i18n/locales/ro.json   |  11 ++
+ src/components/time-tracker/i18n/locales/ru.json   |  11 ++
+ src/components/workhub/LocationExplainer.tsx       | 119 +++++++++++++++++
+ tests/location-gate.test.ts                        |  54 ++++++++
+ 11 files changed, 435 insertions(+), 94 deletions(-)
+```
+
+| File | In blast radius? |
+|---|---|
+| `.agents/plans/GEO-2.md` | Yes (Plan file per §0) |
+| `src/components/time-tracker/components/ClockButton.tsx` | Yes (Directive fence: "May change: the four call sites above") |
+| `src/components/time-tracker/components/LocationPermissionDialog.tsx` | Yes (Gate 1 Planner review: "Fence extended by exactly this: you may delete ... LocationPermissionDialog.tsx once ClockButton.tsx no longer imports it") |
+| `src/components/time-tracker/hooks/useGeolocation.ts` | Yes (Directive fence: "May change: ... useGeolocation.ts (only to add the gate)") |
+| `src/components/time-tracker/i18n/locales/*.json` (en, fr, nl, ro, ru) | Yes (Directive fence: "the 5 crew locale files") |
+| `src/components/workhub/LocationExplainer.tsx` | Yes (Directive fence: "May create: one component (src/components/workhub/LocationExplainer.tsx)") |
+| `tests/location-gate.test.ts` | Yes (Directive fence: "one test file") |
+
+### 5 · 🔴 Decisions I made that the directive did not state
+| Where (file:line) | The open question | Options I saw | What I chose | Why |
+|---|---|---|---|---|
+| `src/components/time-tracker/hooks/useGeolocation.ts:7-10` | Loading `LocationExplainer` in `.ts` hook without breaking Node test runner | Static import vs dynamic component load | `next/dynamic(() => import('@/components/workhub/LocationExplainer').then(m => m.LocationExplainer), { ssr: false })` | Node's native ESM loader strips TypeScript annotations from `.ts` files but does not parse `.tsx` files. Using `next/dynamic` defers UI component evaluation to browser runtime, preventing Node from attempting to load `.tsx` when executing unit tests for storage helpers. |
+| `src/components/time-tracker/hooks/useGeolocation.ts:245-267` | Guaranteeing clock-in never waits forever on app background | Rely on window focus vs listen for `visibilitychange` | `visibilitychange` listener resolving `null` on `document.visibilityState === 'hidden'` + unmount cleanup | If mobile OS switches away from browser or app backgrounds while modal is open, pending resolver is immediately fulfilled with `null`, preventing permanently stalled clock-in promises. |
+| `src/components/time-tracker/i18n/locales/*.json` | Translation key naming for Privacy badge label | Reuse existing ad-hoc keys vs dedicated `privacyTitle` key | `locationExplainer.privacyTitle` in all 5 locales | `tests/i18n-crew.test.ts` strictly checks that every namespaced `t('...')` resolves in `en` and all 5 locales match; dedicated key maintains full 5-locale parity. |
+
+### 6 · Verification — commands, not descriptions
+
+### VERIFY 1: Location Gate Suite (8/8 tests pass)
+```
+$ node --import ./tests/register.mjs --test tests/location-gate.test.ts; echo "exit: $?"
+✔ never shows explainer when permission is granted, across all 8 input combinations (0.6815ms)
+✔ shows explainer on prompt state when session is not dismissed (0.079542ms)
+✔ suppresses explainer on prompt state if dismissed in current session (0.062458ms)
+✔ falls back to shown-once per device when Permissions API is unsupported (0.051083ms)
+✔ handles denied permission state (0.0575ms)
+✔ storage helpers handle missing window object gracefully without throwing (0.143292ms)
+✔ storage helpers handle throwing storage gracefully (private mode / blocked storage) (0.139334ms)
+✔ handles unknown permissionState (null) when Permissions API is present (0.05025ms)
+(node:5669) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/florin/Documents/GitHub/coral-remodeling-pro/tests/location-gate.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/florin/Documents/GitHub/coral-remodeling-pro/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 232.418958
+exit: 0
+```
+
+### VERIFY 2: Crew i18n Guard Suite (5 locales verified)
+```
+$ node --import ./tests/register.mjs --test tests/i18n-crew.test.ts; echo "exit: $?"
+✔ every crew locale carries every key of en (plural forms count as one) (2.292375ms)
+✔ no empty strings in any crew locale (1.73225ms)
+✔ every literal t('…') in a react-i18next file resolves in en (129.360625ms)
+(node:5682) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/florin/Documents/GitHub/coral-remodeling-pro/tests/i18n-crew.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/florin/Documents/GitHub/coral-remodeling-pro/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 261.885
+exit: 0
+```
+
+### VERIFY 3: M2 Throw Proofs
+1. **TP6 (Storage throw proof):**
+   - Mutation in `src/components/time-tracker/hooks/useGeolocation.ts:68`: removed `try/catch` around `localStorage.getItem`.
+   - Output:
+     ```
+     ✖ storage helpers handle throwing storage gracefully (private mode / blocked storage) (0.121417ms)
+       Error: Blocked storage access
+           at Object.getItem (file:///.../tests/location-gate.test.ts:166:27)
+           at isDeviceExplainerShown (file:///.../src/components/time-tracker/hooks/useGeolocation.ts:68:30)
+     ```
+   - Restored and verified green.
+2. **TP7 (Unknown permissionState fallback throw proof):**
+   - Mutation in `src/components/workhub/location-gate.ts:64`: replaced `return !input.alreadyShownDevice;` with `return false;`.
+   - Output:
+     ```
+     ✖ handles unknown permissionState (null) when Permissions API is present (0.399375ms)
+       AssertionError [ERR_ASSERTION]: must show explainer if permissionState is null and device has not seen it
+       false !== true
+     ```
+   - Restored and verified green.
+
+### VERIFY 4: Typecheck
+```
+$ npm run test:compile; echo "exit: $?"
+
+> coral-remodeling-pro@0.1.0 test:compile
+> NODE_OPTIONS='--max-old-space-size=4096' tsc --noEmit
+
+exit: 0
+```
+
+### VERIFY 5: Lint
+```
+$ npm run test:lint; echo "exit: $?"
+
+> coral-remodeling-pro@0.1.0 test:lint
+> eslint src
+
+[trimmed: 1483 pre-existing warnings in untouched files]
+✖ 1483 problems (0 errors, 1483 warnings)
+  0 errors and 19 warnings potentially fixable with the `--fix` option.
+
+exit: 0
+```
+
+### 7 · Measurements
+None.
+
+### 8 · 🟨 Report-only items
+Verification that `LocationPermissionDialog` was completely purged from codebase:
+```
+$ grep -rn "LocationPermissionDialog" src; echo "exit: $?"
+exit: 1
+```
+(Zero matches found in `src/`).
+
+### 9 · Not done, and why
+`src/components/time-tracker/components/MySchedule.tsx` call sites (lines 247 & 326) deferred to M3 per the approved plan.
+
+### 10 · Noticed, out of scope
+None.
+

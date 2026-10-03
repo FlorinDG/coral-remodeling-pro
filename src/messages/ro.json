@@ -601,6 +601,14 @@
       "bordereauDeChantier": "Borderou de șantier",
       "bestelbon": "Comandă furnizor (PO)",
       "werkbon": "Bon de lucru"
+    },
+    "documentLock": {
+      "blocks_only": "{document} a fost trimisă clientului și este blocată. Modificați liniile prin „Revizuiește” (versiune nouă).",
+      "properties_only": "{document} a fost trimisă clientului și este blocată. Aceste câmpuri nu mai pot fi modificate: {fields}. Folosiți „Revizuiește” (versiune nouă).",
+      "both": "{document} a fost trimisă clientului și este blocată. Liniile și aceste câmpuri nu mai pot fi modificate: {fields}. Folosiți „Revizuiește” (versiune nouă).",
+      "fallback_document": "Această ofertă",
+      "title": "Document blocat.",
+      "body": "Această ofertă a fost trimisă clientului: liniile, prețurile și textele sunt fixe. Pentru modificări, creați o versiune nouă cu „Revizuiește”."
     }
   },
   "Footer": {

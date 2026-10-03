@@ -9,6 +9,7 @@ import { revalidatePath } from 'next/cache';
 import { auth } from '@/auth';
 import { mergeStaleWrite } from '@/lib/records/occ-merge';
 import { checkExportLock, isWipeHazard } from '@/lib/records/export-lock';
+import { checkDocumentLock } from '@/lib/records/document-lock';
 
 /**
  * Validates and sanitizes a string ID, preventing undefined/null values from hitting Prisma
@@ -434,7 +435,7 @@ export async function saveGlobalPage(page: Page) {
         // Security: ensure the page belongs to a database owned by this tenant.
         const parentDb = await prisma.globalDatabase.findUnique({
             where: { id: page.databaseId },
-            select: { tenantId: true, properties: true }   // properties ADDED
+            select: { tenantId: true, properties: true, logicalKey: true }   // properties ADDED
         });
 
         // If the parent DB exists and belongs to a different tenant, block the write.
@@ -474,19 +475,24 @@ export async function saveGlobalPage(page: Page) {
                 if (prop.id && prop.name) propertyLabels[prop.id] = prop.name;
             }
 
-            const violation = checkExportLock(
+            // Two core locks: accountant export (invoices) and the DOCUMENT lock (DOC-LOCK-1: a sent /
+            // accepted / rejected quote). Same refusal shape — the store reverts to the server version.
+            const exportViolation = checkExportLock(
                 existingPage.properties,
                 page.properties as Record<string, unknown>,
                 relationPropertyIds,
                 existingPage.blocks,
                 page.blocks
             );
+            const documentViolation = exportViolation ? null : checkDocumentLock(
+                parentDb?.logicalKey, existingPage.properties, page.properties as Record<string, unknown>, existingPage.blocks, page.blocks);
+            const violation = exportViolation ?? documentViolation;
             if (violation) {
                 const docTitle = String((existingPage.properties as any)?.title || (page.properties as any)?.title || '');
                 return {
                     success: false,
-                    error: '[ExportLocked]',
-                    errorCode: 'EXPORT_LOCKED',
+                    error: documentViolation ? '[DocumentLocked]' : '[ExportLocked]',
+                    errorCode: documentViolation ? 'DOCUMENT_LOCKED' : 'EXPORT_LOCKED',
                     blockedFields: violation.blockedFields,
                     docTitle,
                     propertyLabels,
@@ -609,11 +615,11 @@ export async function saveGlobalPagesBatch(pages: Page[]) {
     try {
         // Verify tenant ownership of the target database(s)
         const dbIds = [...new Set(pages.map(p => p.databaseId))];
-        const dbMap = new Map<string, { tenantId: string | null; properties: any }>();
+        const dbMap = new Map<string, { tenantId: string | null; properties: any; logicalKey: string | null }>();
         for (const dbId of dbIds) {
             const parentDb = await prisma.globalDatabase.findUnique({
                 where: { id: dbId },
-                select: { tenantId: true, properties: true }
+                select: { tenantId: true, properties: true, logicalKey: true }
             });
             if (parentDb && parentDb.tenantId !== tenantId) {
                 return { success: false, error: `Unauthorized DB access: ${dbId}` };
@@ -655,20 +661,23 @@ export async function saveGlobalPagesBatch(pages: Page[]) {
                         if (prop.id && prop.name) propertyLabels[prop.id] = prop.name;
                     }
 
-                    const violation = checkExportLock(
+                    const exportViolation = checkExportLock(
                         existingPage.properties,
                         page.properties as Record<string, unknown>,
                         relationPropertyIds,
                         existingPage.blocks,
                         page.blocks
                     );
+                    const documentViolation = exportViolation ? null : checkDocumentLock(   // DOC-LOCK-1
+                        parentDb?.logicalKey, existingPage.properties, page.properties as Record<string, unknown>, existingPage.blocks, page.blocks);
+                    const violation = exportViolation ?? documentViolation;
                     if (violation) {
                         const docTitle = String((existingPage.properties as any)?.title || (page.properties as any)?.title || '');
                         results.push({
                             id: page.id,
                             success: false,
-                            error: '[ExportLocked]',
-                            errorCode: 'EXPORT_LOCKED',
+                            error: documentViolation ? '[DocumentLocked]' : '[ExportLocked]',
+                            errorCode: documentViolation ? 'DOCUMENT_LOCKED' : 'EXPORT_LOCKED',
                             blockedFields: violation.blockedFields,
                             docTitle,
                             propertyLabels

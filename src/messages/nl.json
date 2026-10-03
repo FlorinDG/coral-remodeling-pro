@@ -601,6 +601,14 @@
       "bordereauDeChantier": "Bordereau de chantier",
       "bestelbon": "Bestelbon",
       "werkbon": "Werkbon"
+    },
+    "documentLock": {
+      "blocks_only": "{document} is verstuurd naar de klant en is vergrendeld. Wijzig de regels via \"Herzien\" (nieuwe versie).",
+      "properties_only": "{document} is verstuurd naar de klant en is vergrendeld. Deze velden kunnen niet meer gewijzigd worden: {fields}. Gebruik \"Herzien\" (nieuwe versie).",
+      "both": "{document} is verstuurd naar de klant en is vergrendeld. De regels en deze velden kunnen niet meer gewijzigd worden: {fields}. Gebruik \"Herzien\" (nieuwe versie).",
+      "fallback_document": "Deze offerte",
+      "title": "Vergrendeld document.",
+      "body": "Deze offerte is naar de klant verstuurd: regels, prijzen en teksten liggen vast. Om iets te wijzigen maak je een nieuwe versie met \"Herzien\"."
     }
   },
   "Footer": {

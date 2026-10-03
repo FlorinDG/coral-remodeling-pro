@@ -38,6 +38,7 @@ import { Link } from '@/i18n/routing';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import InternalTasklist from './InternalTasklist';
+import { isQuoteLocked } from '@/lib/records/document-lock';
 
 const FALLBACK_PAGES: Page[] = [];
 
@@ -54,6 +55,7 @@ interface TenantProfile {
 
 export default function ClientQuotationEngine({ id, locale }: { id: string, locale: string }) {
     const tPlaceholders = useTranslations('Admin.placeholders');
+    const tLock = useTranslations('Admin.documentLock');
     const t = useTranslations();
     const router = useRouter();
     const pathname = usePathname();
@@ -265,6 +267,8 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
     // Must be placed before early returns to satisfy Rules of Hooks
     useEffect(() => {
         if (!quotation || !isHydrated) return;
+        // DOC-LOCK-1: a locked quote's totals are part of what the client received — never re-saved.
+        if (isQuoteLocked(quotation.properties as Record<string, unknown>)) return;
         const currentBlocks = quotation.blocks || [];
 
         const vatIncluded = !!quotation.properties?.['vatIncluded'];
@@ -324,6 +328,8 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
     const paymentTerms = (quotation.properties?.['prop-payment-method'] as string) || 'pay-30';
     const betreft = (quotation.properties?.['betreft'] as string) || '';
     const quotationStatus = (quotation.properties?.['status'] as string) || '';
+    // DOC-LOCK-1 (core rule, enforced by the server): sent / accepted / rejected = a locked document.
+    const isLocked = isQuoteLocked(quotation.properties as Record<string, unknown>);
     const quotationDate = (quotation.properties?.['date'] as string) || '';
     const vatIncluded = !!quotation.properties?.['vatIncluded'];
     const vatRegime = (quotation.properties?.['vatRegime'] as string) || '21';
@@ -1124,7 +1130,14 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
             <div className="flex flex-1 overflow-visible md:overflow-hidden">
                 {/* Canvas */}
                 <div className="flex-1 overflow-y-visible md:overflow-y-auto p-2 sm:p-4 relative bg-neutral-50/50 dark:bg-black">
-                    <div className="w-full max-w-[1400px] mx-auto flex flex-col gap-1 pb-32">
+                    {isLocked && (
+                        <div className="w-full max-w-[1400px] mx-auto mb-3 p-3 rounded-xl border border-blue-200 bg-blue-50 text-blue-900 dark:bg-blue-950/40 dark:border-blue-900 dark:text-blue-100 text-sm">
+                            <strong>{tLock('title')}</strong> {tLock('body')}
+                        </div>
+                    )}
+                    {/* A locked quote is read-only: `inert` blocks every click, key and drag inside (the server refuses
+                        any write regardless — the screen only has to be honest about it). */}
+                    <div className={`w-full max-w-[1400px] mx-auto flex flex-col gap-1 pb-32 ${isLocked ? 'opacity-90' : ''}`} inert={isLocked || undefined}>
 
                         {/* Mathematical Blocks */}
                         <DndContext

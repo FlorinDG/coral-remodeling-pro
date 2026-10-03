@@ -9,14 +9,12 @@ export interface ScheduleAttachment {
   type: string;
   size: number | null;
   createdAt: string;
-  sourceProjectId?: string | null;
   // Transition bridge properties
   shift_id?: string;
   file_name?: string;
   file_path?: string;
   file_type?: string;
   file_size?: number | null;
-  source_project_id?: string | null;
 }
 
 export interface ProjectAttachment {

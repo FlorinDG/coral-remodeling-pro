@@ -7,7 +7,6 @@ import { useGeolocation, validateGeofence } from '@/components/time-tracker/hook
 import { useClockEntries } from '@/components/time-tracker/hooks/useClockEntries';
 import { useScheduledShifts } from '@/components/time-tracker/hooks/useScheduledShifts';
 import { ClockOutForm } from './ClockOutForm';
-import { LocationPermissionDialog } from './LocationPermissionDialog';
 import { GeofenceWarningDialog } from './GeofenceWarningDialog';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
@@ -17,7 +16,6 @@ import { formatTime } from '@/lib/format/date';
 function ClockButtonComponent() {
   const { t } = useTranslation();
   const [showClockOutForm, setShowClockOutForm] = useState(false);
-  const [showLocationDialog, setShowLocationDialog] = useState(false);
   const [showGeofenceWarning, setShowGeofenceWarning] = useState<{distance: number, site: string, location: any} | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [activeShiftId, setActiveShiftId] = useState<string | null>(null);
@@ -30,7 +28,7 @@ function ClockButtonComponent() {
   const { activeEntry, loading: entriesLoading, error: entriesError, clockIn, clockOut } = useClockEntries();
   const { getTodayShift, createUserShift, completeUserShift, loading: shiftsLoading, error: shiftsError, failedEndpoints, refetch: refetchShifts } = useScheduledShifts();
   const { formattedTime, isRunning, startTimer, stopTimer, resetTimer, setStartTime } = useTimer();
-  const { requestLocation, loading: locationLoading, permissionState } = useGeolocation();
+  const { requestLocation, loading: locationLoading, permissionState, explainerDialog } = useGeolocation();
 
   // Terminal branch (WHS-1 §2): never spin forever on the entries load.
   // Shifts have NO timeout here (WHS-1b §2): useScheduledShifts owns its own 9s bound, and a
@@ -78,10 +76,6 @@ function ClockButtonComponent() {
   }, [activeEntry?.id]);
 
   const handleClockIn = async () => {
-    if (permissionState === 'prompt') {
-      setShowLocationDialog(true);
-      return;
-    }
     await performClockIn();
   };
 
@@ -185,10 +179,6 @@ function ClockButtonComponent() {
     }
   };
 
-  const handleLocationPermissionGranted = async () => {
-    setShowLocationDialog(false);
-    await performClockIn();
-  };
 
   const handleClockOut = () => {
     setShowClockOutForm(true);
@@ -315,15 +305,7 @@ function ClockButtonComponent() {
         )}
       </div>
 
-      <LocationPermissionDialog
-        open={showLocationDialog}
-        onClose={() => setShowLocationDialog(false)}
-        onDecline={() => {
-          setShowLocationDialog(false);
-          performClockIn(false, true);
-        }}
-        onGranted={handleLocationPermissionGranted}
-      />
+      {explainerDialog}
 
       <GeofenceWarningDialog
         open={!!showGeofenceWarning}

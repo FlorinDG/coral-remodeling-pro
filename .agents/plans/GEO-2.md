@@ -361,3 +361,71 @@ the pure module sits in `src/components/workhub/`. Clean.
 
 M2 as planned (component + hook gate + ClockButton), plus the review-1 requirements: every exit resolves,
 `denied` reads as "Clock in", one dialog on screen.
+
+---
+
+## M2 — done · 2026-10-03
+
+### 1. Scope Delivered
+- **Carried Test Gaps & Throw Proofs (`tests/location-gate.test.ts`):**
+  - Added test with stubbed `globalThis.window` simulating blocked/private mode storage where `localStorage` and `sessionStorage` methods throw. Verified reads safely return `false` and writes do not throw.
+  - Added test for unknown `permissionState: null` with `hasPermissionsApi: true` covering both `alreadyShownDevice: false` (returns `true`) and `alreadyShownDevice: true` (returns `false`).
+- **Throw Proofs Recorded:**
+  - **TP6 (Storage throw proof):** Removed `try/catch` in `isDeviceExplainerShown()`. Test failed with `Error: Blocked storage access`. Restored and verified green.
+  - **TP7 (Unknown permissionState fallback throw proof):** Mutated `return !input.alreadyShownDevice` to `return false`. Test failed with `AssertionError: false !== true`. Restored and verified green.
+- **LocationExplainer Component (`src/components/workhub/LocationExplainer.tsx`):**
+  - Phone-first WorkHub design, 48px touch targets, accessible Radix Dialog primitive.
+  - Clear explanations: GPS read only at clock-in/out, never tracked continuously; purpose for timesheet and distance to site; never blocks clock-in.
+  - On `permissionState === 'denied'`: displays settings warning banner, does not promise a prompt, and changes primary action button to "Inklokken" / "Clock in".
+- **i18n Across 5 Crew Languages (`src/components/time-tracker/i18n/locales/*.json`):**
+  - Complete `locationExplainer` translations in `nl`, `en`, `fr`, `ro`, and `ru`.
+  - Guard test `tests/i18n-crew.test.ts` passes with 0 missing keys and 0 empty strings.
+- **Unified Explainer Gate in `useGeolocation.ts`:**
+  - `requestLocation()` evaluates gate decision and opens `LocationExplainer` when needed.
+  - **Every exit path resolves the promise with `null` when no coordinates are obtained:**
+    - "Continue" on `denied` state $\rightarrow$ resolves `null` immediately (no browser prompt attempted).
+    - "Not now" $\rightarrow$ marks session dismissed, resolves `null` immediately.
+    - Close button, backdrop tap, or Escape key $\rightarrow$ `onOpenChange(false)` resolves `null`.
+    - App moving to background $\rightarrow$ `visibilitychange` listener resolves `null` and closes modal.
+    - Component unmount $\rightarrow$ cleanup effect resolves any pending resolver with `null`.
+  - **Single dialog on screen:** Each caller component instance maintains its own modal state in React, ensuring only the active call site opens its dialog.
+  - Uses `next/dynamic` to load `LocationExplainer` on the client, preserving clean Node test runner execution.
+- **Call Site Integration (`ClockButton.tsx`):**
+  - Removed manual `if (permissionState === 'prompt')` intercept and local dialog state.
+  - Rendered `{explainerDialog}` in component tree.
+- **Removal of Legacy Component:**
+  - Verified with `grep` that `src/components/time-tracker/components/LocationPermissionDialog.tsx` has 0 importers.
+  - Deleted `LocationPermissionDialog.tsx`.
+
+### 2. Verification Commands & Output
+- **Unit Tests:**
+  `node --import ./tests/register.mjs --test tests/location-gate.test.ts`
+  ```text
+  ✔ never shows explainer when permission is granted, across all 8 input combinations (0.42575ms)
+  ✔ shows explainer on prompt state when session is not dismissed (0.060292ms)
+  ✔ suppresses explainer on prompt state if dismissed in current session (0.050791ms)
+  ✔ falls back to shown-once per device when Permissions API is unsupported (0.042083ms)
+  ✔ handles denied permission state (0.048875ms)
+  ✔ storage helpers handle missing window object gracefully without throwing (0.110875ms)
+  ✔ storage helpers handle throwing storage gracefully (private mode / blocked storage) (0.105209ms)
+  ✔ handles unknown permissionState (null) when Permissions API is present (0.052917ms)
+  ℹ tests 8
+  ℹ suites 0
+  ℹ pass 8
+  ℹ fail 0
+  ```
+- **Crew i18n Guard Suite:**
+  `node --import ./tests/register.mjs --test tests/i18n-crew.test.ts`
+  ```text
+  ✔ every crew locale carries every key of en (plural forms count as one) (2.769958ms)
+  ✔ no empty strings in any crew locale (1.592916ms)
+  ✔ every literal t('…') in a react-i18next file resolves in en (118.033625ms)
+  ℹ tests 3
+  ℹ suites 0
+  ℹ pass 3
+  ℹ fail 0
+  ```
+- **Type Checking:**
+  `npm run test:compile` $\rightarrow$ Exit 0.
+- **Linting:**
+  `npm run test:lint` $\rightarrow$ Exit 0 (0 errors, 1483 pre-existing warnings in untouched files).

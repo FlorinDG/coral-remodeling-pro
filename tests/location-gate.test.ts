@@ -157,3 +157,57 @@ test('storage helpers handle missing window object gracefully without throwing',
   assert.equal(GEO_EXPLAINER_DEVICE_KEY, 'coral:geo-explainer-shown');
   assert.equal(GEO_EXPLAINER_SESSION_KEY, 'coral:geo-explainer-dismissed');
 });
+
+test('storage helpers handle throwing storage gracefully (private mode / blocked storage)', () => {
+  const originalWindow = (globalThis as any).window;
+  try {
+    (globalThis as any).window = {
+      localStorage: {
+        getItem() { throw new Error('Blocked storage access'); },
+        setItem() { throw new Error('Blocked storage access'); },
+      },
+      sessionStorage: {
+        getItem() { throw new Error('Blocked storage access'); },
+        setItem() { throw new Error('Blocked storage access'); },
+      },
+    };
+
+    assert.equal(isDeviceExplainerShown(), false, 'throwing localStorage read must return false');
+    assert.equal(isSessionExplainerDismissed(), false, 'throwing sessionStorage read must return false');
+    assert.doesNotThrow(() => markDeviceExplainerShown(), 'throwing localStorage write must not throw');
+    assert.doesNotThrow(() => dismissSessionExplainer(), 'throwing sessionStorage write must not throw');
+  } finally {
+    if (originalWindow === undefined) {
+      delete (globalThis as any).window;
+    } else {
+      (globalThis as any).window = originalWindow;
+    }
+  }
+});
+
+// ── 6. UNKNOWN PERMISSION STATE WITH API PRESENT ─────────────────────────────
+
+test('handles unknown permissionState (null) when Permissions API is present', () => {
+  // Query pending or rejected, but API is present, not yet shown on device
+  assert.equal(
+    shouldShowLocationExplainer({
+      permissionState: null,
+      hasPermissionsApi: true,
+      alreadyShownDevice: false,
+    }),
+    true,
+    'must show explainer if permissionState is null and device has not seen it'
+  );
+
+  // Query pending or rejected, but API is present, already shown on device
+  assert.equal(
+    shouldShowLocationExplainer({
+      permissionState: null,
+      hasPermissionsApi: true,
+      alreadyShownDevice: true,
+    }),
+    false,
+    'must not show explainer if permissionState is null and device has already seen it'
+  );
+});
+

@@ -253,3 +253,32 @@ Test file: `tests/location-gate.test.ts` (pure Node test runner).
 1. **Storage mechanism:** We propose `localStorage.getItem('coral:geo-explainer-shown')` for the per-device flag, and `sessionStorage.getItem('coral:geo-explainer-dismissed')` for the "Not now" session dismiss. Does this meet the "shown once per device, unless ungranted on a new session" specification?
 2. **Component location:** Directive fence permits `src/components/workhub/LocationExplainer.tsx` and one pure decision module. We place the pure decision in `src/lib/kernel/location-gate.ts` (re-exported or colocated). Confirmed?
 3. **Replacing `LocationPermissionDialog`:** `ClockButton.tsx` currently imports an older `LocationPermissionDialog`. We will replace it with the new `LocationExplainer` to avoid two different permission dialogs in the codebase. Confirmed?
+
+---
+
+## Planner review — 2026-10-03 · Gate 1: APPROVED with changes · GO for M1
+
+**Truth table:** accepted as written. A `denied` permission shows the explanation once; "Continue" then clocks in
+without location (no prompt can appear) — the screen must not promise a prompt in that case (M2: on `denied`,
+the Continue button reads as "Clock in" and a line says location is switched off in the phone's settings).
+
+**Answers to §7**
+1. **Storage — yes**, `coral:geo-explainer-shown` (localStorage) and `coral:geo-explainer-dismissed`
+   (sessionStorage). Every read and write in try/catch (private mode / blocked storage throws): a failed read
+   counts as "not shown", a failed write is ignored. Never block on it.
+2. **Not in the kernel.** `src/lib/kernel/` is pure, tenant-free platform primitives; a WorkHub screen decision
+   is not one. Put the pure function in `src/components/workhub/location-gate.ts` (pure: no window, no storage,
+   no React — the runner tests it). The storage helpers live in `useGeolocation.ts` (already in the fence).
+3. **Yes, replace it** — two dialogs for one permission is the defect. Fence extended by exactly this: you may
+   delete `src/components/time-tracker/components/LocationPermissionDialog.tsx` once `ClockButton.tsx` no longer
+   imports it (it has no other importer — check again before deleting, and show the grep in the report).
+
+**Added requirements**
+- **The clock-in never waits forever.** Every way out of the dialog — Continue, Not now, close button, tap
+  outside, Escape, the app going to background — resolves the promise (null when no location). Test it in M1 at
+  the decision level where possible, and state in M2 how each path resolves.
+- **`granted` never shows — whatever the other inputs.** Make test 1 table-driven over every combination of the
+  other three inputs (not one case). Throw proof: the mutation that shows on `granted` when `alreadyShownDevice`
+  is false must fail it.
+- **One dialog on screen.** If ClockButton and MySchedule are mounted together, only the call site that asked may
+  open it — say how in M2.

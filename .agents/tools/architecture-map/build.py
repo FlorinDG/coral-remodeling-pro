@@ -36,6 +36,7 @@ LAYERS = [
         ('read path — pageIndex, hydration, accessor', r'^read path|^relation|^sync queue'),
         ('ERP core — mixed triage', r'^ERP core|^Projects|^Platform|^raw SQL|^DI conv|^schema valid|^app url'),
         ('provisioning · system schemas', r'^provisioning'),
+        ('central catalogue — ERP → tenant only', r'^central catalogue'),
         ('platform services — email, notify, i18n', r'^platform services|^notify|^i18n|^job registry'),
         ('Client Portal — the two-party record', r'^Client Portal'),
         ('entitlement state · trial · plan limits', r'^entitlement|^trial|^plan-limits|^grant'),
@@ -54,7 +55,8 @@ LAYERS = [
         ('Projects', r'^Projects|^journal'),
         ('Calendar module', r'^Calendar'),
         ('Client Portal', r'^Client Portal'),
-        ('Automations · Tasks · Mobile/PWA · Records · Library', r'^Automations|^Tasks|^Database|^Library|^reminders|^cron'),
+        ('Library — packs, nudges, supplier carts', r'^Library|^integrations'),
+        ('Automations · Tasks · Mobile/PWA · Records', r'^Automations|^Tasks|^Database|^reminders|^cron'),
     ]),
     ('MODULE GATE', 'mg', 'mgate', 'The other gates', 'entitlement · actor reach · export lock — asked for, never asserted', [
         ('entitlement — modules → submodules → quota · tiers', r'^entitlement —'),

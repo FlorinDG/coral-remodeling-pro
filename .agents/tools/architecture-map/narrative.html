@@ -42,11 +42,15 @@
     <div class="tname">Track C — documents, library, tiers</div>
     <div class="chain">
       <span class="step done">WO-1…3 ✓</span><span class="arr">→</span>
-      <span class="step now">WO-4a PDF (coder, M3)</span><span class="arr">→</span>
+      <span class="step now">WO-4a PDF (M3 in review)</span><span class="arr">→</span>
       <span class="step">WO-4b store + send</span><span class="arr">→</span>
       <span class="step you">WO-LIB-1 + VARIANT-1</span><span class="arr">→</span>
       <span class="step you">KERN-SCHEMA-1 (held)</span><span class="arr">→</span>
-      <span class="step">ENT-FREE-1</span>
+      <span class="step">ENT-FREE-1</span><span class="arr">→</span>
+      <span class="step">CAT-1/2 central catalogue</span><span class="arr">→</span>
+      <span class="step">CAT-3 packs · nudges</span><span class="arr">→</span>
+      <span class="step">CAT-4 price service</span><span class="arr">→</span>
+      <span class="step">SUP-CART-1 supplier carts</span>
     </div>
   </div>
   <div class="track">
@@ -70,6 +74,8 @@
 <tr><td><b>Entitlement granularity</b></td><td class="ok">Module → submodule → quota. A submodule is a sidebar entry.</td></tr>
 <tr><td><b>Tier vs entitlement</b></td><td class="ok">The tier is a template of what you are <i>given</i>; entitlement is what you may <i>use</i>. No gate reads <code>planType</code>.</td></tr>
 <tr><td><b>Databases per tier</b> <i>(3 Oct)</i></td><td class="ok">FREE: invoicing only, no databases at all. PRO: the library's columns, empty. ENTERPRISE: may get it filled.</td></tr>
+<tr><td><b>The library and the central catalogue</b> <i>(3 Oct)</i></td><td class="ok">PRO starts with an empty library and bestek. We keep a central catalogue that fills new tenants with current prices; information flows ERP → tenant only, never back. Filling the library is a purchase, nudged only in discreet, opt-in ways and never opt-out. Price updates are a service: the tenant is notified and applying them is opt-in, because they may buy from their own supplier.</td></tr>
+<tr><td><b>Supplier prices</b> <i>(3 Oct)</i></td><td class="ok">Cebeo, Rexel, Facq and others become sources. Logged for later: import the tenant's live cart from a shop they are signed into, not an unofficial supplier API.</td></tr>
 <tr><td><b>The client portal's actor</b></td><td class="ok">A third scope constructor, not a user. An append-only two-party record.</td></tr>
 <tr><td><b>What is a work order?</b></td><td class="ok">The shifts created together (<code>seriesId</code>), one per day. The client signs per work order per day, and the signature is the lock.</td></tr>
 <tr><td><b>What prints on the client's signed copy?</b></td><td class="ok">The shift description and the crew note. Admin notes never print.</td></tr>
@@ -85,7 +91,6 @@
 <table>
 <tr><th>Decision</th><th>Blocks</th></tr>
 <tr><td>Go to release <b>KERN-SCHEMA-1</b>: the system columns come from the kernel and are reconciled per tenant on load. The code is on <code>hold/kern-schema-1</code>, with 317 tests green.</td><td>ENT-FREE-1 · PRO empty library</td></tr>
-<tr><td>PRO's <b>bestek</b>: a catalog we ship, or an empty library like the articles?</td><td>KERN-SCHEMA-1 · ENT-FREE-1</td></tr>
 <tr><td>Should the <b>variant fix</b> go in with WO-LIB-1? Today a variant surcharge counts as 0 in the totals.</td><td>WO-LIB-1 · VARIANT-1</td></tr>
 <tr><td>The <b>R1-2 binding census</b>: confirm each database binding before the resolver is deleted</td><td>KERN-8 · R1-4 · all of Track B</td></tr>
 <tr><td>Late entries since June that landed 2 h late: correct them, or leave them?</td><td>Hours history</td></tr>

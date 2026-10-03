@@ -429,3 +429,25 @@ M2 as planned (component + hook gate + ClockButton), plus the review-1 requireme
   `npm run test:compile` $\rightarrow$ Exit 0.
 - **Linting:**
   `npm run test:lint` $\rightarrow$ Exit 0 (0 errors, 1483 pre-existing warnings in untouched files).
+
+---
+
+## Planner review — M2 · 2026-10-03 · APPROVED with one fix (do it first in M3)
+
+Checked: 11/11 tests (location-gate + i18n-crew) re-run green; the two M1 test gaps are closed; every exit
+(Continue, Not now, close, backdrop, background, unmount) resolves the promise; `denied` never calls the phone;
+the old `LocationPermissionDialog` is gone with its only importer; ClockButton clocks in with `null` location
+exactly as before.
+
+**🔴 Fix — "Not now" leaks to the phone's prompt.** After "Not now", the next request in the same session (the
+clock-out, or a second clock-in) gets `shouldShow = false` and falls through to `requestLocationRaw()` — so the
+phone's own prompt appears without our explanation, which is exactly what GEO-2 exists to prevent.
+"Not now" means: no location, no prompt, for the rest of the session.
+
+Make it a decision, not a branch in the hook: the pure function returns one of three actions —
+`'explain'` (show our screen) · `'ask-phone'` (call the phone directly) · `'skip'` (no location, no prompt) —
+and the hook only follows it. `'skip'` for: `denied` already explained, and `prompt` dismissed this session.
+Tests: the table-driven test covers all three outcomes; throw proof: map the dismissed-session case to
+`'ask-phone'` → the test fails.
+
+Then M3 as planned (MySchedule, 5-language audit, compile/lint).

@@ -99,6 +99,10 @@ def load():
             continue
         status = str(r[ix['Status']] or 'Open')
         out.append({
+            'id': str(r[ix['ID']]),
+            'task': ' '.join(str(r[ix['Task']] or '').split()),
+            'status': status,
+            'prio': str(r[ix['Priority']] or ''),
             'layer': LAYER_ALIAS.get(r[ix['Map Layer']], r[ix['Map Layer']]),
             'block': str(r[ix['Map Block']] or ''),
             'open': not CLOSED.match(status),
@@ -114,13 +118,29 @@ def stats(items):
     return n, o, p
 
 
+PRIO = {'P0': 0, 'P1': 1, 'P2': 2, 'P3': 3}
+
+
+def task_rows(items):
+    def key(i):
+        return (not i['open'], i['status'] != 'In progress', PRIO.get(i['prio'], 9), i['id'])
+    rows = []
+    for i in sorted(items, key=key):
+        t = i['task'] if len(i['task']) <= 150 else i['task'][:147] + '…'
+        cls = 'tr' + ('' if i['open'] else ' closed') + (' p0' if i['open'] and i['prio'] == 'P0' else '')
+        rows.append(f'      <div class="{cls}"><span class="tid">{html.escape(i["id"])}</span>'
+                    f'<span class="tpr">{html.escape(i["prio"])}</span><span class="ttx">{html.escape(t)}</span>'
+                    f'<span class="tst">{html.escape(i["status"])}</span></div>')
+    return '\n'.join(rows)
+
+
 def blk(name, items):
     n, o, p = stats(items)
     pct = round(100 * o / n) if n else 0
     warn = ' class="warn"' if p >= 2 and p * 3 >= o else ''
     cnt = f'<b>{n}</b> · ' + (f'{o} open' if o else 'closed') + (f' · <span class="p">{p}</span>' if p else '')
-    return (f'    <div class="blk"><span class="bn">{name}</span><span class="bar"><i{warn} style="width:{pct}%"></i></span>'
-            f'<span class="cnt">{cnt}</span></div>')
+    return (f'    <details class="blkd"><summary class="blk"><span class="bn">{name}</span><span class="bar"><i{warn} style="width:{pct}%"></i></span>'
+            f'<span class="cnt">{cnt}</span></summary>\n    <div class="tasks">\n{task_rows(items)}\n    </div></details>')
 
 
 def main():
@@ -189,6 +209,7 @@ def main():
 </div>
 {since}
 <h2>The stack</h2>
+<p class="expand">Click a block to open its task list: open work first, in progress at the top, P0 in orange; closed items are greyed.</p>
 
 {chr(10).join(parts)}
 {rest}

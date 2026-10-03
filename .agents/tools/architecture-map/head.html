@@ -57,5 +57,17 @@ code{background:#f0f0ea;border-radius:4px;padding:1px 5px;font-size:12.5px;font-
 .step.done{background:#e8f5ec;border-color:#bfe3cb;color:#1a7f47}
 .since{background:#fff;border:1px solid #e3e3dd;border-left:3px solid #1a7f47;border-radius:6px;padding:15px 18px;margin:14px 0}
 .since h4{margin:0 0 7px;font-size:14px;font-weight:800}.since p{margin:0 0 7px}.since ul{margin:4px 0 0 18px;padding:0}
+details.blkd>summary{list-style:none;cursor:pointer}
+details.blkd>summary::-webkit-details-marker{display:none}
+details.blkd>summary .bn::before{content:"▸ ";color:#9a948c}
+details.blkd[open]>summary .bn::before{content:"▾ "}
+.tasks{margin:2px 0 10px 14px;border-left:2px solid #e3e3dd;padding-left:10px}
+.tr{display:grid;grid-template-columns:150px 28px 1fr 110px;gap:8px;font-size:12px;padding:3px 0;border-bottom:1px dashed #eeece6;align-items:baseline}
+.tr .tid{font-family:ui-monospace,Menlo,monospace;font-size:11px;font-weight:600;overflow-wrap:anywhere}
+.tr .tpr{font-size:10.5px;color:#6b625a}.tr.p0 .tpr{color:#c2410c;font-weight:700}
+.tr .tst{font-size:11px;color:#6b625a;text-align:right}
+.tr.closed{opacity:.5}
+.expand{font-size:12px;color:#6b625a;margin:0 0 10px}
+@media (max-width:640px){.tr{grid-template-columns:1fr auto;}.tr .ttx{grid-column:1/-1}.tr .tpr{display:none}}
 </style>
 </head>

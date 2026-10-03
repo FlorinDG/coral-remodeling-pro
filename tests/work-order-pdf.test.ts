@@ -143,6 +143,45 @@ test('language changes labels and unit between nl and fr', () => {
     assert.match(viewFr.lines[0].formattedDuration, /\bh\b/);
 });
 
+test('language covers full dictionary, unit, and decimal formatting for English (en)', () => {
+    const inputEn = makeValidInput({
+        language: 'en',
+        lines: [
+            { workerName: 'John Doe', in: '08:00', out: '16:00', minutes: 450 },
+            { workerName: 'Jane Smith', in: '08:00', out: '12:00', minutes: 240 },
+        ],
+    });
+    const viewEn = buildWorkOrderView(inputEn);
+
+    assert.equal(viewEn.labels.title, 'WORK ORDER');
+    assert.equal(viewEn.labels.reference, 'Work order ref.');
+    assert.equal(viewEn.labels.date, 'Date');
+    assert.equal(viewEn.labels.project, 'Project');
+    assert.equal(viewEn.labels.siteAddress, 'Site address');
+    assert.equal(viewEn.labels.client, 'Client');
+    assert.equal(viewEn.labels.performances, 'Work performed');
+    assert.equal(viewEn.labels.worker, 'Worker');
+    assert.equal(viewEn.labels.from, 'From');
+    assert.equal(viewEn.labels.to, 'To');
+    assert.equal(viewEn.labels.duration, 'Duration');
+    assert.equal(viewEn.labels.total, 'TOTAL');
+    assert.equal(viewEn.labels.tasks, 'Completed tasks');
+    assert.equal(viewEn.labels.description, 'Description');
+    assert.equal(viewEn.labels.crewNotes, 'Crew notes');
+    assert.equal(viewEn.labels.signature, 'Signed for approval');
+    assert.equal(viewEn.labels.signedBy, 'Signed by');
+    assert.equal(viewEn.labels.signedAt, 'Timestamp');
+    assert.equal(viewEn.labels.unit, 'h');
+    assert.equal(viewEn.labels.page, 'Page');
+    assert.equal(viewEn.labels.of, 'of');
+
+    // Decimal hours format in English uses dot separator: "7.50 h (07:30)" and "11.50 h (11:30)"
+    assert.equal(viewEn.lines[0].formattedDuration, '7.50 h (07:30)');
+    assert.equal(viewEn.lines[1].formattedDuration, '4.00 h (04:00)');
+    assert.equal(viewEn.totals.totalMinutes, 690);
+    assert.equal(viewEn.totals.formattedDuration, '11.50 h (11:30)');
+});
+
 test('carries description and crew notes verbatim without truncation', () => {
     const desc = 'Special instructions: client requested extra attention on the corner joint.';
     const note = 'Work completed as agreed; site left clean.';
@@ -248,5 +287,128 @@ test('renderSignedWorkOrderPdf handles 40-line fixture across multiple pages wit
     const pageMatches = buf.toString('latin1').match(/\/Type\s*\/Page\b/g);
     const pageCount = pageMatches ? pageMatches.length : 0;
     assert.ok(pageCount >= 2, `expected at least 2 pages for 40 lines, got ${pageCount}`);
+});
+
+// ── 8. REAL RENDERER: MULTI-LANGUAGE PARITY (M3) ──────────────────────────────
+
+test('renderSignedWorkOrderPdf produces distinct PDF bytes across nl, fr, and en', async () => {
+    const inputNl = makeValidInput({ language: 'nl' });
+    const inputFr = makeValidInput({ language: 'fr' });
+    const inputEn = makeValidInput({ language: 'en' });
+
+    const [bufNl, bufFr, bufEn] = await Promise.all([
+        renderSignedWorkOrderPdf(inputNl),
+        renderSignedWorkOrderPdf(inputFr),
+        renderSignedWorkOrderPdf(inputEn),
+    ]);
+
+    assert.ok(bufNl.subarray(0, 4).toString('utf-8') === '%PDF');
+    assert.ok(bufFr.subarray(0, 4).toString('utf-8') === '%PDF');
+    assert.ok(bufEn.subarray(0, 4).toString('utf-8') === '%PDF');
+
+    // Different languages produce distinct labels, units, and bytes
+    assert.notEqual(Buffer.compare(bufNl, bufFr), 0, 'nl and fr renders must produce different PDF bytes');
+    assert.notEqual(Buffer.compare(bufNl, bufEn), 0, 'nl and en renders must produce different PDF bytes');
+    assert.notEqual(Buffer.compare(bufFr, bufEn), 0, 'fr and en renders must produce different PDF bytes');
+});
+
+// ── 9. REAL RENDERER: EDGE CASES & HARDENING (M3) ──────────────────────────────
+
+test('renderSignedWorkOrderPdf handles missing optional fields without crashing', async () => {
+    const minimalInput: SignedWorkOrderPdfInput = {
+        tenant: {
+            name: 'Minimal Contractor BV',
+            vatNumber: null,
+            address: null,
+            logoPng: null,
+            logoUrl: null,
+            brandColor: null,
+        },
+        client: null,
+        workOrder: {
+            reference: 'WO-MIN-2026',
+            date: '2026-10-02',
+            siteAddress: null,
+            projectName: null,
+        },
+        lines: [
+            { workerName: 'Solo Artisan', in: '09:00', out: '17:00', minutes: 480 },
+        ],
+        tasks: [],
+        description: null,
+        crewNotes: [],
+        signature: {
+            signerName: 'Direct Client',
+            signedAt: '2026-10-02T16:00:00Z',
+            imagePng: SAMPLE_PNG,
+        },
+        language: 'nl',
+    };
+
+    const view = buildWorkOrderView(minimalInput);
+    assert.equal(view.client, null);
+    assert.equal(view.workOrder.siteAddress, null);
+    assert.equal(view.workOrder.projectName, null);
+    assert.equal(view.tenant.logoPng, null);
+    assert.equal(view.tenant.vatNumber, null);
+    assert.equal(view.tenant.address, null);
+    assert.equal(view.tasks.length, 0);
+    assert.equal(view.description, null);
+    assert.equal(view.crewNotes.length, 0);
+
+    const buf = await renderSignedWorkOrderPdf(minimalInput);
+    assert.ok(Buffer.isBuffer(buf), 'minimal input must render valid PDF Buffer');
+    assert.equal(buf.subarray(0, 4).toString('utf-8'), '%PDF');
+    assert.ok(buf.length > 500);
+});
+
+test('renderSignedWorkOrderPdf handles edge-case long text and multi-line notes without truncation', async () => {
+    const multiLineDesc = 'Fase 1: Afbraak en voorbereiding van de vloer.\nFase 2: Plaatsen van akoestische isolatie en chape.\nFase 3: Oplevering en inspectie door de werfleider.';
+    const multiLineNote = 'Ochtend: materiaal geleverd en gecontroleerd.\nNamiddag: chape geplaatst conform opmeting.\nOpmerking: droogtijd 48u gerespecteerd.';
+    const longWorkerName = 'Maximilian-Alexander van den Berghen-Sigmaringen de la Tour';
+    const longProjectName = 'Herinrichting en structurele renovatie van historisch herenhuis met geklasseerde voorgevel';
+    const longSiteAddress = 'Koningin Astridlaan 142 bus 4B, 9000 Gent - Gebouw C, Toegang via binnenkoer';
+
+    const longTextInput = makeValidInput({
+        tenant: {
+            name: 'Coral Remodeling & Heritage Restoration Enterprise International NV',
+            vatNumber: 'BE 0123.456.789',
+            address: 'Boulevard Anspach 1 bus 12, 1000 Brussel, België',
+            brandColor: '#2563eb',
+            logoPng: null,
+        },
+        client: {
+            name: 'Vereniging van Mede-Eigenaars Residentie Parkzicht & Kasteelpark',
+            address: 'Leopold II Laan 250 bus 10, 1080 Sint-Jans-Molenbeek',
+        },
+        workOrder: {
+            reference: 'WO-2026-LONG-TEXT-OVERFLOW-TEST-0099',
+            date: '2026-10-02',
+            siteAddress: longSiteAddress,
+            projectName: longProjectName,
+        },
+        lines: [
+            { workerName: longWorkerName, in: '07:30', out: '16:00', minutes: 510 },
+        ],
+        tasks: [
+            { title: 'Volledige demontage van het bestaande houten schrijnwerk en opslag in droge loods', done: true },
+        ],
+        description: multiLineDesc,
+        crewNotes: [
+            { workerName: longWorkerName, note: multiLineNote },
+        ],
+    });
+
+    const view = buildWorkOrderView(longTextInput);
+    assert.equal(view.description, multiLineDesc, 'multi-line description must be preserved verbatim');
+    assert.equal(view.crewNotes[0].note, multiLineNote, 'multi-line crew note must be preserved verbatim');
+    assert.equal(view.lines[0].workerName, longWorkerName);
+    assert.equal(view.workOrder.projectName, longProjectName);
+    assert.equal(view.workOrder.siteAddress, longSiteAddress);
+
+    const buf = await renderSignedWorkOrderPdf(longTextInput);
+    assert.ok(Buffer.isBuffer(buf), 'result must be a Buffer');
+    assert.equal(buf.subarray(0, 4).toString('utf-8'), '%PDF');
+    assert.ok(buf.length > 500);
 });
 

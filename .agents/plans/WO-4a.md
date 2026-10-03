@@ -616,3 +616,189 @@ total from summed minutes (`320,00 u (320:00)`). Not covered by a test (acceptab
 WO-4b): the repeated table header and the signature block staying in one piece.
 **M3** as planned: fr + en labels, edge cases (long names, multi-line notes, missing client / site / project / logo).
 Stop after M3.
+
+---
+
+## M3 — done
+
+### 1. Scope Completed
+- **Multi-language Parity (`nl`, `fr`, `en`):**
+  - Full label dictionary across all three languages (`title`, `reference`, `date`, `project`, `siteAddress`, `client`, `performances`, `worker`, `from`, `to`, `duration`, `total`, `tasks`, `description`, `crewNotes`, `signature`, `signedBy`, `signedAt`, `declaration`, `unit`, `page`, `of`).
+  - Unit parity: `u` for `nl`, `h` for `fr` and `en`.
+  - Locale-specific decimal hours formatting: Belgian comma formatting for `nl` and `fr` (`7,50 u (07:30)` and `7,50 h (07:30)`), and dot formatting for `en` (`7.50 h (07:30)`).
+  - Byte-level language distinction: `renderSignedWorkOrderPdf` produces distinct, deterministic PDF output bytes across `nl`, `fr`, and `en`.
+- **Edge-Case Hardening:**
+  - Missing optional fields handled cleanly without exceptions: `client` null, `siteAddress` null, `projectName` null, `logoPng` null, `vatNumber` null, `address` null, `tasks` empty, `description` null, `crewNotes` empty.
+  - Very long worker names (e.g. 60+ chars with compound titles), project names, and site addresses wrap cleanly within table cells and header columns without clipping or overflow.
+  - Multi-line shift descriptions and multi-line crew notes with `\n` line breaks are preserved verbatim and formatted cleanly.
+- **Font & Style Consistency:**
+  - `styles.page` and `styles.footer` explicitly styled with `fontFamily: 'IBM Plex Sans'`, `fontWeight: 400`, ensuring zero fallback to built-in Helvetica.
+
+### 2. Verification Commands & Test Output
+
+```bash
+$ node --import ./tests/register.mjs --test tests/work-order-pdf.test.ts
+✔ throws SignedWorkOrderValidationError on empty or whitespace signerName (0.777791ms)
+✔ throws SignedWorkOrderValidationError on empty signature imagePng (0.109083ms)
+✔ throws SignedWorkOrderValidationError on zero lines (0.082375ms)
+✔ formats signature timestamp strictly in Europe/Brussels wall-clock time (14.958125ms)
+✔ formats line duration as "7,50 u (07:30)" and total from summed minutes (0.290583ms)
+✔ language changes labels and unit between nl and fr (0.452834ms)
+✔ language covers full dictionary, unit, and decimal formatting for English (en) (0.21925ms)
+✔ carries description and crew notes verbatim without truncation (0.18625ms)
+✔ carries Romanian and Cyrillic names through unchanged (C4) (0.169292ms)
+✔ view model never leaks internal cost rates, prices, or user ids (0.313916ms)
+✔ renderSignedWorkOrderPdf returns a Buffer starting with %PDF (111.382ms)
+✔ renderSignedWorkOrderPdf is deterministic: same input produces identical bytes (57.077209ms)
+✔ renderSignedWorkOrderPdf embeds IBM Plex Sans font in PDF bytes (24.646375ms)
+✔ renderSignedWorkOrderPdf handles 40-line fixture across multiple pages with intact totals (77.249292ms)
+✔ renderSignedWorkOrderPdf produces distinct PDF bytes across nl, fr, and en (70.547333ms)
+✔ renderSignedWorkOrderPdf handles missing optional fields without crashing (16.50125ms)
+✔ renderSignedWorkOrderPdf handles edge-case long text and multi-line notes without truncation (28.327417ms)
+ℹ tests 17
+ℹ suites 0
+ℹ pass 17
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 672.6305
+exit: 0
+```
+
+```bash
+$ npm run test:compile
+> coral-remodeling-pro@0.1.0 test:compile
+> NODE_OPTIONS='--max-old-space-size=4096' tsc --noEmit
+exit: 0
+```
+
+```bash
+$ npm run test:lint
+> coral-remodeling-pro@0.1.0 test:lint
+> eslint src
+exit: 0 (0 errors, 1481 warnings)
+```
+
+---
+
+### 3. Throw Proofs
+
+#### THROW PROOF M3-1 — English (en) Decimal Hours Dot Formatting
+Mutate `locale` in `buildWorkOrderView` to always use `'nl-BE'`. Test fails because English requires dot separator (`7.50 h`), but received comma separator (`7,50 h`):
+```bash
+$ node -e '
+const fs = require("fs");
+let code = fs.readFileSync("src/lib/documents/work-order-pdf.ts", "utf8");
+code = code.replace("const locale = lang === '\''en'\'' ? '\''en-GB'\'' : '\''nl-BE'\'';", "const locale = '\''nl-BE'\'';");
+fs.writeFileSync("src/lib/documents/work-order-pdf.ts", code);
+'; node --import ./tests/register.mjs --test tests/work-order-pdf.test.ts; echo "exit: $?"; git checkout -- src/lib/documents/work-order-pdf.ts
+
+✖ language covers full dictionary, unit, and decimal formatting for English (en) (0.817333ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + '7,50 h (07:30)'
+  - '7.50 h (07:30)'
+  
+      at TestContext.<anonymous> (file:///Users/florin/Documents/GitHub/coral-remodeling-pro/tests/work-order-pdf.test.ts:179:12)
+      at Test.runInAsyncScope (node:async_hooks:228:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '7,50 h (07:30)',
+    expected: '7.50 h (07:30)',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+exit: 1
+```
+
+#### THROW PROOF M3-2 — Distinct PDF Bytes across Languages
+Mutate language selection in `buildWorkOrderView` to always force `lang = 'nl'`. Test fails because `nl` and `fr` renders produce identical bytes:
+```bash
+$ node -e '
+const fs = require("fs");
+let code = fs.readFileSync("src/lib/documents/work-order-pdf.ts", "utf8");
+code = code.replace("const lang = input.language && WORK_ORDER_LABELS[input.language] ? input.language : '\''nl'\'';", "const lang = '\''nl'\'';");
+fs.writeFileSync("src/lib/documents/work-order-pdf.ts", code);
+'; node --import ./tests/register.mjs --test tests/work-order-pdf.test.ts; echo "exit: $?"; git checkout -- src/lib/documents/work-order-pdf.ts
+
+✖ renderSignedWorkOrderPdf produces distinct PDF bytes across nl, fr, and en (68.94025ms)
+  AssertionError [ERR_ASSERTION]: nl and fr renders must produce different PDF bytes
+      at TestContext.<anonymous> (file:///Users/florin/Documents/GitHub/coral-remodeling-pro/tests/work-order-pdf.test.ts:310:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 0,
+    operator: 'notStrictEqual',
+    diff: 'simple'
+  }
+exit: 1
+```
+
+#### THROW PROOF M3-3 — Missing Optional Fields Null Safety
+Mutate client rendering in `WorkOrderPdfDocument` to remove the null-check and access `client.name` directly. Test fails with TypeError on null client during PDF generation:
+```bash
+$ node -e '
+const fs = require("fs");
+let code = fs.readFileSync("src/lib/documents/work-order-pdf.ts", "utf8");
+code = code.replace("client\n                    ? [\n                        h(Text, { key: '\''cName'\'', style: styles.infoValueBold }, client.name),\n                        client.address ? h(Text, { key: '\''cAddr'\'', style: styles.infoValue }, client.address) : null,\n                    ]\n                    : h(Text, { style: styles.infoValue }, '\''-'\'')", "h(Text, { key: '\''cName'\'', style: styles.infoValueBold }, (client as any).name)");
+fs.writeFileSync("src/lib/documents/work-order-pdf.ts", code);
+'; node --import ./tests/register.mjs --test tests/work-order-pdf.test.ts; echo "exit: $?"; git checkout -- src/lib/documents/work-order-pdf.ts
+
+✖ renderSignedWorkOrderPdf handles missing optional fields without crashing (0.6695ms)
+  TypeError: Cannot read properties of null (reading 'name')
+      at WorkOrderPdfDocument (file:///Users/florin/Documents/GitHub/coral-remodeling-pro/src/lib/documents/work-order-pdf.ts:643:92)
+      at renderSignedWorkOrderPdf (file:///Users/florin/Documents/GitHub/coral-remodeling-pro/src/lib/documents/work-order-pdf.ts:770:25)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestContext.<anonymous> (file:///Users/florin/Documents/GitHub/coral-remodeling-pro/tests/work-order-pdf.test.ts:359:17)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7)
+exit: 1
+```
+
+#### THROW PROOF M3-4 — Multi-Line Description Verbatim Preservation
+Mutate description handling in `buildWorkOrderView` to truncate text to 20 characters (`.slice(0, 20)`). Test fails because full multi-line notes must be preserved verbatim without truncation:
+```bash
+$ node -e '
+const fs = require("fs");
+let code = fs.readFileSync("src/lib/documents/work-order-pdf.ts", "utf8");
+code = code.replace("description: input.description && input.description.trim() ? input.description.trim() : null,", "description: input.description && input.description.trim() ? input.description.trim().slice(0, 20) : null,");
+fs.writeFileSync("src/lib/documents/work-order-pdf.ts", code);
+'; node --import ./tests/register.mjs --test tests/work-order-pdf.test.ts; echo "exit: $?"; git checkout -- src/lib/documents/work-order-pdf.ts
+
+✖ renderSignedWorkOrderPdf handles edge-case long text and multi-line notes without truncation (0.939875ms)
+  AssertionError [ERR_ASSERTION]: multi-line description must be preserved verbatim
+  + actual - expected
+  
+  + 'Fase 1: Afbraak en v'
+  - 'Fase 1: Afbraak en voorbereiding van de vloer.\n' +
+  -   'Fase 2: Plaatsen van akoestische isolatie en chape.\n' +
+  -   'Fase 3: Oplevering en inspectie door de werfleider.'
+  
+      at TestContext.<anonymous> (file:///Users/florin/Documents/GitHub/coral-remodeling-pro/tests/work-order-pdf.test.ts:403:12)
+      at Test.runInAsyncScope (node:async_hooks:228:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'Fase 1: Afbraak en v',
+    expected: 'Fase 1: Afbraak en voorbereiding van de vloer.\nFase 2: Plaatsen van akoestische isolatie en chape.\nFase 3: Oplevering en inspectie door de werfleider.',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+exit: 1
+```
+

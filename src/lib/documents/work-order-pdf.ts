@@ -337,7 +337,8 @@ export function buildWorkOrderView(input: SignedWorkOrderPdfInput): WorkOrderVie
 
 const styles = StyleSheet.create({
     page: {
-        fontFamily: 'Helvetica',
+        fontFamily: 'IBM Plex Sans',
+        fontWeight: 400,
         fontSize: 9,
         color: '#1f2937',
         backgroundColor: '#FFFFFF',
@@ -586,6 +587,8 @@ const styles = StyleSheet.create({
         right: 40,
         flexDirection: 'row',
         justifyContent: 'space-between',
+        fontFamily: 'IBM Plex Sans',
+        fontWeight: 400,
         fontSize: 7.5,
         color: '#9ca3af',
         borderTopWidth: 0.5,

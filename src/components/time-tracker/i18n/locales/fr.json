@@ -405,5 +405,16 @@
       "unauthorized": "Veuillez vous reconnecter"
     },
     "myNoteHint": "Le client lit cette note avant de signer."
+  },
+  "locationExplainer": {
+    "title": "Localisation au pointage",
+    "privacyTitle": "Vie privée",
+    "description": "Nous lisons votre position uniquement au moment précis où vous pointez à l'arrivée et au départ. Vous n'êtes jamais suivi entre-temps.",
+    "whyTitle": "Pourquoi nous l'enregistrons",
+    "whyDescription": "La feuille d'heures et le bon de travail indiquent l'adresse et la distance du chantier. Cela ne bloque jamais votre pointage.",
+    "deniedHelp": "La localisation est désactivée dans les paramètres de votre téléphone.",
+    "continue": "Continuer",
+    "clockInWithoutLocation": "Pointer",
+    "notNow": "Pas maintenant"
   }
 }

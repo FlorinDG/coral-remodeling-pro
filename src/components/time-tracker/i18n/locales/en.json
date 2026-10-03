@@ -405,5 +405,16 @@
       "unauthorized": "Please sign in again"
     },
     "myNoteHint": "The client reads this note before signing."
+  },
+  "locationExplainer": {
+    "title": "Location when clocking",
+    "privacyTitle": "Privacy",
+    "description": "We only read your location at the exact moment you clock in or out. You are never tracked in between or continuously.",
+    "whyTitle": "Why we record this",
+    "whyDescription": "Your timesheet and work order show the address and distance to the job site. This never blocks you from clocking in.",
+    "deniedHelp": "Location is turned off in your phone's settings.",
+    "continue": "Continue",
+    "clockInWithoutLocation": "Clock in",
+    "notNow": "Not now"
   }
 }

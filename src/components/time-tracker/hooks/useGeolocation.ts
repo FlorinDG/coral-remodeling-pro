@@ -1,6 +1,13 @@
 "use client";
-import { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
+import dynamic from 'next/dynamic';
 import type { GeolocationCoordinates } from '@/components/time-tracker/types/timesheet';
+import { shouldShowLocationExplainer } from '@/components/workhub/location-gate';
+
+const LocationExplainer = dynamic(
+  () => import('@/components/workhub/LocationExplainer').then((mod) => mod.LocationExplainer),
+  { ssr: false }
+);
 
 // ── Geofence Validation ──────────────────────────────────────────────
 
@@ -101,12 +108,24 @@ export function dismissSessionExplainer(): void {
 
 // ── Geolocation Hook ─────────────────────────────────────────────────
 
-interface UseGeolocationResult {
+export interface UseGeolocationResult {
   location: GeolocationCoordinates | null;
   error: string | null;
   loading: boolean;
   permissionState: PermissionState | null;
-  requestLocation: () => Promise<GeolocationCoordinates | null>;
+  /** Direct native location request (bypasses explainer modal gate) */
+  requestLocationRaw: () => Promise<GeolocationCoordinates | null>;
+  /**
+   * Unified Location Gate:
+   * Evaluates shouldShowLocationExplainer. If explanation needed, opens LocationExplainer
+   * and awaits worker action.
+   * - Continue -> marks device shown, requests native GPS (or resolves null if denied).
+   * - Not now -> marks session dismissed, resolves null immediately.
+   * - Escape / backdrop / close / background / unmount -> resolves null immediately.
+   */
+  requestLocation: (options?: { skipExplainer?: boolean }) => Promise<GeolocationCoordinates | null>;
+  /** The LocationExplainer dialog element to render in the caller component */
+  explainerDialog: React.ReactNode;
 }
 
 export function useGeolocation(): UseGeolocationResult {
@@ -114,18 +133,22 @@ export function useGeolocation(): UseGeolocationResult {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [permissionState, setPermissionState] = useState<PermissionState | null>(null);
+  const [isExplainerOpen, setIsExplainerOpen] = useState(false);
+  const pendingResolverRef = useRef<((coords: GeolocationCoordinates | null) => void) | null>(null);
 
   useEffect(() => {
-    if ('permissions' in navigator) {
+    if (typeof navigator !== 'undefined' && 'permissions' in navigator) {
       navigator.permissions.query({ name: 'geolocation' }).then((result) => {
         setPermissionState(result.state);
         result.onchange = () => setPermissionState(result.state);
+      }).catch(() => {
+        // Permissions API query rejected or unsupported
       });
     }
   }, []);
 
-  const requestLocation = useCallback(async (): Promise<GeolocationCoordinates | null> => {
-    if (!navigator.geolocation) {
+  const requestLocationRaw = useCallback(async (): Promise<GeolocationCoordinates | null> => {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
       setError('Geolocation is not supported by your browser');
       return null;
     }
@@ -159,5 +182,112 @@ export function useGeolocation(): UseGeolocationResult {
     });
   }, []);
 
-  return { location, error, loading, permissionState, requestLocation };
+  const requestLocation = useCallback(async (options?: { skipExplainer?: boolean }): Promise<GeolocationCoordinates | null> => {
+    if (options?.skipExplainer) {
+      return requestLocationRaw();
+    }
+
+    const hasPermissionsApi = typeof navigator !== 'undefined' && 'permissions' in navigator;
+    const alreadyShown = isDeviceExplainerShown();
+    const sessionDismissed = isSessionExplainerDismissed();
+
+    const shouldShow = shouldShowLocationExplainer({
+      permissionState,
+      hasPermissionsApi,
+      alreadyShownDevice: alreadyShown,
+      sessionDismissed,
+    });
+
+    if (!shouldShow) {
+      if (permissionState === 'denied') {
+        return null;
+      }
+      return requestLocationRaw();
+    }
+
+    if (pendingResolverRef.current) {
+      pendingResolverRef.current(null);
+      pendingResolverRef.current = null;
+    }
+
+    return new Promise<GeolocationCoordinates | null>((resolve) => {
+      pendingResolverRef.current = resolve;
+      setIsExplainerOpen(true);
+    });
+  }, [permissionState, requestLocationRaw]);
+
+  const handleExplainerContinue = useCallback(async () => {
+    markDeviceExplainerShown();
+    setIsExplainerOpen(false);
+    const resolver = pendingResolverRef.current;
+    pendingResolverRef.current = null;
+    if (!resolver) return;
+
+    if (permissionState === 'denied') {
+      resolver(null);
+    } else {
+      const coords = await requestLocationRaw();
+      resolver(coords);
+    }
+  }, [permissionState, requestLocationRaw]);
+
+  const handleExplainerDismiss = useCallback(() => {
+    dismissSessionExplainer();
+    setIsExplainerOpen(false);
+    if (pendingResolverRef.current) {
+      pendingResolverRef.current(null);
+      pendingResolverRef.current = null;
+    }
+  }, []);
+
+  const handleOpenChange = useCallback((open: boolean) => {
+    if (!open) {
+      setIsExplainerOpen(false);
+      if (pendingResolverRef.current) {
+        pendingResolverRef.current(null);
+        pendingResolverRef.current = null;
+      }
+    }
+  }, []);
+
+  // Ensure clock-in never waits forever if app moves to background or unmounts
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden' && pendingResolverRef.current) {
+        setIsExplainerOpen(false);
+        pendingResolverRef.current(null);
+        pendingResolverRef.current = null;
+      }
+    };
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+    }
+    return () => {
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+      }
+      if (pendingResolverRef.current) {
+        pendingResolverRef.current(null);
+        pendingResolverRef.current = null;
+      }
+    };
+  }, []);
+
+  const explainerDialog = React.createElement(LocationExplainer, {
+    open: isExplainerOpen,
+    onOpenChange: handleOpenChange,
+    onContinue: handleExplainerContinue,
+    onDismiss: handleExplainerDismiss,
+    isDenied: permissionState === 'denied',
+  });
+
+  return {
+    location,
+    error,
+    loading,
+    permissionState,
+    requestLocationRaw,
+    requestLocation,
+    explainerDialog,
+  };
 }

@@ -408,5 +408,16 @@
       "unauthorized": "Autentificați-vă din nou"
     },
     "myNoteHint": "Clientul citește această notiță înainte de a semna."
+  },
+  "locationExplainer": {
+    "title": "Locația la pontare",
+    "privacyTitle": "Confidențialitate",
+    "description": "Citim locația doar în momentul exact în care pontezi sosirea sau plecarea. Nu ești niciodată urmărit între timp sau continuu.",
+    "whyTitle": "De ce înregistrăm acest lucru",
+    "whyDescription": "Fișa de pontaj și bonul de lucru arată adresa și distanța până la șantier. Pontarea nu este niciodată blocată.",
+    "deniedHelp": "Locația este dezactivată din setările telefonului tău.",
+    "continue": "Continuă",
+    "clockInWithoutLocation": "Pontează",
+    "notNow": "Nu acum"
   }
 }

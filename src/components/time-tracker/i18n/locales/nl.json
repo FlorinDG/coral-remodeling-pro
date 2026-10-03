@@ -405,5 +405,16 @@
       "unauthorized": "Meld je opnieuw aan"
     },
     "myNoteHint": "De klant leest deze notitie voor hij tekent."
+  },
+  "locationExplainer": {
+    "title": "Locatie bij in- en uitklokken",
+    "privacyTitle": "Privacy",
+    "description": "We lezen je locatie alleen op het moment dat je in- of uitklokt. We volgen je locatie nooit tussendoor of continu.",
+    "whyTitle": "Waarom we dit vragen",
+    "whyDescription": "Op de werkbon en urenregistratie tonen we het adres en de afstand tot de werf. Dit blokkeert je inklokken nooit.",
+    "deniedHelp": "Locatie staat uitgeschakeld in de instellingen van je telefoon.",
+    "continue": "Doorgaan",
+    "clockInWithoutLocation": "Inklokken",
+    "notNow": "Niet nu"
   }
 }

@@ -343,3 +343,21 @@ All 5 mutations were executed and verified to fail their respective test, then r
   `npm run test:compile` -> Exit 0.
 - **Linting:**
   `npm run test:lint` -> Exit 0 (0 errors, 1481 pre-existing warnings).
+
+---
+
+## Planner review — M1 · 2026-10-03 · APPROVED · GO for M2
+
+Checked: the decision matches the approved truth table; 6/6 tests pass (re-run by the Planner); the table-driven
+`granted` test covers all 8 combinations and its throw proof fails as it should; storage helpers wrapped as asked;
+the pure module sits in `src/components/workhub/`. Clean.
+
+**Carry into M2 (two test gaps):**
+1. **Storage that throws.** The helper test only runs with no `window`. Add one with a stubbed `globalThis.window`
+   whose `localStorage` / `sessionStorage` getters throw: reads return `false`, writes do not throw. Throw proof:
+   remove one try/catch → the test fails.
+2. **Unknown permission state with the API present** (`hasPermissionsApi: true`, `permissionState: null` — the
+   query is still pending or rejected): one case each for `alreadyShownDevice` true/false.
+
+M2 as planned (component + hook gate + ClockButton), plus the review-1 requirements: every exit resolves,
+`denied` reads as "Clock in", one dialog on screen.

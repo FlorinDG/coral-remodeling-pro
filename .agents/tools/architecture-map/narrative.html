@@ -29,7 +29,7 @@
     <div class="tname">Track B — the kernel path to the scoped client</div>
     <div class="chain">
       <span class="step done">KERN-7b ✓</span><span class="arr">→</span>
-      <span class="step now">R1-2 binding census</span><span class="arr">→</span>
+      <span class="step now">R1-2 binding census (Planner)</span><span class="arr">→</span>
       <span class="step">KERN-8 delete the resolver</span><span class="arr">→</span>
       <span class="step">R1-4 the only door</span><span class="arr">→</span>
       <span class="step">R2-1 one saveRecord</span><span class="arr">→</span>
@@ -84,6 +84,7 @@
 <tr><td><b>Geofencing</b></td><td class="ok">Record, never block. An address and a distance, with no live tracking and no face recognition.</td></tr>
 <tr><td><b>A sent quote</b></td><td class="ok">Locked once sent, accepted or rejected. A change goes through Revise, which keeps the number and adds <code>-vN</code>. Expiry shows a banner and does not unlock the quote.</td></tr>
 <tr><td><b>Article discount</b></td><td class="ok">A real discount: <code>netto = bruto × (1 − discount/100)</code>, the same in the library, the quote and the invoice.</td></tr>
+<tr><td><b>WEBSITES and EMAIL</b> <i>(3 Oct)</i></td><td class="ok">Finish the features first, then decide what is grantable. Ideally they become nice-to-haves that sweeten an upgrade. The PRO happy path: website (lead-capture form) → lead in the pipeline ⇄ mail → quote → project → portal. We tease and squeeze, never past ethics.</td></tr>
 <tr><td><b>Release</b></td><td class="ok">Every green commit goes to <code>main</code>. Florin pushes any range with a migration or a package change.</td></tr>
 <tr><td><b>The coder</b></td><td class="ok">Plan first, Florin approves milestones, and every test needs a throw proof. Bending a directive is not progress.</td></tr>
 <tr><td><b>WorkHub: repair or rebuild</b></td><td class="ok">Extract the plumbing (<span class="ok">done</span>), <b>rebuild the shift editor</b> (TD-0, 3 Oct: the debt left sits in its two files), repair the rest.</td></tr>
@@ -94,11 +95,8 @@
 <tr><th>Decision</th><th>Blocks</th></tr>
 <tr><td>Go to release <b>KERN-SCHEMA-1</b>: the system columns come from the kernel and are reconciled per tenant on load. The code is on <code>hold/kern-schema-1</code>, with 317 tests green.</td><td>ENT-FREE-1 · PRO empty library</td></tr>
 <tr><td>Should the <b>variant fix</b> go in with WO-LIB-1? Today a variant surcharge counts as 0 in the totals.</td><td>WO-LIB-1 · VARIANT-1</td></tr>
-<tr><td>The <b>R1-2 binding census</b>: confirm each database binding before the resolver is deleted</td><td>KERN-8 · R1-4 · all of Track B</td></tr>
 <tr><td>Late entries since June that landed 2 h late: correct them, or leave them?</td><td>Hours history</td></tr>
-<tr><td><code>TIER_DEFAULTS</code>: PRO's module set beyond the library</td><td>All of entitlement</td></tr>
-<tr><td>WEBSITES / EMAIL: make them grantable, or drop the gates?</td><td>Module vocabulary</td></tr>
-<tr><td>Phantom field <code>source_project_id</code>: TD-0 found it drives a dead feature. Confirm it simply disappears with the WH-7 rebuild</td><td>TD-2</td></tr>
+<tr><td><code>TIER_DEFAULTS</code>: PRO's module set beyond the library. <i>Defined as we go; raised in conversation, not forced now.</i></td><td>All of entitlement</td></tr>
 </table>
 
 <div class="foot">

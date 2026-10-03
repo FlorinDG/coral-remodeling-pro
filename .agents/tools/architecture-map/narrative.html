@@ -68,6 +68,8 @@
 <h2>Decided — and no longer open questions</h2>
 <table>
 <tr><th>Question</th><th>Answer</th></tr>
+<tr><td><b>What &ldquo;canonical&rdquo; means</b> <i>(28 Sep, pd.md 4z)</i></td><td class="ok">Each concept is defined precisely, then frozen. It is not reduced to one concept. The defect is one concept with two representations, not two things that sound alike. A projection joining two defined concepts is legitimate; the same fact stored, decided or named twice is not.</td></tr>
+<tr><td><b>Identity</b> <i>(28 Sep, pd.md 4y)</i></td><td class="ok"><code>User</code>, <code>Employee</code> and the <code>db-hr</code> projection are all legitimate. A User is anyone who logs into the ERP, with roles on two axes: functional (superadmin, tenant admin, ERP operator, tenant employee) and operational (director, HR, team leader, workforce). The operational axis governs module access. Separating the WorkHub as a surface does not separate the crew from the company.</td></tr>
 <tr><td><b>What is a project?</b></td><td class="ok">The page in the projects database. <code>InternalProject</code> and <code>HrProject</code> are deleted. CMS projects live in the CMS.</td></tr>
 <tr><td><b>Who owns the tenant's databases?</b></td><td class="ok">The seraph. <code>lockedDbIds</code> forward, <code>logicalKey</code> reverse. An id is never parsed.</td></tr>
 <tr><td><b>Deleting a project vs the hours worked on it</b></td><td class="ok"><code>SetNull</code>: the project does not own the hours.</td></tr>
@@ -76,7 +78,7 @@
 <tr><td><b>Databases per tier</b> <i>(3 Oct)</i></td><td class="ok">FREE: invoicing only, no databases at all. PRO: the library's columns, empty. ENTERPRISE: may get it filled.</td></tr>
 <tr><td><b>The library and the central catalogue</b> <i>(3 Oct)</i></td><td class="ok">PRO starts with an empty library and bestek. We keep a central catalogue that fills new tenants with current prices; information flows ERP → tenant only, never back. Filling the library is a purchase, nudged only in discreet, opt-in ways and never opt-out. Price updates are a service: the tenant is notified and applying them is opt-in, because they may buy from their own supplier.</td></tr>
 <tr><td><b>Supplier prices</b> <i>(3 Oct)</i></td><td class="ok">Cebeo, Rexel, Facq and others become sources. Logged for later: import the tenant's live cart from a shop they are signed into, not an unofficial supplier API.</td></tr>
-<tr><td><b>The client portal's actor</b></td><td class="ok">A third scope constructor, not a user. An append-only two-party record.</td></tr>
+<tr><td><b>The client portal's actor</b></td><td class="ok">A third scope constructor, not a user. An append-only two-party record. Task status is open at both ends: either side may change it, and every change is logged.</td></tr>
 <tr><td><b>What is a work order?</b></td><td class="ok">The shifts created together (<code>seriesId</code>), one per day. The client signs per work order per day, and the signature is the lock.</td></tr>
 <tr><td><b>What prints on the client's signed copy?</b></td><td class="ok">The shift description and the crew note. Admin notes never print.</td></tr>
 <tr><td><b>Geofencing</b></td><td class="ok">Record, never block. An address and a distance, with no live tracking and no face recognition.</td></tr>
@@ -94,11 +96,9 @@
 <tr><td>Should the <b>variant fix</b> go in with WO-LIB-1? Today a variant surcharge counts as 0 in the totals.</td><td>WO-LIB-1 · VARIANT-1</td></tr>
 <tr><td>The <b>R1-2 binding census</b>: confirm each database binding before the resolver is deleted</td><td>KERN-8 · R1-4 · all of Track B</td></tr>
 <tr><td>Late entries since June that landed 2 h late: correct them, or leave them?</td><td>Hours history</td></tr>
-<tr><td>Which &ldquo;employee&rdquo; is canonical: <code>User</code>, <code>Employee</code>, or the <code>db-hr</code> projection?</td><td>HR module, timesheets, WorkHub identity</td></tr>
 <tr><td><code>TIER_DEFAULTS</code>: PRO's module set beyond the library</td><td>All of entitlement</td></tr>
-<tr><td>Does a client mark a tenant-created task done? <i>(a response, not an edit)</i></td><td>Portal two-party record</td></tr>
 <tr><td>WEBSITES / EMAIL: make them grantable, or drop the gates?</td><td>Module vocabulary</td></tr>
-<tr><td>Phantom fields: implement or delete? <i>(<code>source_project_id</code> is the first)</i></td><td>TD-2</td></tr>
+<tr><td>Phantom field <code>source_project_id</code>: TD-0 found it drives a dead feature. Confirm it simply disappears with the WH-7 rebuild</td><td>TD-2</td></tr>
 </table>
 
 <div class="foot">

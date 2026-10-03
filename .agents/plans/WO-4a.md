@@ -606,3 +606,13 @@ fs.writeFileSync("tests/work-order-pdf.test.ts", code);
 exit: 1
 ```
 
+
+---
+
+## Planner review of M2 — 2026-10-03 · ✅ **APPROVED — GO for M3**
+13/13 on the real code. Fonts registered from static paths as asked; the Planner re-ran the font throw proof
+(`fontFamily: 'Helvetica'` → "embeds IBM Plex Sans" fails; restored → green). The 40-line test asserts ≥ 2 pages and the
+total from summed minutes (`320,00 u (320:00)`). Not covered by a test (acceptable — checked by eye on a real PDF in
+WO-4b): the repeated table header and the signature block staying in one piece.
+**M3** as planned: fr + en labels, edge cases (long names, multi-line notes, missing client / site / project / logo).
+Stop after M3.

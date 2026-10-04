@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useRef } from 'react';
 import Link from 'next/link';
+import { useLocale } from 'next-intl';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Upload, FileSpreadsheet, Bot, AlertCircle, Check, ArrowRight, Loader2, Database, TableProperties, FileText, Building2, CalendarDays, Hash, Coins } from 'lucide-react';
 import { useDatabaseStore } from '@/components/admin/database/store';
@@ -41,6 +42,7 @@ const FRIENDLY_TYPES: Record<string, string> = {
 };
 
 export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: SpreadsheetImportModalProps) {
+    const locale = useLocale();
     const [file, setFile] = useState<File | null>(null);
     const [isParsing, setIsParsing] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
@@ -670,7 +672,7 @@ export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: Spreadsh
                                     Property Mapping Interface
                                 </h3>
                                 <div className="text-xs bg-neutral-100 dark:bg-neutral-900 px-3 py-1.5 rounded-full font-medium text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-800">
-                                    Detected {previewData.length.toLocaleString()} rows
+                                    Detected {previewData.length.toLocaleString(locale)} rows
                                 </div>
                             </div>
 
@@ -732,12 +734,12 @@ export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: Spreadsh
                                         <>
                                             <Loader2 className="w-4 h-4 animate-spin" />
                                             {importProgress
-                                                ? `Processing ${importProgress.current.toLocaleString()} / ${importProgress.total.toLocaleString()} rows...`
+                                                ? `Processing ${importProgress.current.toLocaleString(locale)} / ${importProgress.total.toLocaleString(locale)} rows...`
                                                 : `Preparing ${previewData.length} lines...`
                                             }
                                         </>
                                     ) : (
-                                        <><Database className="w-4 h-4" /> Import {previewData.length.toLocaleString()} Rows Directly</>
+                                        <><Database className="w-4 h-4" /> Import {previewData.length.toLocaleString(locale)} Rows Directly</>
                                     )}
                                 </button>
                             </div>

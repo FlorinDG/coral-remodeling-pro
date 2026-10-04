@@ -1,0 +1,57 @@
+/**
+ * KERN-SCHEMA-1 · give every tenant's system databases their canonical fields — on the SERVER, at
+ * provisioning (every layout load), not when someone happens to open a screen.
+ * Server-only. Idempotent; never throws (a reconcile failure is logged, the page still loads).
+ */
+import type { PrismaClient, Prisma } from '@prisma/client';
+import { SYSTEM_DATABASES, BASE_TO_KEY, type SystemDatabaseRole } from '@/lib/kernel/system-databases';
+import { canonicalSchemas, type KernelProperty } from '@/lib/kernel/system-schemas';
+import { planSchemaReconcile } from '@/lib/kernel/system-schema-plan';
+import { upgradesFor } from '@/lib/kernel/system-schema-upgrades';
+import { systemDatabaseEntitled } from '@/lib/kernel/system-schema-entitlement';
+
+/** Tenants already reconciled by this server instance — the healthy path costs nothing after the first load. */
+const done = new Set<string>();   // key: tenant + plan + modules — a plan change reconciles again
+
+export async function reconcileSystemSchemas(
+    tenantId: string,
+    db: Pick<PrismaClient, 'globalDatabase'>,
+    lockedDbIds: Record<string, string>,
+    entitlement: { planType: string | null | undefined; activeModules: string[] },
+): Promise<{ changed: Array<{ role: string; added: string[]; upgraded: string[] }> }> {
+    const key = `${tenantId}|${entitlement.planType}|${[...entitlement.activeModules].sort().join(',')}`;
+    if (done.has(key)) return { changed: [] };
+    const changed: Array<{ role: string; added: string[]; upgraded: string[] }> = [];
+    try {
+        const resolve = (base: string) => {
+            const role = BASE_TO_KEY[base] as SystemDatabaseRole | undefined;
+            return (role && lockedDbIds[role]) || base;
+        };
+        const schemas = canonicalSchemas(resolve);
+        const ids = Object.values(lockedDbIds).filter(Boolean);
+        const rows = await db.globalDatabase.findMany({
+            where: { tenantId, id: { in: ids } },
+            select: { id: true, logicalKey: true, properties: true },
+        });
+        for (const row of rows) {
+            const spec = row.logicalKey ? SYSTEM_DATABASES[row.logicalKey as SystemDatabaseRole] : undefined;
+            // Tier gate (Florin 2026-10-03): only the databases this tenant's plan / modules entitle it to.
+            if (!spec || !systemDatabaseEntitled(spec.role, entitlement.planType, entitlement.activeModules)) continue;
+            const canonical = spec ? schemas[spec.legacyBase] : undefined;
+            if (!canonical) continue;
+            const current = (Array.isArray(row.properties) ? row.properties : []) as unknown as KernelProperty[];
+            const plan = planSchemaReconcile(current, canonical, upgradesFor(spec.legacyBase));
+            if (!plan.next) continue;
+            await db.globalDatabase.update({
+                where: { id: row.id },
+                data: { properties: plan.next as unknown as Prisma.InputJsonValue },
+            });
+            changed.push({ role: String(row.logicalKey), added: plan.added, upgraded: plan.upgraded });
+        }
+        if (changed.length) console.info(`[KERN-SCHEMA-1] tenant ${tenantId}:`, JSON.stringify(changed));
+        done.add(key);
+    } catch (err) {
+        console.error(`[KERN-SCHEMA-1] reconcile failed for tenant ${tenantId}:`, err);
+    }
+    return { changed };
+}

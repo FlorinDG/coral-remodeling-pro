@@ -26,6 +26,7 @@ interface GlobalDatabaseSyncerProps {
 
 export default function GlobalDatabaseSyncer({ databases, pageIndex, tenantId, userId }: GlobalDatabaseSyncerProps) {
     const tExportLock = useTranslations('Admin.exportLock');
+    const tDocumentLock = useTranslations('Admin.documentLock');
     const hasHydrated = useRef(false);
     const serverDbs = useRef(databases);
     const serverPageIndex = useRef(pageIndex);
@@ -105,19 +106,20 @@ export default function GlobalDatabaseSyncer({ databases, pageIndex, tenantId, u
         const handleExportLocked = (e: Event) => {
             const detail = (e as CustomEvent).detail;
             if (!detail) return;
-            const { docTitle, blockedFields = [], propertyLabels = {} } = detail;
+            const { docTitle, blockedFields = [], propertyLabels = {}, reason } = detail;
+            const tLock = reason === 'document' ? tDocumentLock : tExportLock;   // DOC-LOCK-1: a sent quote
             const hasBlocks = blockedFields.includes('blocks');
             const propFields = blockedFields.filter((f: string) => f !== 'blocks');
             const friendlyFields = propFields.map((f: string) => propertyLabels[f] || f).join(', ');
-            const document = docTitle || tExportLock('fallback_document');
+            const document = docTitle || tLock('fallback_document');
 
             let msg = '';
             if (hasBlocks && propFields.length === 0) {
-                msg = tExportLock('blocks_only', { document });
+                msg = tLock('blocks_only', { document });
             } else if (!hasBlocks && propFields.length > 0) {
-                msg = tExportLock('properties_only', { document, fields: friendlyFields });
+                msg = tLock('properties_only', { document, fields: friendlyFields });
             } else {
-                msg = tExportLock('both', { document, fields: friendlyFields });
+                msg = tLock('both', { document, fields: friendlyFields });
             }
             toast.error(msg, { duration: 8000 });
         };

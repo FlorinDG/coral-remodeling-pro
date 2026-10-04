@@ -147,6 +147,16 @@ export function isWorkforceRole(role?: string | null): boolean {
 
 // ── Financial export authorization (LOCK-6) ─────────────────────────
 
+/**
+ * The tenant's highest authority — the owner (and the platform superadmin). May edit APPROVED hours
+ * without the time-limited unlock, always with a written reason (Florin 2026-10-02: "approved by the
+ * highest tenant authority must not completely lock it … leave a comment to justify the edit").
+ */
+export function isTenantTopRole(role?: string | null): boolean {
+    return role === ROLES.SUPERADMIN || role === ROLES.TENANT_FREE || role === 'TENANT_OWNER'
+        || role === ROLES.TENANT_PRO_OWNER || role === ROLES.TENANT_ENTERPRISE_OWNER;
+}
+
 export function isAccountantRole(role?: string | null): boolean {
     return role === ROLES.ACCOUNTANT || role === ROLES.BOOKKEEPING;
 }

@@ -4,7 +4,8 @@ import React, { useState } from 'react';
 import { useDatabaseStore } from '@/components/admin/database/store';
 import { Property, SelectOption } from '@/components/admin/database/types';
 import { GripVertical, User2, Calendar as CalendarIcon, MoreHorizontal } from 'lucide-react';
-import { format } from 'date-fns';
+import { useLocale } from 'next-intl';
+import { formatDate } from '@/lib/format/date';
 import { cn } from '@/lib/utils';
 
 interface BoardViewProps {
@@ -14,6 +15,7 @@ interface BoardViewProps {
 }
 
 export default function BoardView({ databaseId, viewId, renderTabs }: BoardViewProps) {
+    const locale = useLocale();
     const database = useDatabaseStore(state => state.getDatabase(databaseId));
     const updatePageProperty = useDatabaseStore(state => state.updatePageProperty);
 
@@ -182,7 +184,7 @@ export default function BoardView({ databaseId, viewId, renderTabs }: BoardViewP
                                     if (dateProp) {
                                         const dVal = page.properties[dateProp.id] as string;
                                         if (dVal) {
-                                            dateStr = format(new Date(dVal), 'MMM d, yyyy');
+                                            dateStr = formatDate(dVal, locale);
                                         }
                                     }
 

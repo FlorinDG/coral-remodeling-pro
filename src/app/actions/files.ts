@@ -4,7 +4,7 @@ import { auth } from '@/auth';
 import { storage, DocumentArchivedError, StorageKeyConflictError } from '@/lib/storage';
 import { v4 as uuidv4 } from 'uuid';
 import { isWorkforceRole } from '@/lib/roles';
-import { crewFileRefusal } from '@/lib/crew-file-policy';
+import { crewFileRefusal, CREW_UPLOAD_RECORD_TYPES } from '@/lib/crew-file-policy';
 
 const STORAGE_ERROR_FALLBACKS: Record<string, Record<string, string>> = {
     nl: {
@@ -63,7 +63,13 @@ export async function uploadFileAction(formData: FormData, recordType: string, r
     // Key scheme: t_{tenantId}/{recordType}/{recordId}/{filename}
     // Clean filename to remove weird characters
     const cleanFilename = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
-    const key = `t_${tenantId}/${recordType}/${finalRecordId}/${cleanFilename}`;
+    // Photos and attachments from the field never REPLACE each other: phones name every camera shot
+    // "image.jpg" and the key is the name, so a second photo overwrote the first (all attachments then
+    // pointed at one file). These contexts get a unique prefix; office documents keep their names.
+    const storedName = CREW_UPLOAD_RECORD_TYPES.has(recordType)
+        ? `${Date.now().toString(36)}-${uuidv4().slice(0, 8)}-${cleanFilename}`
+        : cleanFilename;
+    const key = `t_${tenantId}/${recordType}/${finalRecordId}/${storedName}`;
 
     // Refuse writes to archive paths (DOC-ARCH-1 / BLOB-7)
     if (recordType === 'document' || recordType === 'documents' || key.includes('/documents/')) {

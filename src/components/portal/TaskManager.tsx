@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { CheckCircle, Plus, Calendar, Paperclip, X } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
+import { formatDate } from '@/lib/format/date';
 
 interface Task {
     id: string;
@@ -20,6 +21,7 @@ interface TaskManagerProps {
 
 export default function TaskManager({ portalId, initialTasks, readOnly = false }: TaskManagerProps) {
     const t = useTranslations('Portal');
+    const locale = useLocale();
     const [tasks, setTasks] = useState(initialTasks);
     const [isAdding, setIsAdding] = useState(false);
     const [formData, setFormData] = useState({
@@ -148,7 +150,7 @@ export default function TaskManager({ portalId, initialTasks, readOnly = false }
                                 {task.dueDate && (
                                     <div className="flex items-center gap-1.5 text-[10px] font-bold text-neutral-400 uppercase tracking-widest bg-neutral-100 dark:bg-white/5 px-2 py-1 rounded-lg">
                                         <Calendar className="w-3 h-3 text-[#d75d00]" />
-                                        {new Date(task.dueDate).toLocaleDateString()}
+                                        {formatDate(task.dueDate, locale)}
                                     </div>
                                 )}
                                 {task.fileUrl && (

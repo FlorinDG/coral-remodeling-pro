@@ -4,8 +4,11 @@ import { useState, useEffect, useRef } from 'react';
 import { Bell, Check, Trash2, ExternalLink } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import { useLocale } from 'next-intl';
+import { formatDateTime } from '@/lib/format/date';
 
 export default function NotificationBell() {
+    const locale = useLocale();
     const [unreadCount, setUnreadCount] = useState(0);
     const [isOpen, setIsOpen] = useState(false);
     const [notifications, setNotifications] = useState<any[]>([]);
@@ -136,7 +139,7 @@ export default function NotificationBell() {
                                                     {notif.body}
                                                 </p>
                                                 <p className="text-[10px] text-neutral-400 dark:text-neutral-500 mt-1.5 uppercase tracking-wider">
-                                                    {new Date(notif.createdAt).toLocaleString()}
+                                                    {formatDateTime(notif.createdAt, locale)}
                                                 </p>
                                             </div>
                                         </div>

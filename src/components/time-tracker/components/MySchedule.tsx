@@ -17,7 +17,7 @@ import { useTranslation } from 'react-i18next';
 import { formatTime, formatWeekdayDayMonth } from '@/lib/format/date';
 import { describeError } from '@/lib/describe-error';
 import { shiftBrief, type ShiftBriefResult } from '@/lib/data/shift-brief';
-import { ShiftBriefDetails } from '@/components/workhub/ShiftBriefDetails';
+import { WorkOrderTabs } from '@/components/workhub/WorkOrderTabs';
 import FileViewer, { type ViewableFile } from '@/components/files/FileViewer';
 import { shiftTemporalState, compareShifts, isShiftSubmitted } from '@/lib/kernel/shift-time';
 import { submitShift } from '@/lib/data/shift-submit';
@@ -140,7 +140,7 @@ export function MySchedule() {
   const { shifts, loading, error, failedEndpoints, refetch: refetchShifts } = useScheduledShifts();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { activeEntry, clockIn, clockOut } = useClockEntries();
-  const { location, requestLocation } = useGeolocation();
+  const { requestLocation, explainerDialog } = useGeolocation();
   const [isClockingIn, setIsClockingIn] = useState(false);
   const [isClockingOut, setIsClockingOut] = useState(false);
   const [showGeofenceWarning, setShowGeofenceWarning] = useState<{distance: number, site: string, location: any, shiftId: string} | null>(null);
@@ -148,6 +148,7 @@ export function MySchedule() {
   const [brief, setBrief] = useState<ShiftBriefResult | null>(null);
   const [viewer, setViewer] = useState<{ files: ViewableFile[]; index: number } | null>(null);
   const [briefLoading, setBriefLoading] = useState(false);
+  const [briefVersion, setBriefVersion] = useState(0);   // bump → reload the brief (hours/files added)
   const [elapsedTime, setElapsedTime] = useState('00:00:00');
   const [now, setNow] = useState(() => new Date());
   const nextShiftRef = useRef<HTMLDivElement>(null);
@@ -202,7 +203,7 @@ export function MySchedule() {
     return () => {
       active = false;
     };
-  }, [selectedShift?.id]);
+  }, [selectedShift?.id, briefVersion]);
 
   // Date range: 1 week behind to 2 weeks ahead
   const today = startOfDay(new Date());
@@ -305,7 +306,7 @@ export function MySchedule() {
       const res = await submitShift(shiftId);
       if (res.ok) {
         toast.success(t('schedule.submittedToast'));
-        setSelectedShift((s: any) => (s && s.id === shiftId ? { ...s, status: 'completed' } : s));
+        setSelectedShift(null);   // done: close — the toast and the card's status say the rest (Florin 2026-10-01)
         await refetchShifts();
       } else {
         console.error('[MySchedule] submit refused:', res);
@@ -322,10 +323,12 @@ export function MySchedule() {
   const handleClockOut = async () => {
     setIsClockingOut(true);
     try {
-      await requestLocation();
+      const loc = await requestLocation();
       const { error } = await clockOut({
-        clockOutLatitude: location?.latitude,
-        clockOutLongitude: location?.longitude,
+        // Only THIS clock-out's fix. No fallback to the hook's last position: after "Not now" (or a failed
+        // fix) that is the clock-in's position, and the clock-out would be recorded where it did not happen.
+        clockOutLatitude: loc?.latitude,
+        clockOutLongitude: loc?.longitude,
       });
       
       if (error) {
@@ -428,7 +431,10 @@ export function MySchedule() {
       {/* While the carousel is open the brief steps aside (and returns when it closes): a full-screen
           viewer cannot live inside Radix's transformed dialog content. */}
       <Dialog open={!!selectedShift && !viewer} onOpenChange={(open) => { if (!open && !viewer) setSelectedShift(null); }}>
-        <DialogContent className="sm:max-w-[480px] p-0 overflow-hidden font-content">
+        <DialogContent
+          overlayClassName="p-0 sm:p-4"
+          closeClassName="top-[max(0.75rem,env(safe-area-inset-top))] right-3 h-11 w-11 flex items-center justify-center rounded-full"
+          className="p-0 gap-0 my-0 sm:my-auto overflow-hidden font-content flex flex-col w-screen max-w-none h-[100dvh] rounded-none border-0 shadow-none sm:w-full sm:max-w-[560px] sm:h-[90vh] sm:rounded-xl sm:border sm:shadow-lg">
           {selectedShift && (() => {
             const shiftDateObj = parseISO(selectedShift.shiftDate);
             const scheduledDateStr = isToday(shiftDateObj) 
@@ -441,11 +447,10 @@ export function MySchedule() {
             const displayTitle = brief?.title || projectName || description || t('schedule.shiftFallback');
 
             const addressText = brief?.address || selectedShift.project?.address?.trim() || selectedShift.projectAddress?.trim() || null;
-            const mapUrl = brief?.mapUrl || (addressText ? `https://maps.google.com/?q=${encodeURIComponent(addressText)}` : null);
 
             return (
               <>
-                <DialogHeader className="p-5 pb-3 border-b border-neutral-100 dark:border-white/10 text-left">
+                <DialogHeader className="shrink-0 p-5 pr-16 pb-3 pt-[max(1.25rem,env(safe-area-inset-top))] border-b border-neutral-100 dark:border-white/10 text-left">
                   <DialogTitle className="text-lg font-semibold text-foreground leading-snug">
                     {displayTitle}
                   </DialogTitle>
@@ -458,42 +463,39 @@ export function MySchedule() {
                   </div>
                 </DialogHeader>
 
-                <div className="p-4 space-y-3 max-h-[60vh] overflow-y-auto">
-                  {/* WH-2: address · contact · notes · tasks · attachments — each rendered by what it is */}
-                  <ShiftBriefDetails
-                    shiftId={selectedShift.id}
-                    brief={brief}
-                    fallbackAddress={addressText}
-                    title={displayTitle}
-                    userId={user?.id}
-                    onOpenMedia={(files, index) => setViewer({ files, index })}
-                  />
-
-                  {/* Worked duration (only when clock entry exists) */}
-                  {brief?.worked && (
-                    <div className="flex items-center justify-between p-3.5 bg-neutral-50 dark:bg-neutral-900/60 rounded-xl border border-neutral-100 dark:border-white/5">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <Clock className="w-5 h-5 text-[var(--persian-green)] shrink-0" />
-                        <div className="flex flex-col">
-                          <span className="text-sm font-medium text-muted-foreground">{t('schedule.worked')}</span>
-                          <span className="text-base font-semibold text-foreground">
-                            {formatTime(brief.worked.in)} – {brief.worked.out ? formatTime(brief.worked.out) : '…'} · {Math.floor(brief.worked.minutes / 60)}h {brief.worked.minutes % 60}m
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {briefLoading && !brief && (
-                    <div className="flex items-center justify-center p-6">
-                      <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-                    </div>
-                  )}
-                </div>
+                {/* WO-1: the shift opens as a work order — Info · Hours · Tasks · Files · Sign */}
+                <WorkOrderTabs
+                  shiftId={selectedShift.id}
+                  shiftDate={selectedShift.shiftDate}
+                  submitted={isShiftSubmitted(selectedShift.status)}
+                  brief={brief}
+                  briefLoading={briefLoading}
+                  fallbackAddress={addressText}
+                  title={displayTitle}
+                  userId={user?.id}
+                  onOpenMedia={(files, index) => setViewer({ files, index })}
+                  onChanged={() => { setBriefVersion(v => v + 1); void refetchShifts(); }}
+                />
 
                 {/* Clock Action Surface */}
-                <div className="p-4 border-t border-neutral-100 dark:border-white/10 bg-neutral-50/50 dark:bg-neutral-900/50 flex flex-col items-center">
-                  {isShiftSubmitted(selectedShift.status) ? (
+                <div className="shrink-0 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-neutral-100 dark:border-white/10 bg-neutral-50/50 dark:bg-neutral-900/50 flex flex-col items-center">
+                  {brief?.signed && !isShiftSubmitted(selectedShift.status) ? (
+                    <>
+                      <p className="w-full text-center pb-3 text-base font-semibold text-[var(--persian-green)]">
+                        ✓ {t('workOrder.signedClosed')}
+                      </p>
+                      {/* Signed by the client; the shift is still completed only by the worker's own submit. */}
+                      <Button
+                        variant="outline"
+                        className="w-full h-14 text-base font-bold rounded-xl border-2 border-[var(--persian-green)] text-[var(--persian-green)]"
+                        onClick={() => handleSubmitShift(selectedShift.id)}
+                        disabled={isSubmitting}
+                      >
+                        {isSubmitting && <Loader2 className="w-5 h-5 animate-spin mr-2" />}
+                        {t('schedule.submitShift')}
+                      </Button>
+                    </>
+                  ) : isShiftSubmitted(selectedShift.status) ? (
                     <p className="w-full text-center py-3 text-base font-semibold text-[var(--persian-green)]">
                       ✓ {t('schedule.submittedLong')}
                     </p>
@@ -525,6 +527,8 @@ export function MySchedule() {
                           ? t('schedule.clockInAgain')
                           : t('schedule.clockIntoShift')}
                       </Button>
+                      {/* GEO-1 · GDPR: say what is recorded, and when */}
+                      <p className="mt-2 text-xs text-muted-foreground text-center">{t('clock.locationNotice')}</p>
                       {/* THE ONE DOOR that completes a shift — the worker's own accountable act */}
                       {(selectedShift.clockEntries?.some((e: { clockOutTime?: string | null }) => e.clockOutTime != null) ?? false) && (
                         <Button
@@ -564,6 +568,7 @@ export function MySchedule() {
           }
         }}
       />
+      {explainerDialog}
     </Card>
   );
 }

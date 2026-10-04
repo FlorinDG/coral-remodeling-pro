@@ -5,7 +5,8 @@ import { useFileManagerStore } from './store';
 import { FileContextType, FileNode } from './types';
 import { LayoutGrid, List, UploadCloud, Search, FileIcon, ImageIcon, FileText, ChevronRight, MoreVertical, Loader2, Download, PackageOpen, Receipt, FileSignature, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { useLocale } from 'next-intl';
+import { formatDate } from '@/lib/format/date';
 import FileViewer from '@/components/files/FileViewer';
 
 // -------------------------------------------------------------
@@ -22,6 +23,7 @@ const FileDisplayArea = ({
     onDeleteFile: (file: FileNode) => void,
     viewMode: 'grid' | 'list'
 }) => {
+    const locale = useLocale();
     const getIcon = (node: FileNode) => {
         if (node.mimeType?.includes('image')) return <ImageIcon className="w-10 h-10 text-emerald-400 mb-2" />;
         if (node.mimeType?.includes('pdf')) return <FileText className="w-10 h-10 text-red-400 mb-2" />;
@@ -73,7 +75,7 @@ const FileDisplayArea = ({
                             </div>
                             <div className="col-span-2 text-right text-sm text-muted-foreground">{formatSize(node.size)}</div>
                             <div className="col-span-3 text-sm text-muted-foreground">
-                                {format(new Date(node.updatedAt), 'MMM d, yyyy')}
+                                {formatDate(node.updatedAt, locale)}
                             </div>
                             <div className="col-span-1 flex justify-end gap-1">
                                 {node.url && (

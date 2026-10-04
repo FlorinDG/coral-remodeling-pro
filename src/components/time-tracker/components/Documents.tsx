@@ -1,8 +1,8 @@
 "use client";
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   FileText, Download, Check, Clock, AlertCircle,
-  ChevronRight, X, Pen, Loader2, Eye
+  ChevronRight, X, Loader2, Eye
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -15,7 +15,10 @@ import {
 import { useAuth } from '@/components/time-tracker/contexts/AuthContext';
 import { getHrDocuments, acknowledgeHrDocument } from '@/app/actions/hr-documents';
 import { format, parseISO, formatDistanceToNow } from 'date-fns';
+import { formatDateLong, formatTime } from '@/lib/format/date';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import { SignaturePad } from '@/components/ui/SignaturePad';
 
 interface Document {
   id: string;
@@ -30,126 +33,11 @@ interface Document {
   acknowledgedAt: string | null;
 }
 
-// ── Signature Pad ────────────────────────────────────────────────────
-
-function SignaturePad({
-  onSign,
-  onClear,
-}: {
-  onSign: (dataUrl: string) => void;
-  onClear: () => void;
-}) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [isDrawing, setIsDrawing] = useState(false);
-  const [hasSignature, setHasSignature] = useState(false);
-
-  const getCoords = (e: React.MouseEvent | React.TouchEvent) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return { x: 0, y: 0 };
-    const rect = canvas.getBoundingClientRect();
-
-    if ('touches' in e) {
-      return {
-        x: e.touches[0].clientX - rect.left,
-        y: e.touches[0].clientY - rect.top,
-      };
-    }
-    return {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
-    };
-  };
-
-  const startDrawing = (e: React.MouseEvent | React.TouchEvent) => {
-    e.preventDefault();
-    const ctx = canvasRef.current?.getContext('2d');
-    if (!ctx) return;
-    const { x, y } = getCoords(e);
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-    setIsDrawing(true);
-  };
-
-  const draw = (e: React.MouseEvent | React.TouchEvent) => {
-    e.preventDefault();
-    if (!isDrawing) return;
-    const ctx = canvasRef.current?.getContext('2d');
-    if (!ctx) return;
-    const { x, y } = getCoords(e);
-    ctx.lineWidth = 2;
-    ctx.lineCap = 'round';
-    ctx.strokeStyle = 'currentColor';
-    ctx.lineTo(x, y);
-    ctx.stroke();
-    setHasSignature(true);
-  };
-
-  const stopDrawing = () => {
-    setIsDrawing(false);
-    if (hasSignature && canvasRef.current) {
-      onSign(canvasRef.current.toDataURL());
-    }
-  };
-
-  const clearCanvas = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    setHasSignature(false);
-    onClear();
-  };
-
-  // Set canvas size on mount
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width;
-    canvas.height = rect.height;
-  }, []);
-
-  return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <label className="text-sm font-medium text-foreground flex items-center gap-2">
-          <Pen className="w-4 h-4" />
-          Your Signature
-        </label>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={clearCanvas}
-          className="text-sm"
-        >
-          Clear
-        </Button>
-      </div>
-      <div className="border-2 border-dashed border-border rounded-xl overflow-hidden bg-white dark:bg-black/20">
-        <canvas
-          ref={canvasRef}
-          className="w-full h-32 cursor-crosshair touch-none"
-          onMouseDown={startDrawing}
-          onMouseMove={draw}
-          onMouseUp={stopDrawing}
-          onMouseLeave={stopDrawing}
-          onTouchStart={startDrawing}
-          onTouchMove={draw}
-          onTouchEnd={stopDrawing}
-        />
-      </div>
-      <p className="text-sm text-muted-foreground text-center">
-        Draw your signature above to acknowledge
-      </p>
-    </div>
-  );
-}
-
 // ── Main Documents Component ─────────────────────────────────────────
 
 export function Documents() {
+  // Dates in the crew's language (Belgium) — not date-fns' English defaults.
+  const { i18n } = useTranslation();
   const { user } = useAuth();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
@@ -265,7 +153,7 @@ export function Documents() {
               <div className="flex-1 min-w-0">
                 <h3 className="text-base font-medium text-muted-foreground truncate">{doc.title}</h3>
                 <p className="text-sm text-muted-foreground mt-0.5">
-                  Acknowledged {doc.acknowledgedAt ? format(parseISO(doc.acknowledgedAt), 'MMM d, yyyy') : ''}
+                  Acknowledged {doc.acknowledgedAt ? formatDateLong(doc.acknowledgedAt, i18n.language) : ''}
                 </p>
               </div>
               <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
@@ -319,7 +207,7 @@ export function Documents() {
                     <p className="text-sm font-semibold text-secondary">Acknowledged</p>
                     <p className="text-sm text-muted-foreground">
                       {selectedDoc.acknowledgedAt
-                        ? format(parseISO(selectedDoc.acknowledgedAt), 'd MMMM yyyy HH:mm')
+                        ? `${formatDateLong(selectedDoc.acknowledgedAt, i18n.language)} ${formatTime(new Date(selectedDoc.acknowledgedAt))}`
                         : ''}
                     </p>
                   </div>

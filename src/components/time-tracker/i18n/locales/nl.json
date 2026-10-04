@@ -118,7 +118,8 @@
     "userInitiatedEntry": "Inklokken creëert een door gebruiker geïnitieerde registratie",
     "locationRecorded": "Locatie geregistreerd",
     "alreadyClockedInSince": "Je was al ingeklokt sinds {{time}}.",
-    "statusUnconfirmed": "Je klokstatus kon niet bevestigd worden. Inklokken blijft veilig."
+    "statusUnconfirmed": "Je klokstatus kon niet bevestigd worden. Inklokken blijft veilig.",
+    "locationNotice": "Je locatie wordt enkel vastgelegd bij in- en uitklokken — nooit daartussen."
   },
   "schedule": {
     "title": "Rooster",
@@ -184,7 +185,15 @@
       "clock_out_first": "Eerst uitklokken",
       "nothing_recorded": "Er zijn geen uren geregistreerd op deze dienst",
       "failed": "De dienst kon niet ingediend worden"
-    }
+    },
+    "noAddress": "Geen adres",
+    "noContact": "Geen contact",
+    "noNotes": "Geen notities",
+    "noTasks": "Geen taken",
+    "noAttachments": "Geen bijlagen",
+    "addFiles": "Foto's of bestanden toevoegen",
+    "filesAdded": "{{count}} bestand(en) toegevoegd",
+    "fileAddFailed": "Bestand toevoegen mislukt"
   },
   "timeOff": {
     "title": "Verlof",
@@ -262,7 +271,21 @@
       "unreviewed": "Nog niet nagekeken"
     },
     "exportTitle": "Mijn urenstaat",
-    "exportMonth": "Maand"
+    "exportMonth": "Maand",
+    "exportFailed": "De export kon niet gedownload worden",
+    "shiftLink": {
+      "title": "Uren te koppelen aan een shift",
+      "hint": "Deze uren hangen niet aan een geplande shift, of overlappen een andere. Kies de juiste shift — of geen — en bevestig.",
+      "unlinked": "Niet gekoppeld",
+      "mismatch": "Andere shift overlapt",
+      "linkedTo": "Nu gekoppeld aan",
+      "noShift": "Geen shift",
+      "link": "Koppelen",
+      "keep": "Behouden",
+      "noOverlap": "geen overlap",
+      "submitted": "ingediend",
+      "failed": "Opslaan mislukt"
+    }
   },
   "tasks": {
     "title": "Mijn taken",
@@ -313,7 +336,7 @@
     "empty": "Nog geen gedeelde documenten"
   },
   "lateEntry": {
-    "title": "Uren nadien invoeren",
+    "title": "Handmatige invoer",
     "subtitle": "Uren toevoegen voor een vroegere datum (goedkeuring nodig)",
     "worker": "Medewerker (optioneel)",
     "selectWorker": "Kies een medewerker (optioneel)",
@@ -334,13 +357,64 @@
     "attachments": "Foto’s / bestanden (optioneel)",
     "addFiles": "Bestanden toevoegen",
     "includeLocation": "Mijn locatie toevoegen",
-    "locationOptional": "Optioneel bij nadien ingevoerde uren",
+    "locationOptional": "Optioneel bij handmatige invoer",
     "location": "Locatie",
     "cancel": "Annuleren",
     "submit": "Ter goedkeuring versturen",
-    "futureDate": "Uren nadien invoeren kan niet voor de toekomst",
+    "futureDate": "Handmatige invoer kan niet in de toekomst liggen",
     "submitted": "Uren verstuurd ter goedkeuring",
     "submitFailed": "De uren konden niet verstuurd worden",
     "invalidFiles": "Deze bestanden kunnen niet toegevoegd worden"
+  },
+  "workOrder": {
+    "tabInfo": "Info",
+    "tabHours": "Uren",
+    "tabTasks": "Taken",
+    "tabFiles": "Notities",
+    "tabSign": "Tekenen",
+    "noHours": "Nog geen uren op deze shift.",
+    "running": "loopt",
+    "pending": "wacht op goedkeuring",
+    "signTitle": "Handtekening klant",
+    "myNote": "Mijn notitie — komt op de werkbon",
+    "notePlaceholder": "Wat is gedaan, wat blijft, wat het kantoor moet weten…",
+    "saveNote": "Notitie opslaan",
+    "noteSaved": "Notitie opgeslagen",
+    "noteFailed": "Notitie opslaan mislukt",
+    "signIntro": "De klant controleert de uren hieronder en tekent. Tekenen vergrendelt deze werkbon — uren, notities en bestanden kunnen niet meer gewijzigd worden.",
+    "total": "Totaal",
+    "noHoursShort": "geen uren",
+    "signerName": "Naam van de ondertekenaar",
+    "signHere": "Handtekening klant",
+    "clear": "Wissen",
+    "signHint": "Teken met je vinger in het vak",
+    "signButton": "Tekenen en vergrendelen",
+    "signConfirm": "Nu tekenen? Daarna kan deze werkbon niet meer gewijzigd worden.",
+    "signedToast": "Getekend — de werkbon is vergrendeld",
+    "signedBy": "Getekend door {{name}}",
+    "signLoadFailed": "Werkbon laden mislukt",
+    "signedClosed": "Getekend door de klant — afgesloten",
+    "signError": {
+      "signer_name_required": "Vul de naam van de ondertekenaar in",
+      "signature_required": "Een handtekening is verplicht",
+      "signature_invalid": "De handtekening kon niet gelezen worden — teken opnieuw",
+      "not_found": "Werkbon niet gevonden",
+      "already_signed": "Deze werkbon is al getekend",
+      "still_clocked_in": "Iemand is nog ingeklokt op deze werkbon — eerst uitklokken",
+      "failed": "Tekenen mislukt",
+      "unauthorized": "Meld je opnieuw aan"
+    },
+    "myNoteHint": "De klant leest deze notitie voor hij tekent."
+  },
+  "locationExplainer": {
+    "title": "Locatie bij in- en uitklokken",
+    "privacyTitle": "Privacy",
+    "description": "We lezen je locatie alleen op het moment dat je in- of uitklokt. We volgen je locatie nooit tussendoor of continu.",
+    "whyTitle": "Waarom we dit vragen",
+    "whyDescription": "Op de werkbon en urenregistratie tonen we het adres en de afstand tot de werf. Dit blokkeert je inklokken nooit.",
+    "deniedHelp": "Locatie staat uitgeschakeld in de instellingen van je telefoon.",
+    "continue": "Doorgaan",
+    "clockInWithoutLocation": "Inklokken",
+    "notNow": "Niet nu"
   }
 }

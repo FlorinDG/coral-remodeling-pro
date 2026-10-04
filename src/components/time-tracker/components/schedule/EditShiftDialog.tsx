@@ -65,6 +65,8 @@ interface EditShiftDialogProps {
     role?: string | null;
     notes?: string | null;
     seriesId?: string;
+    siteAddress?: string | null;
+    materialsEnabled?: boolean;
   }, scope?: EditScope) => Promise<void>;
   onCreateShift?: (shift: any) => Promise<any>;
   onDeleteShift: (shiftId: string, scope?: EditScope) => Promise<void>;
@@ -125,6 +127,8 @@ export function EditShiftDialog({
   const [shiftEnd, setShiftEnd] = useState('');
   const [role, setRole] = useState('');
   const [notes, setNotes] = useState('');
+  const [siteAddress, setSiteAddress] = useState('');
+  const [materialsEnabled, setMaterialsEnabled] = useState(false);
   const [status, setStatus] = useState('');
   const [activeTab, setActiveTab] = useState('details');
   const [editScope, setEditScope] = useState<EditScope>('occurrence');
@@ -165,6 +169,8 @@ export function EditShiftDialog({
       setShiftEnd(shift.shiftEnd);
       setRole(shift.role || '');
       setNotes(shift.notes || '');
+      setSiteAddress((shift as { siteAddress?: string | null }).siteAddress || '');
+      setMaterialsEnabled(!!(shift as { materialsEnabled?: boolean }).materialsEnabled);
       setStatus(shift.status);
       setEditScope('occurrence');
       setActiveTab('details');
@@ -244,7 +250,7 @@ export function EditShiftDialog({
   // Task handlers
   const handleAssignTask = async (taskId: string) => {
     try {
-      await assignTask(taskId);
+      await assignTask(taskId, projectTasks.find(t => t.id === taskId));
       setTaskPopoverOpen(false);
       toast.success('Task assigned to shift');
     } catch {
@@ -282,7 +288,7 @@ export function EditShiftDialog({
         priority: newTaskPriority,
       });
       if (result?.data?.id) {
-        await assignTask(result.data.id);
+        await assignTask(result.data.id, result.data);
         setNewTaskTitle('');
         setNewTaskPriority('normal');
         toast.success('Task created and assigned');
@@ -338,6 +344,8 @@ export function EditShiftDialog({
               shift_end: shiftEnd,
               role: role || null,
               notes: notes || null,
+              siteAddress: siteAddress.trim() || null,
+              materialsEnabled,
               seriesId,
               status
             });
@@ -357,6 +365,8 @@ export function EditShiftDialog({
         shift_end: shiftEnd,
         role: role || null,
         notes: notes || null,
+        siteAddress: siteAddress.trim() || null,
+        materialsEnabled,
         ...(seriesId ? { seriesId } : {})
       }, editScope);
 
@@ -392,7 +402,7 @@ export function EditShiftDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Edit Shift</DialogTitle>
         </DialogHeader>
@@ -420,7 +430,7 @@ export function EditShiftDialog({
             </TabsTrigger>
           </TabsList>
           
-          <TabsContent value="details" className="h-[540px] overflow-y-auto pr-1">
+          <TabsContent value="details" className="h-[min(648px,70vh)] overflow-y-auto pr-1">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <Label>Employee</Label>
@@ -528,16 +538,29 @@ export function EditShiftDialog({
               </div>
 
               <div>
-                <Label htmlFor="editNotes">Notes</Label>
+                <Label htmlFor="editNotes">Description — printed on the client's signed work order</Label>
                 <Textarea
                   id="editNotes"
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Any additional notes..."
+                  placeholder="What is to be done — you may quote the client's request"
                   rows={2}
                   disabled={!canManage}
                 />
               </div>
+                    {/* WO-2: where the work happens when it is not the project's address; Materials tab on/off */}
+                    {(<>
+                    <div>
+                      <Label htmlFor="siteAddressEdit">Execution address (if not the project's)</Label>
+                      <Input id="siteAddressEdit" value={siteAddress} onChange={(e) => setSiteAddress(e.target.value)}
+                        placeholder="Leave empty to use the project address" disabled={!canManage} />
+                    </div>
+                    <label className="flex items-center gap-2 text-sm">
+                      <input type="checkbox" checked={materialsEnabled} onChange={(e) => setMaterialsEnabled(e.target.checked)} disabled={!canManage} />
+                      Crew records materials used on this shift
+                    </label>
+                    </>)}
+
 
               {canManage && !shift?.seriesId && !isConvertingToRecurring && (
                 <div className="pt-4 border-t mt-6">
@@ -609,7 +632,7 @@ export function EditShiftDialog({
             </form>
           </TabsContent>
 
-          <TabsContent value="tasks" className="space-y-4 h-[540px] overflow-y-auto pr-1">
+          <TabsContent value="tasks" className="space-y-4 h-[min(648px,70vh)] overflow-y-auto pr-1">
             {!(projectId || shift?.project_id) ? (
               <div className="text-center py-8 text-muted-foreground">
                 <ListTodo className="h-8 w-8 mx-auto mb-2 opacity-50" />
@@ -761,7 +784,7 @@ export function EditShiftDialog({
             )}
           </TabsContent>
           
-          <TabsContent value="attachments" className="space-y-4 h-[540px] overflow-y-auto pr-1">
+          <TabsContent value="attachments" className="space-y-4 h-[min(648px,70vh)] overflow-y-auto pr-1">
             {/* Add attachment buttons */}
             {canManage && (
               <div className="flex gap-2">
@@ -851,7 +874,6 @@ export function EditShiftDialog({
                   const fileName = attachment.name || attachment.file_name || '';
                   const filePath = attachment.url || attachment.file_path || '';
                   const fileSize = attachment.size || attachment.file_size;
-                  const fromProject = Boolean(attachment.sourceProjectId || attachment.source_project_id);
                   
                   return (
                     <div
@@ -879,9 +901,6 @@ export function EditShiftDialog({
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
                           {fileSize && (
                             <span>{formatFileSize(fileSize)}</span>
-                          )}
-                          {fromProject && (
-                            <Badge variant="outline" className="text-xs">From Project</Badge>
                           )}
                         </div>
                       </div>

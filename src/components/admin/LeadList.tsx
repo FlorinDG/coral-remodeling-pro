@@ -4,8 +4,9 @@ import { useState } from 'react';
 import FilterBar from './FilterBar';
 import StatusBadge from './StatusBadge';
 import { ChevronRight, ChevronDown, Mail, Phone, MessageSquare, Clock, User, Trash2, CheckSquare, Square, X } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { updateLeadStatus, deleteLead, bulkDeleteLeads } from '@/app/actions/crm';
+import { formatDate } from '@/lib/format/date';
 
 interface Lead {
     id: string;
@@ -24,6 +25,7 @@ interface LeadListProps {
 
 export default function LeadList({ leads: initialLeads }: LeadListProps) {
     const t = useTranslations('Admin.leads');
+    const locale = useLocale();
     const [leads, setLeads] = useState(initialLeads);
     const [filter, setFilter] = useState('ALL');
     const [search, setSearch] = useState('');
@@ -177,7 +179,7 @@ export default function LeadList({ leads: initialLeads }: LeadListProps) {
                                     </div>
                                     <div>
                                         <h3 className="font-bold text-sm text-neutral-900 dark:text-white group-hover:text-[var(--brand-color,#d35400)] transition-colors">{lead.name}</h3>
-                                        <p className="text-[10px] text-neutral-500 dark:text-neutral-400 font-medium uppercase tracking-wider">{lead.service} • {new Date(lead.createdAt).toLocaleDateString()}</p>
+                                        <p className="text-[10px] text-neutral-500 dark:text-neutral-400 font-medium uppercase tracking-wider">{lead.service} • {formatDate(lead.createdAt, locale)}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-3">

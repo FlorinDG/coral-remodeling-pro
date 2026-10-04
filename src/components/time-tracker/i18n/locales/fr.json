@@ -118,7 +118,8 @@
     "userInitiatedEntry": "Le pointage créera une entrée initiée par l'utilisateur",
     "locationRecorded": "Emplacement enregistré",
     "alreadyClockedInSince": "Vous étiez déjà pointé depuis {{time}}.",
-    "statusUnconfirmed": "Votre statut de pointage n’a pas pu être confirmé. Pointer reste sûr."
+    "statusUnconfirmed": "Votre statut de pointage n’a pas pu être confirmé. Pointer reste sûr.",
+    "locationNotice": "Votre position est enregistrée uniquement au pointage d'entrée et de sortie — jamais entre les deux."
   },
   "schedule": {
     "title": "Planning",
@@ -184,7 +185,15 @@
       "clock_out_first": "Dépointez d’abord",
       "nothing_recorded": "Aucune heure n’a été enregistrée sur ce service",
       "failed": "Le service n’a pas pu être envoyé"
-    }
+    },
+    "noAddress": "Pas d’adresse",
+    "noContact": "Pas de contact",
+    "noNotes": "Pas de notes",
+    "noTasks": "Pas de tâches",
+    "noAttachments": "Pas de pièces jointes",
+    "addFiles": "Ajouter des photos ou fichiers",
+    "filesAdded": "{{count}} fichier(s) ajouté(s)",
+    "fileAddFailed": "Impossible d'ajouter le fichier"
   },
   "timeOff": {
     "title": "Congés",
@@ -262,7 +271,21 @@
       "unreviewed": "Pas encore vérifié"
     },
     "exportTitle": "Ma feuille de temps",
-    "exportMonth": "Mois"
+    "exportMonth": "Mois",
+    "exportFailed": "L’export n’a pas pu être téléchargé",
+    "shiftLink": {
+      "title": "Heures à lier à un service",
+      "hint": "Ces heures ne sont liées à aucun service planifié, ou en chevauchent un autre. Choisissez le bon service — ou aucun — et confirmez.",
+      "unlinked": "Non lié",
+      "mismatch": "Un autre service chevauche",
+      "linkedTo": "Actuellement lié à",
+      "noShift": "Aucun service",
+      "link": "Lier",
+      "keep": "Conserver",
+      "noOverlap": "aucun chevauchement",
+      "submitted": "soumis",
+      "failed": "Échec de l'enregistrement"
+    }
   },
   "tasks": {
     "title": "Mes tâches",
@@ -313,7 +336,7 @@
     "empty": "Aucun document partagé"
   },
   "lateEntry": {
-    "title": "Saisir des heures après coup",
+    "title": "Saisie manuelle",
     "subtitle": "Ajouter des heures pour une date passée (approbation requise)",
     "worker": "Ouvrier (facultatif)",
     "selectWorker": "Choisir un ouvrier (facultatif)",
@@ -334,13 +357,64 @@
     "attachments": "Photos / fichiers (facultatif)",
     "addFiles": "Ajouter des fichiers",
     "includeLocation": "Ajouter ma position",
-    "locationOptional": "Facultatif pour une saisie après coup",
+    "locationOptional": "Facultatif pour une saisie manuelle",
     "location": "Position",
     "cancel": "Annuler",
     "submit": "Envoyer pour approbation",
-    "futureDate": "Impossible de saisir des heures dans le futur",
+    "futureDate": "Une saisie manuelle ne peut pas être dans le futur",
     "submitted": "Heures envoyées pour approbation",
     "submitFailed": "Les heures n’ont pas pu être envoyées",
     "invalidFiles": "Ces fichiers ne peuvent pas être ajoutés"
+  },
+  "workOrder": {
+    "tabInfo": "Infos",
+    "tabHours": "Heures",
+    "tabTasks": "Tâches",
+    "tabFiles": "Notes",
+    "tabSign": "Signer",
+    "noHours": "Pas encore d'heures sur ce service.",
+    "running": "en cours",
+    "pending": "en attente d'approbation",
+    "signTitle": "Signature du client",
+    "myNote": "Ma note — imprimée sur le bon de travail",
+    "notePlaceholder": "Ce qui a été fait, ce qui reste, ce que le bureau doit savoir…",
+    "saveNote": "Enregistrer la note",
+    "noteSaved": "Note enregistrée",
+    "noteFailed": "Impossible d'enregistrer la note",
+    "signIntro": "Le client vérifie les heures ci-dessous et signe. La signature verrouille ce bon de travail — heures, notes et fichiers ne peuvent plus être modifiés.",
+    "total": "Total",
+    "noHoursShort": "aucune heure",
+    "signerName": "Nom du signataire",
+    "signHere": "Signature du client",
+    "clear": "Effacer",
+    "signHint": "Signez avec le doigt dans le cadre",
+    "signButton": "Signer et verrouiller",
+    "signConfirm": "Signer maintenant ? Ensuite, ce bon de travail ne pourra plus être modifié.",
+    "signedToast": "Signé — le bon de travail est verrouillé",
+    "signedBy": "Signé par {{name}}",
+    "signLoadFailed": "Impossible de charger le bon de travail",
+    "signedClosed": "Signé par le client — clôturé",
+    "signError": {
+      "signer_name_required": "Indiquez le nom du signataire",
+      "signature_required": "Une signature est requise",
+      "signature_invalid": "La signature n'a pas pu être lue — signez à nouveau",
+      "not_found": "Bon de travail introuvable",
+      "already_signed": "Ce bon de travail est déjà signé",
+      "still_clocked_in": "Quelqu'un est encore pointé sur ce bon — pointez la sortie d'abord",
+      "failed": "La signature a échoué",
+      "unauthorized": "Veuillez vous reconnecter"
+    },
+    "myNoteHint": "Le client lit cette note avant de signer."
+  },
+  "locationExplainer": {
+    "title": "Localisation au pointage",
+    "privacyTitle": "Vie privée",
+    "description": "Nous lisons votre position uniquement au moment précis où vous pointez à l'arrivée et au départ. Vous n'êtes jamais suivi entre-temps.",
+    "whyTitle": "Pourquoi nous l'enregistrons",
+    "whyDescription": "La feuille d'heures et le bon de travail indiquent l'adresse et la distance du chantier. Cela ne bloque jamais votre pointage.",
+    "deniedHelp": "La localisation est désactivée dans les paramètres de votre téléphone.",
+    "continue": "Continuer",
+    "clockInWithoutLocation": "Pointer",
+    "notNow": "Pas maintenant"
   }
 }

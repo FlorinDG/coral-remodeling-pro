@@ -2,7 +2,8 @@
 
 import { useState, useMemo } from "react";
 import { useEmailStore } from "./store";
-import { format } from "date-fns";
+import { useLocale } from "next-intl";
+import { formatDateTime } from "@/lib/format/date";
 import { MoreVertical, Trash2, Paperclip, Reply, ReplyAll, Forward, Archive, Mail, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,6 +17,7 @@ import {
 import { AttachmentViewerModal } from "./AttachmentViewerModal";
 
 export function EmailReader() {
+    const locale = useLocale();
     const selectedThreadId = useEmailStore((state) => state.selectedThreadId);
     const threads = useEmailStore((state) => state.threads);
 
@@ -191,7 +193,7 @@ export function EmailReader() {
                                                     </div>
                                                 </div>
                                                 <div className="text-sm text-muted-foreground shrink-0">
-                                                    {format(new Date(email.sentDate), 'MMM d, h:mm a')}
+                                                    {formatDateTime(email.sentDate, locale)}
                                                 </div>
                                             </div>
 
@@ -231,7 +233,7 @@ export function EmailReader() {
                                                 </div>
                                             </div>
                                             <div className="text-xs text-muted-foreground shrink-0">
-                                                {format(new Date(email.sentDate), 'MMM d, h:mm a')}
+                                                {formatDateTime(email.sentDate, locale)}
                                             </div>
                                         </div>
                                     )}

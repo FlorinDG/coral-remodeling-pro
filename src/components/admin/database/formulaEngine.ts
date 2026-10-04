@@ -1,4 +1,5 @@
 import { Property, PropertyValue } from './types';
+import { formatDate, formatDateTime } from '@/lib/format/date';
 
 interface FormulaContext {
     rowProperties: Record<string, PropertyValue>;
@@ -62,7 +63,11 @@ export function evaluateFormula(expression: string, context: FormulaContext): st
                 return String(formulaResult);
             }
 
-            const val = context.rowProperties[property.id];
+            let val = context.rowProperties[property.id];
+            // The old grid number cell stored { [propertyId]: v } as the value ("[object Object]") — read the number.
+            if (val !== null && typeof val === 'object' && !Array.isArray(val) && property.id in (val as Record<string, unknown>)) {
+                val = (val as Record<string, unknown>)[property.id] as typeof val;
+            }
             if (typeof val === 'string') return `"${val.replace(/"/g, '\\"')}"`;
             if (typeof val === 'number' || typeof val === 'boolean') return String(val);
             if (Array.isArray(val)) return JSON.stringify(val);
@@ -116,7 +121,7 @@ export function evaluateFormula(expression: string, context: FormulaContext): st
             join: (arr: any[], sep?: string) => (Array.isArray(arr) ? arr : []).join(sep ?? ', '),
             trim: (v: any) => String(v).trim(),
             format: (v: any) => {
-                if (v instanceof Date) return v.toLocaleString();
+                if (v instanceof Date) return formatDateTime(v);
                 return String(v);
             },
 
@@ -161,7 +166,7 @@ export function evaluateFormula(expression: string, context: FormulaContext): st
             parseDate: (v: any) => new Date(String(v)),
             formatDate: (d: any, fmt?: string) => {
                 const date = d instanceof Date ? d : new Date(String(d));
-                if (!fmt) return date.toLocaleDateString();
+                if (!fmt) return formatDate(date);
                 // Simple substitution for common tokens
                 return fmt
                     .replace('YYYY', String(date.getFullYear()))
@@ -242,7 +247,7 @@ export function evaluateFormula(expression: string, context: FormulaContext): st
         const result = evaluator(...contextValues);
 
         // Format Date results back to string for display
-        if (result instanceof Date) return result.toLocaleDateString();
+        if (result instanceof Date) return formatDate(result);
 
         // Guard against NaN cascading through dependent formula chains
         if (typeof result === 'number' && isNaN(result)) return 0;

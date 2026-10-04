@@ -14,13 +14,9 @@ import prisma from './prisma';
 
 // ── Plan → Module canonical mapping ──────────────────────────────────
 
-export const PLAN_MODULES: Record<string, string[]> = {
-    FREE:       ['INVOICING'],
-    PRO:        ['INVOICING', 'CRM', 'PROJECTS', 'CALENDAR', 'DATABASES', 'TASKS'],
-    ENTERPRISE: ['INVOICING', 'CRM', 'PROJECTS', 'CALENDAR', 'DATABASES', 'TASKS', 'HR', 'WEBSITES', 'EMAIL'],
-    FOUNDER:    ['INVOICING', 'CRM', 'PROJECTS', 'CALENDAR', 'DATABASES', 'TASKS', 'HR', 'WEBSITES', 'EMAIL'],
-    CUSTOM:     ['INVOICING', 'CRM', 'PROJECTS', 'CALENDAR', 'DATABASES', 'TASKS', 'HR', 'WEBSITES', 'EMAIL'],
-};
+// The mapping lives in plan-modules.ts (pure — read by the kernel and tests); re-exported here unchanged.
+import { PLAN_MODULES } from './plan-modules';
+export { PLAN_MODULES };
 
 // ── Pricing constants ────────────────────────────────────────────────
 

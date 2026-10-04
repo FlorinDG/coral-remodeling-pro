@@ -90,6 +90,8 @@ interface CreateShiftFormProps {
     status?: string;
     shiftName?: string;
     seriesId?: string;
+    siteAddress?: string | null;
+    materialsEnabled?: boolean;
   }) => Promise<{ id: string } | unknown>;
   onCreateProject: (data: { name: string; address?: string | null; color?: string; latitude?: number; longitude?: number }) => Promise<unknown>;
   open?: boolean;
@@ -163,6 +165,8 @@ export function CreateShiftForm({
   const [shiftEnd, setShiftEnd] = useState('17:00');
   const [role, setRole] = useState('');
   const [notes, setNotes] = useState('');
+  const [siteAddress, setSiteAddress] = useState('');
+  const [materialsEnabled, setMaterialsEnabled] = useState(false);
   // WB-A: the order giver when no project supplies one — a page of the tenant's clients database.
   const [contactPageId, setContactPageId] = useState('');
   const [clients, setClients] = useState<{ id: string; name: string }[]>([]);
@@ -272,6 +276,8 @@ export function CreateShiftForm({
     setShiftEnd('17:00');
     setRole('');
     setNotes('');
+    setSiteAddress('');
+    setMaterialsEnabled(false);
     setIsRecurring(false);
     setRecurringWeeks(4);
     setSelectedDays([]);
@@ -477,6 +483,8 @@ export function CreateShiftForm({
                 shift_end: shiftEnd,
                 role: role || null,
                 notes: notes || null,
+                siteAddress: siteAddress.trim() || null,
+                materialsEnabled,
                 seriesId
               });
             }
@@ -507,7 +515,9 @@ export function CreateShiftForm({
         }
 
         const isMultiDay = start.getTime() !== end.getTime();
-        const seriesId = isMultiDay ? Math.random().toString(36).substring(2, 9) : undefined;
+        // The work order (Florin 2026-10-01): shifts created TOGETHER — several days and/or several
+        // crew — share one seriesId; one person on one day is a work order on its own.
+        const seriesId = (isMultiDay || userIds.length > 1) ? Math.random().toString(36).substring(2, 9) : undefined;
         
         const shiftsToCreate: Array<any> = [];
         let daysCount = 0;
@@ -526,6 +536,8 @@ export function CreateShiftForm({
                 shift_end: scheduleType === 'leave' ? '17:00' : shiftEnd,
                 role: scheduleType === 'leave' ? null : (role || null),
                 notes: scheduleType === 'leave' ? `Leave: ${leaveReason}${notes ? ` - ${notes}` : ''}` : (notes || null),
+                siteAddress: scheduleType === 'leave' ? null : (siteAddress.trim() || null),
+                materialsEnabled: scheduleType === 'leave' ? false : materialsEnabled,
                 status: scheduleType === 'leave' ? 'leave' : 'scheduled',
                 shiftName: scheduleType === 'leave' ? leaveReason : undefined,
                 seriesId
@@ -724,7 +736,7 @@ export function CreateShiftForm({
                 Schedule Shift
               </Button>
             </DialogTrigger>
-            <DialogContent ref={dialogContentRef} className="max-w-lg max-h-[90vh] overflow-y-auto">
+            <DialogContent ref={dialogContentRef} className="max-w-3xl max-h-[92vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Schedule New Shift</DialogTitle>
               </DialogHeader>
@@ -1130,15 +1142,28 @@ export function CreateShiftForm({
                     )}
 
                     <div>
-                      <Label htmlFor="notes">Notes</Label>
+                      <Label htmlFor="notes">Description — printed on the client's signed work order</Label>
                       <Textarea
                         id="notes"
                         value={notes}
                         onChange={(e) => setNotes(e.target.value)}
-                        placeholder="Any additional notes..."
+                        placeholder="What is to be done — you may quote the client's request"
                         rows={2}
                       />
                     </div>
+                    {/* WO-2: where the work happens when it is not the project's address; Materials tab on/off */}
+                    {scheduleType !== 'leave' && (<>
+                    <div>
+                      <Label htmlFor="siteAddress">Execution address (if not the project's)</Label>
+                      <Input id="siteAddress" value={siteAddress} onChange={(e) => setSiteAddress(e.target.value)}
+                        placeholder="Leave empty to use the project address" />
+                    </div>
+                    <label className="flex items-center gap-2 text-sm">
+                      <input type="checkbox" checked={materialsEnabled} onChange={(e) => setMaterialsEnabled(e.target.checked)} />
+                      Crew records materials used on this shift
+                    </label>
+                    </>)}
+
 
                     {/* Save as template option */}
                     {scheduleType !== 'leave' && (
@@ -1369,7 +1394,7 @@ export function CreateShiftForm({
       {/* Controlled mode - dialog without trigger */}
       {isControlled && (
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogContent ref={controlledDialogContentRef} className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogContent ref={controlledDialogContentRef} className="max-w-3xl max-h-[92vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Schedule New Shift</DialogTitle>
             </DialogHeader>
@@ -1758,15 +1783,28 @@ export function CreateShiftForm({
                   )}
 
                   <div>
-                    <Label htmlFor="notes2">Notes</Label>
+                    <Label htmlFor="notes2">Description — printed on the client's signed work order</Label>
                     <Textarea
                       id="notes2"
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}
-                      placeholder="Any additional notes..."
+                      placeholder="What is to be done — you may quote the client's request"
                       rows={2}
                     />
                   </div>
+                    {/* WO-2: where the work happens when it is not the project's address; Materials tab on/off */}
+                    {scheduleType !== 'leave' && (<>
+                    <div>
+                      <Label htmlFor="siteAddress2">Execution address (if not the project's)</Label>
+                      <Input id="siteAddress2" value={siteAddress} onChange={(e) => setSiteAddress(e.target.value)}
+                        placeholder="Leave empty to use the project address" />
+                    </div>
+                    <label className="flex items-center gap-2 text-sm">
+                      <input type="checkbox" checked={materialsEnabled} onChange={(e) => setMaterialsEnabled(e.target.checked)} />
+                      Crew records materials used on this shift
+                    </label>
+                    </>)}
+
 
                   {/* Save as template option */}
                   {scheduleType !== 'leave' && (

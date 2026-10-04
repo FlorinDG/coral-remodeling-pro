@@ -1,9 +1,30 @@
 # CORAL — PLANNER HANDOVER
-**Written 2026-09-29 by the outgoing Planner session, for whichever session picks this up next.**
+**Written 2026-09-29, updated 2026-10-01 evening, by the Planner session, for whichever session picks this up next.**
 
 > **Read this file first, then `pd.md`, then `CODER-QUEUE.md`.** Everything else is reference.
 
 ---
+
+# 0 · 1 OCT (day + evening) — scheduler, clocking, the work order · ALL LIVE ON MAIN
+**Standing rule (Florin 1 Oct):** promote EVERY green change to main. A range with a `prisma/` change → report green, Florin runs `git push origin <sha>:refs/heads/main` himself (my script refuses; override was refused as weakening a check).
+**Migrations applied today (Florin):** `20261001090000_shift_work_order_fields` (siteAddress, materialsEnabled, crewNote) · `20261001180000_geo_clock_addresses` (clock addresses + distance, site coords).
+**Shipped:** SHIFT-LINK-1 (hours ↔ shifts, auto-link on creation, review card) · scheduler stale screens · WH-LEAN-1 (WorkHub no longer loads the ERP store) · task reach (a task on my shift is mine) · late-entry 2h bug (phone sends instants) · WO-1 tabs (Info · Hours · Tasks · Notes · Sign, full-screen) · WO-2 scheduler fields + work order = shifts created together (seriesId) · SCH-8 series scope server-side + HR-TS-8 · WO-3 signing + lock (AuditLog `shift`/`sign` rows = the lock, every writer refuses) · GEO-1 (Geoapify now, Google later; record never block) · Timesheets: shift row in entry detail, "Admin notes", "Uren manueel toevoegen" (app label only — export keeps "Nageleverd"), list refreshes after every action.
+**Plan of record:** `coral-work-order-tabs.md` (WO phasing, GEO-1).
+**Next, in order:** WO-4 (send the signed PDF; a failed send ≠ failure if signed — §11a) · offer Florin the list of late entries since June (stored 1–2 h late, fix by hand only) · delete dead `LateEntryForm.tsx` · then back to the roadmap (R1-2 census on track-b · R2).
+**Coder:** LOC-SWEEP-1 done & live · R2-5 characterization tests queued (tests only).
+**Not seen by me (no login):** the WO tabs / Sign screens — Florin has seen tabs + Sign land.
+
+---
+
+# 0a · NIGHT OF 30 SEP → 1 OCT — unattended run (Florin: "work unattended … then follow the roadmap")
+**Live in production (WorkHub scope, promoted green):** TASK-CREW-1 (crew task status, notes draft→submit frozen, read-only log in WorkHub + ERP) · WB-A (order giver = client page) + SHIFT-DST-1 · I18N-TT-1 (crew i18n guard, Russian completed) · CREW-ERP-1 (12 ERP database doors closed to workforce; crew phones no longer get db ids or tenant financials) · PROJ-SSOT-1 phase 1 (one project resolver).
+**On branch `track-b/r1-2-kern-8` (worktree `~/Documents/GitHub/coral-trackb`, NOT on develop):** R1-2 + KERN-8 (fail-closed resolver, getLockedDbId deleted) · R1-4 scopeWhere (contract now a build gate) · the TenantScopedClient (built, 14 tests, **not adopted**).
+**Florin, in the morning:**
+1. Run `.agents/workflows/r1-2-binding-census.sql` (on the branch) — R1-2 ships only if no tenant reads a system role that is MISSING/DANGLING.
+2. Decide the R1-5 rollout (adopting scopeFromSession file by file).
+3. Verify the reseller rate (fair use numbers in `feature_matrix.md`).
+4. PRO shape (A/B/C) in `coral-draft-pro-tier.md`; PROJ-SSOT-1 phase 2 (drop HrProject — after a snapshot).
+**Process lessons, saved to memory:** zsh `$S:refs` pushes nowhere (brace it) · a new model needs the SCOPE table + TSC-9 census · run the full suite after a schema change.
 
 # 0 · UPDATE — 2026-09-30 (read this first; the sections below are the 29 Sep baseline)
 - **The Planner now works in Claude Code, on the repo directly.** It implements judgement-heavy items itself; the Antigravity coder takes mechanical items under a file fence and reports in `.agents/reports/<ITEM>.md` (`coder-report-protocol.md`, `pd.md` 5g).

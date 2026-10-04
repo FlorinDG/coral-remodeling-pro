@@ -1,5 +1,6 @@
 'use client';
 
+import { resolveLocale, parseDateInput, formatWeekdayDayMonth } from '@/lib/format/date';
 import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronDown, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -12,16 +13,28 @@ export interface CustomDatePickerProps {
     clearable?: boolean;
     customTrigger?: React.ReactNode;
     triggerClassName?: string;
+    /** BCP-47 / app language ('nl', 'fr', 'ro', …). Default: the page's <html lang>. Never the phone's region. */
+    locale?: string;
+    /** Latest selectable date, 'YYYY-MM-DD'. */
+    max?: string;
 }
 
-function formatDateDisplay(isoString?: string) {
-    if (!isoString) return 'Select date';
-    const d = new Date(isoString + 'T00:00:00');
-    if (isNaN(d.getTime())) return isoString;
-    return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+/** Belgium (LOC-1): the app's language decides the format — not the device region (an English
+ *  iPhone set to US would otherwise show "Sep 30" and a Sunday-first week). */
+function pickerLocale(locale?: string): string {
+    const lang = locale || (typeof document !== 'undefined' ? document.documentElement.lang : '') || 'nl';
+    return resolveLocale(lang);
 }
 
-export function CustomDatePicker({ value, onChange, min, placeholder = 'Select date', clearable = true, customTrigger, triggerClassName }: CustomDatePickerProps) {
+function formatDateDisplay(isoString: string | undefined, locale: string) {
+    if (!isoString) return '';
+    const d = parseDateInput(isoString);   // 'YYYY-MM-DD' parsed as a LOCAL date
+    if (!d) return isoString;
+    return formatWeekdayDayMonth(d, locale, true);
+}
+
+export function CustomDatePicker({ value, onChange, min, max, placeholder = 'Select date', clearable = true, customTrigger, triggerClassName, locale }: CustomDatePickerProps) {
+    const loc = pickerLocale(locale);
     const [open, setOpen] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
 
@@ -143,13 +156,15 @@ export function CustomDatePicker({ value, onChange, min, placeholder = 'Select d
 
     // Calendar logic
     const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-    const firstDayIndex = new Date(currentYear, currentMonth, 1).getDay();
+    // Monday-first grid: getDay() is 0 for Sunday → shift so Monday = 0 (LOC-1).
+    const firstDayIndex = (new Date(currentYear, currentMonth, 1).getDay() + 6) % 7;
     const prevMonthDays = new Date(currentYear, currentMonth, 0).getDate();
 
     const todayObj = new Date();
     const todayStr = `${todayObj.getFullYear()}-${String(todayObj.getMonth() + 1).padStart(2, '0')}-${String(todayObj.getDate()).padStart(2, '0')}`;
 
     const minDateStr = min ? min : '';
+    const maxDateStr = max ? max : '';
 
     const days: any[] = [];
 
@@ -164,7 +179,7 @@ export function CustomDatePicker({ value, onChange, min, placeholder = 'Select d
             isCurrentMonth: false,
             monthOffset: -1,
             dateStr: dStr,
-            isPast: minDateStr ? dStr < minDateStr : false,
+            isPast: (minDateStr ? dStr < minDateStr : false) || (maxDateStr ? dStr > maxDateStr : false),
         });
     }
 
@@ -176,7 +191,7 @@ export function CustomDatePicker({ value, onChange, min, placeholder = 'Select d
             isCurrentMonth: true,
             monthOffset: 0,
             dateStr: dStr,
-            isPast: minDateStr ? dStr < minDateStr : false,
+            isPast: (minDateStr ? dStr < minDateStr : false) || (maxDateStr ? dStr > maxDateStr : false),
         });
     }
 
@@ -191,11 +206,14 @@ export function CustomDatePicker({ value, onChange, min, placeholder = 'Select d
             isCurrentMonth: false,
             monthOffset: 1,
             dateStr: dStr,
-            isPast: minDateStr ? dStr < minDateStr : false,
+            isPast: (minDateStr ? dStr < minDateStr : false) || (maxDateStr ? dStr > maxDateStr : false),
         });
     }
 
-    const monthName = new Date(currentYear, currentMonth).toLocaleString(undefined, { month: 'long' });
+    const monthName = new Intl.DateTimeFormat(loc, { month: 'long' }).format(new Date(currentYear, currentMonth, 1));
+    // Monday-first weekday initials in the app's locale (LOC-1: WEEK_STARTS_ON = 1).
+    const weekdayLabels = Array.from({ length: 7 }, (_, i) =>
+        new Intl.DateTimeFormat(loc, { weekday: 'narrow' }).format(new Date(2024, 0, 1 + i)));  // 1 Jan 2024 = Monday
     const isSelected = (dayObj: typeof days[0]) => dayObj.dateStr === value;
 
     return (
@@ -210,7 +228,7 @@ export function CustomDatePicker({ value, onChange, min, placeholder = 'Select d
                 >
                     <div className="flex items-center gap-2">
                         <Calendar className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
-                        <span>{value ? formatDateDisplay(value) : placeholder}</span>
+                        <span>{value ? formatDateDisplay(value, loc) : placeholder}</span>
                     </div>
                     <ChevronDown className="w-3.5 h-3.5 text-neutral-500 opacity-60" />
                 </button>
@@ -219,6 +237,12 @@ export function CustomDatePicker({ value, onChange, min, placeholder = 'Select d
             {open && pos && typeof document !== 'undefined' && createPortal(
                 <div
                     data-datepicker-popover="true"
+                    // Inside a modal Dialog the calendar must live IN the dialog: a modal blocks pointer
+                    // events everywhere else, so a calendar on <body> showed but its days could not be
+                    // clicked — the form kept today's date (Florin 2026-10-02). Same rule as SearchableSelect.
+                    data-portal-dropdown="true"
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onMouseDown={(e) => e.stopPropagation()}
                     className="fixed z-[99999] bg-white/95 dark:bg-neutral-950/95 backdrop-blur-md border border-neutral-300 dark:border-white/10 rounded-2xl shadow-2xl p-4 w-72 select-none animate-in fade-in slide-in-from-top-1 duration-150"
                     style={pos.placement === 'top'
                         ? { bottom: window.innerHeight - pos.top, left: pos.left }
@@ -246,8 +270,8 @@ export function CustomDatePicker({ value, onChange, min, placeholder = 'Select d
                     </div>
 
                     <div className="grid grid-cols-7 gap-1 mb-2">
-                        {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => (
-                            <div key={d} className="text-center text-[10px] font-black text-neutral-400 dark:text-neutral-500 uppercase">
+                        {weekdayLabels.map((d, i) => (
+                            <div key={i} className="text-center text-[10px] font-black text-neutral-400 dark:text-neutral-500 uppercase">
                                 {d}
                             </div>
                         ))}
@@ -294,7 +318,7 @@ export function CustomDatePicker({ value, onChange, min, placeholder = 'Select d
                         </div>
                     )}
                 </div>
-            , document.body)}
+            , (ref.current?.closest('[role="dialog"]') as HTMLElement | null) ?? document.body)}
         </div>
     );
 }

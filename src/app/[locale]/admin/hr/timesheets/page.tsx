@@ -5,10 +5,12 @@ import { hrFetch, hrUpdate } from '@/lib/hr-api';
 import { Loader2, FileText, Download, AlertCircle, Image as ImageIcon, Check, X, Clock, Hourglass, Plus, ChevronDown, ChevronRight } from 'lucide-react';
 import { formatISO, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
 import { Button } from '@/components/ui/button';
-import { computeWorkedDuration } from '@/lib/computeWorkedDuration';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { computeWorkedDuration, formatDecimalHours, formatHoursMinutes } from '@/lib/computeWorkedDuration';
 import { Link, usePathname, useRouter } from '@/i18n/routing';
 import { useSearchParams } from 'next/navigation';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
+import { ShiftLinkReview, SHIFT_LINK_KEYS, type ShiftLinkLabels } from '@/components/shift-link/ShiftLinkReview';
 import ModuleTabs from "@/components/admin/ModuleTabs";
 import { hrTabs } from "@/config/tabs";
 import { ManualEntryModal } from './ManualEntryModal';
@@ -19,6 +21,10 @@ import { nl } from 'date-fns/locale';
 import { format } from 'date-fns';
 import { isSelfApproved } from '@/lib/provenance';
 import { describeError } from '@/lib/describe-error';
+import { toast } from 'sonner';
+import SearchableSelect from '@/components/ui/SearchableSelect';
+import { listInvoicesForHours, markHoursInvoiced, unmarkHoursInvoiced, invoiceSelectedHours, setHoursArchived, type InvoiceOption } from '@/lib/data/timesheet-invoicing';
+import { useDatabaseStore } from '@/components/admin/database/store';
 
 interface Employee {
     id: string;
@@ -43,11 +49,21 @@ interface ClockEntry {
     notes?: string | null;
     photos: string[] | null;
     noBreak?: boolean;
+    billable?: boolean;
+    invoicedAt?: string | null;
     user?: Employee;
+}
+
+/** "7,50 u (07:30)" — decimals first (what the invoice uses), HH:mm in brackets. From hours as the
+ *  report sends them: 2-decimal hours map back to the exact minute (one minute = 0.0167 h). */
+function hoursLabel(hours: number, locale: string): string {
+    const minutes = Math.round((hours || 0) * 60);
+    return `${formatDecimalHours(minutes, locale)} u (${formatHoursMinutes(minutes)})`;
 }
 
 function TimesheetsContent() {
     const t = useTranslations('Hr.timesheets');
+    const locale = useLocale();
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
@@ -116,11 +132,10 @@ function TimesheetsContent() {
     const handleBulkAction = async (action: 'approved' | 'denied') => {
         const selectedHours = entries
             .filter((e: any) => selectedEntries.has(e.id))
-            .reduce((acc, e: any) => acc + (e.hoursDecimal || 0), 0)
-            .toFixed(2);
+            .reduce((acc, e: any) => acc + (e.hoursDecimal || 0), 0);
             
         const actionText = action === 'approved' ? t('approve', { fallback: 'Approve' }) : t('deny', { fallback: 'Deny' });
-        if (!window.confirm(`${actionText} ${selectedEntries.size} entries, ${selectedHours} h?`)) return;
+        if (!window.confirm(`${actionText} ${selectedEntries.size} entries, ${hoursLabel(selectedHours, locale)}?`)) return;
         
         setLoading(true);
         try {
@@ -128,7 +143,7 @@ function TimesheetsContent() {
                 await hrUpdate('clock-entries', id, { approvalStatus: action });
             }
             setSelectedEntries(new Set());
-            await fetchData();
+            await fetchData(true);
         } catch (err: any) {
             console.error('Bulk action error:', err);
             alert(err.message ? `${t('bulkActionFailed')}: ${err.message}` : t('bulkActionFailed'));
@@ -142,8 +157,10 @@ function TimesheetsContent() {
         currentParams.set('format', format);
         window.location.href = `/api/hr/timesheet-export?${currentParams.toString()}`;
     };
-    const fetchData = async () => {
-        setLoading(true);
+    /** `silent`: re-read the report without the full-page spinner — after every action, so totals,
+     *  counts, approver, project and source labels match the server (they were stale until a reload). */
+    const fetchData = async (silent = false) => {
+        if (!silent) setLoading(true);
         setError(null);
         try {
             const currentParams = new URLSearchParams(searchParams.toString());
@@ -179,9 +196,24 @@ function TimesheetsContent() {
             setLoading(false);
         }
     };
+    const refresh = () => { void fetchData(true); };
 
     useEffect(() => {
         fetchData();
+    }, [searchParams]);
+
+    // Changes made elsewhere (the WorkHub, another tab, a colleague) arrive when this tab is shown again.
+    useEffect(() => {
+        let last = Date.now();
+        const onVisible = () => {
+            if (document.visibilityState !== 'visible' || Date.now() - last < 15_000) return;
+            last = Date.now();
+            refresh();
+        };
+        document.addEventListener('visibilitychange', onVisible);
+        window.addEventListener('focus', onVisible);
+        return () => { document.removeEventListener('visibilitychange', onVisible); window.removeEventListener('focus', onVisible); };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [searchParams]);
 
     const setApprovalStatusFilter = (status: string | null) => {
@@ -193,10 +225,87 @@ function TimesheetsContent() {
 
     const currentStatus = searchParams.get('approvalStatus') || 'all';
 
+    // TS-INV-1 · mark / unmark the selected hours as invoiced (audited server-side)
+    const [invoiceDialog, setInvoiceDialog] = useState(false);
+    const [invoiceOptions, setInvoiceOptions] = useState<InvoiceOption[] | null>(null);
+    const [invoiceRef, setInvoiceRef] = useState('none');
+    const [invoicing, setInvoicing] = useState(false);
+    const openInvoiceDialog = async () => {
+        setInvoiceRef('none');
+        setInvoiceDialog(true);
+        if (!invoiceOptions) {
+            const r = await listInvoicesForHours();
+            setInvoiceOptions(r.ok ? r.invoices : []);
+            if (!r.ok) toast.error(`${t('invoiceListFailed')} — ${r.error}`);
+        }
+    };
+    const confirmInvoiced = async () => {
+        setInvoicing(true);
+        try {
+            const r = await markHoursInvoiced(Array.from(selectedEntries), invoiceRef === 'none' ? null : invoiceRef);
+            if (!r.ok) throw new Error(r.detail ? `${r.error} — ${r.detail}` : r.error);
+            toast.success(t('markedInvoiced', { marked: r.marked, skipped: r.skipped }));
+            setInvoiceDialog(false);
+            setSelectedEntries(new Set());
+            refresh();
+        } catch (err) {
+            toast.error(describeError(err));
+        } finally {
+            setInvoicing(false);
+        }
+    };
+    // TS-INV-2 · the selected hours become a draft invoice (rate typed here; one line per worker per day)
+    const [billDialog, setBillDialog] = useState(false);
+    const [billRate, setBillRate] = useState('');
+    const [billing, setBilling] = useState(false);
+    const createInvoiceFromHours = async () => {
+        const rate = Number(billRate.replace(',', '.'));
+        if (!(rate > 0)) { toast.error(t('billError.rate_required')); return; }
+        setBilling(true);
+        try {
+            const r = await invoiceSelectedHours(Array.from(selectedEntries), rate);
+            if (!r.ok) {
+                toast.error(t(`billError.${r.error}`, { detail: r.detail ?? '' }), { duration: 8000 });
+                return;
+            }
+            // The invoice engine reads the page from the store — put the confirmed page there first
+            // (its server fallback rebuilds an invoice WITHOUT lines and client).
+            useDatabaseStore.getState().addConfirmedPage(r.page);
+            toast.success(t('billCreated', { count: r.invoiced, skipped: r.skipped }));
+            setBillDialog(false);
+            setSelectedEntries(new Set());
+            router.push(`/admin/financials/income/invoices/${r.page.id}`);
+        } catch (err) {
+            toast.error(describeError(err));
+        } finally {
+            setBilling(false);
+        }
+    };
+
+    // TS-ARCH-1 · archive / restore the selection
+    const archiveSelection = async (archived: boolean) => {
+        const r = await setHoursArchived(Array.from(selectedEntries), archived);
+        if (!r.ok) { toast.error(r.detail ? `${r.error} — ${r.detail}` : r.error); return; }
+        toast.success(t(archived ? 'archivedToast' : 'restoredToast', { count: r.changed, skipped: r.skipped }));
+        setSelectedEntries(new Set());
+        refresh();
+    };
+
+    const unmarkInvoiced = async () => {
+        const reason = window.prompt(t('unmarkReason'));
+        if (!reason) return;
+        const r = await unmarkHoursInvoiced(Array.from(selectedEntries), reason);
+        if (!r.ok) { toast.error(r.error === 'reason_required' ? t('unmarkReason') : r.error); return; }
+        toast.success(t('unmarkedInvoiced', { count: r.unmarked }));
+        setSelectedEntries(new Set());
+        refresh();
+    };
+
     const handleApproval = async (id: string, status: 'approved' | 'denied') => {
         try {
             const updated = await hrUpdate('clock-entries', id, { approvalStatus: status });
             setEntries(prev => prev.map(e => e.id === id ? { ...e, ...updated, approvalStatus: status } : e));
+            refresh();
         } catch (err: any) {
             console.error('Failed to update status:', err);
             alert(`Failed to update status — ${describeError(err)}`);
@@ -246,7 +355,7 @@ function TimesheetsContent() {
                 <td className="px-6 py-4">
                     <div className="font-bold text-sm">
                         {entry.clockOutTime 
-                            ? `${Math.floor(duration.totalMinutes / 60)}${t('hoursShort')} ${duration.totalMinutes % 60}${t('minutesShort')}`
+                            ? hoursLabel(duration.totalMinutes / 60, locale)
                             : <span className="text-orange-500 text-xs px-2 py-1 bg-orange-50 rounded-full flex items-center w-max gap-1"><Clock className="w-3 h-3"/> {t('statusLooptNog')}</span>
                         }
                     </div>
@@ -255,7 +364,12 @@ function TimesheetsContent() {
                     <p className="text-sm text-neutral-600 dark:text-neutral-400 line-clamp-2 max-w-xs">{entry.taskDescription || <span className="italic text-neutral-400">{t('na')}</span>}</p>
                 </td>
                 <td className="px-6 py-4">
-                    {entry.approvalStatus === 'approved' ? (
+                    {entry.invoicedAt ? (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 w-max" title={format(new Date(entry.invoicedAt), 'dd/MM/yyyy HH:mm')}>
+                            <FileText className="w-3 h-3 mr-1" />
+                            {t('statusInvoiced')}
+                        </span>
+                    ) : entry.approvalStatus === 'approved' ? (
                         <div className="flex flex-col">
                             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700 w-max">
                                 <Check className="w-3 h-3 mr-1" />
@@ -283,6 +397,11 @@ function TimesheetsContent() {
                         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-neutral-100 text-neutral-700 w-max">
                             <Hourglass className="w-3 h-3 mr-1 text-neutral-500" />
                             {t('statusTeBeoordelen')}
+                        </span>
+                    )}
+                    {entry.billable === false && (
+                        <span className="mt-1 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-neutral-200 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 w-max">
+                            {t('statusNonBillable')}
                         </span>
                     )}
                 </td>
@@ -327,7 +446,7 @@ function TimesheetsContent() {
                     <td colSpan={7} className="p-0">
                         <TimesheetEntryDetail 
                             entry={entry} 
-                            onUpdate={(updated) => setEntries(prev => prev.map(e => e.id === entry.id ? { ...e, ...updated } : e))} 
+                            onUpdate={(updated) => { setEntries(prev => prev.map(e => e.id === entry.id ? { ...e, ...updated } : e)); refresh(); }} 
                             unlockTokenValid={unlockState.valid && (!unlockState.expiresAt || unlockState.expiresAt > nowMs)} 
                         />
                     </td>
@@ -369,23 +488,23 @@ function TimesheetsContent() {
                             <div className="flex flex-wrap items-center gap-4 xl:gap-6 text-sm">
                                 <div className="flex flex-col">
                                     <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">{t('totalHours', { fallback: 'Totaal uren' })}</span>
-                                    <span className="font-black text-lg leading-none">{summary.totalHours}u</span>
+                                    <span className="font-black text-lg leading-none">{hoursLabel(summary.totalHours, locale)}</span>
                                 </div>
                                 <div className="w-px h-8 bg-neutral-200 dark:bg-white/10 hidden xl:block"></div>
                                 <div className="flex flex-col">
                                     <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">{t('billableInternal', { fallback: 'Factureerbaar / Intern' })}</span>
-                                    <span className="font-black text-lg leading-none">{summary.billableHours}u <span className="text-neutral-400 font-normal">/ {summary.internalHours}u</span></span>
+                                    <span className="font-black text-lg leading-none">{hoursLabel(summary.billableHours, locale)} <span className="text-neutral-400 font-normal">/ {hoursLabel(summary.internalHours, locale)}</span></span>
                                 </div>
                                 <div className="w-px h-8 bg-neutral-200 dark:bg-white/10 hidden xl:block"></div>
                                 <div className="flex flex-col">
                                     <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">{t('approvedPending', { fallback: 'Goedgekeurd / Te beoordelen' })}</span>
-                                    <span className="font-black text-lg leading-none text-green-600">{summary.approvedHours}u <span className="text-orange-500 font-normal">/ {summary.pendingHours}u</span></span>
+                                    <span className="font-black text-lg leading-none text-green-600">{hoursLabel(summary.approvedHours, locale)} <span className="text-orange-500 font-normal">/ {hoursLabel(summary.pendingHours, locale)}</span></span>
                                 </div>
                                 <div className="w-px h-8 bg-neutral-200 dark:bg-white/10 hidden xl:block"></div>
                                 <div className="flex flex-col">
                                     <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">{t('unattributedHours', { fallback: 'Niet toegewezen uren' })}</span>
                                     <span className="font-black text-lg leading-none text-red-500">
-                                        {entries.filter(e => !(e as any).projectId).reduce((acc, e) => acc + ((e as any).hoursDecimal || 0), 0).toFixed(2)}u
+                                        {hoursLabel(entries.filter(e => !(e as any).projectId).reduce((acc, e) => acc + ((e as any).hoursDecimal || 0), 0), locale)}
                                     </span>
                                 </div>
                             </div>
@@ -406,12 +525,23 @@ function TimesheetsContent() {
                             </DropdownMenuContent>
                         </DropdownMenu>
 
+                        <Button variant="outline" className="h-10 rounded-xl border-blue-200 text-blue-700 hover:bg-blue-50 disabled:opacity-40"
+                            disabled={selectedEntries.size === 0} onClick={() => setBillDialog(true)}
+                            title={selectedEntries.size === 0 ? t('billSelectFirst') : undefined}>
+                            <FileText className="w-4 h-4 mr-2" />
+                            {t('billButton')}{selectedEntries.size > 0 ? ` (${selectedEntries.size})` : ''}
+                        </Button>
+
                         <Button onClick={() => setModalOpen(true)} className="bg-orange-500 hover:bg-orange-600 text-white font-bold h-10 px-4 rounded-xl shadow-sm transition-all shadow-orange-500/20">
                             <Plus className="w-4 h-4 mr-2" />
                             {t('manualAdd')}
                         </Button>
                     </div>
                 </header>
+
+                {/* SHIFT-LINK-1 — hours not (or wrongly) linked to a planned shift, editable suggestion */}
+                <ShiftLinkReview locale={locale} showWorker days={31} onLinked={refresh}
+                    labels={Object.fromEntries(SHIFT_LINK_KEYS.map(k => [k, t(`shiftLink.${k}`)])) as unknown as ShiftLinkLabels} />
 
                 <div className="flex flex-col gap-4 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-2xl p-4 shadow-sm mb-2">
                     <TimesheetFilterBar />
@@ -437,6 +567,30 @@ function TimesheetsContent() {
                             >
                                 {t('statusGoedgekeurd')}
                             </button>
+                            <button 
+                                onClick={() => setApprovalStatusFilter('denied')}
+                                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${currentStatus === 'denied' ? 'bg-red-100 text-red-700' : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'}`}
+                            >
+                                {t('statusGeweigerd')}
+                            </button>
+                            <button 
+                                onClick={() => setApprovalStatusFilter('invoiced')}
+                                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${currentStatus === 'invoiced' ? 'bg-blue-100 text-blue-700' : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'}`}
+                            >
+                                {t('statusInvoiced')}
+                            </button>
+                            <button 
+                                onClick={() => setApprovalStatusFilter('nonBillable')}
+                                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${currentStatus === 'nonBillable' ? 'bg-neutral-700 text-white' : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'}`}
+                            >
+                                {t('statusNonBillable')}
+                            </button>
+                            <button 
+                                onClick={() => setApprovalStatusFilter('archived')}
+                                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${currentStatus === 'archived' ? 'bg-neutral-500 text-white' : 'bg-neutral-100 text-neutral-500 hover:bg-neutral-200'}`}
+                            >
+                                {t('statusArchived')}
+                            </button>
                         </div>
 
                         <div className="flex items-center gap-3">
@@ -445,6 +599,13 @@ function TimesheetsContent() {
                                     <span className="text-sm font-bold text-orange-800">{t('selectedCount', { count: selectedEntries.size })}</span>
                                     <Button size="sm" className="h-7 text-xs bg-green-600 hover:bg-green-700 text-white ml-2" onClick={() => handleBulkAction('approved')}>{t('bulkApprove')}</Button>
                                     <Button size="sm" variant="outline" className="h-7 text-xs text-red-600 border-red-200 hover:bg-red-50" onClick={() => handleBulkAction('denied')}>{t('bulkDeny')}</Button>
+                                    <Button size="sm" variant="outline" className="h-7 text-xs text-blue-700 border-blue-200 hover:bg-blue-50" onClick={openInvoiceDialog}>{t('bulkInvoiced')}</Button>
+                                    {currentStatus === 'archived'
+                                        ? <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => archiveSelection(false)}>{t('bulkRestore')}</Button>
+                                        : <Button size="sm" variant="ghost" className="h-7 text-xs text-neutral-600" onClick={() => archiveSelection(true)}>{t('bulkArchive')}</Button>}
+                                    {currentStatus === 'invoiced' && (
+                                        <Button size="sm" variant="ghost" className="h-7 text-xs text-neutral-600" onClick={unmarkInvoiced}>{t('bulkUninvoice')}</Button>
+                                    )}
                                 </div>
                             )}
                             
@@ -457,10 +618,54 @@ function TimesheetsContent() {
                     </div>
                 </div>
 
+                <Dialog open={billDialog} onOpenChange={setBillDialog}>
+                    <DialogContent className="max-w-md">
+                        <DialogHeader><DialogTitle>{t('billButton')}</DialogTitle></DialogHeader>
+                        <p className="text-sm text-neutral-600 dark:text-neutral-400">{t('billHint', { count: selectedEntries.size })}</p>
+                        <label className="space-y-1 block">
+                            <span className="text-xs font-semibold text-neutral-500">{t('billRate')}</span>
+                            <div className="flex items-center gap-2">
+                                <span className="text-sm text-neutral-500">€</span>
+                                <input inputMode="decimal" autoFocus value={billRate} onChange={e => setBillRate(e.target.value)}
+                                    placeholder="45,00" className="h-10 w-32 px-3 rounded-md border border-border bg-background text-base tabular-nums" />
+                                <span className="text-sm text-neutral-500">/ u {t('billExVat')}</span>
+                            </div>
+                        </label>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setBillDialog(false)}>{t('cancel', { fallback: 'Annuleren' })}</Button>
+                            <Button onClick={createInvoiceFromHours} disabled={billing || !billRate} className="bg-blue-600 hover:bg-blue-700 text-white">
+                                {billing && <Loader2 className="w-4 h-4 animate-spin mr-1" />}{t('billCreate')}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                <Dialog open={invoiceDialog} onOpenChange={setInvoiceDialog}>
+                    <DialogContent className="max-w-md">
+                        <DialogHeader><DialogTitle>{t('bulkInvoiced')}</DialogTitle></DialogHeader>
+                        <p className="text-sm text-neutral-600 dark:text-neutral-400">{t('invoiceDialogHint', { count: selectedEntries.size })}</p>
+                        <div className="space-y-1">
+                            <span className="text-xs font-semibold text-neutral-500">{t('invoiceOptional')}</span>
+                            {invoiceOptions === null ? (
+                                <div className="h-10 rounded-md bg-neutral-100 dark:bg-neutral-800 animate-pulse" />
+                            ) : (
+                                <SearchableSelect value={invoiceRef} onChange={setInvoiceRef} placeholder={t('invoiceOptional')}
+                                    options={[{ value: 'none', label: t('noInvoiceLink') }, ...invoiceOptions.map(o => ({ value: o.id, label: o.label }))]} />
+                            )}
+                        </div>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setInvoiceDialog(false)}>{t('cancel', { fallback: 'Annuleren' })}</Button>
+                            <Button onClick={confirmInvoiced} disabled={invoicing} className="bg-blue-600 hover:bg-blue-700 text-white">
+                                {invoicing && <Loader2 className="w-4 h-4 animate-spin mr-1" />}{t('bulkInvoiced')}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
                 <ManualEntryModal 
                     open={modalOpen} 
                     onOpenChange={setModalOpen} 
-                    onSuccess={fetchData} 
+                    onSuccess={refresh} 
                 />
 
                 {/* Old stat cards removed in favor of inline header stats */}
@@ -498,7 +703,7 @@ function TimesheetsContent() {
                                                     {expandedGroups[worker.userId] ? <ChevronDown className="w-4 h-4"/> : <ChevronRight className="w-4 h-4"/>}
                                                     {worker.workerName}
                                                 </span>
-                                                <span className="font-medium bg-neutral-200 dark:bg-neutral-700 px-3 py-1 rounded-lg">{worker.hours.toFixed(2)} {t('hoursShort')}</span>
+                                                <span className="font-medium bg-neutral-200 dark:bg-neutral-700 px-3 py-1 rounded-lg">{hoursLabel(worker.hours, locale)}</span>
                                             </div>
                                         </td>
                                     </tr>
@@ -516,7 +721,7 @@ function TimesheetsContent() {
                                                     {expandedGroups[project.projectId] ? <ChevronDown className="w-4 h-4"/> : <ChevronRight className="w-4 h-4"/>}
                                                     {project.projectName}
                                                 </span>
-                                                <span className="font-medium bg-neutral-200 dark:bg-neutral-700 px-3 py-1 rounded-lg">{project.hours.toFixed(2)} {t('hoursShort')}</span>
+                                                <span className="font-medium bg-neutral-200 dark:bg-neutral-700 px-3 py-1 rounded-lg">{hoursLabel(project.hours, locale)}</span>
                                             </div>
                                         </td>
                                     </tr>
@@ -537,7 +742,7 @@ function TimesheetsContent() {
                                                 <div className="flex items-center gap-3">
                                                     <span className="text-xs text-red-600 underline hover:no-underline" onClick={(e) => { e.stopPropagation(); /* TODO Bulk assign action */ }}>Bulk Assign</span>
                                                     <span className="font-medium bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300 px-3 py-1 rounded-lg">
-                                                        {entries.filter((e: any) => !e.projectId).reduce((acc: number, e: any) => acc + (e.hoursDecimal || 0), 0).toFixed(2)} {t('hoursShort')}
+                                                        {hoursLabel(entries.filter((e: any) => !e.projectId).reduce((acc: number, e: any) => acc + (e.hoursDecimal || 0), 0), locale)}
                                                     </span>
                                                 </div>
                                             </div>

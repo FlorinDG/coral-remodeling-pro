@@ -7,7 +7,6 @@ import { useGeolocation, validateGeofence } from '@/components/time-tracker/hook
 import { useClockEntries } from '@/components/time-tracker/hooks/useClockEntries';
 import { useScheduledShifts } from '@/components/time-tracker/hooks/useScheduledShifts';
 import { ClockOutForm } from './ClockOutForm';
-import { LocationPermissionDialog } from './LocationPermissionDialog';
 import { GeofenceWarningDialog } from './GeofenceWarningDialog';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
@@ -17,20 +16,17 @@ import { formatTime } from '@/lib/format/date';
 function ClockButtonComponent() {
   const { t } = useTranslation();
   const [showClockOutForm, setShowClockOutForm] = useState(false);
-  const [showLocationDialog, setShowLocationDialog] = useState(false);
   const [showGeofenceWarning, setShowGeofenceWarning] = useState<{distance: number, site: string, location: any} | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [activeShiftId, setActiveShiftId] = useState<string | null>(null);
   // The ad-hoc shift THIS button created at clock-in. Only that one is closed (end time + completed)
   // at clock-out — a PLANNED shift is the planner's record and is never rewritten by clocking out.
-  const [userCreatedShiftId, setUserCreatedShiftId] = useState<string | null>(null);
   
   const [entriesTimedOut, setEntriesTimedOut] = useState(false);
   
   const { activeEntry, loading: entriesLoading, error: entriesError, clockIn, clockOut } = useClockEntries();
-  const { getTodayShift, createUserShift, completeUserShift, loading: shiftsLoading, error: shiftsError, failedEndpoints, refetch: refetchShifts } = useScheduledShifts();
+  const { getTodayShift, loading: shiftsLoading, error: shiftsError, failedEndpoints, refetch: refetchShifts } = useScheduledShifts();
   const { formattedTime, isRunning, startTimer, stopTimer, resetTimer, setStartTime } = useTimer();
-  const { requestLocation, loading: locationLoading, permissionState } = useGeolocation();
+  const { requestLocation, loading: locationLoading, permissionState, explainerDialog } = useGeolocation();
 
   // Terminal branch (WHS-1 §2): never spin forever on the entries load.
   // Shifts have NO timeout here (WHS-1b §2): useScheduledShifts owns its own 9s bound, and a
@@ -53,15 +49,6 @@ function ClockButtonComponent() {
 
   const isClockedIn = !!activeEntry;
 
-  // Track the active shift when clocked in
-  useEffect(() => {
-    if (activeEntry && activeEntry.shiftId === todayShift?.id) {
-      setActiveShiftId(todayShift.id);
-    } else if (activeEntry && todayShift?.status === 'In Progress') {
-      setActiveShiftId(todayShift.id);
-    }
-  }, [activeEntry?.id, activeEntry?.shiftId, todayShift?.id, todayShift?.status]);
-
   // Restore timer from active entry - only once per entry
   useEffect(() => {
     if (activeEntry && initializedEntryRef.current !== activeEntry.id) {
@@ -78,10 +65,6 @@ function ClockButtonComponent() {
   }, [activeEntry?.id]);
 
   const handleClockIn = async () => {
-    if (permissionState === 'prompt') {
-      setShowLocationDialog(true);
-      return;
-    }
     await performClockIn();
   };
 
@@ -114,11 +97,15 @@ function ClockButtonComponent() {
       clockInData.clockInLongitude = location.longitude;
     }
     
-    if (overrideShiftWithFallback) {
+    // NO ad-hoc shifts (Florin 2026-10-04): no planned shift (or the crew member chose "without shift") →
+    // the entry is recorded WITHOUT a shift, pending approval. The crew member's clock-out note says why;
+    // the admin may plan a shift in the past to match it. Nothing is invented here.
+    const withoutShift = overrideShiftWithFallback || !todayShift?.id;
+    if (withoutShift) {
       clockInData.requiresApproval = true;
       clockInData.approvalStatus = 'pending';
-    } else if (todayShift?.id) {
-      clockInData.shiftId = todayShift.id;
+    } else {
+      clockInData.shiftId = todayShift!.id;
     }
 
     const { data, error, alreadyClockedIn } = await clockIn(clockInData);
@@ -138,41 +125,13 @@ function ClockButtonComponent() {
       return;
     }
     
-    // If no scheduled shift, try to create a user-initiated shift (WHS-1 §2: shift failure must not break clock-in).
-    // WHS-1b §2: only when shifts actually LOADED. If they failed we do not know whether a shift
-    // exists today, so the entry is recorded without one — never a guessed, possibly duplicate shift.
-    if (!todayShift && data && !overrideShiftWithFallback && !shiftsFailed) {
-      try {
-        const userShift = await createUserShift();
-        if (userShift?.data) {
-          setActiveShiftId(userShift.data.id);
-          setUserCreatedShiftId(userShift.data.id);
-          
-          // Link the newly created shift to the clock entry
-          try {
-            await fetch(`/api/hr/clock-entries?id=${data.id}`, {
-              method: 'PATCH',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ shiftId: userShift.data.id }),
-            });
-          } catch (patchErr) {
-            console.error('[ClockButton] Failed to link shift to clock entry:', patchErr);
-          }
-        }
-      } catch (shiftErr) {
-        console.warn('[ClockButton] Failed to create user shift, clock entry remains valid:', shiftErr);
-      }
-    } else if (todayShift && !overrideShiftWithFallback) {
-      setActiveShiftId(todayShift.id);
-    }
-
     try {
       await refetchShifts();
     } catch {}
     setIsProcessing(false);
     setShowGeofenceWarning(null);
 
-    if (overrideShiftWithFallback) {
+    if (withoutShift) {
       toast.success('Clocked in without shift', {
         description: 'Entry requires manager approval',
       });
@@ -185,10 +144,6 @@ function ClockButtonComponent() {
     }
   };
 
-  const handleLocationPermissionGranted = async () => {
-    setShowLocationDialog(false);
-    await performClockIn();
-  };
 
   const handleClockOut = () => {
     setShowClockOutForm(true);
@@ -206,13 +161,6 @@ function ClockButtonComponent() {
       noBreak: data.noBreak
     });
     
-    // Only an ad-hoc shift this button created gets its end time set. Before, ANY active shift was
-    // "completed" here — clocking out of a planned 13:00–17:00 at 12:10 rewrote it to end at 12:10.
-    if (activeShiftId && activeShiftId === userCreatedShiftId) {
-      await completeUserShift(activeShiftId);
-    }
-    setUserCreatedShiftId(null);
-
     await refetchShifts();
     setIsProcessing(false);
     setShowClockOutForm(false);
@@ -228,7 +176,6 @@ function ClockButtonComponent() {
       description: `Worked for ${formattedTime}${breakNote}`,
     });
     resetTimer();
-    setActiveShiftId(null);
   };
 
   // Terminal branch (WHS-1 §2): never block indefinitely on loading
@@ -315,15 +262,7 @@ function ClockButtonComponent() {
         )}
       </div>
 
-      <LocationPermissionDialog
-        open={showLocationDialog}
-        onClose={() => setShowLocationDialog(false)}
-        onDecline={() => {
-          setShowLocationDialog(false);
-          performClockIn(false, true);
-        }}
-        onGranted={handleLocationPermissionGranted}
-      />
+      {explainerDialog}
 
       <GeofenceWarningDialog
         open={!!showGeofenceWarning}

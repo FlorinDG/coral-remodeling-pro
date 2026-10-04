@@ -118,7 +118,8 @@
     "userInitiatedEntry": "Clocking in will create a user-initiated entry",
     "locationRecorded": "Location recorded",
     "alreadyClockedInSince": "You were already clocked in since {{time}}.",
-    "statusUnconfirmed": "Your clock status could not be confirmed. Clocking in is still safe."
+    "statusUnconfirmed": "Your clock status could not be confirmed. Clocking in is still safe.",
+    "locationNotice": "Your location is recorded only when you clock in and out — never in between."
   },
   "schedule": {
     "title": "Schedule",
@@ -184,7 +185,15 @@
       "clock_out_first": "Clock out first",
       "nothing_recorded": "No hours were recorded on this shift",
       "failed": "The shift could not be submitted"
-    }
+    },
+    "noAddress": "No address",
+    "noContact": "No contact",
+    "noNotes": "No notes",
+    "noTasks": "No tasks",
+    "noAttachments": "No attachments",
+    "addFiles": "Add photos or files",
+    "filesAdded": "{{count}} file(s) added",
+    "fileAddFailed": "Could not add the file"
   },
   "timeOff": {
     "title": "Time Off",
@@ -262,7 +271,21 @@
       "unreviewed": "Not yet reviewed"
     },
     "exportTitle": "My timesheet",
-    "exportMonth": "Month"
+    "exportMonth": "Month",
+    "exportFailed": "The export could not be downloaded",
+    "shiftLink": {
+      "title": "Hours to link to a shift",
+      "hint": "These hours are not linked to a planned shift, or overlap a different one. Pick the right shift — or none — and confirm.",
+      "unlinked": "Not linked",
+      "mismatch": "Other shift overlaps",
+      "linkedTo": "Now linked to",
+      "noShift": "No shift",
+      "link": "Link",
+      "keep": "Keep",
+      "noOverlap": "no overlap",
+      "submitted": "submitted",
+      "failed": "Could not save"
+    }
   },
   "tasks": {
     "title": "My tasks",
@@ -313,7 +336,7 @@
     "empty": "No shared documents yet"
   },
   "lateEntry": {
-    "title": "Submit late entry",
+    "title": "Manual entry",
     "subtitle": "Add hours for a past date (needs approval)",
     "worker": "Worker (optional)",
     "selectWorker": "Select a worker (optional)",
@@ -334,13 +357,64 @@
     "attachments": "Photos / files (optional)",
     "addFiles": "Add files",
     "includeLocation": "Add my location",
-    "locationOptional": "Optional for late entries",
+    "locationOptional": "Optional for manual entries",
     "location": "Location",
     "cancel": "Cancel",
     "submit": "Send for approval",
-    "futureDate": "A late entry cannot be in the future",
-    "submitted": "Late entry sent for approval",
-    "submitFailed": "The late entry could not be sent",
+    "futureDate": "A manual entry cannot be in the future",
+    "submitted": "Manual entry sent for approval",
+    "submitFailed": "The manual entry could not be sent",
     "invalidFiles": "These files cannot be added"
+  },
+  "workOrder": {
+    "tabInfo": "Info",
+    "tabHours": "Hours",
+    "tabTasks": "Tasks",
+    "tabFiles": "Notes",
+    "tabSign": "Sign",
+    "noHours": "No hours on this shift yet.",
+    "running": "running",
+    "pending": "awaiting approval",
+    "signTitle": "Client signature",
+    "myNote": "My note — printed on the work order",
+    "notePlaceholder": "What was done, what is left, anything the office should know…",
+    "saveNote": "Save note",
+    "noteSaved": "Note saved",
+    "noteFailed": "Could not save the note",
+    "signIntro": "The client checks the hours below and signs. Signing locks this work order — hours, notes and files can no longer be changed.",
+    "total": "Total",
+    "noHoursShort": "no hours",
+    "signerName": "Name of the person signing",
+    "signHere": "Client signature",
+    "clear": "Clear",
+    "signHint": "Sign with your finger in the box",
+    "signButton": "Sign and lock",
+    "signConfirm": "Sign now? After signing, this work order can no longer be changed.",
+    "signedToast": "Signed — the work order is locked",
+    "signedBy": "Signed by {{name}}",
+    "signLoadFailed": "Could not load the work order",
+    "signedClosed": "Signed by the client — closed",
+    "signError": {
+      "signer_name_required": "Enter the name of the person signing",
+      "signature_required": "A signature is required",
+      "signature_invalid": "The signature could not be read — sign again",
+      "not_found": "Work order not found",
+      "already_signed": "This work order is already signed",
+      "still_clocked_in": "Someone is still clocked in on this work order — clock out first",
+      "failed": "Signing failed",
+      "unauthorized": "Please sign in again"
+    },
+    "myNoteHint": "The client reads this note before signing."
+  },
+  "locationExplainer": {
+    "title": "Location when clocking",
+    "privacyTitle": "Privacy",
+    "description": "We only read your location at the exact moment you clock in or out. You are never tracked in between or continuously.",
+    "whyTitle": "Why we record this",
+    "whyDescription": "Your timesheet and work order show the address and distance to the job site. This never blocks you from clocking in.",
+    "deniedHelp": "Location is turned off in your phone's settings.",
+    "continue": "Continue",
+    "clockInWithoutLocation": "Clock in",
+    "notNow": "Not now"
   }
 }

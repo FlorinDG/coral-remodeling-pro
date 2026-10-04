@@ -1,11 +1,13 @@
 "use client";
 
 import React from 'react';
+import { useLocale } from 'next-intl';
 import { useDatabaseStore } from '../store';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend, ResponsiveContainer } from 'recharts';
 import { TrendingUp } from 'lucide-react';
 
 export default function PageFinancialAnalysis({ databaseId, pageId, costs: passedCosts, quotationTotal, invoicedTotal }: { databaseId: string, pageId: string, costs?: number, quotationTotal?: number, invoicedTotal?: number }) {
+    const locale = useLocale();
     const db = useDatabaseStore(state => state.databases.find(d => d.id === databaseId));
     const page = db?.pages.find(p => p.id === pageId);
 
@@ -61,7 +63,7 @@ export default function PageFinancialAnalysis({ databaseId, pageId, costs: passe
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
                         <XAxis dataKey="name" hide />
                         <YAxis
-                            tickFormatter={(value) => `€${value.toLocaleString()}`}
+                            tickFormatter={(value) => `€${value.toLocaleString(locale)}`}
                             width={80}
                             tick={{ fontSize: 11, fill: '#6b7280' }}
                             axisLine={false}
@@ -96,15 +98,15 @@ export default function PageFinancialAnalysis({ databaseId, pageId, costs: passe
                     <>
                         <div className="p-4 bg-purple-500/10 rounded-2xl border border-purple-500/20">
                             <p className="text-[10px] font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400">Quoted Amount</p>
-                            <p className="text-xl font-black text-purple-700 dark:text-purple-300 mt-0.5">€{(quoted || effectiveBudget).toLocaleString()}</p>
+                            <p className="text-xl font-black text-purple-700 dark:text-purple-300 mt-0.5">€{(quoted || effectiveBudget).toLocaleString(locale)}</p>
                         </div>
                         <div className="p-4 bg-yellow-500/10 rounded-2xl border border-yellow-500/20">
                             <p className="text-[10px] font-bold uppercase tracking-wider text-yellow-600 dark:text-yellow-400">Est. Total Cost</p>
-                            <p className="text-xl font-black text-yellow-700 dark:text-yellow-300 mt-0.5">€{costs.toLocaleString()}</p>
+                            <p className="text-xl font-black text-yellow-700 dark:text-yellow-300 mt-0.5">€{costs.toLocaleString(locale)}</p>
                         </div>
                         <div className="p-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/20">
                             <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Est. Margin</p>
-                            <p className="text-xl font-black text-emerald-700 dark:text-emerald-300 mt-0.5">€{remaining.toLocaleString()}</p>
+                            <p className="text-xl font-black text-emerald-700 dark:text-emerald-300 mt-0.5">€{remaining.toLocaleString(locale)}</p>
                         </div>
                         <div className="p-4 bg-blue-500/10 rounded-2xl border border-blue-500/20">
                             <p className="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">Profit Margin %</p>
@@ -115,28 +117,28 @@ export default function PageFinancialAnalysis({ databaseId, pageId, costs: passe
                     <>
                         <div className="p-4 bg-orange-500/10 rounded-2xl border border-orange-500/20">
                             <p className="text-[10px] font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400">Total Budget</p>
-                            <p className="text-xl font-black text-orange-700 dark:text-orange-300 mt-0.5">€{effectiveBudget.toLocaleString()}</p>
+                            <p className="text-xl font-black text-orange-700 dark:text-orange-300 mt-0.5">€{effectiveBudget.toLocaleString(locale)}</p>
                         </div>
                         {quoted > 0 && (
                             <div className="p-4 bg-purple-500/10 rounded-2xl border border-purple-500/20">
                                 <p className="text-[10px] font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400">Quoted</p>
-                                <p className="text-xl font-black text-purple-700 dark:text-purple-300 mt-0.5">€{quoted.toLocaleString()}</p>
+                                <p className="text-xl font-black text-purple-700 dark:text-purple-300 mt-0.5">€{quoted.toLocaleString(locale)}</p>
                             </div>
                         )}
                         {invoiced > 0 && (
                             <div className="p-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/20">
                                 <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Invoiced</p>
-                                <p className="text-xl font-black text-emerald-700 dark:text-emerald-300 mt-0.5">€{invoiced.toLocaleString()}</p>
+                                <p className="text-xl font-black text-emerald-700 dark:text-emerald-300 mt-0.5">€{invoiced.toLocaleString(locale)}</p>
                             </div>
                         )}
                         <div className="p-4 bg-yellow-500/10 rounded-2xl border border-yellow-500/20">
                             <p className="text-[10px] font-bold uppercase tracking-wider text-yellow-600 dark:text-yellow-400">Realized Costs</p>
-                            <p className="text-xl font-black text-yellow-700 dark:text-yellow-300 mt-0.5">€{costs.toLocaleString()}</p>
+                            <p className="text-xl font-black text-yellow-700 dark:text-yellow-300 mt-0.5">€{costs.toLocaleString(locale)}</p>
                         </div>
                         <div className={`p-4 rounded-2xl border ${deficit > 0 ? 'bg-red-500/10 border-red-500/20' : 'bg-green-500/10 border-green-500/20'}`}>
                             <p className={`text-[10px] font-bold uppercase tracking-wider ${deficit > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>Projected Margin</p>
                             <p className={`text-xl font-black mt-0.5 ${deficit > 0 ? 'text-red-700 dark:text-red-300' : 'text-green-700 dark:text-green-300'}`}>
-                                {deficit > 0 ? `-€${deficit.toLocaleString()}` : `€${remaining.toLocaleString()}`}
+                                {deficit > 0 ? `-€${deficit.toLocaleString(locale)}` : `€${remaining.toLocaleString(locale)}`}
                             </p>
                         </div>
                     </>

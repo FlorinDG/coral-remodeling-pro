@@ -3,7 +3,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars, @next/next/no-img-element */
 
 import React, { useState, useMemo, useRef } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { useDatabaseStore } from '../store';
 import { SelectOption, Page, Property } from '../types';
 import { resolveRelationTarget, resolveRelationTitle } from '@/lib/relations/resolve';
@@ -29,7 +29,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Plus, MoreHorizontal, ChevronRight, ChevronDown, AlertTriangle, User2, Calendar as CalendarIcon, GripHorizontal, Settings2, Image as ImageIcon, LayoutList, Copy, Trash2, Maximize2, FileEdit, ExternalLink, X } from 'lucide-react';
-import { format } from 'date-fns';
+import { formatDayMonth } from '@/lib/format/date';
 import PageModal from '@/components/admin/database/components/PageModal';
 import { useFilteredPages } from '../hooks/useFilteredPages';
 
@@ -266,6 +266,7 @@ function SortableCard({ page, dateProp, priorityProp, coverProp, databaseId, onC
     onClick?: () => void;
     onOpenEditor?: () => void;
 }) {
+    const locale = useLocale();
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ 
         id: page.id,
         data: { type: 'card', page }
@@ -328,7 +329,7 @@ function SortableCard({ page, dateProp, priorityProp, coverProp, databaseId, onC
     let dateStr = '';
     if (dateProp) {
         const dVal = page.properties[dateProp.id] as string;
-        if (dVal) { try { dateStr = format(new Date(dVal), 'MMM d'); } catch { /* */ } }
+        if (dVal) { try { dateStr = formatDayMonth(dVal, locale); } catch { /* */ } }
     }
 
     const handleSaveTitle = () => {

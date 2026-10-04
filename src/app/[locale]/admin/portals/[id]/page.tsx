@@ -10,9 +10,10 @@ import ChatBox from '@/components/portal/ChatBox';
 import ProjectUpdateForm from '@/components/admin/ProjectUpdateForm';
 import PortalSettings from '@/components/admin/PortalSettings';
 import { getTranslations } from 'next-intl/server';
+import { formatDate } from '@/lib/format/date';
 
 export default async function PortalDetailPage({ params }: { params: Promise<{ id: string, locale: string }> }) {
-    const { id } = await params;
+    const { id, locale } = await params;
     const t = await getTranslations('Admin.portals');
 
     const portal = await prisma.clientPortal.findUnique({
@@ -97,7 +98,7 @@ export default async function PortalDetailPage({ params }: { params: Promise<{ i
                                     <div key={update.id} className="relative pl-6 border-l border-white/10 pb-4 last:pb-0">
                                         <div className="absolute left-[-5px] top-1 w-2.5 h-2.5 rounded-full" style={{ backgroundColor: 'var(--brand-color, #d35400)' }} />
                                         <span className="text-[10px] font-mono text-neutral-500 uppercase block mb-1">
-                                            {new Date(update.createdAt).toLocaleDateString()}
+                                            {formatDate(update.createdAt, locale)}
                                         </span>
                                         <h4 className="font-bold text-sm mb-1">{update.title}</h4>
                                         <p className="text-neutral-400 text-xs leading-relaxed">{update.content}</p>

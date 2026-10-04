@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { pricingValue, type PricingRole, type PropDef } from '@/lib/article-pricing';
 import React, { useMemo, useState } from 'react';
 import { Block, BlockType, VariantsConfig } from '@/components/admin/database/types';
 import { useDatabaseStore } from '@/components/admin/database/store';
@@ -203,10 +204,9 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
         const db = getDatabase(entity.databaseId);
         const page = entity.page;
         if (db && page) {
-            const getPropVal = (keywords: string[]) => {
-                const prop = db.properties.find(p => p.name && keywords.some(k => p.name.toLowerCase().includes(k.toLowerCase())));
-                return prop ? page.properties[prop.id] : undefined;
-            };
+            // ONE answer for quote + invoice lines (lib/article-pricing.ts): fixed ids for the articles
+            // database, else typed name matching — the old first-substring guess read LEVERANCIER as the discount.
+            const getPropVal = (role: PricingRole) => pricingValue(db.properties as PropDef[], page.properties as Record<string, unknown>, role);
 
             const parseNumber = (val: any): number | undefined => {
                 if (Array.isArray(val) && val.length > 0) return parseDecimal(val[0]);
@@ -271,12 +271,12 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
 
             } else {
                 // ── STANDARD ARTICLE / OTHER: existing field mapping ────────
-                const rawBruto = getPropVal(['bruto', 'brutoprijs', 'kost', 'prijs', 'price', 'inkoop']);
-                const rawVerkoop = getPropVal(['verkoop', 'selling']);
-                const rawMarge = getPropVal(['marge', 'margin', 'marge stanndard', 'marge standard']);
-                const rawDiscount = getPropVal(['korting', 'discount', 'disc', 'remise', 'lever']);
-                const rawUnit = getPropVal(['eenheid', 'unit', 'maat', 'eeh']);
-                const rawType = getPropVal(['type', 'calculatietype', 'calculationtype']);
+                const rawBruto = getPropVal('bruto');
+                const rawVerkoop = getPropVal('verkoop');
+                const rawMarge = getPropVal('marge');
+                const rawDiscount = getPropVal('discount');
+                const rawUnit = getPropVal('unit');
+                const rawType = getPropVal('type');
 
                 const numBruto = parseNumber(rawBruto);
                 if (numBruto !== undefined) payload.brutoPrice = numBruto;

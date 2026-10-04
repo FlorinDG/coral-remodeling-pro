@@ -8,13 +8,15 @@
  *   notes   → plain text, wraps, never cut    tasks → worker progress (start / done / checklist)
  *   files   → thumbnails; tap opens the shared FileViewer carousel (swipe/arrows), not a new tab
  */
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import {
   MapPin, Phone, Mail, StickyNote, CheckSquare, Paperclip, ChevronRight,
-  FileText, Loader2, Check, Circle, PlayCircle,
+  FileText, Loader2, Check, Circle, PlayCircle, Camera,
 } from 'lucide-react';
+import { uploadFileAction } from '@/app/actions/files';
+import { addShiftFile } from '@/lib/data/shift-files';
 import type { ViewableFile } from '@/components/files/FileViewer';
 import { resolveFileUrl } from '@/lib/files';
 import { describeError } from '@/lib/describe-error';
@@ -47,13 +49,48 @@ interface Props {
   fallbackAddress: string | null;
   title: string;
   userId?: string;
+  /** The brief is still loading — every section shows a placeholder bar at its final height. */
+  loading?: boolean;
   /** The carousel is rendered by the PARENT, outside the dialog: Radix's dialog content is
    *  transformed, which would trap a `fixed` full-screen viewer inside the modal's box. */
   onOpenMedia: (files: ViewableFile[], index: number) => void;
+  /** WO-1 tabs: render one part only. Omitted → everything (the pre-tab layout). */
+  section?: 'info' | 'tasks' | 'files';
+  /** Files tab: the crew may add photos/documents (own, open shift). Called after a successful add. */
+  onFilesAdded?: () => void;
+  canAddFiles?: boolean;
 }
 
-export function ShiftBriefDetails({ shiftId, brief, fallbackAddress, title, userId, onOpenMedia }: Props) {
+export function ShiftBriefDetails({ shiftId, brief, fallbackAddress, title, userId, onOpenMedia, loading = false, section, onFilesAdded, canAddFiles = false }: Props) {
   const { t } = useTranslation();
+  const show = (k: 'info' | 'tasks' | 'files') => !section || section === k;
+  const fileInput = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const addFiles = async (list: FileList | null) => {
+    if (!list?.length) return;
+    setUploading(true);
+    let added = 0;
+    try {
+      for (const file of Array.from(list)) {
+        const fd = new FormData();
+        fd.append('file', file);
+        const up = await uploadFileAction(fd, 'hr-shift', shiftId);
+        if (!up?.success || !up.key) throw new Error(up?.error || 'upload failed');
+        const res = await addShiftFile({ shiftId, key: up.key, name: file.name, type: file.type, size: file.size });
+        if (!res.ok) throw new Error(res.error);
+        added++;
+      }
+      toast.success(t('schedule.filesAdded', { count: added }));
+    } catch (err) {
+      console.error('[ShiftBrief] add file failed:', err);
+      toast.error(`${t('schedule.fileAddFailed')} — ${describeError(err)}`);
+    } finally {
+      setUploading(false);
+      if (fileInput.current) fileInput.current.value = '';
+      if (added) onFilesAdded?.();
+    }
+  };
   const [busyTask, setBusyTask] = useState<string | null>(null);
   const {
     shiftTasks, loading: tasksLoading, error: tasksError,
@@ -90,17 +127,22 @@ export function ShiftBriefDetails({ shiftId, brief, fallbackAddress, title, user
 
   return (
     <div className="space-y-4">
-      {/* ── Where and who ── */}
-      {(address || brief?.contactPhone || brief?.contactEmail) && (
+      {show('info') && (<>
+      {/* ── Where and who — ALWAYS rendered (Florin: placeholders, not elements that pop in and vanish) ── */}
         <div className="space-y-2">
-          {address && mapUrl && (
+          {loading && !address ? <Skeleton /> : !address ? (
+            <div className={`${ROW} text-muted-foreground`}><MapPin className="w-6 h-6 shrink-0 opacity-50" /><span className="text-base">{t('schedule.noAddress')}</span></div>
+          ) : mapUrl && (
             <a href={mapUrl} target="_blank" rel="noopener noreferrer" className={LINK_ROW}>
               <MapPin className="w-6 h-6 text-[var(--persian-green)] shrink-0" />
               <span className="flex-1 min-w-0 text-base font-medium text-foreground break-words">{address}</span>
               <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
             </a>
           )}
-          {brief?.contactPhone && (
+          {loading ? <Skeleton /> : !brief?.contactPhone && !brief?.contactEmail ? (
+            <div className={`${ROW} text-muted-foreground`}><Phone className="w-6 h-6 shrink-0 opacity-50" /><span className="text-base">{t('schedule.noContact')}</span></div>
+          ) : null}
+          {!loading && brief?.contactPhone && (
             <a href={telHref(brief.contactPhone)} className={LINK_ROW}>
               <Phone className="w-6 h-6 text-[var(--persian-green)] shrink-0" />
               <span className="flex-1 min-w-0">
@@ -110,7 +152,7 @@ export function ShiftBriefDetails({ shiftId, brief, fallbackAddress, title, user
               <span className="shrink-0 text-sm font-semibold text-[var(--persian-green)]">{t('schedule.call')}</span>
             </a>
           )}
-          {brief?.contactEmail && (
+          {!loading && brief?.contactEmail && (
             <a href={`mailto:${brief.contactEmail}`} className={LINK_ROW}>
               <Mail className="w-6 h-6 text-[var(--persian-green)] shrink-0" />
               <span className="flex-1 min-w-0 text-base font-medium text-foreground break-all">{brief.contactEmail}</span>
@@ -118,20 +160,21 @@ export function ShiftBriefDetails({ shiftId, brief, fallbackAddress, title, user
             </a>
           )}
         </div>
-      )}
 
-      {/* ── Notes from the planner ── */}
-      {notes && (
+      {/* ── Notes from the planner — always rendered ── */}
         <section className="space-y-2">
           <h3 className={SECTION_LABEL}><StickyNote className="w-4 h-4" />{t('schedule.notes')}</h3>
-          <p className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200/70 dark:border-amber-900/50 text-base text-foreground whitespace-pre-wrap break-words">
-            {notes}
-          </p>
+          {loading ? <Skeleton /> : notes ? (
+            <p className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200/70 dark:border-amber-900/50 text-base text-foreground whitespace-pre-wrap break-words">
+              {notes}
+            </p>
+          ) : <p className="px-1 text-base text-muted-foreground">{t('schedule.noNotes')}</p>}
         </section>
-      )}
 
+      </>)}
+
+      {show('tasks') && (<>
       {/* ── Tasks — the worker reports progress; management closes the task itself ── */}
-      {(tasksLoading || shiftTasks.length > 0 || tasksError) && (
         <section className="space-y-2">
           <h3 className={SECTION_LABEL}>
             <CheckSquare className="w-4 h-4" />{t('schedule.tasks')}
@@ -143,7 +186,9 @@ export function ShiftBriefDetails({ shiftId, brief, fallbackAddress, title, user
           </h3>
           {tasksError && <p className="text-sm text-amber-700 dark:text-amber-300">{tasksError}</p>}
           {tasksLoading && shiftTasks.length === 0 ? (
-            <div className="h-16 rounded-xl bg-muted/60 animate-pulse" />
+            <Skeleton />
+          ) : shiftTasks.length === 0 ? (
+            <p className="px-1 text-base text-muted-foreground">{t('schedule.noTasks')}</p>
           ) : (
             <ul className="space-y-2">
               {shiftTasks.map(st => {
@@ -216,12 +261,27 @@ export function ShiftBriefDetails({ shiftId, brief, fallbackAddress, title, user
             </ul>
           )}
         </section>
-      )}
 
-      {/* ── Attachments — thumbnails, tap to open the carousel ── */}
-      {media.length > 0 && (
+      </>)}
+
+      {show('files') && (<>
+      {/* ── Attachments — always rendered; thumbnails open the carousel ── */}
         <section className="space-y-2">
-          <h3 className={SECTION_LABEL}><Paperclip className="w-4 h-4" />{t('schedule.attachments')} · {media.length}</h3>
+          <h3 className={SECTION_LABEL}><Paperclip className="w-4 h-4" />{t('schedule.attachments')}{media.length > 0 ? ` · ${media.length}` : ''}</h3>
+          {canAddFiles && (
+            <>
+              <input ref={fileInput} type="file" multiple accept="image/*,application/pdf" className="hidden"
+                onChange={e => addFiles(e.target.files)} />
+              <button type="button" disabled={uploading} onClick={() => fileInput.current?.click()}
+                className="w-full h-12 rounded-xl border-2 border-dashed border-[var(--persian-green)] text-[var(--persian-green)] text-base font-semibold inline-flex items-center justify-center gap-2 disabled:opacity-50">
+                {uploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Camera className="w-5 h-5" />}
+                {t('schedule.addFiles')}
+              </button>
+            </>
+          )}
+          {loading ? <Skeleton /> : media.length === 0 ? (
+            <p className="px-1 text-base text-muted-foreground">{t('schedule.noAttachments')}</p>
+          ) : (
           <div className="grid grid-cols-3 gap-2">
             {media.map((m, i) => (
               <button
@@ -244,8 +304,14 @@ export function ShiftBriefDetails({ shiftId, brief, fallbackAddress, title, user
               </button>
             ))}
           </div>
+          )}
         </section>
-      )}
+      </>)}
     </div>
   );
+}
+
+/** A placeholder at the final height of a row — the modal never jumps while the brief loads. */
+function Skeleton() {
+  return <div className="h-[3.25rem] rounded-xl bg-muted/60 animate-pulse" aria-hidden />;
 }

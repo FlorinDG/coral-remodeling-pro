@@ -7,6 +7,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import SearchableSelect from '@/components/ui/SearchableSelect';
+import { CustomDatePicker } from '@/components/ui/CustomDatePicker';
+import { TimeSelect } from '@/components/ui/TimeSelect';
+import { useLocale } from 'next-intl';
+import { localDateKey } from '@/lib/kernel/shift-time';
 
 interface Employee {
     id: string;
@@ -22,6 +27,7 @@ interface Props {
 }
 
 export function ManualEntryModal({ open, onOpenChange, onSuccess }: Props) {
+    const locale = useLocale();
     const [loading, setLoading] = useState(false);
     const [employees, setEmployees] = useState<Employee[]>([]);
     const [projects, setProjects] = useState<any[]>([]);
@@ -37,13 +43,14 @@ export function ManualEntryModal({ open, onOpenChange, onSuccess }: Props) {
 
     useEffect(() => {
         if (open) {
-            setDate(new Date().toISOString().split('T')[0]);
+            setDate(localDateKey(new Date()));   // local date — toISOString() is UTC (yesterday before 02:00)
             
             if (employees.length === 0) {
                 hrList<Employee>('employees').then(data => setEmployees(data)).catch(console.error);
             }
             if (projects.length === 0) {
-                hrList<any>('projects').then(data => setProjects(data)).catch(console.error);
+                // PROJ-SSOT-1: the one project source (was the empty HrProject list → no project to pick).
+                hrList<any>('erp-projects').then(data => setProjects(data)).catch(err => console.error('[ManualEntryModal] projects could not be loaded:', err));
             }
         }
     }, [open]);
@@ -54,8 +61,13 @@ export function ManualEntryModal({ open, onOpenChange, onSuccess }: Props) {
         
         setLoading(true);
         try {
-            const clockInTime = new Date(`${date}T${startTime}:00`).toISOString();
-            const clockOutTime = new Date(`${date}T${endTime}:00`).toISOString();
+            // An end at or before the start is the NEXT day (night work: 22:00 → 02:00) — it was
+            // stored with a negative duration.
+            const inAt = new Date(`${date}T${startTime}:00`);
+            const outAt = new Date(`${date}T${endTime}:00`);
+            if (outAt.getTime() <= inAt.getTime()) outAt.setDate(outAt.getDate() + 1);
+            const clockInTime = inAt.toISOString();
+            const clockOutTime = outAt.toISOString();
             
             await hrCreate('clock-entries', {
                 userId,
@@ -113,34 +125,30 @@ export function ManualEntryModal({ open, onOpenChange, onSuccess }: Props) {
 
                     <div className="space-y-2">
                         <Label>Project (Optioneel)</Label>
-                        <Select value={projectId} onValueChange={setProjectId}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Selecteer een project" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="none">— Geen project —</SelectItem>
-                                {projects.map(proj => (
-                                    <SelectItem key={proj.id} value={proj.id}>
-                                        {proj.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                        {/* HR-TS-8: searchable — the same erp-projects list as the filter bar */}
+                        <SearchableSelect
+                            value={projectId || 'none'}
+                            onChange={setProjectId}
+                            placeholder="Selecteer een project"
+                            searchPlaceholder="Zoek project…"
+                            options={[{ value: 'none', label: '— Geen project —' }, ...projects.map(p => ({ value: p.id, label: p.name }))]}
+                        />
                     </div>
                     
                     <div className="space-y-2">
                         <Label>Datum</Label>
-                        <Input type="date" value={date} onChange={e => setDate(e.target.value)} required />
+                        {/* Belgian, Monday-first — a native date input follows the browser's region */}
+                        <CustomDatePicker value={date} onChange={setDate} locale={locale} clearable={false} triggerClassName="w-full" />
                     </div>
                     
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label>Starttijd</Label>
-                            <Input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} required />
+                            <TimeSelect value={startTime} onChange={setStartTime} minuteStep={5} ariaLabel="Starttijd" />
                         </div>
                         <div className="space-y-2">
                             <Label>Eindtijd</Label>
-                            <Input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} required />
+                            <TimeSelect value={endTime} onChange={setEndTime} minuteStep={5} ariaLabel="Eindtijd" />
                         </div>
                     </div>
                     

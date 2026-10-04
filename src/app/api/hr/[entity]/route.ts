@@ -17,12 +17,21 @@ import { buildAuditLogData, buildAuditLogOperation } from '@/lib/audit';
 import { resolveReach } from '../lib/actor-reach';
 import { hrWriteRefusal } from '../lib/write-policy';
 import { describeError } from '@/lib/describe-error';
-import { isShiftSubmitted, zonedParts } from '@/lib/kernel/shift-time';
+import { isShiftSubmitted } from '@/lib/kernel/shift-time';
+import { resolveProjects, projectNameMap } from '@/lib/data/projects';
 import crypto from 'crypto';
 import { Resend } from 'resend';
 import React from 'react';
 import InvitationEmail from '@/emails/InvitationEmail';
 import { syncSeatQuantities } from '@/lib/stripe';
+import { autoLinkIfUnique } from '@/lib/data/entry-shift-match';
+import { shiftTaskIdsFor } from '@/lib/data/task-reach';
+import { parseScope, seriesData, seriesWhere } from '@/lib/data/shift-series';
+import { isShiftSigned, SIGNED_REFUSAL } from '@/lib/data/work-order-lock';
+import { recordClockPlace } from '@/lib/data/geo';
+import { after } from 'next/server';
+import type { Prisma } from '@prisma/client';
+import { isTenantHrRole, isTenantTopRole } from '@/lib/roles';
 
 const resend = new Resend(process.env.RESEND_API_KEY || 're_dummy_fallback');
 
@@ -109,6 +118,43 @@ function hrWriteGate(
     const refusal = hrWriteRefusal(entity, method, mayApprove, actorId, data, existing);
     if (!refusal) return null;
     return NextResponse.json({ error: refusal.detail ? `${refusal.code}: ${refusal.detail}` : refusal.code }, { status: 403 });
+}
+
+/**
+ * WO-3 / WB-D · the lock. Which shift does this write touch? A signed work order is closed for
+ * EVERY role — no unlock exists. Returns a 409 naming the refusal, or null.
+ */
+async function signedRefusal(
+    tenantId: string, entity: string, id: string | null, data: Record<string, unknown>,
+): Promise<NextResponse | null> {
+    const touched = new Set<string>();
+    if (entity === 'shifts' && id) touched.add(id);
+    if (entity === 'clock-entries' || entity === 'shift-tasks' || entity === 'shift-attachments') {
+        if (typeof data.shiftId === 'string' && data.shiftId) touched.add(data.shiftId);   // moving INTO / creating on
+        if (id) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const row = await (getModel(entity) as any)?.findUnique({ where: { id }, select: { shiftId: true } });
+            if (row?.shiftId) touched.add(row.shiftId);                                      // already ON
+        }
+    }
+    for (const shiftId of touched) {
+        if (await isShiftSigned(tenantId, shiftId)) {
+            return NextResponse.json({ error: `${SIGNED_REFUSAL}: the client signed this work order — it can no longer be changed` }, { status: 409 });
+        }
+    }
+    return null;
+}
+
+/** A series action never reaches a signed shift. */
+async function withoutSigned(tenantId: string, where: Prisma.ScheduledShiftWhereInput | null): Promise<Prisma.ScheduledShiftWhereInput | null> {
+    if (!where) return null;
+    const ids = (await prisma.scheduledShift.findMany({ where, select: { id: true } })).map(r => r.id);
+    if (!ids.length) return where;
+    const signed = await prisma.auditLog.findMany({
+        where: { tenantId, entityType: 'shift', action: 'sign', entityId: { in: ids } },
+        select: { entityId: true },
+    });
+    return signed.length ? { AND: [where, { id: { notIn: signed.map(r => r.entityId) } }] } : where;
 }
 
 // ── GET ────────────────────────────────────────────────────────────────────
@@ -207,58 +253,19 @@ export async function GET(
             const locked = (tenant?.lockedDbIds as Record<string, string>) || {};
 
             if (entity === 'erp-projects') {
-                const projectDbId = locked['projects'] || 'db-1';
-
-                let projectWhere: any = { databaseId: projectDbId, database: { tenantId: ctx.tenantId } };
-                let internalProjectWhere: any = { tenantId: ctx.tenantId };
-
+                // PROJ-SSOT-1: the ONE resolver (lib/data/projects.ts). The non-admin filter stays
+                // HERE, with the caller's reach — the resolver never widens or narrows on its own.
+                let onlyIds: string[] | undefined;
                 if (!isAdminRole) {
                     const accessibleIds = Array.from(reach.userIds ?? []);
                     const shifts = await prisma.scheduledShift.findMany({
                         where: { userId: { in: accessibleIds }, tenantId: ctx.tenantId },
                         select: { projectId: true }
                     });
-                    const allowedProjectIds = Array.from(new Set(shifts.map(s => s.projectId).filter(Boolean))) as string[];
-                    projectWhere.id = { in: allowedProjectIds };
-                    internalProjectWhere.id = { in: allowedProjectIds };
+                    onlyIds = Array.from(new Set(shifts.map(s => s.projectId).filter(Boolean))) as string[];
                 }
-
-                // Fetch from GlobalPage (Dynamic DB)
-                const dynamicProjects = await prisma.globalPage.findMany({
-                    where: projectWhere,
-                    select: { id: true, properties: true, createdAt: true }
-                });
-
-                // Fetch from InternalProject (Specialized Model)
-                const internalProjects = await prisma.internalProject.findMany({
-                    where: internalProjectWhere,
-                    select: { id: true, name: true, projectCode: true, createdAt: true }
-                });
-
-                // Merge
-                const merged = [
-                    ...dynamicProjects.map(p => {
-                        const props = p.properties as Record<string, unknown>;
-                        const loc = props['location'] as { address?: string; lat?: number; lng?: number } | undefined;
-                        return {
-                            id: p.id,
-                            name: String(props?.title || props?.name || 'Untitled'),
-                            address: loc?.address || null,
-                            latitude: loc?.lat || null,
-                            longitude: loc?.lng || null,
-                            source: 'dynamic',
-                            createdAt: p.createdAt,
-                        };
-                    }),
-                    ...internalProjects.map(p => ({
-                        id: p.id,
-                        name: `${p.projectCode}: ${p.name}`,
-                        source: 'internal',
-                        createdAt: p.createdAt,
-                    }))
-                ];
-
-                return NextResponse.json(merged);
+                const projects = await resolveProjects(ctx.tenantId, onlyIds ? { onlyIds } : undefined);
+                return NextResponse.json(projects);
             }
 
             if (entity === 'erp-tasks') {
@@ -267,7 +274,8 @@ export async function GET(
                 // Scope filter: admin/accountant roles see all tasks.
                 // Employee/workforce role sees only tasks assigned to or created by them.
                 // Mirrors the ASSIGNED_AND_OWN rule in access-control.ts.
-                const isAdminRole = ['TENANT_ADMIN', 'SUPERADMIN', 'ACCOUNTANT'].includes(ctx.role);
+                // Office roles see all tasks (owners were filtered like crew — isTenantHrRole is the one list).
+                const isAdminRole = isTenantHrRole(ctx.role) || ctx.role === 'ACCOUNTANT';
                 const pageWhere: Record<string, unknown> = {
                     databaseId: tasksDbId,
                     database: { tenantId: ctx.tenantId },
@@ -278,6 +286,8 @@ export async function GET(
                     pageWhere.OR = [
                         { assignedTo: { hasSome: accessibleIds } },
                         { createdBy: { in: accessibleIds } },
+                        // a task the office put on one of their shifts is theirs too (task-reach.ts)
+                        { id: { in: await shiftTaskIdsFor(ctx.tenantId, accessibleIds) } },
                     ];
                 }
 
@@ -405,18 +415,12 @@ export async function GET(
             if (entity === 'shifts') {
                 const projectIds = [...new Set(records.map((r: any) => r.projectId).filter(Boolean))] as string[];
                 if (projectIds.length > 0) {
-                    const projects = await prisma.hrProject.findMany({
-                        where: { id: { in: projectIds } },
-                        select: { id: true, name: true }
-                    });
-                    const projectMap = new Map(projects.map((p: any) => [p.id, p.name]));
-                    records = records.map((r: any) => {
-                        let projectName = (r.projectId ? projectMap.get(r.projectId) : undefined) as string | undefined;
-                        if (projectName && projectName.startsWith('[ERP] ')) {
-                            projectName = projectName.replace('[ERP] ', '');
-                        }
-                        return { ...r, projectName };
-                    });
+                    // PROJ-SSOT-1: names from the one resolver (was HrProject — empty, and unscoped by tenant).
+                    const projectMap = await projectNameMap(ctx.tenantId, projectIds);
+                    records = records.map((r: any) => ({
+                        ...r,
+                        projectName: r.projectId ? projectMap.get(r.projectId) : undefined,
+                    }));
                 }
             }
 
@@ -504,6 +508,8 @@ export async function POST(
     const writeReach = await resolveReach(ctx);
     const gate2 = hrWriteGate(entity, 'POST', writeReach.mayApprove, ctx.userId, data, null);
     if (gate2) return gate2;
+    const locked = await signedRefusal(ctx.tenantId, entity, null, data);
+    if (locked) return locked;
     if (entity === 'shifts') {
         const bad = await contactPageRefusal(ctx.tenantId, data);
         if (bad) return bad;
@@ -511,6 +517,8 @@ export async function POST(
     if (entity === 'clock-entries') {
         // Facts the server records about an act — never values a client supplies (any role).
         delete data.approvedBy;
+        // TS-INV-1: invoiced is set ONLY by markHoursInvoiced / unmarkHoursInvoiced (audited)
+        delete data.invoicedAt; delete data.invoicedBy; delete data.invoiceRef;
         delete data.approvedAt;
         delete data.editedAfterApproval;
         delete data.costRateApplied;
@@ -653,6 +661,24 @@ export async function POST(
         const record = await model.create({ data });
 
         // ── POST Automations ───────────────────────────────────────────
+        // GEO-1: where the clock-in happened (address + distance to site) — after the response,
+        // never delaying or blocking the clock event.
+        if (entity === 'clock-entries' && (record as { clockInLatitude?: number | null }).clockInLatitude != null) {
+            const entryId = (record as { id: string }).id;
+            after(() => recordClockPlace(ctx.tenantId, entryId, 'in'));
+        }
+        // SHIFT-LINK-1: a RECORDED entry (manual / late, has clockOutTime) with no shift is linked when
+        // exactly one of the worker's shifts that day overlaps it. Live clock-ins without a shift are a
+        // deliberate choice and stay unlinked. Ambiguous → surfaced in the review, never guessed.
+        if (entity === 'clock-entries' && !(record as { shiftId?: string | null }).shiftId && (record as { clockOutTime?: Date | null }).clockOutTime) {
+            try {
+                const linked = await autoLinkIfUnique((record as { id: string }).id, { tenantId: ctx.tenantId, userId: ctx.userId });
+                if (linked) (record as { shiftId?: string }).shiftId = linked;
+            } catch (err) {
+                console.error('[HR API] SHIFT-LINK-1 auto-link failed:', err);
+                warnings.push('shift_link_failed');
+            }
+        }
         // Clock-in with shiftId → set shift status to 'in-progress' (HRA-2)
         if (entity === 'clock-entries' && parentShift && (record as { shiftId?: string }).shiftId) {
             try {
@@ -765,6 +791,12 @@ export async function PATCH(
     const data = sanitize(body);
     const warnings: string[] = [];
 
+    // ── WO-3 · a signed work order is closed for every role ──
+    {
+        const locked = await signedRefusal(ctx.tenantId, entity, id, data);
+        if (locked) return locked;
+    }
+
     // ── GATE 2 · WRITE POLICY (PATCH) ──
     if (entity === 'shifts') {
         const bad = await contactPageRefusal(ctx.tenantId, data);
@@ -782,6 +814,8 @@ export async function PATCH(
     if (entity === 'clock-entries') {
         // Server-recorded facts — the approval branch below stamps approvedBy/approvedAt itself.
         delete data.approvedBy;
+        // TS-INV-1: invoiced is set ONLY by markHoursInvoiced / unmarkHoursInvoiced (audited)
+        delete data.invoicedAt; delete data.invoicedBy; delete data.invoiceRef;
         delete data.approvedAt;
         delete data.costRateApplied;
         // CE-TIME-1: a crew member closing their own entry clocks out NOW (server time).
@@ -793,6 +827,7 @@ export async function PATCH(
 
     try {
         let record;
+    let seriesCount: number | null = null;   // SCH-8: other shifts changed by a series edit
 
         // --- CLOCK ENTRIES INTERCEPT: Audit and Edit Guard ---
         if (entity === 'clock-entries') {
@@ -801,13 +836,27 @@ export async function PATCH(
                 return NextResponse.json({ error: 'Not found' }, { status: 404 });
             }
 
-            // Edit Guard check
+            // TS-INV-1: invoiced hours stay approved and billable — unmark them first (with a reason).
+            if (existingEntry.invoicedAt) {
+                if (('approvalStatus' in data && data.approvalStatus !== 'approved') || ('billable' in data && data.billable === false)) {
+                    return NextResponse.json({ error: 'invoiced: these hours are on an invoice — unmark them first' }, { status: 409 });
+                }
+            }
+
+            // Edit Guard — approved hours: a written reason ALWAYS (it goes into the audit trail), and
+            // either the time-limited unlock or the tenant owner (Florin 2026-10-02: the highest authority
+            // is never locked out of a bon it approved).
+            const editReason = typeof data.editReason === 'string' ? data.editReason.trim().slice(0, 1000) : '';
+            delete data.editReason;
             if (existingEntry.approvalStatus === 'approved') {
                 const isForceClockOut = !existingEntry.clockOutTime && data.clockOutTime;
                 if (!isForceClockOut) {
                     const isUnlocked = await verifyUnlockCookie(ctx.tenantId, ctx.userId);
-                    if (!isUnlocked) {
+                    if (!isUnlocked && !isTenantTopRole(ctx.role)) {
                         return NextResponse.json({ error: 'Editing approved entries requires unlock' }, { status: 403 });
+                    }
+                    if (editReason.length < 3) {
+                        return NextResponse.json({ error: 'edit_reason_required: say why approved hours are changed' }, { status: 400 });
                     }
                     data.editedAfterApproval = true;
                 }
@@ -842,7 +891,7 @@ export async function PATCH(
                 action: auditAction,
                 before: existingEntry,
                 after: { ...existingEntry, ...data, ...(data.source ? { source: data.source } : {}) },
-                reason: data.editedAfterApproval ? 'edited-after-approval' : null,
+                reason: data.editedAfterApproval ? `edited-after-approval: ${editReason}` : (editReason || null),
             });
             const auditOp = buildAuditLogOperation(prisma, auditData);
 
@@ -853,10 +902,31 @@ export async function PATCH(
             ]);
             record = updated;
         } else {
-            record = await model.update({ where: { id }, data });
+            // SCH-8: "this and following" / "all in series" — the other shifts first, in ONE statement.
+            const scope = entity === 'shifts' ? parseScope(url.searchParams.get('scope')) : 'occurrence';
+            if (scope !== 'occurrence') {
+                if (!patchReach.mayApprove) return NextResponse.json({ error: 'forbidden: series edits are for planners' }, { status: 403 });
+                const anchor = await prisma.scheduledShift.findFirst({ where: { id, tenantId: ctx.tenantId }, select: { id: true, seriesId: true, shiftDate: true } });
+                const where = anchor ? await withoutSigned(ctx.tenantId, seriesWhere(ctx.tenantId, anchor, scope)) : null;
+                const fields = seriesData(data);
+                if (where && Object.keys(fields).length) {
+                    // ONE transaction: the series and the edited shift change together or not at all.
+                    const [res, anchorRow] = await prisma.$transaction([
+                        prisma.scheduledShift.updateMany({ where, data: { ...fields, lastEditedBy: ctx.userId } }),
+                        prisma.scheduledShift.update({ where: { id }, data: data as Prisma.ScheduledShiftUncheckedUpdateInput }),
+                    ]);
+                    seriesCount = res.count;
+                    record = anchorRow;
+                }
+            }
+            if (record === undefined) record = await model.update({ where: { id }, data });
         }
 
         // ── PATCH Automations ──────────────────────────────────────────
+        // GEO-1: the clock-out's place, recorded after the response.
+        if (entity === 'clock-entries' && data.clockOutLatitude != null) {
+            after(() => recordClockPlace(ctx.tenantId, id, 'out'));
+        }
         // Approval / rejection of clock entry requests (late_entry, manual_hours)
         if (entity === 'approval-requests' && (data.status === 'approved' || data.status === 'rejected')) {
             try {
@@ -892,29 +962,7 @@ export async function PATCH(
                                 projectId: reqData.projectId || null,
                             }
                         });
-                        if (reqData.projectId) {
-                            // Wall-clock parts in the business zone (was UTC via toISOString — 2h early).
-                            const inLocal = zonedParts(reqData.clockInTime);
-                            const shiftDate = inLocal.date;
-                            const shiftStart = inLocal.time;
-                            const shiftEnd = zonedParts(reqData.clockOutTime).time;
-                            const shift = await prisma.scheduledShift.create({
-                                data: {
-                                    tenantId: approval.tenantId,
-                                    userId: approval.userId,
-                                    projectId: reqData.projectId,
-                                    shiftDate,
-                                    shiftStart,
-                                    shiftEnd,
-                                    // not 'completed': only the crew member's submit completes a shift
-                                    createdBy: approval.reviewedBy || ctx.userId,
-                                }
-                            });
-                            await prisma.clockEntry.update({
-                                where: { id: entry.id },
-                                data: { shiftId: shift.id }
-                            });
-                        }
+                        // NO ad-hoc shifts (Florin 2026-10-04): the entry keeps its project; no shift is invented.
                     }
                 }
             } catch (err) {
@@ -929,8 +977,9 @@ export async function PATCH(
         // (Removed 2026-09-30: finishing every shift task no longer completes the shift — only the
         //  crew member's submit does.)
 
+        const withCount = seriesCount !== null ? { ...(record as object), seriesUpdated: seriesCount + 1 } : record;
         return NextResponse.json(
-            warnings.length > 0 ? { ...(typeof record === 'object' && record !== null ? record : {}), warnings } : record
+            warnings.length > 0 ? { ...(typeof withCount === 'object' && withCount !== null ? withCount : {}), warnings } : withCount
         );
     } catch (error: unknown) {
         console.error(`[HR API] PATCH ${entity} error:`, error);
@@ -992,12 +1041,43 @@ export async function DELETE(
         return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
 
+    // ── WO-3 · a signed work order is closed for every role ──
+    {
+        const locked = await signedRefusal(ctx.tenantId, entity, id, {});
+        if (locked) return locked;
+    }
+
     // ── GATE 2 · WRITE POLICY (DELETE) ──
+    if (entity === 'clock-entries') {
+        const row = await prisma.clockEntry.findFirst({ where: { id, tenantId: ctx.tenantId }, select: { invoicedAt: true } });
+        if (row?.invoicedAt) return NextResponse.json({ error: 'invoiced: these hours are on an invoice — unmark them first' }, { status: 409 });
+    }
     const deleteReach = await resolveReach(ctx);
     const gate2 = hrWriteGate(entity, 'DELETE', deleteReach.mayApprove, ctx.userId, {}, null);
     if (gate2) return gate2;
 
     try {
+        // SCH-8: "this and following" / "all in series" — one statement; a shift that already has
+        // hours on it is never deleted by a series action (it is kept and counted).
+        const scope = entity === 'shifts' ? parseScope(url.searchParams.get('scope')) : 'occurrence';
+        if (scope !== 'occurrence') {
+            if (!deleteReach.mayApprove) return NextResponse.json({ error: 'forbidden: series deletes are for planners' }, { status: 403 });
+            const anchor = await prisma.scheduledShift.findFirst({ where: { id, tenantId: ctx.tenantId }, select: { id: true, seriesId: true, shiftDate: true } });
+            const where = anchor ? await withoutSigned(ctx.tenantId, seriesWhere(ctx.tenantId, anchor, scope)) : null;
+            let deleted = 0, kept = 0;
+            if (where) {
+                // ONE transaction: the series and the shift itself are deleted together or not at all.
+                const [res, withHours] = await prisma.$transaction([
+                    prisma.scheduledShift.deleteMany({ where: { ...where, clockEntries: { none: {} } } }),
+                    prisma.scheduledShift.count({ where }),
+                    prisma.scheduledShift.delete({ where: { id } }),
+                ]);
+                deleted = res.count; kept = withHours;
+            } else {
+                await model.delete({ where: { id } });
+            }
+            return NextResponse.json({ success: true, seriesDeleted: deleted + 1, seriesKept: kept });
+        }
         await model.delete({ where: { id } });
         return NextResponse.json({ success: true });
     } catch (error: unknown) {

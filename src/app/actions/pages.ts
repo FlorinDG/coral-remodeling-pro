@@ -8,7 +8,9 @@ import { Prisma } from '@prisma/client';
 import { Page, PropertyValue } from '@/components/admin/database/types';
 import { generateOGM } from '@/lib/ogm';
 import { checkExportLock } from '@/lib/records/export-lock';
+import { checkDocumentLock } from '@/lib/records/document-lock';
 import { SYSTEM_DATABASES, BASE_TO_KEY, SystemDatabaseRole } from '@/lib/kernel/system-databases';
+import { systemDatabaseEntitled } from '@/lib/kernel/system-schema-entitlement';
 import { systemDatabaseId } from '@/lib/data/system-databases';
 import { describeError } from '@/lib/describe-error';
 
@@ -67,17 +69,18 @@ export async function createPageServerFirst(
         }
     }
 
-    // Module-level authorization — enforced server-side regardless of UI state.
-    // A FREE tenant calling this directly for an INVOICING/CRM database gets denied.
+    // Module-level authorization — enforced server-side regardless of UI state. ONE rule for every system
+    // database (systemDatabaseEntitled — the same the column reconcile reads). ENT-6: before 2026-10-04 eight
+    // roles had no gate, so a FREE tenant could create projects, tasks, articles, CRM, bestek and HR rows.
     const requiredModule = role ? SYSTEM_DATABASES[role]?.module : null;
-    if (requiredModule) {
+    if (role && requiredModule) {
         const tenant = await prisma.tenant.findUnique({
             where: { id: tenantId },
             select: { activeModules: true, planType: true },
         });
         const sessionRole = session?.user?.role;
         const isSuperadmin = sessionRole ? ['SUPERADMIN', 'PLATFORM_ADMIN'].includes(sessionRole) : false;
-        if (!isSuperadmin && !tenant?.activeModules.includes(requiredModule)) {
+        if (!isSuperadmin && !systemDatabaseEntitled(role, tenant?.planType, tenant?.activeModules ?? [])) {
             return {
                 success: false,
                 error: `Access denied — module '${requiredModule}' is not active on your plan.`,
@@ -203,19 +206,22 @@ export async function updatePageServerFirst(
             if (prop.id && prop.name) propertyLabels[prop.id] = prop.name;
         }
 
-        const violation = checkExportLock(
+        const exportViolation = checkExportLock(
             existing.properties,
             properties as Record<string, unknown>,
             relationPropertyIds,
             existing.blocks,
             undefined
         );
+        const documentViolation = exportViolation ? null : checkDocumentLock(   // DOC-LOCK-1
+            existing.database.logicalKey, existing.properties, properties as Record<string, unknown>, existing.blocks, undefined);
+        const violation = exportViolation ?? documentViolation;
         if (violation) {
             const docTitle = String((existing.properties as any)?.title || (properties as any)?.title || '');
             return {
                 success: false,
-                error: '[ExportLocked]',
-                errorCode: 'EXPORT_LOCKED',
+                error: documentViolation ? '[DocumentLocked]' : '[ExportLocked]',
+                errorCode: documentViolation ? 'DOCUMENT_LOCKED' : 'EXPORT_LOCKED',
                 blockedFields: violation.blockedFields,
                 docTitle,
                 propertyLabels
@@ -252,8 +258,10 @@ export async function updatePageServerFirst(
             databaseId: saved.databaseId,
             properties: saved.properties as Record<string, PropertyValue>,
             order: saved.order ?? 0,
-            blocks: [],
-            blocksVersion: 1,
+            // R2-1-FABRICATED-PAGE: the row's REAL blocks and version — a hard-coded [] / 1 here wiped the
+            // document's lines in any store that adopted this page (Peppol send, receipt scan) and reset OCC.
+            blocks: (Array.isArray(saved.blocks) ? saved.blocks : []) as unknown as Page['blocks'],
+            blocksVersion: saved.blocksVersion,
             createdAt: saved.createdAt.toISOString(),
             updatedAt: saved.updatedAt.toISOString(),
             createdBy: saved.createdBy,

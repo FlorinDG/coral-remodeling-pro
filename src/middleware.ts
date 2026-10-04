@@ -413,5 +413,5 @@ export default async function middleware(req: NextRequest) {
 }
 
 export const config = {
-    matcher: ['/((?!api|_next/static|_next/image|images|branding|sitemap.xml|robots.txt|favicon.ico|icon.svg|apple-touch-icon.png|manifest.json|manifest-workhub.json|manifest-mobile.json|sw.js|sw-workhub.js).*)'],
+    matcher: ['/((?!api|_next/static|_next/image|images|fonts|branding|sitemap.xml|robots.txt|favicon.ico|icon.svg|apple-touch-icon.png|manifest.json|manifest-workhub.json|manifest-mobile.json|sw.js|sw-workhub.js).*)'],
 };

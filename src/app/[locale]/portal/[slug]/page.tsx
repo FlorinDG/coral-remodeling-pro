@@ -7,11 +7,13 @@ import MediaManager from '@/components/portal/MediaManager';
 import ChatBox from '@/components/portal/ChatBox';
 import Logo from '@/components/Logo';
 import PortalLogin from '@/components/portal/PortalLogin';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
+import { formatDate } from '@/lib/format/date';
 import { useState, useEffect } from 'react';
 
 export default function PortalPage({ params: paramsPromise }: { params: Promise<{ slug: string, locale: string }> }) {
     const t = useTranslations('Portal');
+    const locale = useLocale();
     const [portal, setPortal] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -130,11 +132,11 @@ export default function PortalPage({ params: paramsPromise }: { params: Promise<
                                             <div className="flex justify-between mt-3 px-1">
                                                 <div className="flex flex-col">
                                                     <span className="text-[8px] font-bold text-neutral-400 uppercase tracking-widest">Received</span>
-                                                    <span className="text-sm font-bold text-neutral-900 dark:text-white">€{displayPaid.toLocaleString()}</span>
+                                                    <span className="text-sm font-bold text-neutral-900 dark:text-white">€{displayPaid.toLocaleString(locale)}</span>
                                                 </div>
                                                 <div className="flex flex-col items-end">
                                                     <span className="text-[8px] font-bold text-neutral-400 uppercase tracking-widest">Total Budget</span>
-                                                    <span className="text-sm font-bold text-neutral-500">€{displayBudget.toLocaleString()}</span>
+                                                    <span className="text-sm font-bold text-neutral-500">€{displayBudget.toLocaleString(locale)}</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -160,7 +162,7 @@ export default function PortalPage({ params: paramsPromise }: { params: Promise<
                                                 <div className="absolute left-[-5px] top-1.5 w-2.5 h-2.5 bg-[#d75d00] rounded-full ring-4 ring-[#d75d00]/10 transition-transform group-hover:scale-125" />
                                                 <div className="flex justify-between items-start mb-2">
                                                     <h4 className="font-bold text-neutral-900 dark:text-white group-hover:text-[#d75d00] transition-colors">{update.title}</h4>
-                                                    <span className="text-[10px] font-mono text-neutral-400 uppercase">{new Date(update.createdAt).toLocaleDateString()}</span>
+                                                    <span className="text-[10px] font-mono text-neutral-400 uppercase">{formatDate(update.createdAt, locale)}</span>
                                                 </div>
                                                 <p className="text-neutral-600 dark:text-neutral-400 text-sm leading-relaxed break-words">{update.content}</p>
                                             </div>

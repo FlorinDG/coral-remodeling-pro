@@ -1,7 +1,6 @@
 "use client";
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { hrList, hrCreate, hrUpdate, hrDelete } from '@/lib/hr-api';
-import { useDatabaseStore } from '@/components/admin/database/store';
 import { useUserRoles } from '@/components/time-tracker/hooks/useUserRoles';
 import { pickShiftNow, localDateKey, isShiftSubmitted } from '@/lib/kernel/shift-time';
 
@@ -113,8 +112,25 @@ export function useScheduledShifts() {
 
   const canManage = isAdmin || isManager;
 
-  const fetchAll = useCallback(async () => {
-    setLoading(true);
+  // The project list, readable from the save callbacks: a saved shift is re-joined to its project so
+  // the scheduler shows the new project at once (it kept the old one until a reload — Florin 2026-10-01).
+  const projectsRef = useRef<Project[]>([]);
+  projectsRef.current = projects;
+  const withProject = useCallback((s: ScheduledShift): ScheduledShift => {
+    const pid = s.projectId ?? null;
+    const project = pid ? projectsRef.current.find(p => p.id === pid) || null : null;
+    return { ...s, project, projectName: project?.name } as ScheduledShift;
+  }, []);
+
+  // Every local change (create / update / delete) bumps this. A reload that STARTED before a change
+  // carries the old list — applying it put a just-deleted shift back on screen until a refresh
+  // (Florin 2026-10-02). Such a reload is discarded and run again.
+  const mutationSeq = useRef(0);
+
+  /** `silent`: refresh without the loading state (no flash) — used when the tab regains focus. */
+  const fetchAll = useCallback(async (silent = false): Promise<void> => {
+    const startedAt = mutationSeq.current;
+    if (!silent) setLoading(true);
     const withTimeout = <T>(p: Promise<T>, ms = 9000, name: string): Promise<T> =>
       Promise.race([
         p,
@@ -123,17 +139,21 @@ export function useScheduledShifts() {
 
     const results = await Promise.allSettled([
       withTimeout(hrList<ScheduledShift>('shifts'), 9000, 'shifts'),
-      withTimeout(hrList<Project>('projects'), 9000, 'projects'),
+      // PROJ-SSOT-1: the HrProject list ('projects') is gone — one project source, one fewer call to fail.
       withTimeout(hrList<{ id: string; name: string; address?: string; latitude?: number; longitude?: number }>('erp-projects'), 9000, 'erp-projects'),
       withTimeout(hrList<{ id: string; userId?: string | null; firstName: string; lastName: string }>('employees'), 9000, 'employees'),
       withTimeout(hrList<any>('time-off'), 9000, 'time-off'),
     ]);
 
-    const [shiftsRes, projectsRes, erpProjectsRes, employeesRes] = results;
+    const [shiftsRes, erpProjectsRes, employeesRes] = results;
+    if (mutationSeq.current !== startedAt) {
+      // A change landed while this reload was on the wire — its list is stale.
+      return fetchAll(true);
+    }
 
     const currentErrors: Record<string, Error> = {};
     const failed: string[] = [];
-    const endpointNames = ['shifts', 'projects', 'erp-projects', 'employees', 'time-off'] as const;
+    const endpointNames = ['shifts', 'erp-projects', 'employees', 'time-off'] as const;
 
     results.forEach((res, i) => {
       if (res.status === 'rejected') {
@@ -155,12 +175,11 @@ export function useScheduledShifts() {
     }
 
     // Projects: graceful degradation
-    const projectsData: Project[] = projectsRes.status === 'fulfilled' ? projectsRes.value : [];
     const erpProjectsData = erpProjectsRes.status === 'fulfilled' ? erpProjectsRes.value : [];
 
     const normalizedErpProjects: Project[] = erpProjectsData.map(p => ({
       id: p.id,
-      name: `[ERP] ${p.name}`,
+      name: p.name,   // PROJ-SSOT-1: no "[ERP] " prefix — there is one kind of project
       address: p.address || null,
       latitude: p.latitude || null,
       longitude: p.longitude || null,
@@ -171,7 +190,7 @@ export function useScheduledShifts() {
       isErp: true,
     }));
 
-    const allProjects = [...projectsData, ...normalizedErpProjects];
+    const allProjects = normalizedErpProjects;
     const projectMap = new Map(allProjects.map(p => [p.id, p]));
 
     // Employees lookup: graceful degradation
@@ -204,6 +223,20 @@ export function useScheduledShifts() {
     fetchAll();
   }, [fetchAll]);
 
+  // Another screen (the WorkHub, another tab, a colleague) may have changed shifts: refresh quietly
+  // when this tab comes back into view, instead of waiting for a manual reload.
+  useEffect(() => {
+    let last = Date.now();
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible' || Date.now() - last < 15_000) return;
+      last = Date.now();
+      void fetchAll(true);
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', onVisible);
+    return () => { document.removeEventListener('visibilitychange', onVisible); window.removeEventListener('focus', onVisible); };
+  }, [fetchAll]);
+
   // Legacy alias
   const shifts = rawShifts;
 
@@ -217,17 +250,20 @@ export function useScheduledShifts() {
     if ('shift_name' in data) { if (!data.shiftName) normalized.shiftName = data.shift_name; delete normalized.shift_name; }
     if ('project_id' in data) { if (!data.projectId) normalized.projectId = data.project_id; delete normalized.project_id; }
 
+    mutationSeq.current++;
     try {
       const shift = await hrCreate<ScheduledShift>('shifts', normalized);
-      setRawShifts(prev => [addSnakeCase(shift), ...prev]);
+      setRawShifts(prev => [addSnakeCase(withProject(shift)), ...prev]);
       // Removed void fetchAll() to prevent matrix flash
       return { data: addSnakeCase(shift), error: null };
     } catch (err: any) {
       return { data: null, error: err };
     }
-  }, [fetchAll]);
+  }, [withProject, fetchAll]);
 
-  const updateShift = useCallback(async (id: string, data: Partial<ScheduledShift>) => {
+  /** `scope` (SCH-8): 'following' | 'series' are applied by the SERVER in one statement; the
+   *  screen then reloads, and `seriesUpdated` says how many shifts changed. */
+  const updateShift = useCallback(async (id: string, data: Partial<ScheduledShift>, scope?: 'occurrence' | 'following' | 'series') => {
     const normalized: Record<string, any> = { ...data };
     if ('user_id' in data) { if (!data.userId) normalized.userId = data.user_id; delete normalized.user_id; }
     if ('shift_date' in data) { if (!data.shiftDate) normalized.shiftDate = data.shift_date; delete normalized.shift_date; }
@@ -236,12 +272,14 @@ export function useScheduledShifts() {
     if ('shift_name' in data) { if (!data.shiftName) normalized.shiftName = data.shift_name; delete normalized.shift_name; }
     if ('project_id' in data) { if (!data.projectId) normalized.projectId = data.project_id; delete normalized.project_id; }
 
+    mutationSeq.current++;
     try {
       // Optimistic update
-      setRawShifts(prev => prev.map(s => s.id === id ? { ...s, ...normalized } : s));
-      
-      const shift = await hrUpdate<ScheduledShift>('shifts', id, normalized);
-      setRawShifts(prev => prev.map(s => s.id === id ? addSnakeCase({ ...s, ...shift }) : s));
+      setRawShifts(prev => prev.map(s => s.id === id ? addSnakeCase(withProject({ ...s, ...normalized })) : s));
+
+      const shift = await hrUpdate<ScheduledShift & { seriesUpdated?: number }>('shifts', id, normalized, scope);
+      setRawShifts(prev => prev.map(s => s.id === id ? addSnakeCase(withProject({ ...s, ...shift })) : s));
+      if (scope && scope !== 'occurrence') void fetchAll(true);
       // Removing fetchAll() here to prevent full redraws. The background sync or other hooks will handle refresh if needed.
       // void fetchAll();
       return { data: addSnakeCase(shift), error: null };
@@ -250,21 +288,23 @@ export function useScheduledShifts() {
       void fetchAll();
       return { data: null, error: err };
     }
-  }, [fetchAll]);
+  }, [withProject, fetchAll]);
 
   const updateShiftStatus = useCallback(async (id: string, status: string) => {
     return updateShift(id, { status });
   }, [updateShift]);
 
-  const deleteShift = useCallback(async (id: string) => {
+  const deleteShift = useCallback(async (id: string, scope?: 'occurrence' | 'following' | 'series') => {
+    mutationSeq.current++;
     try {
-      await hrDelete('shifts', id);
+      const res = await hrDelete<{ seriesDeleted?: number; seriesKept?: number }>('shifts', id, scope);
       setRawShifts(prev => prev.filter(s => s.id !== id));
-      return { error: null };
+      if (scope && scope !== 'occurrence') void fetchAll(true);
+      return { error: null, deleted: res?.seriesDeleted ?? 1, kept: res?.seriesKept ?? 0 };
     } catch (err: any) {
-      return { error: err };
+      return { error: err, deleted: 0, kept: 0 };
     }
-  }, []);
+  }, [fetchAll]);
 
   // The shift that is NOW for this worker (kernel/shift-time): running, else next today, else last today.
   // Was `.find()` over createdAt order — with two shifts in a day it returned the later-created one —
@@ -274,25 +314,8 @@ export function useScheduledShifts() {
     return pickShiftNow(shifts.filter(s => s.userId === userId && !isShiftSubmitted(s.status)), new Date());
   }, [shifts, userId]);
 
-  const createUserShift = useCallback(async () => {
-    const today = localDateKey(new Date());   // local date — never toISOString() (UTC)
-    const now = new Date();
-    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-    return createShift({
-      userId,
-      shiftDate: today,
-      shiftStart: timeStr,
-      shiftEnd: '17:00',
-      status: 'in-progress',
-    });
-  }, [createShift, userId]);
-
-  const completeUserShift = useCallback(async (shiftId: string) => {
-    const now = new Date();
-    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-    // Sets the ad-hoc shift's END TIME only — it is not completed until the worker submits it.
-    return updateShift(shiftId, { shiftEnd: timeStr });
-  }, [updateShift]);
+  // createUserShift / completeUserShift REMOVED (Florin 2026-10-04): NO ad-hoc shifts. A clock-in without a
+  // planned shift is recorded as such, pending approval; the admin may plan a shift in the past to match it.
 
   const createProject = useCallback(async (nameOrData: string | Partial<Project>, address?: string | null, color?: string) => {
     // Support both legacy (name, address, color) and new ({ name, address, color }) signatures
@@ -348,11 +371,9 @@ export function useScheduledShifts() {
     updateShiftStatus,
     deleteShift,
     getTodayShift,
-    createUserShift,
-    completeUserShift,
     createProject,
     updateProject,
     deleteProject,
-    refetch: fetchAll,
+    refetch: () => fetchAll(),
   };
 }

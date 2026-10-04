@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
 import { resolveReach } from '@/app/api/hr/lib/actor-reach';
+import { resolveProjects } from '@/lib/data/projects';
 import { computeWorkedDuration } from '@/lib/computeWorkedDuration';
 import { resolveWorkerUserId } from '@/lib/resolveWorkerIdentity';
 import { ClockEntry } from '@prisma/client';
@@ -86,7 +87,20 @@ export async function GET(req: Request) {
         where.projectId = { in: requestedProjectIds };
     }
     
-    if (approvalStatus) {
+    // TS-ARCH-1: archived hours leave every view except their own chip.
+    where.archivedAt = approvalStatus === 'archived' ? { not: null } : null;
+
+    // Status chips (TS-INV-1): approved = approved and NOT yet invoiced · invoiced · nonBillable.
+    if (approvalStatus === 'archived') {
+        // archived: any status
+    } else if (approvalStatus === 'invoiced') {
+        where.invoicedAt = { not: null };
+    } else if (approvalStatus === 'nonBillable') {
+        where.billable = false;
+    } else if (approvalStatus === 'approved') {
+        where.approvalStatus = 'approved';
+        where.invoicedAt = null;
+    } else if (approvalStatus) {
         where.approvalStatus = approvalStatus;
     }
     
@@ -119,10 +133,8 @@ export async function GET(req: Request) {
     const userMap = new Map(users.map(u => [u.id, u]));
 
     // We need projects for names
-    const projects = await prisma.hrProject.findMany({
-        where: { tenantId: ctx.tenantId }
-    });
-    const projMap = new Map(projects.map((p: any) => [p.id, p]));
+    // PROJ-SSOT-1: the one resolver (was HrProject — zero rows → the by-project rollup grouped nothing).
+    const projMap = new Map((await resolveProjects(ctx.tenantId)).map(p => [p.id, p]));
 
     // Process entries and build rollups
     const processedEntries = [];
@@ -130,6 +142,7 @@ export async function GET(req: Request) {
     let billableHours = 0;
     let internalHours = 0;
     let approvedHours = 0;
+    let invoicedHours = 0;
     let selfApprovedHours = 0;
     let pendingHours = 0;
     let openEntries = 0;
@@ -190,6 +203,7 @@ export async function GET(req: Request) {
 
             if (entry.approvalStatus === 'approved') {
                 approvedHours += hoursDecimal;
+                if (entry.invoicedAt) invoicedHours += hoursDecimal;
                 if (entry.approvedBy && entry.approvedBy === entry.createdBy) {
                     selfApprovedHours += hoursDecimal;
                 }
@@ -240,6 +254,7 @@ export async function GET(req: Request) {
             billableHours: Math.round(billableHours * 100) / 100,
             internalHours: Math.round(internalHours * 100) / 100,
             approvedHours: Math.round(approvedHours * 100) / 100,
+            invoicedHours: Math.round(invoicedHours * 100) / 100,
             selfApprovedHours: Math.round(selfApprovedHours * 100) / 100,
             pendingHours: Math.round(pendingHours * 100) / 100,
             openEntries,

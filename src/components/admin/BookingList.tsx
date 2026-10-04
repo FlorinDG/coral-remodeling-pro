@@ -4,8 +4,9 @@ import { useState } from 'react';
 import FilterBar from './FilterBar';
 import StatusBadge from './StatusBadge';
 import { Calendar, Clock, ChevronRight, ChevronDown, Mail, User, Trash2, CalendarCheck, CheckSquare, Square, X } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { updateBookingStatus, deleteBooking, bulkDeleteBookings } from '@/app/actions/crm';
+import { formatDate } from '@/lib/format/date';
 
 interface Booking {
     id: string;
@@ -23,6 +24,7 @@ interface BookingListProps {
 
 export default function BookingList({ bookings: initialBookings }: BookingListProps) {
     const t = useTranslations('Admin.bookings');
+    const locale = useLocale();
     const [bookings, setBookings] = useState(initialBookings);
     const [filter, setFilter] = useState('ALL');
     const [search, setSearch] = useState('');
@@ -177,7 +179,7 @@ export default function BookingList({ bookings: initialBookings }: BookingListPr
                                     <div>
                                         <h3 className="font-bold text-sm text-neutral-900 dark:text-white group-hover:text-[var(--brand-color,#d35400)] transition-colors">{booking.clientName}</h3>
                                         <div className="flex gap-3 text-[10px] text-neutral-500 dark:text-neutral-400 font-medium uppercase tracking-wider">
-                                            <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {new Date(booking.date).toLocaleDateString()}</span>
+                                            <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {formatDate(booking.date, locale)}</span>
                                             <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {booking.timeSlot}</span>
                                         </div>
                                     </div>

@@ -9,6 +9,10 @@ import { resolveFileUrl } from '@/lib/files';
 import SearchableSelect from '@/components/ui/SearchableSelect';
 import { isSelfApproved } from '@/lib/provenance';
 import { describeError } from '@/lib/describe-error';
+import { useSession } from 'next-auth/react';
+import { isTenantTopRole } from '@/lib/roles';
+import { TimeSelect } from '@/components/ui/TimeSelect';
+import { getEntryShiftContext, type EntryShiftContext } from '@/lib/data/entry-shift-context';
 
 interface TimesheetEntryDetailProps {
     entry: any;
@@ -28,6 +32,10 @@ export function TimesheetEntryDetail({ entry, onUpdate, unlockTokenValid }: Time
     const [projectId, setProjectId] = useState(entry.projectId || '');
     const [billable, setBillable] = useState(entry.billable !== false);
     const [notes, setNotes] = useState(entry.notes || '');
+    // Why approved hours are changed — required, goes into the audit trail (Florin 2026-10-02).
+    const [editReason, setEditReason] = useState('');
+    const { data: session } = useSession();
+    const isTop = isTenantTopRole((session?.user as { role?: string } | undefined)?.role);
     const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
     const [error, setError] = useState('');
     const [auditLogs, setAuditLogs] = useState<any[]>([]);
@@ -91,10 +99,12 @@ export function TimesheetEntryDetail({ entry, onUpdate, unlockTokenValid }: Time
     const allMedia = [...entryPhotos, ...shiftAttachments];
 
     const isApproved = entry.approvalStatus === 'approved';
-    const canEdit = !isApproved || unlockTokenValid;
+    // The owner is never locked out of a bon (a reason is still required); others need the unlock.
+    const canEdit = !isApproved || unlockTokenValid || isTop;
+    const needsReason = isApproved;
     const isRunning = !entry.clockOutTime;
 
-    const showUnlockWarning = isApproved && !unlockTokenValid && editing;
+    const showUnlockWarning = isApproved && !unlockTokenValid && !isTop && editing;
 
     const handleCancel = () => {
         setClockInTime(entry.clockInTime ? format(parseISO(entry.clockInTime), 'HH:mm') : '');
@@ -111,7 +121,11 @@ export function TimesheetEntryDetail({ entry, onUpdate, unlockTokenValid }: Time
         const dateBaseOut = entry.clockOutTime ? format(parseISO(entry.clockOutTime), 'yyyy-MM-dd') : dateBaseIn;
         
         const combinedIn = clockInTime ? new Date(`${dateBaseIn}T${clockInTime}:00`) : null;
-        const combinedOut = clockOutTime ? new Date(`${dateBaseOut}T${clockOutTime}:00`) : null;
+        const combinedOut = clockOutTime ? new Date(`${dateBaseIn}T${clockOutTime}:00`) : null;
+        // An end at or before the start is the next day (night work) — not the original out-date.
+        if (combinedIn && combinedOut && combinedOut.getTime() <= combinedIn.getTime()) combinedOut.setDate(combinedOut.getDate() + 1);
+        void dateBaseOut;
+        if (needsReason && editReason.trim().length < 3) { setError(t('editReasonRequired')); return; }
 
         setLoading(true);
         setError('');
@@ -122,7 +136,9 @@ export function TimesheetEntryDetail({ entry, onUpdate, unlockTokenValid }: Time
                 projectId: projectId || null,
                 billable: Boolean(billable),
                 notes: notes.trim() || null,
+                ...(needsReason ? { editReason: editReason.trim() } : {}),
             });
+            setEditReason('');
             onUpdate(updated);
             setEditing(false);
         } catch (err: any) {
@@ -138,7 +154,7 @@ export function TimesheetEntryDetail({ entry, onUpdate, unlockTokenValid }: Time
             case 'clocked':
                 return t('sourceClocked', { fallback: 'Geklokt' });
             case 'late_entry':
-                return t('sourceLateEntry', { fallback: 'Nageleverd' });
+                return t('sourceLateEntry', { fallback: 'Uren manueel toevoegen' });
             case 'Aangepast':
             case 'adjusted':
                 return t('sourceAdjusted', { fallback: 'Aangepast' });
@@ -189,6 +205,19 @@ export function TimesheetEntryDetail({ entry, onUpdate, unlockTokenValid }: Time
         || entry.project?.name 
         || (entry.projectId ? t('unknownProject', { fallback: 'Onbekend project' }) : t('unassigned', { fallback: 'Niet toegewezen' }));
 
+    // The shift behind this entry — planner note, crew note, tasks — read-only, so the office does
+    // not have to go back to the scheduler (Florin 2026-10-01).
+    const [shiftCtx, setShiftCtx] = useState<EntryShiftContext | null>(null);
+    const [shiftCtxError, setShiftCtxError] = useState<string | null>(null);
+    useEffect(() => {
+        let live = true;
+        setShiftCtx(null); setShiftCtxError(null);
+        getEntryShiftContext(entry.id)
+            .then(r => { if (!live) return; if (r.ok) setShiftCtx(r.context); else setShiftCtxError(r.error); })
+            .catch(err => live && setShiftCtxError(describeError(err)));
+        return () => { live = false; };
+    }, [entry.id, entry.shiftId]);
+
     return (
         <div className="bg-neutral-50 dark:bg-white/5 border border-border p-4 rounded-xl m-2 space-y-4 shadow-inner">
             
@@ -208,15 +237,23 @@ export function TimesheetEntryDetail({ entry, onUpdate, unlockTokenValid }: Time
                         <div className="space-y-2 text-sm">
                             <div className="flex items-center justify-between">
                                 <span className="font-medium text-neutral-500">{t('in', { fallback: 'In' })}:</span>
-                                <input type="time" value={clockInTime} onChange={(e) => setClockInTime(e.target.value)} disabled={!canEdit} className="border rounded px-2 py-1 text-xs w-24" />
+                                <div className="w-32"><TimeSelect value={clockInTime} onChange={setClockInTime} minuteStep={1} ariaLabel={t('in', { fallback: 'In' })} /></div>
                             </div>
                             <div className="flex items-center justify-between">
                                 <span className="font-medium text-neutral-500">{t('uit', { fallback: 'Uit' })}:</span>
-                                <input type="time" value={clockOutTime} onChange={(e) => setClockOutTime(e.target.value)} disabled={!canEdit} className="border rounded px-2 py-1 text-xs w-24" />
+                                <div className="w-32"><TimeSelect value={clockOutTime} onChange={setClockOutTime} minuteStep={1} ariaLabel={t('uit', { fallback: 'Uit' })} /></div>
                             </div>
+                            {needsReason && (
+                                <label className="block space-y-1">
+                                    <span className="font-medium text-neutral-500 text-xs">{t('editReason')}</span>
+                                    <textarea value={editReason} onChange={(e) => setEditReason(e.target.value)} rows={2}
+                                        placeholder={t('editReasonPlaceholder')}
+                                        className="border rounded px-2 py-1 text-xs w-full bg-white dark:bg-neutral-800" />
+                                </label>
+                            )}
                             {error && <div className="text-red-500 text-xs">{error}</div>}
                             <div className="flex gap-2 pt-2">
-                                <Button size="sm" disabled={loading || !canEdit} onClick={handleSave}>
+                                <Button size="sm" disabled={loading || !canEdit || (needsReason && editReason.trim().length < 3)} onClick={handleSave}>
                                     {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : t('save', { fallback: 'Save' })}
                                 </Button>
                                 <Button size="sm" variant="ghost" onClick={handleCancel} title={t('cancel', { fallback: 'Annuleren' })} className="text-xs gap-1">
@@ -256,16 +293,20 @@ export function TimesheetEntryDetail({ entry, onUpdate, unlockTokenValid }: Time
                         <MapPin className="w-3 h-3 mt-1 text-green-600" />
                         <div>
                             <span className="font-medium text-neutral-500 block">{t('start', { fallback: 'Start' })}</span>
-                            {entry.clockInLatitude ? `${entry.clockInLatitude}, ${entry.clockInLongitude}` : '-'}
+                            <Place address={entry.clockInAddress} lat={entry.clockInLatitude} lng={entry.clockInLongitude} distance={entry.clockInDistanceM} locale={locale} farLabel={(km: string) => t('farFromSite', { km })} />
                         </div>
                     </div>
                     <div className="text-sm flex items-start gap-1">
                         <MapPin className="w-3 h-3 mt-1 text-red-600" />
                         <div>
                             <span className="font-medium text-neutral-500 block">{t('end', { fallback: 'End' })}</span>
-                            {entry.clockOutLatitude ? `${entry.clockOutLatitude}, ${entry.clockOutLongitude}` : '-'}
+                            <Place address={entry.clockOutAddress} lat={entry.clockOutLatitude} lng={entry.clockOutLongitude} distance={entry.clockOutDistanceM} locale={locale} farLabel={(km: string) => t('farFromSite', { km })} />
                         </div>
                     </div>
+                    {/* Geoapify free tier: attribution where its addresses are shown (GEO-1). Update if Google takes over. */}
+                    {(entry.clockInAddress || entry.clockOutAddress) && (
+                        <p className="text-[11px] text-muted-foreground">Geoapify · © OpenStreetMap contributors</p>
+                    )}
                 </div>
 
                 {/* ATTRIBUTION & CONTENT */}
@@ -307,13 +348,13 @@ export function TimesheetEntryDetail({ entry, onUpdate, unlockTokenValid }: Time
                             </div>
 
                             <div className="space-y-1 pt-1">
-                                <span className="font-medium text-neutral-500 block text-xs">{t('notes', { fallback: 'Notities' })}:</span>
+                                <span className="font-medium text-neutral-500 block text-xs">{t('adminNotes')}:</span>
                                 <textarea
                                     value={notes}
                                     onChange={(e) => setNotes(e.target.value)}
                                     disabled={!canEdit}
                                     className="border rounded px-2 py-1 text-xs w-full min-h-[50px] bg-white dark:bg-neutral-800"
-                                    placeholder={t('notes', { fallback: 'Notities' })}
+                                    placeholder={t('adminNotes')}
                                 />
                             </div>
                         </div>
@@ -340,7 +381,7 @@ export function TimesheetEntryDetail({ entry, onUpdate, unlockTokenValid }: Time
 
                             {entry.notes && (
                                 <div className="text-sm pt-1">
-                                    <span className="font-medium text-neutral-500 block text-xs">{t('notes', { fallback: 'Notities' })}:</span>
+                                    <span className="font-medium text-neutral-500 block text-xs">{t('adminNotes')}:</span>
                                     <p className="text-xs text-neutral-700 dark:text-neutral-300 italic bg-neutral-100/80 dark:bg-white/5 p-2 rounded border border-neutral-200/50 dark:border-white/5 mt-0.5 whitespace-pre-wrap">
                                         {entry.notes}
                                     </p>
@@ -485,7 +526,71 @@ export function TimesheetEntryDetail({ entry, onUpdate, unlockTokenValid }: Time
                     )}
                 </div>
             </div>
-            
+
+            {/* SHIFT — what the planner wrote, what the crew wrote, the tasks (read-only) */}
+            {(shiftCtx || shiftCtxError) && (
+                <div className="border-t border-border pt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {shiftCtxError ? (
+                        <p className="text-xs text-amber-700 dark:text-amber-300 md:col-span-3">{t('shiftContextFailed')} — {shiftCtxError}</p>
+                    ) : shiftCtx && (<>
+                        <div className="space-y-1">
+                            <h4 className="text-xs font-semibold uppercase text-muted-foreground">{t('shiftNote')}</h4>
+                            <p className="text-[11px] text-neutral-500">{shiftCtx.shiftLabel}</p>
+                            {shiftCtx.plannerNote
+                                ? <p className="text-sm whitespace-pre-wrap bg-amber-50 dark:bg-amber-950/30 border border-amber-200/70 dark:border-amber-900/50 rounded p-2">{shiftCtx.plannerNote}</p>
+                                : <p className="text-xs text-neutral-400 italic">{t('none')}</p>}
+                        </div>
+                        <div className="space-y-1">
+                            <h4 className="text-xs font-semibold uppercase text-muted-foreground">{t('crewNote')}</h4>
+                            {shiftCtx.crewNote
+                                ? <p className="text-sm whitespace-pre-wrap bg-white dark:bg-neutral-900/60 border border-border rounded p-2">{shiftCtx.crewNote}</p>
+                                : <p className="text-xs text-neutral-400 italic">{t('none')}</p>}
+                        </div>
+                        <div className="space-y-1">
+                            <h4 className="text-xs font-semibold uppercase text-muted-foreground">{t('shiftTasks')}{shiftCtx.tasks.length ? ` · ${shiftCtx.tasks.length}` : ''}</h4>
+                            {shiftCtx.tasks.length === 0 ? <p className="text-xs text-neutral-400 italic">{t('none')}</p> : (
+                                <ul className="space-y-1.5">
+                                    {shiftCtx.tasks.map(task => (
+                                        <li key={task.id} className="text-sm bg-white dark:bg-neutral-900/60 border border-border rounded p-2">
+                                            <div className="flex items-start justify-between gap-2">
+                                                <span className={`font-medium ${task.status === 'done_by_worker' ? 'line-through text-neutral-500' : ''}`}>{task.title}</span>
+                                                <span className="shrink-0 text-[10px] font-semibold uppercase text-neutral-500">
+                                                    {task.status === 'done_by_worker' ? t('taskDone') : task.status === 'in_progress' ? t('taskBusy') : t('taskTodo')}
+                                                </span>
+                                            </div>
+                                            {task.subtasksTotal > 0 && <p className="text-[11px] text-neutral-500">{task.subtasksDone}/{task.subtasksTotal} ✓</p>}
+                                            {task.workerNotes && <p className="text-xs text-neutral-600 dark:text-neutral-300 whitespace-pre-wrap mt-1">{task.workerNotes}</p>}
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                        </div>
+                    </>)}
+                </div>
+            )}
         </div>
+    );
+}
+
+/** GEO-1: the street address (raw coordinates only when no address was recorded), a map link, and a
+ *  flag when the clock event was more than 300 m from the work site — recorded, never blocking. */
+function Place({ address, lat, lng, distance, locale, farLabel }: {
+    address?: string | null; lat?: number | null; lng?: number | null; distance?: number | null; locale: string;
+    farLabel: (km: string) => string;
+}) {
+    if (lat == null || lng == null) return <>-</>;
+    const href = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+    const far = distance != null && distance > 300;
+    return (
+        <>
+            <a href={href} target="_blank" rel="noopener noreferrer" className="underline decoration-dotted break-words">
+                {address || `${lat.toFixed(5)}, ${lng.toFixed(5)}`}
+            </a>
+            {far && (
+                <span className="mt-1 inline-block px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 dark:bg-amber-950/50 dark:text-amber-200 text-xs font-semibold">
+                    {farLabel((distance! / 1000).toLocaleString(locale, { maximumFractionDigits: 1 }))}
+                </span>
+            )}
+        </>
     );
 }

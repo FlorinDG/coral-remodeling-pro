@@ -9,7 +9,10 @@ import { useAuth } from '@/components/time-tracker/contexts/AuthContext';
 import { useUserRoles } from '@/components/time-tracker/hooks/useUserRoles';
 import { Button } from '@/components/ui/button';
 import { MapPin } from 'lucide-react';
-import { SiteVisitModal } from '@/components/time-tracker/components/SiteVisitModal';
+import dynamic from 'next/dynamic';
+
+// WH-LEAN-1: the ERP store and the Site Visit form are downloaded only when an office user opens it.
+const SiteVisitLauncher = dynamic(() => import('@/components/time-tracker/components/SiteVisitLauncher'), { ssr: false });
 
 interface IndexProps {
   /** When true, hides standalone Header/Footer — used when rendered inside AdminLayout */
@@ -52,11 +55,8 @@ export default function Index({ embedded = false }: IndexProps) {
           </div>
         )}
 
-        {isAdmin && (
-          <SiteVisitModal 
-            open={siteVisitOpen} 
-            onClose={() => setSiteVisitOpen(false)} 
-          />
+        {isAdmin && siteVisitOpen && (
+          <SiteVisitLauncher open onClose={() => setSiteVisitOpen(false)} />
         )}
 
         {/* Scheduled Shifts — the primary content */}

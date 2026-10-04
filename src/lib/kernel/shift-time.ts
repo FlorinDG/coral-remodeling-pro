@@ -92,3 +92,42 @@ export function zonedParts(instant: Date | string, timeZone: string = BUSINESS_T
     const get = (type: string) => parts.find(p => p.type === type)?.value || '00';
     return { date: `${get('year')}-${get('month')}-${get('day')}`, time: `${get('hour')}:${get('minute')}` };
 }
+
+// ── ENTRY ↔ SHIFT MATCHING (SHIFT-LINK-1) ─────────────────────────────────────
+/**
+ * Florin 2026-10-01: "if you can map them correctly, the app can fix them, otherwise … suggestion,
+ * editable". Matching is done in WALL-CLOCK minutes of one local date — the entry's instants are
+ * turned into Brussels date + HH:mm (zonedParts), the shift is already stored that way. No Date is
+ * built from shift strings on the server (it runs in UTC).
+ */
+export interface LocalSpan { date: string; start: string; end: string }
+
+const toMin = (hhmm: string) => { const [h, m] = (hhmm || '0:0').split(':').map(Number); return (h || 0) * 60 + (m || 0); };
+
+/** Minutes of overlap between a recorded span and a shift on the same local date (overnight shifts handled). */
+export function overlapMinutes(span: LocalSpan, shift: ShiftTimes): number {
+    if (span.date !== shift.shiftDate) return 0;
+    const s0 = toMin(span.start); let s1 = toMin(span.end); if (s1 <= s0) s1 += 24 * 60;
+    const h0 = toMin(shift.shiftStart); let h1 = toMin(shift.shiftEnd); if (h1 <= h0) h1 += 24 * 60;
+    return Math.max(0, Math.min(s1, h1) - Math.max(s0, h0));
+}
+
+/**
+ * `unique` — the ONE shift the span overlaps (safe to link automatically), else null.
+ * `ranked` — every shift of that date, most overlap first (the editable suggestion's options,
+ * the first being the suggestion when it overlaps at all).
+ */
+export function matchSpanToShifts<T extends ShiftTimes>(span: LocalSpan, shifts: T[]): { unique: T | null; ranked: Array<{ shift: T; overlap: number }> } {
+    const ranked = shifts
+        .filter(s => s.shiftDate === span.date)
+        .map(shift => ({ shift, overlap: overlapMinutes(span, shift) }))
+        .sort((a, b) => b.overlap - a.overlap || compareShifts(a.shift, b.shift));
+    const overlapping = ranked.filter(r => r.overlap > 0);
+    return { unique: overlapping.length === 1 ? overlapping[0].shift : null, ranked };
+}
+
+/** A recorded entry's local span (Brussels wall clock) — closed entries only. */
+export function entrySpan(clockIn: Date | string, clockOut: Date | string, timeZone: string = BUSINESS_TIME_ZONE): LocalSpan {
+    const a = zonedParts(clockIn, timeZone); const b = zonedParts(clockOut, timeZone);
+    return { date: a.date, start: a.time, end: b.date === a.date ? b.time : '24:00' };
+}

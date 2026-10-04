@@ -4,6 +4,9 @@ import { Loader2, LayoutList, LayoutGrid } from 'lucide-react';
 import { ScheduleTable } from '@/components/time-tracker/components/schedule/ScheduleTable';
 import { ScheduleMatrixView } from '@/components/time-tracker/components/schedule/ScheduleMatrixView';
 import { CreateShiftForm } from '@/components/time-tracker/components/schedule/CreateShiftForm';
+import type { EditScope } from '@/components/ui/ScopePicker';
+import { describeError } from '@/lib/describe-error';
+import { localDateKey, shiftMoment } from '@/lib/kernel/shift-time';
 import { EditShiftDialog } from '@/components/time-tracker/components/schedule/EditShiftDialog';
 import { useScheduledShifts, ScheduledShift } from '@/components/time-tracker/hooks/useScheduledShifts';
 import { toast } from 'sonner';
@@ -86,13 +89,13 @@ export function ScheduleManagement() {
     fetchWorkers();
   }, []);
 
-  const handleDelete = async (shiftId: string) => {
-    try {
-      await deleteShift(shiftId);
-      toast.success('Shift deleted');
-    } catch {
-      toast.error('Failed to delete shift');
-    }
+  // SCH-8: the scope reaches the server; the count makes a silent no-op impossible.
+  const handleDelete = async (shiftId: string, scope?: EditScope) => {
+    const res = await deleteShift(shiftId, scope);
+    if (res.error) { toast.error(`Failed to delete shift — ${describeError(res.error)}`); throw res.error; }
+    toast.success(res.deleted > 1 || res.kept
+      ? `${res.deleted} shift(s) deleted${res.kept ? ` · ${res.kept} kept (hours already recorded)` : ''}`
+      : 'Shift deleted');
   };
 
   const handleStatusChange = async (shiftId: string, status: string) => {
@@ -134,8 +137,11 @@ export function ScheduleManagement() {
     setEditDialogOpen(true);
   };
 
-  const handleUpdateShift = async (shiftId: string, updates: Parameters<typeof updateShift>[1]) => {
-    await updateShift(shiftId, updates);
+  const handleUpdateShift = async (shiftId: string, updates: Parameters<typeof updateShift>[1], scope?: EditScope) => {
+    const res = await updateShift(shiftId, updates, scope);
+    if (res.error) throw res.error;   // EditShiftDialog shows the failure
+    const n = (res.data as { seriesUpdated?: number } | null)?.seriesUpdated;
+    if (n && n > 1) toast.success(`${n} shifts updated`);
   };
 
   const handleAddShift = (userId: string, date: string) => {
@@ -155,8 +161,9 @@ export function ScheduleManagement() {
     // Find all shifts in the source week
     const sourceEnd = new Date(sourceWeekStart);
     sourceEnd.setDate(sourceEnd.getDate() + 6);
-    const sourceStartStr = sourceWeekStart.toISOString().split('T')[0];
-    const sourceEndStr = sourceEnd.toISOString().split('T')[0];
+    // Local dates (toISOString is UTC — the week's Sunday fell outside the window and was never copied).
+    const sourceStartStr = localDateKey(sourceWeekStart);
+    const sourceEndStr = localDateKey(sourceEnd);
 
     const sourceShifts = shifts.filter(s => {
       const d = s.shiftDate || '';
@@ -173,10 +180,9 @@ export function ScheduleManagement() {
 
     let created = 0;
     for (const shift of sourceShifts) {
-      const srcDate = new Date(shift.shiftDate || '');
-      const newDate = new Date(srcDate);
+      const newDate = shiftMoment(shift.shiftDate || '', '12:00');   // local noon: no DST/UTC edge
       newDate.setDate(newDate.getDate() + dayOffset);
-      const newDateStr = newDate.toISOString().split('T')[0];
+      const newDateStr = localDateKey(newDate);
 
       // Check if a shift already exists for this user on this date
       const alreadyExists = shifts.some(s => {
@@ -207,8 +213,10 @@ export function ScheduleManagement() {
     const endDate = new Date(weekStart);
     endDate.setDate(endDate.getDate() + (weekCount * 7) - 1);
 
-    const startStr = weekStart.toISOString().split('T')[0];
-    const endStr = endDate.toISOString().split('T')[0];
+    // Local dates — toISOString() is UTC: Monday 00:00 in Belgium is Sunday 22:00Z, which shifted the
+    // window a day back and dropped the week's Sunday from the matrix.
+    const startStr = localDateKey(weekStart);
+    const endStr = localDateKey(endDate);
 
     return shifts.filter(s => {
       const d = s.shiftDate || '';

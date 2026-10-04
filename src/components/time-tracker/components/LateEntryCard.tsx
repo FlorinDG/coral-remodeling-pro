@@ -28,6 +28,8 @@ import { useTasks, Task } from '@/components/time-tracker/hooks/useTasks';
 
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
+import { CustomDatePicker } from '@/components/ui/CustomDatePicker';
+import { TimeSelect } from '@/components/ui/TimeSelect';
 import { describeError } from '@/lib/describe-error';
 import { format, parseISO, isAfter, startOfDay } from 'date-fns';
 import { validateFile, validateFiles, getSafeFileType, generateSafeFilePath, ALLOWED_EXTENSIONS } from '@/components/time-tracker/lib/fileValidation';
@@ -36,8 +38,10 @@ function getNotionColor(colorName: string) {
   return NOTION_COLORS.find(c => c.name === colorName) || NOTION_COLORS[6];
 }
 
-export function LateEntryCard() {
-  const { t } = useTranslation();
+/** `shiftId` + `shiftDate`: hours added from inside a shift (WO-1 Hours tab) — the date is the
+ *  shift's, no project is asked (the shift has it), and the form starts open. */
+export function LateEntryCard({ shiftId, shiftDate, onSubmitted }: { shiftId?: string; shiftDate?: string; onSubmitted?: () => void } = {}) {
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const { projects } = useScheduledShifts();
   const { createRequest } = useApprovalRequests();
@@ -45,9 +49,9 @@ export function LateEntryCard() {
   const { location, loading: geoLoading, requestLocation } = useGeolocation();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(!!shiftId);
   const [loading, setLoading] = useState(false);
-  const [date, setDate] = useState('');
+  const [date, setDate] = useState(shiftDate || '');
   const [clockIn, setClockIn] = useState('09:00');
   const [clockOut, setClockOut] = useState('17:00');
   const [projectId, setProjectId] = useState('');
@@ -119,12 +123,20 @@ export function LateEntryCard() {
         }
       }
 
+      // An end at or before the start is the NEXT day (night work: 22:00 → 02:00).
+      const inAt = new Date(`${date}T${clockIn}`);
+      const outAt = new Date(`${date}T${clockOut}`);
+      if (outAt.getTime() <= inAt.getTime()) outAt.setDate(outAt.getDate() + 1);
+
       // Submit the entry
       const { submitLateEntry } = await import('@/app/actions/timesheets');
       const result = await submitLateEntry({
         targetUserId: targetUserId || user.id,
-        clockInTime: `${date}T${clockIn}`,
-        clockOutTime: `${date}T${clockOut}`,
+        // The phone's own clock: `new Date('YYYY-MM-DDTHH:mm')` is the phone's LOCAL time; sent as
+        // an exact instant, so the (UTC) server never guesses the zone.
+        clockInTime: inAt.toISOString(),
+        clockOutTime: outAt.toISOString(),
+        shiftId: shiftId || null,
         includeLocation,
         location: location ? { lat: location.latitude, lng: location.longitude, address: '' } : undefined,
         taskDescription,
@@ -141,7 +153,7 @@ export function LateEntryCard() {
       toast.success(t('lateEntry.submitted'));
       
       // Reset form
-      setDate('');
+      setDate(shiftDate || '');
       setClockIn('09:00');
       setClockOut('17:00');
       setProjectId('');
@@ -150,7 +162,8 @@ export function LateEntryCard() {
       setIncludeLocation(false);
       setFiles([]);
       setSelectedUserId('');
-      setIsOpen(false);
+      setIsOpen(!!shiftId);
+      onSubmitted?.();
       
     } catch (error) {
       console.error('Error submitting late entry:', error);
@@ -222,7 +235,7 @@ export function LateEntryCard() {
         <CollapsibleContent>
           <CardContent className="border-t pt-4">
             <form onSubmit={handleSubmit} className="space-y-4">
-              {isAdmin && (
+              {isAdmin && !shiftId && (
                 <div>
                   <Label>{t('lateEntry.worker')}</Label>
                   <Select value={selectedUserId || 'none'} onValueChange={handleUserChange}>
@@ -245,44 +258,37 @@ export function LateEntryCard() {
                 </div>
               )}
 
+              {!shiftId && (
               <div>
                 <Label htmlFor="entryDate">{t('lateEntry.date')}</Label>
-                <Input
-                  id="entryDate"
-                  type="date"
+                {/* Belgian date display, Monday-first — a native date input follows the phone's region (US). */}
+                <CustomDatePicker
                   value={date}
-                  onChange={(e) => setDate(e.target.value)}
+                  onChange={setDate}
                   max={format(today, 'yyyy-MM-dd')}
-                  required
+                  locale={i18n.language}
+                  placeholder={t('lateEntry.date')}
+                  clearable={false}
+                  triggerClassName="w-full"
                 />
                 <p className="text-sm text-muted-foreground mt-1">
                   {t('lateEntry.dateHint')}
                 </p>
               </div>
+              )}
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="clockIn">{t('lateEntry.clockIn')}</Label>
-                  <Input
-                    id="clockIn"
-                    type="time"
-                    value={clockIn}
-                    onChange={(e) => setClockIn(e.target.value)}
-                    required
-                  />
+                  <TimeSelect id="clockIn" value={clockIn} onChange={setClockIn} minuteStep={5} ariaLabel={t('lateEntry.clockIn')} />
                 </div>
                 <div>
                   <Label htmlFor="clockOut">{t('lateEntry.clockOut')}</Label>
-                  <Input
-                    id="clockOut"
-                    type="time"
-                    value={clockOut}
-                    onChange={(e) => setClockOut(e.target.value)}
-                    required
-                  />
+                  <TimeSelect id="clockOut" value={clockOut} onChange={setClockOut} minuteStep={5} ariaLabel={t('lateEntry.clockOut')} />
                 </div>
               </div>
 
+              {!shiftId && (
               <div>
                 <Label>{t('lateEntry.project')}</Label>
                 <Select value={projectId || 'none'} onValueChange={handleProjectChange}>
@@ -308,6 +314,7 @@ export function LateEntryCard() {
                   </SelectContent>
                 </Select>
               </div>
+              )}
 
               {projectId && pendingTasks.length > 0 && (
                 <div>

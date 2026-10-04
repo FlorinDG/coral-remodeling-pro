@@ -5,6 +5,19 @@
 
 ---
 
+# 0 · PLAN FIRST — for every item that writes code (Florin 2026-10-02)
+Code items run in three gates. **You stop at each gate and wait.**
+1. **PLAN** — `.agents/plans/<ITEM>.md`: your approach, the files you will create/change (must sit inside
+   the directive's fence), the functions with their signatures, the tests (and how each can fail — §3a),
+   and **milestones M1…Mn**, each small enough to review in one sitting. Open questions go in the plan.
+   Commit the plan, push, **stop**.
+2. **REVIEW** — the Planner validates or corrects the plan in the same file (`## Planner review`), and
+   brings anything that is a product decision to Florin. **Do not start code before the review says GO.**
+3. **BUILD, one milestone at a time** — implement M1, append `## M1 — done` to the report (evidence per §2
+   below), push, **stop** for the Planner's ✅. Then M2. A milestone the review sent back is redone, not
+   patched around (§3b).
+🟢 A plan that says "this cannot be done inside the fence because…" is a good plan.
+
 # 1 · WHERE
 
 ```
@@ -103,10 +116,52 @@ Anything you are not sure is correct: an edge case, a type you could not confirm
 
 ---
 
+# 3a · 🔴 A TEST IS ONLY A TEST IF IT CAN FAIL — binding (Florin 2026-10-02)
+Found in R2-5: 11 of 13 "characterization" tests re-implemented the merge loop **inside the test file**
+and asserted against that copy. They stayed green whatever the real code did — they pinned nothing.
+1. 🛑 **A test imports the code it pins.** A function, formula, loop or rule re-written in a test file is
+   not a test — not even with a comment saying it mirrors `file:line`. Test data and stubs of
+   *dependencies* are fine; a copy of the *subject* never is.
+2. 🛑 **THE THROW PROOF — every new test file, in §6.** Show that the test throws when the real code
+   changes:
+   ````
+   ### THROW PROOF — tests/<file>.test.ts
+   $ <one-line change to the REAL code it pins — e.g. flip a comparison>; git diff --stat
+   $ node --import ./tests/register.mjs --test tests/<file>.test.ts; echo "exit: $?"
+   <the failing output — at least one ✖ / AssertionError — exit ≠ 0>
+   $ git checkout -- <file>; git diff --stat          ← must print nothing
+   $ node --import ./tests/register.mjs --test tests/<file>.test.ts; echo "exit: $?"
+   <green — exit: 0>
+   ````
+   One mutation per `describe` at minimum. **A test that stays green under a mutation of the code it
+   claims to pin is reported in §9 as not done** — never as ✅.
+3. **Unreachable code is a §9 / §8 item, not a reason to copy it.** "Not reachable without an export at
+   `file:line`" is a complete, correct answer. The Planner decides whether to open the code up.
+
+# 3b · 🛑 A FENCE IS A WALL — bending a directive is NOT a step in the same direction (Florin 2026-10-02)
+When a directive blocks the way (a fenced file, `src/` read-only, a prohibited command, a missing
+export), the work **stops there**. A workaround that delivers something *shaped like* the goal while
+the directive forbids the real thing is not partial progress — it is a different deliverable that
+looks like the asked one, and it costs more to find than an honest stop.
+- Bending includes: copying fenced logic into tests or helpers; re-creating a forbidden change in an
+  allowed file; mocking the very thing to be checked; editing a fenced file "minimally"; widening a
+  stub until the test passes; renaming a check so it no longer applies.
+- **The only correct move is: §1 `STOPPED` or `PARTIAL`, the blocked item in §9 with `file:line`, and
+  in §11 what would unblock it.** That report is a good report.
+- 🔴 **A report whose green result depends on a bent directive is rejected as a whole** — the green is
+  not counted, the item goes back to the queue, and the bend is named in the review.
+- Planner's counterpart: a directive whose fence makes the goal impossible is the Planner's defect —
+  say so in §11; it gets fixed in the directive, not around it.
+
+---
+
 # 4 · WHAT THE PLANNER DOES WITH IT
 1. Checks §4 against `git diff --stat` independently.
 2. Re-runs a sample of §6's commands. **Any mismatch invalidates the whole report**, not just that line.
 3. Reads §5 first. Anything there the Planner would have decided differently becomes a revision.
 4. Opens every `file:line` in §3 marked ✅.
+5. **For every new test file: checks it imports the code it pins (§3a.1) and re-runs one THROW PROOF.**
+   A test that stays green under the mutation invalidates the item.
+6. **Looks for bends (§3b) first in the files that DID change** — a green built on a bend is rejected whole.
 
 🟢 **A report that makes this fast gets the next item sooner.**

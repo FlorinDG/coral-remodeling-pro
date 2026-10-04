@@ -762,6 +762,12 @@ model ClockEntry {
   clockInLongitude  Float?
   clockOutLatitude  Float?
   clockOutLongitude Float?
+  /// GEO-1: reverse-geocoded address of the clock-in / clock-out (raw lat/lng stay as evidence)
+  clockInAddress    String?
+  clockOutAddress   String?
+  /// GEO-1: metres from the work site at that moment — recorded, never blocking
+  clockInDistanceM  Int?
+  clockOutDistanceM Int?
   taskDescription   String?
   requiresApproval  Boolean   @default(false)
   approvalStatus    String?
@@ -778,6 +784,14 @@ model ClockEntry {
   editedAfterApproval Boolean @default(false)
   costRateApplied   Float?
   accountantExportedAt DateTime?
+  /// TS-INV-1: these hours went onto an invoice — when, by whom, which invoice (GlobalPage id in the
+  /// tenant's invoices database; optional). Locked like approved hours.
+  invoicedAt        DateTime?
+  invoicedBy        String?
+  invoiceRef        String?
+  /// TS-ARCH-1: out of the default Timesheets view, still stored; restorable any time
+  archivedAt        DateTime?
+  archivedBy        String?
 
   costRatePrevious  Float?
   createdBy         String?
@@ -800,6 +814,16 @@ model ScheduledShift {
   /// WB-A: the order giver when no project supplies one — a page in the tenant's CLIENTS system
   /// database (93 in production; the `Contact` table is empty and unused — measured 2026-09-30).
   contactPageId String?
+  /// WO-2: where the work happens when it is not the project's address (null → project address)
+  siteAddress      String?
+  /// WO-2: the Materials tab is shown only when the scheduler enabled it
+  materialsEnabled Boolean @default(false)
+  /// WO-2: the crew member's note on the work order — office instructions stay in `notes`
+  crewNote         String?
+  /// GEO-1: the work site's coordinates, geocoded from `siteGeocodedFrom` (siteAddress ?? project address)
+  siteLat          Float?
+  siteLng          Float?
+  siteGeocodedFrom String?
   role         String?
   notes        String?
   status       String   @default("scheduled")

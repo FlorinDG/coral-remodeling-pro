@@ -7,7 +7,10 @@
  */
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ChevronLeft, ChevronRight, Clock, FileSpreadsheet, FileText } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, FileSpreadsheet, FileText, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { saveFile } from '@/lib/save-file';
+import { ShiftLinkReview, SHIFT_LINK_KEYS, type ShiftLinkLabels } from '@/components/shift-link/ShiftLinkReview';
 import { LateEntryCard } from '@/components/time-tracker/components/LateEntryCard';
 import { startOfWeek, addDays, isSameDay, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import { useClockEntries, type ClockEntry } from '@/components/time-tracker/hooks/useClockEntries';
@@ -54,6 +57,20 @@ export function MyHoursScreen() {
     if (user?.id) qs.append('workerIds[]', user.id);
     return `/api/hr/timesheet-export?${qs.toString()}`;
   };
+  // Never navigate to the file: in the installed app there is no way back (Florin 2026-10-01).
+  const [exporting, setExporting] = useState<'xlsx' | 'pdf' | null>(null);
+  const runExport = async (fmt: 'xlsx' | 'pdf') => {
+    setExporting(fmt);
+    try {
+      const m = subMonths(new Date(), exportMonth);
+      await saveFile(exportHref(fmt), `timesheet-${m.getFullYear()}-${String(m.getMonth() + 1).padStart(2, '0')}.${fmt}`);
+    } catch (err) {
+      console.error('[MyHoursScreen] export failed:', err);
+      toast.error(`${t('hours.exportFailed')} — ${describeError(err)}`);
+    } finally {
+      setExporting(null);
+    }
+  };
 
   const weekStart = useMemo(
     () => addDays(startOfWeek(new Date(), { weekStartsOn: WEEK_STARTS_ON }), weekOffset * 7),
@@ -99,6 +116,10 @@ export function MyHoursScreen() {
       <div className="px-3 pb-3">
         <LateEntryCard />
       </div>
+
+      {/* SHIFT-LINK-1 — my hours that are not (or wrongly) linked to a planned shift */}
+      <ShiftLinkReview className="mx-3 mb-3" mine locale={lang} onLinked={() => refetch()}
+        labels={Object.fromEntries(SHIFT_LINK_KEYS.map(k => [k, t(`hours.shiftLink.${k}`)])) as unknown as ShiftLinkLabels} />
 
       {/* Week navigator */}
       <div className="flex items-center justify-between gap-2 px-3 pb-3">
@@ -191,12 +212,12 @@ export function MyHoursScreen() {
           ))}
         </select>
         <div className="grid grid-cols-2 gap-2">
-          <a href={exportHref('xlsx')} className="h-12 rounded-xl border border-border flex items-center justify-center gap-2 text-base font-semibold">
-            <FileSpreadsheet className="w-5 h-5 text-[var(--persian-green)]" />Excel
-          </a>
-          <a href={exportHref('pdf')} className="h-12 rounded-xl border border-border flex items-center justify-center gap-2 text-base font-semibold">
-            <FileText className="w-5 h-5 text-[var(--tawny)]" />PDF
-          </a>
+          <button type="button" onClick={() => runExport('xlsx')} disabled={!!exporting} className="h-12 rounded-xl border border-border flex items-center justify-center gap-2 text-base font-semibold disabled:opacity-50">
+            {exporting === 'xlsx' ? <Loader2 className="w-5 h-5 animate-spin" /> : <FileSpreadsheet className="w-5 h-5 text-[var(--persian-green)]" />}Excel
+          </button>
+          <button type="button" onClick={() => runExport('pdf')} disabled={!!exporting} className="h-12 rounded-xl border border-border flex items-center justify-center gap-2 text-base font-semibold disabled:opacity-50">
+            {exporting === 'pdf' ? <Loader2 className="w-5 h-5 animate-spin" /> : <FileText className="w-5 h-5 text-[var(--tawny)]" />}PDF
+          </button>
         </div>
       </section>
     </div>

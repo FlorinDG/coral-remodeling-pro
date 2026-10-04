@@ -1,4 +1,5 @@
 import AdminLayout from "@/components/AdminLayout";
+import { reconcileSystemSchemas } from '@/lib/data/system-schema-reconcile';
 import AuthProvider from "@/components/AuthProvider";
 import { getGlobalDatabases, getGlobalDatabaseSchemas, getGlobalPageIndex } from "@/app/actions/global-databases";
 import { IS_LAZY_DATA_ENABLED } from "@/lib/feature-flags";
@@ -127,6 +128,8 @@ export default async function Layout({ children }: { children: React.ReactNode }
 
                 try {
                     lockedDbIds = await provisionLockedDatabases(tenantId, prisma);
+                    // KERN-SCHEMA-1: canonical fields for every system database, before the schemas load below.
+                    await reconcileSystemSchemas(tenantId, prisma, lockedDbIds, { planType, activeModules });
                 } catch (provErr) {
                     console.error(`[admin/layout] Provisioning failed for ${tenantId}:`, provErr);
                     lockedDbIds = (tenant.lockedDbIds as Record<string, string> | null) || {};

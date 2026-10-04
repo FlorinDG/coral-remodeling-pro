@@ -5,8 +5,11 @@ import { useDatabaseStore } from '@/components/admin/database/store';
 import { Calendar as CalendarIcon, Clock, ChevronRight, Activity } from 'lucide-react';
 import { differenceInDays, addDays, startOfMonth, endOfMonth, eachMonthOfInterval, format } from 'date-fns';
 import { useTenant } from '@/context/TenantContext';
+import { useLocale } from 'next-intl';
+import { formatDate } from '@/lib/format/date';
 
 export default function ProjectTimelineView() {
+    const locale = useLocale();
     const { resolveDbId } = useTenant();
     const resolvedId = resolveDbId('db-1');
     const database = useDatabaseStore(state => state.getDatabase(resolvedId));
@@ -132,7 +135,7 @@ export default function ProjectTimelineView() {
                                             <div
                                                 className="absolute h-6 top-3 bg-neutral-200 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-lg opacity-80"
                                                 style={{ left: `${pStart}%`, width: `${Math.max(pWidth, 0.5)}%` }}
-                                                title={`Planned: ${project.plannedStart?.toLocaleDateString()} - ${project.plannedEnd?.toLocaleDateString()}`}
+                                                title={`Planned: ${formatDate(project.plannedStart, locale)} - ${formatDate(project.plannedEnd, locale)}`}
                                             >
                                                 {pWidth > 3 && (
                                                     <span className="absolute inset-0 flex items-center px-3 text-[9px] font-bold text-neutral-500 uppercase tracking-widest whitespace-nowrap overflow-hidden">
@@ -147,7 +150,7 @@ export default function ProjectTimelineView() {
                                             <div
                                                 className="absolute h-6 bottom-3 bg-blue-500 border border-blue-600 rounded-lg shadow-md shadow-blue-500/20 z-10 group/bar hover:scale-y-110 transition-transform origin-left"
                                                 style={{ left: `${aStart}%`, width: `${Math.max(aWidth, 0.5)}%` }}
-                                                title={`Actual: ${project.actualStart?.toLocaleDateString()} - ${project.actualEnd?.toLocaleDateString() || 'Ongoing'}`}
+                                                title={`Actual: ${formatDate(project.actualStart, locale)} - ${project.actualEnd ? formatDate(project.actualEnd, locale) : 'Ongoing'}`}
                                             >
                                                 {aWidth > 3 && (
                                                     <span className="absolute inset-0 flex items-center px-3 text-[9px] font-bold text-white uppercase tracking-widest whitespace-nowrap overflow-hidden">

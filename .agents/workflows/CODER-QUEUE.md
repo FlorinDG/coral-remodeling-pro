@@ -1,5 +1,5 @@
 # CORAL — CODER QUEUE
-**Current as of 2026-09-30 (night).** This file is always the live queue — superseded items are removed, not renamed.
+**Current as of 2026-10-04.** This file is always the live queue — superseded items are removed, not renamed.
 🛑 **The filename never carries a date.** `PLANNER-HANDOVER.md` §7 points here permanently.
 
 **Work top to bottom. Each item is a separate commit set. Report after each.**
@@ -12,29 +12,38 @@
 
 ---
 
-## 1 · `SCH-8` / `HR-TS-8` — the series scope; the manual-entry project select
-📄 `coder-directive-sch-8-series-and-manual-entry.md`
-"Save for all" on a recurring series does nothing; `ManualEntryModal` project select → `SearchableSelect` over `erp-projects`.
+🔴 **STANDING (Florin 2026-10-02) — read `coder-report-protocol.md` §3a and §3b before any item:**
+**every new test needs a THROW PROOF** (break the real code, show the test fail, restore), and
+**bending a directive is not progress** — a blocked step is STOPPED, never worked around.
 
-## 2 · `PROJ-SSOT-1` — one project resolver, `HrProject` retired
-📄 `coder-directive-proj-ssot-1-retire-hrproject.md`
-🟢 **Census done (2026-09-30):** 27 clock entries (Coral only) — 26 unattributed *by design* (Florin tests clock-in without shift; `pd.md` 4x), 1 dangling (27 Jul) → **cleared by Florin, hours kept.** **No row is broken today; it goes off the first time hours are attributed with the HR-TS-5 picker and exported.** Land before that.
-🟨 §1 correction: unresolved `projectId` prints `Unknown Project`, not blank.
+## 0 · `WO-4a-M4` — the work order PDF without global patches — 🟦 PLAN FIRST (protocol §0)
+📄 `coder-directive-wo-4a-m4.md` — append the M4 plan to `.agents/plans/WO-4a.md`, push, STOP for review.
+Removes the `Math.random` seeding and the PDF library prototype patch; WO-4b waits on it.
+*(WO-4a M1–M3 ✅ and GEO-2 M1–M3 ✅ — done 2026-10-03/04.)*
 
-## 3 · `FILES-GATE-1` → folds into `ENT` — 🟢 **Florin decided the model (2026-09-30)**
+## 1 · `R2-1-CENSUS` — map every direct GlobalPage write (read-only) + one honest backoff test
+📄 `coder-directive-r2-1-write-census.md` — 33 writes in 18 files, one row each (tenant check · OCC · audit · fate). `src/` read-only.
+
+## ✅ `R2-5` — DONE WITH CORRECTIONS (review 2026-10-02, `MORNING-2026-10-02.md` §2)
+Store tests accepted. 11 of 13 OCC tests tested a COPY of the merge loop (§3a) — removed on
+`pending/occ-merge`, replaced by real tests of `lib/records/occ-merge.ts`. Leftover: the backoff-formula
+test in `write-path-store.test.ts` also asserts a copy — fold into the next item that touches it.
+
+## (was) 1 · `R2-5` — characterization tests for the write path (tests only)
+📄 `coder-directive-r2-5-characterization.md` — pins OCC, field merge, single-flight, sync retry, dirty-page protection, persistence BEFORE R2 moves anything. `src/` is read-only.
+
+✅ `LOC-SWEEP-1` — done 2026-10-01 (`03ec24c`, report accepted by the Planner; live on main).
+
+🟦 **Taken by the Planner (2026-10-01), do NOT pick up:** `SCH-8` / `HR-TS-8` (series scope, manual-entry project select) — it shares files with the work-order fields (`coral-work-order-tabs.md`). ✅ Done by the Planner: `PROJ-SSOT-1` phase 1 (`9ef6a6d`), `TASK-CREW-1`.
+
+## 2 · `FILES-GATE-1` → folds into `ENT` — 🟢 **Florin decided the model (2026-09-30)**
 > *"roles are to be confined by their function. hr will not work with financials and vice versa … director, owner have full oversight, project manager to his own. all roles can be granted access to other modules/submodules … in the tenant app settings, gated, accessible to the owner role."*
 - **Inside one tenant (the seraph has already scoped it), a role reaches only its FUNCTION by default:** HR → HR; bookkeeping → financials; project manager → **their own** projects; director + owner → everything.
 - **The owner grants extra modules / submodules to a role** in tenant settings (owner-only, gated).
 - **Files follow the module they belong to** — an invoice PDF is financials, a clock photo is HR. `crew-file-policy.ts` is the first instance; this generalises it.
 - 🟨 Open: grants **per role** (Florin's words) vs the existing **per person** `User.moduleAccess` (Settings → Team) — see chat 2026-09-30.
 
-## 4 · `TASK-CREW-1` — 🟢 **Florin decided (2026-09-30):** the crew updates task status and writes notes with photos; the app keeps a detailed log of changes, **read-only for every role**
-- Crew may change the status of a task **assigned to them**. Management still sees and can override.
-- Crew notes: details + photos, in reference to the task.
-- **Every change** (status, note) → an immutable log entry (who, when, before → after), shown read-only on the task in the ERP and the WorkHub. *(AuditLog is already immutable — `POST /api/hr/audit-logs` is refused.)*
-- 🟨 Open: notes append-only vs editable · storage (new table + Florin's migration vs task JSON property) — see chat.
-
-## 5 · `GATE-2b` — crew self-service on shifts, tasks, attachments
+## 3 · `GATE-2b` — crew self-service on shifts, tasks, attachments
 `write-policy.ts` does not yet cover `shifts`, `shift-tasks`, `shift-attachments` (crew writes those legitimately: user-initiated shifts, task progress, uploads). Needs reach-on-parent — **rides with `R1-4`.**
 
 ---

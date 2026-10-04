@@ -13,6 +13,8 @@ import { CustomDatePicker } from '@/components/ui/CustomDatePicker';
 import FileViewer from '@/components/files/FileViewer';
 import { TaskCrewRecord } from './TaskCrewRecord';
 import { resolveFileUrl } from '@/lib/files';
+import { useLocale } from 'next-intl';
+import { formatDate } from '@/lib/format/date';
 
 
 import { Page } from '@/components/admin/database/types';
@@ -157,6 +159,7 @@ function PropRow({ label, children }: { label: string; children: React.ReactNode
 }
 
 export function TaskDetailPanel({ page, onClose, onUpdate, onDelete, onOpenFullPage }: TaskDetailPanelProps) {
+    const locale = useLocale();
     const props = page.properties;
     const [title, setTitle]   = useState((props['title'] as string) || '');
     const [notes, setNotes]   = useState((props['prop-task-notes'] as string) || '');
@@ -598,7 +601,7 @@ export function TaskDetailPanel({ page, onClose, onUpdate, onDelete, onOpenFullP
                 {/* Completed timestamp */}
                 {completedAt && (
                     <p className="text-xs font-bold text-neutral-800 dark:text-neutral-300">
-                        ✅ Completed {new Date(completedAt).toLocaleDateString()}
+                        ✅ Completed {formatDate(completedAt, locale)}
                     </p>
                 )}
             </div>

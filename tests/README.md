@@ -21,6 +21,10 @@ node --experimental-strip-types --import ./tests/register.mjs --test tests/invoi
 | `invoice-totals.test.ts` | **The money path.** VAT regimes (21 / 6 / medecontractant), uniform output VAT, `unitPrice` overriding `verkoopPrice`, quantity multipliers through nesting, optional lines excluded, VAT-inclusive back-calculation, rounding, totals reconciliation. |
 | `block-tree.test.ts` | **The DnD invariant.** flatten/build round-trip is lossless, containers-only recursion, `assertTreeInvariants` catches loss and id changes, nesting rules (`canNest`). |
 | `duration.test.ts` | **The break rule.** >4h ⇒ deduct 30 min, `noBreak` suppression, the 4h boundary, missing/reversed/unparseable timestamps returning 0 rather than NaN or negatives. |
+| `write-path-occ.test.ts` | The write-door guards on real code: export lock (`checkExportLock`) and the empty-lines protection (`isWipeHazard`). The merge cases moved to `occ-merge*.test.ts`. |
+| `write-path-store.test.ts` | **Store write path invariants.** `inFlightPageLoads` single-flight fetch deduplication and caching, `syncQueue` retry lifecycle and 5-retry error threshold with exponential backoff (3000 * 2^retryCount), permanent refusals (`EXPORT_LOCKED` state revert and `EMPTY_BLOCKS_PROTECTION`), OCC-13 dirty page eviction immunity in `hydrateDatabases`/`loadDatabasePages`, and `partialize` IndexedDB filtering (dropping clean pages, stripping blocks unless `dirtyBaseBlocks`). |
+| `occ-merge.test.ts` | **The stale-write merge** (OCC-MERGE-1): another user's edit to an untouched field is kept; same-field conflict; derived totals; no base = conflict. Real `lib/records/occ-merge.ts`. |
+| `occ-merge-store.test.ts` | The store adopts `keptServer` values and re-bases to the saved row; a clean page has no base. |
 | `alias-hooks.mjs` / `register.mjs` | Resolve `@/*` → `src/*` so tests can import app modules. |
 
 ## Rules of use

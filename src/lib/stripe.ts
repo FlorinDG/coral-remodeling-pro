@@ -16,6 +16,7 @@ import prisma from './prisma';
 
 // The mapping lives in plan-modules.ts (pure — read by the kernel and tests); re-exported here unchanged.
 import { PLAN_MODULES } from './plan-modules';
+import { planChanged } from '@/lib/records/license-subscription';
 export { PLAN_MODULES };
 
 // ── Pricing constants ────────────────────────────────────────────────
@@ -116,8 +117,8 @@ export function getPriceId(key: keyof typeof STRIPE_PRICE_IDS): string {
 // ── Helpers ──────────────────────────────────────────────────────────
 
 /**
- * Atomically sync a plan change to the tenant record.
- * Updates planType, activeModules, subscriptionStatus, scanQuota, and Stripe IDs.
+ * Sync a plan to the tenant record: planType, subscriptionStatus and Stripe ids always; activeModules and
+ * scanQuota (the plan template) ONLY when the plan changes (LIC-1).
  */
 export async function syncPlanToTenant(
     tenantId: string,
@@ -130,15 +131,18 @@ export async function syncPlanToTenant(
         billingCycle?: string;
     }
 ) {
-    const modules = PLAN_MODULES[planType] || PLAN_MODULES.FREE;
-    const scanQuota = PLAN_SCAN_QUOTAS[planType] ?? PLAN_SCAN_QUOTAS.FREE;
+    // LIC-1: the plan TEMPLATE (modules, scan quota) is applied only when the plan CHANGES. A renewal or a
+    // seat change re-sends the same plan — it must not wipe modules Florin granted by hand (ENT-12).
+    const current = await prisma.tenant.findUnique({ where: { id: tenantId }, select: { planType: true } });
+    const template = planChanged(current?.planType, planType)
+        ? { activeModules: PLAN_MODULES[planType] || PLAN_MODULES.FREE, scanQuota: PLAN_SCAN_QUOTAS[planType] ?? PLAN_SCAN_QUOTAS.FREE }
+        : {};
 
     await prisma.tenant.update({
         where: { id: tenantId },
         data: {
             planType,
-            activeModules: modules,
-            scanQuota,
+            ...template,
             ...(opts?.stripeCustomerId     && { stripeCustomerId:     opts.stripeCustomerId }),
             ...(opts?.stripeSubscriptionId && { stripeSubscriptionId: opts.stripeSubscriptionId }),
             ...(opts?.stripePriceId        && { stripePriceId:        opts.stripePriceId }),

@@ -15,51 +15,37 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { getStripeInstance, syncPlanToTenant, STRIPE_PRICE_IDS, getPriceId } from '@/lib/stripe';
-import { platformDb, systemScope } from '@/lib/data/scope';
-import { recordStripePayment } from '@/lib/data/invoice-payments';
-import { stripeTenantPaymentRefusal, stripeAmountEuro } from '@/lib/records/stripe-tenant-payment';
+import { platformDb } from '@/lib/data/scope';
+import { basePlanOf, licenseStatusOf, licenseEventRefusal } from '@/lib/records/license-subscription';
 
-/**
- * PAY-2 · a checkout on a TENANT's own Stripe account. The request body is unsigned, so it only says which
- * tenant's key to ask; everything else is read from the session Stripe returns to THAT key. A confirmed,
- * matching payment becomes a payments-in row on that tenant's invoice (through its system scope) and the
- * invoice's status follows from the payments (PAY-1). Nothing else can happen on this path.
- */
-async function handleTenantCheckout(body: string): Promise<NextResponse> {
-    try {
-        const raw = JSON.parse(body);
-        if (raw?.type !== 'checkout.session.completed') return NextResponse.json({ error: 'Webhook signature verification failed' }, { status: 400 });
-        const claimedTenantId: string | undefined = raw?.data?.object?.metadata?.tenantId;
-        const sessionId: string | undefined = raw?.data?.object?.id;
-        if (!claimedTenantId || !sessionId) return NextResponse.json({ error: 'Webhook signature verification failed' }, { status: 400 });
-
-        const tenant = await platformDb().tenant.findUnique({ where: { id: claimedTenantId }, select: { id: true, paymentProvider: true, stripeSecretKey: true } });
-        if (!tenant || tenant.paymentProvider !== 'stripe' || !tenant.stripeSecretKey) return NextResponse.json({ error: 'Webhook signature verification failed' }, { status: 400 });
-        const { decrypt } = await import('@/lib/encryption');
-        const key = decrypt(tenant.stripeSecretKey);
-        if (!key) return NextResponse.json({ error: 'Webhook signature verification failed' }, { status: 400 });
-
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const fetched = await new Stripe(key, { apiVersion: '2022-11-15' as any }).checkout.sessions.retrieve(sessionId);
-        const refusal = stripeTenantPaymentRefusal(fetched as never, tenant.id);
-        if (refusal) {
-            console.warn(`[Stripe Webhook] tenant ${tenant.id} checkout ${sessionId} refused: ${refusal}`);
-            return NextResponse.json({ received: true, recorded: false, reason: refusal });
-        }
-        const db = systemScope(tenant.id, `stripe checkout ${sessionId}`);
-        const result = await recordStripePayment(db, tenant.id, {
-            invoiceId: fetched.metadata!.invoiceId,
-            sessionId,
-            amount: stripeAmountEuro(fetched.amount_total!),
-        });
-        console.log(`[Stripe Webhook] tenant ${tenant.id} checkout ${sessionId}: ${result}`);
-        return NextResponse.json({ received: true, recorded: result !== 'not_found' && result !== 'unbound', result });
-    } catch (err) {
-        console.error('[Stripe Webhook] tenant checkout verification failed:', err);
-        return NextResponse.json({ error: 'Webhook signature verification failed' }, { status: 400 });
-    }
+function stripeEnv(): 'test' | 'prod' {
+    return process.env.STRIPE_SECRET_KEY?.startsWith('sk_test_') ? 'test' : 'prod';
 }
 
+/** The tenant a license event concerns: the owner of the Stripe CUSTOMER first; metadata only for a first purchase. */
+async function licenseTenant(customerId: string | null, metadataTenantId: string | null) {
+    const select = { id: true, stripeCustomerId: true, stripeSubscriptionId: true } as const;
+    if (customerId) {
+        const owner = await platformDb().tenant.findUnique({ where: { stripeCustomerId: customerId }, select });
+        if (owner) return owner;
+    }
+    return metadataTenantId ? platformDb().tenant.findUnique({ where: { id: metadataTenantId }, select }) : null;
+}
+
+/** Seat add-ons on the subscription (extra users, workforce) for the plan it carries. */
+function seatCounts(sub: Stripe.Subscription, plan: 'PRO' | 'ENTERPRISE') {
+    const xu = getPriceId(plan === 'ENTERPRISE' ? 'EXTRA_USER_ENT' : 'EXTRA_USER_PRO');
+    const wf = getPriceId(plan === 'ENTERPRISE' ? 'WORKFORCE_ENT' : 'WORKFORCE_PRO');
+    return {
+        extraUserCount: sub.items.data.find(it => it.price.id === xu)?.quantity ?? 0,
+        workforceUserCount: sub.items.data.find(it => it.price.id === wf)?.quantity ?? 0,
+    };
+}
+/**
+ * Stripe is ONLY the CoralOS license fee (Florin 2026-10-04: "we do not handle payments for the tenants").
+ * Every event must carry the PLATFORM's signature — there is no other sender, no fallback. A tenant's
+ * invoices are paid by bank transfer and reconciled in its payments-in database (PAY-1), never here.
+ */
 export async function POST(req: Request) {
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
     if (!webhookSecret) {
@@ -80,10 +66,7 @@ export async function POST(req: Request) {
     try {
         event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
     } catch {
-        // Not signed by the PLATFORM. The only other legitimate sender is a tenant's own Stripe account
-        // (its checkout for one of its invoices). That path can only ever record a payment — it never
-        // reaches the platform handlers below (plans, seats, subscription status). PAY-2.
-        return handleTenantCheckout(body);
+        return NextResponse.json({ error: 'Webhook signature verification failed' }, { status: 400 });
     }
 
     console.log(`[Stripe Webhook] Received: ${event.type}`);
@@ -93,129 +76,66 @@ export async function POST(req: Request) {
             // ── Checkout completed — provision subscription ──────────
             case 'checkout.session.completed': {
                 const session = event.data.object as Stripe.Checkout.Session;
-                const tenantId = session.metadata?.tenantId;
-                const invoiceId = session.metadata?.invoiceId;
-
-                if (invoiceId) {
-                    // A tenant's invoice is paid through the TENANT's Stripe account (handleTenantCheckout), never
-                    // the platform's. A platform-signed session naming an invoice is not ours to act on. PAY-2.
-                    console.warn(`[Stripe Webhook] platform checkout ${session.id} names invoice ${invoiceId} — ignored`);
+                if (session.metadata?.invoiceId) {
+                    // Tenants' invoices are never paid through Stripe; a session naming one is not a license sale.
+                    console.warn(`[Stripe Webhook] checkout ${session.id} names an invoice — not a license payment, ignored`);
                     break;
                 }
+                const subscriptionId = typeof session.subscription === 'string' ? session.subscription : session.subscription?.id;
+                if (!subscriptionId) break;
+                const customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id ?? null;
+                const tenant = await licenseTenant(customerId, session.metadata?.tenantId ?? null);
+                if (!tenant) { console.warn(`[Stripe Webhook] checkout ${session.id}: no tenant for customer ${customerId}`); break; }
+                const refusal = licenseEventRefusal(tenant, { customerId, metadataTenantId: session.metadata?.tenantId ?? null, subscriptionId, kind: 'checkout' });
+                if (refusal) { console.error(`[Stripe Webhook] checkout ${session.id} refused for tenant ${tenant.id}: ${refusal}`); break; }
 
-                const planType = session.metadata?.planType || 'PRO';
-
-                if (!tenantId) {
-                    console.warn('[Stripe Webhook] checkout.session.completed missing tenantId metadata');
-                    break;
-                }
-
-                // Retrieve the subscription to get IDs
-                const subscriptionId = typeof session.subscription === 'string'
-                    ? session.subscription
-                    : session.subscription?.id;
-
-                if (subscriptionId) {
-                    const sub = await stripe.subscriptions.retrieve(subscriptionId);
-                    const isTrial = sub.status === 'trialing';
-
-                    await syncPlanToTenant(tenantId, planType, {
-                        stripeCustomerId: typeof session.customer === 'string' ? session.customer : session.customer?.id,
-                        stripeSubscriptionId: sub.id,
-                        stripePriceId: sub.items.data[0]?.price?.id,
-                        subscriptionStatus: isTrial ? 'TRIAL' : 'ACTIVE',
-                        billingCycle: session.metadata?.billingCycle || 'MONTHLY',
-                    });
-
-                    // Set trial end date from Stripe's trial_end timestamp
-                    if (isTrial && sub.trial_end) {
-                        const { default: prisma } = await import('@/lib/prisma');
-                        await prisma.tenant.update({
-                            where: { id: tenantId },
-                            data: {
-                                trialEndsAt: new Date(sub.trial_end * 1000),
-                                trialNotifiedAt: null,
-                            },
-                        });
-                    }
-                }
-
-                console.log(`[Stripe Webhook] Provisioned ${planType} for tenant ${tenantId}`);
-                break;
-            }
-
-            // ── Subscription updated — plan/seat changes ────────────
-            case 'customer.subscription.updated': {
-                const sub = event.data.object as Stripe.Subscription;
-                const tenantId = sub.metadata?.tenantId;
-
-                if (!tenantId) break;
-
-                // Map subscription status
-                let status = 'ACTIVE';
-                if (sub.status === 'trialing') status = 'TRIAL';
-                else if (sub.status === 'past_due') status = 'PAST_DUE';
-                else if (sub.status === 'canceled') status = 'CANCELLED';
-
-                // Determine plan type from price
-                const priceId = sub.items.data[0]?.price?.id;
-                const planType = sub.metadata?.planType || determinePlanFromPrice(priceId);
-
-                // Determine dynamic price IDs for extra standard users and workforce members
-                const extraUserPriceKey = planType === 'ENTERPRISE' ? 'EXTRA_USER_ENT' : 'EXTRA_USER_PRO';
-                const workforcePriceKey = planType === 'ENTERPRISE' ? 'WORKFORCE_ENT' : 'WORKFORCE_PRO';
-                
-                const extraUserPriceId = getPriceId(extraUserPriceKey);
-                const workforcePriceId = getPriceId(workforcePriceKey);
-
-                const extraUserItem = sub.items.data.find(item => item.price.id === extraUserPriceId);
-                const workforceItem = sub.items.data.find(item => item.price.id === workforcePriceId);
-
-                const extraUserCount = extraUserItem?.quantity ?? 0;
-                const workforceUserCount = workforceItem?.quantity ?? 0;
-
-                await syncPlanToTenant(tenantId, planType, {
+                const sub = await stripe.subscriptions.retrieve(subscriptionId);   // the current truth, not the payload
+                const plan = basePlanOf(sub.items.data.map(it => it.price?.id), STRIPE_PRICE_IDS, stripeEnv());
+                if (!plan) { console.error(`[Stripe Webhook] checkout ${session.id}: no known plan price on ${sub.id} — tenant ${tenant.id} NOT changed`); break; }
+                const status = licenseStatusOf(sub.status) ?? 'ACTIVE';
+                await syncPlanToTenant(tenant.id, plan, {
+                    stripeCustomerId: customerId ?? undefined,
                     stripeSubscriptionId: sub.id,
-                    stripePriceId: priceId,
+                    stripePriceId: sub.items.data.find(it => basePlanOf([it.price?.id], STRIPE_PRICE_IDS, stripeEnv()))?.price?.id,
                     subscriptionStatus: status,
+                    billingCycle: session.metadata?.billingCycle || 'MONTHLY',
                 });
-
-                // Update tenant counters in database
-                const { default: prisma } = await import('@/lib/prisma');
-                await prisma.tenant.update({
-                    where: { id: tenantId },
-                    data: {
-                        extraUserCount,
-                        workforceUserCount,
-                    },
-                });
-
-                console.log(`[Stripe Webhook] Updated subscription for tenant ${tenantId}: ${status} (seats: extraUsers=${extraUserCount}, workforce=${workforceUserCount})`);
+                await platformDb().tenant.update({ where: { id: tenant.id }, data: seatCounts(sub, plan) });
+                if (status === 'TRIAL' && sub.trial_end) {
+                    await platformDb().tenant.update({ where: { id: tenant.id }, data: { trialEndsAt: new Date(sub.trial_end * 1000), trialNotifiedAt: null } });
+                }
+                console.log(`[Stripe Webhook] License ${plan} (${status}) for tenant ${tenant.id}`);
                 break;
             }
 
-            // ── Subscription deleted — downgrade to FREE ────────────
+            // ── Subscription updated / deleted — read the CURRENT subscription, act only on the tenant's own ──
+            case 'customer.subscription.updated':
             case 'customer.subscription.deleted': {
-                const sub = event.data.object as Stripe.Subscription;
-                const tenantId = sub.metadata?.tenantId;
+                const evSub = event.data.object as Stripe.Subscription;
+                const customerId = typeof evSub.customer === 'string' ? evSub.customer : evSub.customer?.id ?? null;
+                const tenant = await licenseTenant(customerId, evSub.metadata?.tenantId ?? null);
+                if (!tenant) { console.warn(`[Stripe Webhook] ${event.type} ${evSub.id}: no tenant for customer ${customerId}`); break; }
+                const refusal = licenseEventRefusal(tenant, { customerId, metadataTenantId: evSub.metadata?.tenantId ?? null, subscriptionId: evSub.id, kind: 'subscription' });
+                if (refusal) { console.warn(`[Stripe Webhook] ${event.type} ${evSub.id} ignored for tenant ${tenant.id}: ${refusal}`); break; }
 
-                if (!tenantId) break;
-
-                await syncPlanToTenant(tenantId, 'FREE', {
-                    subscriptionStatus: 'CANCELLED',
+                // Stripe does not guarantee event order: the fetched subscription is the truth, not this payload.
+                const sub = await stripe.subscriptions.retrieve(evSub.id);
+                const status = licenseStatusOf(sub.status);
+                if (status === 'CANCELLED') {
+                    await syncPlanToTenant(tenant.id, 'FREE', { subscriptionStatus: 'CANCELLED' });
+                    await platformDb().tenant.update({ where: { id: tenant.id }, data: { extraUserCount: 0, workforceUserCount: 0 } });
+                    console.log(`[Stripe Webhook] License cancelled — tenant ${tenant.id} on FREE, seats 0`);
+                    break;
+                }
+                const plan = basePlanOf(sub.items.data.map(it => it.price?.id), STRIPE_PRICE_IDS, stripeEnv());
+                if (!plan) { console.error(`[Stripe Webhook] ${sub.id}: no known plan price — tenant ${tenant.id} plan NOT changed`); break; }
+                await syncPlanToTenant(tenant.id, plan, {
+                    stripeSubscriptionId: sub.id,
+                    stripePriceId: sub.items.data.find(it => basePlanOf([it.price?.id], STRIPE_PRICE_IDS, stripeEnv()))?.price?.id,
+                    ...(status ? { subscriptionStatus: status } : {}),
                 });
-
-                // Reset tenant counters in database
-                const { default: prisma } = await import('@/lib/prisma');
-                await prisma.tenant.update({
-                    where: { id: tenantId },
-                    data: {
-                        extraUserCount: 0,
-                        workforceUserCount: 0,
-                    },
-                });
-
-                console.log(`[Stripe Webhook] Subscription deleted — tenant ${tenantId} downgraded to FREE and seat counters reset to 0`);
+                await platformDb().tenant.update({ where: { id: tenant.id }, data: seatCounts(sub, plan) });
+                console.log(`[Stripe Webhook] License ${plan} ${status ?? '(status unchanged)'} for tenant ${tenant.id}`);
                 break;
             }
 
@@ -227,8 +147,7 @@ export async function POST(req: Request) {
                     : invoice.customer?.id;
 
                 if (customerId) {
-                    const { default: prisma } = await import('@/lib/prisma');
-                    await prisma.tenant.updateMany({
+                    await platformDb().tenant.updateMany({
                         where: { stripeCustomerId: customerId },
                         data: { subscriptionStatus: 'PAST_DUE' },
                     });
@@ -245,8 +164,7 @@ export async function POST(req: Request) {
                     : invoice.customer?.id;
 
                 if (customerId) {
-                    const { default: prisma } = await import('@/lib/prisma');
-                    await prisma.tenant.updateMany({
+                    await platformDb().tenant.updateMany({
                         where: { stripeCustomerId: customerId, subscriptionStatus: 'PAST_DUE' },
                         data: { subscriptionStatus: 'ACTIVE' },
                     });
@@ -264,20 +182,4 @@ export async function POST(req: Request) {
         console.error('[Stripe Webhook] Handler error:', error);
         return NextResponse.json({ error: String(error) }, { status: 500 });
     }
-}
-
-// ── Helper: determine plan type from price ID ───────────────────────
-function determinePlanFromPrice(priceId: string | undefined): string {
-    if (!priceId) return 'PRO';
-
-    const isTest = process.env.STRIPE_SECRET_KEY?.startsWith('sk_test_');
-    const env = isTest ? 'test' : 'prod';
-
-    for (const [key, ids] of Object.entries(STRIPE_PRICE_IDS)) {
-        if (ids[env] === priceId) {
-            return key.includes('ENT') ? 'ENTERPRISE' : 'PRO';
-        }
-    }
-
-    return 'PRO';
 }

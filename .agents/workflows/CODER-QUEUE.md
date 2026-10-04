@@ -16,13 +16,10 @@
 **every new test needs a THROW PROOF** (break the real code, show the test fail, restore), and
 **bending a directive is not progress** — a blocked step is STOPPED, never worked around.
 
-## 0 · `WO-4a-M4` — the work order PDF without global patches — 🟦 PLAN FIRST (protocol §0)
-📄 `coder-directive-wo-4a-m4.md` — append the M4 plan to `.agents/plans/WO-4a.md`, push, STOP for review.
-Removes the `Math.random` seeding and the PDF library prototype patch; WO-4b waits on it.
-*(WO-4a M1–M3 ✅ and GEO-2 M1–M3 ✅ — done 2026-10-03/04.)*
-
-## 1 · `R2-1-CENSUS` — map every direct GlobalPage write (read-only) + one honest backoff test
-📄 `coder-directive-r2-1-write-census.md` — 33 writes in 18 files, one row each (tenant check · OCC · audit · fate). `src/` read-only.
+## 0 · `WH-7` — rebuild the shift editor — 🟦 PLAN FIRST (protocol §0)
+📄 `coder-directive-wh-7.md` — write `.agents/plans/WH-7.md`, push, STOP for review.
+Canonical logic is binding (kernel time functions, a pure tested model, the existing write doors only).
+*(Done 2026-10-04: WO-4a-M4 ✅ · R2-1-CENSUS ✅ — 4 holes it found were fixed the same day.)*
 
 ## ✅ `R2-5` — DONE WITH CORRECTIONS (review 2026-10-02, `MORNING-2026-10-02.md` §2)
 Store tests accepted. 11 of 13 OCC tests tested a COPY of the merge loop (§3a) — removed on

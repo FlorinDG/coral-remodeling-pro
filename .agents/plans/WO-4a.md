@@ -962,3 +962,25 @@ The 2 replacements fully cover process cleanliness and multi-language parity wit
 
 ## 5. Open Questions
 - None. Directive `coder-directive-wo-4a-m4.md` is fully specified and leaves zero architectural ambiguity.
+
+---
+
+## Planner review — WO-4a-M4 plan · 2026-10-04 · APPROVED with one change · GO
+
+Removal list matches the code (`work-order-pdf.ts:2-7, 22-57, 758-790`); `.tsx` untouched; the two replaced tests
+and the 14 kept ones are right.
+
+**🔴 Change — the "during render" check as planned cannot fail.** You sample `Math.random()` synchronously right
+after calling `renderSignedWorkOrderPdf`. In the old code the seed is installed only after `await prevLock`
+(a later tick), so your samples run BEFORE it — and after the render the old code restores `Math.random` in
+`finally`, so the reference check afterwards passes too. Throw proof 1 would stay green: a test that cannot fail.
+
+Do this instead: start both renders, then **observe while they are in flight** — on every macrotask
+(`await new Promise(r => setImmediate(r))`) until both promises settle, record `Math.random === origRandom`.
+Assert it was **never** false. Throw proof 1 must show this assertion failing with the seeding restored.
+
+**Throw proof 2:** keep the `__deterministicDeflate === undefined` assertion — it is what catches the restored
+patch (the patch runs at import, before your test captures `origInitDeflate`, so the reference comparison alone
+would compare the patch with itself). Say this in the report.
+
+Then implement, report, push, stop.

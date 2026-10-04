@@ -258,8 +258,10 @@ export async function updatePageServerFirst(
             databaseId: saved.databaseId,
             properties: saved.properties as Record<string, PropertyValue>,
             order: saved.order ?? 0,
-            blocks: [],
-            blocksVersion: 1,
+            // R2-1-FABRICATED-PAGE: the row's REAL blocks and version — a hard-coded [] / 1 here wiped the
+            // document's lines in any store that adopted this page (Peppol send, receipt scan) and reset OCC.
+            blocks: (Array.isArray(saved.blocks) ? saved.blocks : []) as unknown as Page['blocks'],
+            blocksVersion: saved.blocksVersion,
             createdAt: saved.createdAt.toISOString(),
             updatedAt: saved.updatedAt.toISOString(),
             createdBy: saved.createdBy,

@@ -16,9 +16,15 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: authResult.error || 'Unauthorized' }, { status: authResult.status || 401 });
         }
 
+        // R2-1-CENSUS #23: the PORTAL's tenant's tasks database — a hard-coded 'db-tasks' is BV Coral's, so every
+        // other tenant's portal wrote its tasks there. Fail closed: no binding → refused, never a guess.
+        const owner = await prisma.tenant.findUnique({ where: { id: authResult.portal.tenantId }, select: { lockedDbIds: true } });
+        const tasksDbId = ((owner?.lockedDbIds as Record<string, string> | null) || {})['tasks'];
+        if (!tasksDbId) return NextResponse.json({ error: 'unbound_system_database: tasks' }, { status: 409 });
+
         const task = await prisma.globalPage.create({
             data: {
-                databaseId: 'db-tasks',
+                databaseId: tasksDbId,
                 createdBy: 'system:portal',
                 lastEditedBy: 'system:portal',
                 properties: {
@@ -56,9 +62,9 @@ export async function PUT(request: Request) {
             return NextResponse.json({ error: 'Task ID required' }, { status: 400 });
         }
 
-        // Verify task exists and belongs to db-tasks
-        const existing = await prisma.globalPage.findUnique({ where: { id } });
-        if (!existing || existing.databaseId !== 'db-tasks') {
+        // Verify the task exists and is a TASK (its database's role), not a hard-coded id (R2-1-CENSUS #23/#24)
+        const existing = await prisma.globalPage.findUnique({ where: { id }, include: { database: { select: { logicalKey: true, tenantId: true } } } });
+        if (!existing || existing.database.logicalKey !== 'tasks') {
             return NextResponse.json({ error: 'Not found' }, { status: 404 });
         }
 
@@ -80,6 +86,10 @@ export async function PUT(request: Request) {
 
         if (!authorizedPortal) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+        // …and the portal that grants access belongs to the same tenant as the task.
+        if (authorizedPortal.tenantId !== existing.database.tenantId) {
+            return NextResponse.json({ error: 'Not found' }, { status: 404 });
         }
 
         const newProperties = {

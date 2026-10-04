@@ -46,9 +46,10 @@ async function handlePortalRequest(request: Request, context: any, explicitPassw
         const isCustomer = portal.audience === 'CUSTOMER';
 
         // 1. Fetch portal tasks from the generic tasks module
+        // The PORTAL tenant's tasks database, by its role (R2-1-CENSUS #23) — not BV Coral's hard-coded 'db-tasks'.
         const rawTasks = await prisma.globalPage.findMany({
             where: {
-                databaseId: 'db-tasks',
+                database: { tenantId: portal.tenantId, logicalKey: 'tasks' },
                 properties: {
                     path: ['prop-task-portal'],
                     array_contains: portal.id

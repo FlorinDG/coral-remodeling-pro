@@ -1,4 +1,5 @@
 "use server";
+import { clientAcceptRefusal } from '@/lib/records/client-accept';
 
 import prisma from '@/lib/prisma';
 
@@ -12,7 +13,8 @@ interface AcceptQuotationPayload {
 export async function acceptQuotation({ quoteId, signatureBase64, signatureMethod, consentName }: AcceptQuotationPayload) {
     try {
         const quote = await prisma.globalPage.findUnique({
-            where: { id: quoteId }
+            where: { id: quoteId },
+            include: { database: { select: { logicalKey: true } } },
         });
 
         if (!quote) throw new Error("Quote not found.");
@@ -21,10 +23,11 @@ export async function acceptQuotation({ quoteId, signatureBase64, signatureMetho
             ? (quote.properties as Record<string, unknown>)
             : {};
 
-        // Check if already accepted
-        if (currentProps.status === 'ACCEPTED' || currentProps.status === 'opt-accepted') {
-            return { success: false, error: 'This quotation has already been accepted.' };
-        }
+        // R2-1-CENSUS #10: only a SENT quotation can be accepted from its link — any other record id
+        // (an article, a project, another tenant's anything) used to be overwritten here.
+        const refusal = clientAcceptRefusal('quotations', quote.database?.logicalKey, currentProps.status);
+        if (refusal === 'already_accepted') return { success: false, error: 'This quotation has already been accepted.' };
+        if (refusal) return { success: false, error: 'This quotation cannot be accepted.' };
 
         await prisma.globalPage.update({
             where: { id: quoteId },

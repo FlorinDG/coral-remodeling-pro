@@ -2,6 +2,13 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { nanoid } from "nanoid";
 import { auth } from '@/auth';
+import { scopeFromSession, type TenantScopedClient } from '@/lib/data/scope';
+import { systemDatabaseId } from '@/lib/data/system-databases';
+
+/** A page in THIS tenant's projects database (the scoped client cannot see another tenant's). */
+async function isOwnProject(db: TenantScopedClient, id: string): Promise<boolean> {
+    return !!(await db.globalPage.findFirst({ where: { id, database: { logicalKey: 'projects' } }, select: { id: true } }));
+}
 
 export async function POST(request: Request) {
     try {
@@ -11,15 +18,19 @@ export async function POST(request: Request) {
         const body = await request.json();
         const { clientName, clientEmail, projectTitle, serviceId, budget, paidAmount, password, createProject, linkedProjectId: providedLinkedProjectId, audience } = body;
 
+        // Seraph (R2-1-CENSUS #25, 2026-10-04): the session scope for every read/write; the projects database
+        // from the binding (no 'db-1' fallback); a linked project must be a project of THIS tenant.
+        const db = await scopeFromSession();
         let finalLinkedProjectId = providedLinkedProjectId || null;
-        const finalLinkedDatabaseId = 'db-1';
-
-        const tenant = await prisma.tenant.findUnique({ where: { id: tenantId }, select: { lockedDbIds: true } });
-        const locked = (tenant?.lockedDbIds as Record<string, string>) || {};
-        const projectDbId = locked['projects'] || 'db-1';
+        if (finalLinkedProjectId && !(await isOwnProject(db, finalLinkedProjectId))) {
+            return NextResponse.json({ error: 'linkedProjectId is not a project of this workspace' }, { status: 400 });
+        }
+        let projectDbId: string | null = null;
+        try { projectDbId = await systemDatabaseId(tenantId, 'projects'); } catch { /* no projects database: a portal without a project */ }
 
         if (createProject && projectTitle && !finalLinkedProjectId) {
-            const globalPage = await prisma.globalPage.create({
+            if (!projectDbId) return NextResponse.json({ error: 'unbound_system_database: projects' }, { status: 409 });
+            const globalPage = await db.globalPage.create({
                 data: {
                     databaseId: projectDbId,
                     properties: { title: projectTitle, clientName, status: 'New', budget: budget || 0 },
@@ -38,7 +49,7 @@ export async function POST(request: Request) {
             hashedPassword = await bcrypt.hash(password, 10);
         }
 
-        const portal = await prisma.clientPortal.create({
+        const portal = await db.clientPortal.create({
             data: {
                 tenantId,
                 clientName,
@@ -79,8 +90,15 @@ export async function PATCH(request: Request) {
         if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
         const updatedData: any = { budget, paidAmount, status };
-        if (body.linkedProjectId !== undefined) updatedData.linkedProjectId = body.linkedProjectId;
-        if (body.linkedDatabaseId !== undefined) updatedData.linkedDatabaseId = body.linkedDatabaseId;
+        if (body.linkedProjectId !== undefined) {
+            // Only a project of THIS tenant may be linked; the database is the binding, never the body's.
+            const db = await scopeFromSession();
+            if (body.linkedProjectId && !(await isOwnProject(db, body.linkedProjectId))) {
+                return NextResponse.json({ error: 'linkedProjectId is not a project of this workspace' }, { status: 400 });
+            }
+            updatedData.linkedProjectId = body.linkedProjectId || null;
+            try { updatedData.linkedDatabaseId = body.linkedProjectId ? await systemDatabaseId(tenantId, 'projects') : null; } catch { updatedData.linkedDatabaseId = null; }
+        }
         if (audience !== undefined) updatedData.audience = audience;
 
         if (password) {

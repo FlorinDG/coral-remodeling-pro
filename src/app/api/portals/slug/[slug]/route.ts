@@ -78,8 +78,10 @@ async function handlePortalRequest(request: Request, context: any, explicitPassw
         let invoices: any[] = [];
 
         if (portal.linkedProjectId) {
-            const globalPage = await prisma.globalPage.findUnique({
-                where: { id: portal.linkedProjectId },
+            // Through the portal scope (seraph): only a PROJECT of the portal's own tenant — a linked id of
+            // another tenant shows nothing (it was read by id alone before, 2026-10-04).
+            const globalPage = await scoped.globalPage.findFirst({
+                where: { id: portal.linkedProjectId, database: { logicalKey: 'projects' } },
                 select: { id: true, properties: true }
             });
             if (globalPage) {
@@ -99,9 +101,9 @@ async function handlePortalRequest(request: Request, context: any, explicitPassw
 
             // 3. Fetch financial documents only for CUSTOMER
             if (isCustomer) {
-                const rawQuotes = await prisma.globalPage.findMany({
+                const rawQuotes = await scoped.globalPage.findMany({
                     where: {
-                        databaseId: 'db-quotations',
+                        database: { logicalKey: 'quotations' },   // the tenant's own, by role — not a bare 'db-quotations'
                         properties: {
                             path: ['prop-quote-project'],
                             array_contains: portal.linkedProjectId
@@ -120,9 +122,9 @@ async function handlePortalRequest(request: Request, context: any, explicitPassw
                     };
                 });
 
-                const rawInvoices = await prisma.globalPage.findMany({
+                const rawInvoices = await scoped.globalPage.findMany({
                     where: {
-                        databaseId: 'db-invoices',
+                        database: { logicalKey: 'invoices' },     // the tenant's own, by role — not a bare 'db-invoices'
                         properties: {
                             path: ['project'],
                             array_contains: portal.linkedProjectId

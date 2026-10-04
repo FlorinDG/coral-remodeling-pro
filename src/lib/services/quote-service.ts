@@ -1,13 +1,20 @@
-import prisma from '@/lib/prisma';
 import { v4 as uuidv4 } from 'uuid';
 import { Prisma } from '@prisma/client';
+import { systemScope } from '@/lib/data/scope';
+import { systemDatabaseId } from '@/lib/data/system-databases';
 
+/**
+ * Quote accepted → project (+ tasks). Through the seraph (R2-1-CENSUS #33–35, 2026-10-04): every read and
+ * write on the tenant's system scope, the quote must be a QUOTATION of that tenant, and the projects / tasks
+ * databases come from the binding (fails closed) — no 'db-1' / 'db-tasks' fallback, which are BV Coral's.
+ * Callers: updatePageServerFirst (session tenant), acceptQuotation (the accepted document's tenant).
+ */
 export async function autoCreateProjectFromQuote(quoteId: string, tenantId: string) {
     try {
-        // 1. Fetch the quote
-        const quote = await prisma.globalPage.findUnique({
-            where: { id: quoteId },
-            include: { database: true }
+        const db = systemScope(tenantId, `quote ${quoteId} accepted → project`);
+        // 1. Fetch the quote — a quotation of THIS tenant, or nothing
+        const quote = await db.globalPage.findFirst({
+            where: { id: quoteId, database: { logicalKey: 'quotations' } },
         });
 
         if (!quote) return { success: false, error: 'Quote not found' };
@@ -26,29 +33,20 @@ export async function autoCreateProjectFromQuote(quoteId: string, tenantId: stri
         const title = (props.betreft as string) || (props.title as string) || 'New Project';
         const billingRule = (props['prop-billing-rule'] as string) || 'opt-fixed';
 
-        // 2. Create GlobalPage in db-1 (Projects Management)
-        // We use a fixed ID for db-1 or look it up via tenant's lockedDbIds
-        let projectDbId = 'db-1';
-        const tenant = await prisma.tenant.findUnique({
-            where: { id: tenantId },
-            select: { lockedDbIds: true, driveFolderId: true, companyName: true }
-        });
-        if (tenant?.lockedDbIds && typeof tenant.lockedDbIds === 'object') {
-            const locked = tenant.lockedDbIds as Record<string, string>;
-            if (locked['projects']) projectDbId = locked['projects'];
-        }
+        // 2. The tenant's projects database — from the binding; none → no project (never a guessed 'db-1')
+        const projectDbId = await systemDatabaseId(tenantId, 'projects');
 
         const projectId = uuidv4();
 
         // Get order for db-1
-        const maxOrderRow = await prisma.globalPage.findFirst({
+        const maxOrderRow = await db.globalPage.findFirst({
             where: { databaseId: projectDbId },
             orderBy: { order: 'desc' },
             select: { order: true }
         });
         const order = (maxOrderRow?.order ?? -1) + 1;
 
-        await prisma.globalPage.create({
+        await db.globalPage.create({
             data: {
                 id: projectId,
                 databaseId: projectDbId,
@@ -71,8 +69,7 @@ export async function autoCreateProjectFromQuote(quoteId: string, tenantId: stri
 
         // 3. Create InternalProject (ERP/Scheduler shadow record)
         // This ensures it shows up in LinkedRecords and Scheduler
-        const latestProject = await prisma.internalProject.findFirst({
-            where: { tenantId },
+        const latestProject = await db.internalProject.findFirst({
             orderBy: { projectCode: 'desc' }
         });
 
@@ -83,7 +80,7 @@ export async function autoCreateProjectFromQuote(quoteId: string, tenantId: stri
         }
         const projectCode = `PRJ-${String(nextNum).padStart(3, '0')}`;
 
-        await prisma.internalProject.create({
+        await db.internalProject.create({
             data: {
                 id: projectId, // Use same ID for consistency if possible, or link them
                 tenantId,
@@ -96,7 +93,7 @@ export async function autoCreateProjectFromQuote(quoteId: string, tenantId: stri
         });
 
         // 4. Update Quote to link back to Project
-        await prisma.globalPage.update({
+        await db.globalPage.update({
             where: { id: quoteId },
             data: {
                 properties: {
@@ -107,19 +104,17 @@ export async function autoCreateProjectFromQuote(quoteId: string, tenantId: stri
             }
         });
 
-        // 5. Create Tasks in db-tasks if available
-        let tasksDbId = 'db-tasks';
-        if (tenant?.lockedDbIds && typeof tenant.lockedDbIds === 'object') {
-            const locked = tenant.lockedDbIds as Record<string, string>;
-            if (locked['tasks']) tasksDbId = locked['tasks'];
-        }
+        // 5. Tasks in the tenant's tasks database, if it has one (binding; never a guessed 'db-tasks')
+        let tasksDbId: string | null = null;
+        try { tasksDbId = await systemDatabaseId(tenantId, 'tasks'); }
+        catch { console.warn(`[autoCreateProject] tenant ${tenantId} has no tasks binding — no tasks created`); }
 
         const quoteBlocks = (quote.blocks || []) as unknown[];
         const extractAndCreateTasks = async (nodes: unknown[]) => {
             for (const item of nodes) {
                 const block = item as Record<string, any>;
-                if (block.type === 'line' || block.type === 'post') {
-                    await prisma.globalPage.create({
+                if (tasksDbId && (block.type === 'line' || block.type === 'post')) {
+                    await db.globalPage.create({
                         data: {
                             id: uuidv4(),
                             databaseId: tasksDbId,

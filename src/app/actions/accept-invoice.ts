@@ -1,7 +1,7 @@
 "use server";
 import { clientAcceptRefusal } from '@/lib/records/client-accept';
+import { platformDb, systemScope } from '@/lib/data/scope';
 
-import prisma from '@/lib/prisma';
 import { describeError } from '@/lib/describe-error';
 
 interface AcceptInvoicePayload {
@@ -13,9 +13,11 @@ interface AcceptInvoicePayload {
 
 export async function acceptInvoice({ invoiceId, signatureBase64, signatureMethod, consentName }: AcceptInvoicePayload) {
     try {
-        const invoice = await prisma.globalPage.findUnique({
+        // The link is the key (public by design): the document is read through the platform door — its tenant is
+        // not known yet — then the rule decides, then the write goes through THAT tenant's scope (seraph).
+        const invoice = await platformDb().globalPage.findUnique({
             where: { id: invoiceId },
-            include: { database: { select: { logicalKey: true } } },
+            include: { database: { select: { logicalKey: true, tenantId: true } } },
         });
 
         if (!invoice) throw new Error("Invoice not found.");
@@ -30,7 +32,7 @@ export async function acceptInvoice({ invoiceId, signatureBase64, signatureMetho
         if (refusal === 'already_accepted') return { success: false, error: 'This invoice has already been accepted.' };
         if (refusal) return { success: false, error: 'This invoice cannot be accepted.' };
 
-        await prisma.globalPage.update({
+        await systemScope(invoice.database.tenantId, `client accepted invoice ${invoiceId} via its link`).globalPage.update({
             where: { id: invoiceId },
             data: {
                 properties: {

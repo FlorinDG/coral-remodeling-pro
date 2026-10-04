@@ -1,5 +1,6 @@
 "use server";
 import { clientAcceptRefusal } from '@/lib/records/client-accept';
+import { platformDb, systemScope } from '@/lib/data/scope';
 
 import prisma from '@/lib/prisma';
 
@@ -12,9 +13,11 @@ interface AcceptQuotationPayload {
 
 export async function acceptQuotation({ quoteId, signatureBase64, signatureMethod, consentName }: AcceptQuotationPayload) {
     try {
-        const quote = await prisma.globalPage.findUnique({
+        // The link is the key (public by design): the document is read through the platform door — its tenant is
+        // not known yet — then the rule decides, then the write goes through THAT tenant's scope (seraph).
+        const quote = await platformDb().globalPage.findUnique({
             where: { id: quoteId },
-            include: { database: { select: { logicalKey: true } } },
+            include: { database: { select: { logicalKey: true, tenantId: true } } },
         });
 
         if (!quote) throw new Error("Quote not found.");
@@ -29,7 +32,7 @@ export async function acceptQuotation({ quoteId, signatureBase64, signatureMetho
         if (refusal === 'already_accepted') return { success: false, error: 'This quotation has already been accepted.' };
         if (refusal) return { success: false, error: 'This quotation cannot be accepted.' };
 
-        await prisma.globalPage.update({
+        await systemScope(quote.database.tenantId, `client accepted quotation ${quoteId} via its link`).globalPage.update({
             where: { id: quoteId },
             data: {
                 properties: {
@@ -44,11 +47,8 @@ export async function acceptQuotation({ quoteId, signatureBase64, signatureMetho
             }
         });
 
-        // Auto-create project after successful acceptance
-        const quoteWithDb = await prisma.globalPage.findUnique({
-            where: { id: quoteId },
-            select: { database: { select: { tenantId: true } } }
-        });
+        // Auto-create project after successful acceptance — in the quote's own tenant (read above)
+        const quoteWithDb = quote;
         
         if (quoteWithDb?.database.tenantId) {
             const { autoCreateProjectFromQuote } = await import('@/lib/services/quote-service');
@@ -56,7 +56,7 @@ export async function acceptQuotation({ quoteId, signatureBase64, signatureMetho
 
             // Fetch tenant details for email notification
             try {
-                const tenant = await prisma.tenant.findUnique({
+                const tenant = await platformDb().tenant.findUnique({   // Tenant: platform model (D4)
                     where: { id: quoteWithDb.database.tenantId }
                 });
 

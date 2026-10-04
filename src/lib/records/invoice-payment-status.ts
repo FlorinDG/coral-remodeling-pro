@@ -1,10 +1,11 @@
 /**
  * PAY-1 · the ONE rule for an invoice's / expense's payment status — pure, tested
- * (tests/invoice-payment-status.test.ts). Every surface that changes it — a matched bank payment, a
- * Stripe payment, the overdue cron — asks this; none decides on its own.
+ * (tests/invoice-payment-status.test.ts). Every surface that changes it — a matched bank payment, the
+ * overdue cron — asks this; none decides on its own. (Tenants' clients pay by bank transfer only; Stripe
+ * is the CoralOS license fee, never a tenant's invoice — Florin 2026-10-04.)
  *
  * Florin 2026-10-04: "make sure no leak can occur at the level where we cash in, and the statuses that
- * incur from that … a host of surfaces that overlap." Before: Stripe set opt-paid outright (any amount),
+ * incur from that … a host of surfaces that overlap." Before: a Stripe path set opt-paid outright (any amount),
  * payment matching computed it from payments, the cron set opt-overdue — three writers, three rules.
  *
  * The semantics are TODAY's, kept exactly — only collected here:

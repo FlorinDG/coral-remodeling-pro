@@ -66,10 +66,6 @@ export const FEATURE_FLAGS = {
     /** HR contracts and advanced workforce management */
     HR_CONTRACTS:                   { minTier: 'ENTERPRISE'  as Tier },
 
-    // ── Payments ─────────────────────────────────────────────────────
-    /** Stripe online payments for sales invoices (opt-in) */
-    STRIPE_PAYMENTS:                { minTier: 'PRO'         as Tier },
-
     // ── Architecture & Performance ─────────────────────────────────────
     /** MEM-3: Lazy database page loading (schemas + lightweight index on initial render, pages on-demand) */
     LAZY_DATABASE_PAGES:            { minTier: 'FREE'        as Tier },

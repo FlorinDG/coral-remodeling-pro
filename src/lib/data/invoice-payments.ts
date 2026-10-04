@@ -1,14 +1,13 @@
 /**
  * PAY-1 · the ONE door for payment facts and the statuses that follow from them (core, on the seraph's
  * scoped client). Callers bring a TenantScopedClient — scopeFromSession() (a user's action),
- * systemScope(tenantId, reason) (Stripe, cron) — so no call can read or write another tenant's invoice,
+ * systemScope(tenantId, reason) (cron) — so no call can read or write another tenant's invoice,
  * whatever id it is handed. The status rule itself is pure: lib/records/invoice-payment-status.ts.
  */
 import prisma from '@/lib/prisma';
 import type { Prisma } from '@prisma/client';
 import { zonedParts } from '@/lib/kernel/shift-time';
 import { nextInvoiceStatus, paidTowards } from '@/lib/records/invoice-payment-status';
-import { systemDatabaseId } from '@/lib/data/system-databases';
 import type { TenantScopedClient } from '@/lib/data/scope';
 
 /** Today in the business zone (YYYY-MM-DD) — never toISOString(), which is UTC. */
@@ -61,48 +60,4 @@ export async function syncInvoicePaymentStatus(
         }
     }
     return next;
-}
-
-/**
- * A card payment confirmed by the tenant's OWN Stripe account becomes a payments-in row (the fact), then
- * the invoice's status follows (the rule). Idempotent on the Stripe session id: a webhook retried by Stripe
- * records the payment once. The amount is what Stripe says was paid — never assumed to be the total.
- */
-export async function recordStripePayment(
-    db: TenantScopedClient,
-    tenantId: string,
-    p: { invoiceId: string; sessionId: string; amount: number },
-): Promise<'not_found' | 'duplicate' | 'unbound' | string> {
-    const invoice = await db.globalPage.findFirst({ where: { id: p.invoiceId, database: { logicalKey: 'invoices' } } });
-    if (!invoice) return 'not_found';
-
-    const already = await db.globalPage.findFirst({
-        where: { database: { logicalKey: 'payments-in' }, properties: { path: ['stripeSessionId'], equals: p.sessionId } },
-        select: { id: true },
-    });
-    if (already) return 'duplicate';
-
-    let paymentsDbId: string;
-    try { paymentsDbId = await systemDatabaseId(tenantId, 'payments-in'); }
-    catch { console.error(`[PAY-1] tenant ${tenantId}: no payments-in binding — Stripe payment ${p.sessionId} NOT recorded`); return 'unbound'; }
-
-    const inv = (invoice.properties || {}) as Props;
-    const today = businessToday();
-    await db.globalPage.create({
-        data: {
-            databaseId: paymentsDbId,
-            createdBy: 'system:stripe',
-            lastEditedBy: 'system:stripe',
-            properties: {
-                title: `Stripe ${inv.title ?? ''}`.trim(),
-                client: inv.client ?? [],
-                invoice: [p.invoiceId],
-                amount: Math.round(p.amount * 100) / 100,
-                date: today,
-                method: 'pm-stripe',
-                stripeSessionId: p.sessionId,
-            } as Prisma.InputJsonValue,
-        },
-    });
-    return syncInvoicePaymentStatus(db, tenantId, p.invoiceId, 'system:stripe');
 }

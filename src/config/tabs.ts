@@ -142,7 +142,8 @@ const settingsTabsBase = [
     { label: 'PEPPOL', href: '/admin/settings/peppol', id: 'opt-peppol' },
     { label: 'DATABASES SCHEMA', href: '/admin/settings/databases', id: 'opt-databases' },
     { label: 'TEMPLATES', href: '/admin/settings/templates', id: 'opt-templates' },
-    { label: 'PAYMENTS', href: '/admin/settings/payments', id: 'opt-payments' }
+    // PAYMENTS removed 2026-10-04 (Florin): Stripe is ONLY for CoralOS's own license fee — tenants' clients
+    // pay by bank transfer (EPC QR + OGM on the invoice; details in Company Info).
 ];
 
 export function getSettingsTabs(t?: (key: string) => string, tHas?: (key: string) => boolean) {

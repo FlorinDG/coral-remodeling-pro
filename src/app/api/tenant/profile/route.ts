@@ -32,8 +32,8 @@ const TENANT_FIELDS = [
     'defaultEventDuration', 'defaultCalendarView',
     'workHoursPerDay',
     'bordereauPrefix', 'poPrefix',
-    // Payments settings
-    'paymentProvider', 'stripeSecretKey', 'stripePublishableKey',
+    // (paymentProvider / stripeSecretKey / stripePublishableKey removed 2026-10-04: Stripe is only for the
+    //  CoralOS license fee — a tenant can neither read nor set Stripe keys.)
 ];
 
 // Build a select object from field list + extras
@@ -59,10 +59,6 @@ export async function GET() {
 
         if (!tenant) return NextResponse.json({ error: 'Tenant not found' }, { status: 404 });
 
-        if (tenant.stripeSecretKey) {
-            tenant.stripeSecretKey = '********';
-        }
-
         return NextResponse.json(tenant);
     } catch (error) {
         console.error('Error fetching tenant profile:', error);
@@ -85,16 +81,7 @@ export async function PUT(request: Request) {
         const data: Record<string, any> = {};
         for (const field of TENANT_FIELDS) {
             if (field in body) {
-                if (field === 'stripeSecretKey') {
-                    if (body.stripeSecretKey === '') {
-                        data.stripeSecretKey = null;
-                    } else if (body.stripeSecretKey !== '********') {
-                        const { encrypt } = await import('@/lib/encryption');
-                        data.stripeSecretKey = encrypt(body.stripeSecretKey);
-                    }
-                } else {
-                    data[field] = body[field];
-                }
+                data[field] = body[field];
             }
         }
 

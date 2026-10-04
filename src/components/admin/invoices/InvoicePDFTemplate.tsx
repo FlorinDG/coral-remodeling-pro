@@ -88,7 +88,6 @@ interface InvoicePDFProps {
     vatIncluded?: boolean;
     vatRegime?: string;
     structuredComm?: string;
-    stripeCheckoutUrl?: string;
     showSubcomponents?: boolean;
     hidePrices?: boolean;
 }
@@ -117,7 +116,6 @@ export const InvoicePDFTemplate = ({
     invoiceDate, deliveryDate, dueDate, docType,
     vatIncluded = false, vatRegime = '21',
     structuredComm,
-    stripeCheckoutUrl,
     showSubcomponents = false,
     hidePrices = false,
 }: InvoicePDFProps) => {
@@ -433,35 +431,10 @@ export const InvoicePDFTemplate = ({
                             {/* Summary and Stripe Payment Section */}
                             {!hidePrices && (
                                 <View style={{ flexDirection: 'row' as const, justifyContent: 'space-between' as const, marginTop: 12 }}>
-                                    {/* Left Side: Payment Details (EPC QR + Bank Transfer / Stripe) */}
+                                    {/* Left Side: Payment Details (EPC QR + Bank Transfer) */}
                                     {!isCreditNote && (
                                         <View style={{ flex: 1, marginRight: 24, flexDirection: 'column' as const, gap: 6, maxWidth: 260 }}>
-                                            {tenantProfile?.paymentProvider === 'stripe' && stripeCheckoutUrl ? (
-                                                <View style={{ padding: 6, backgroundColor: '#fcfcfc', border: '0.5px solid #e2e8f0', borderRadius: 6, flexDirection: 'row' as const, gap: 8, alignItems: 'center' as const }}>
-                                                    <View style={{ alignItems: 'center' as const, gap: 3 }}>
-                                                        <Image 
-                                                            src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(stripeCheckoutUrl)}`}
-                                                            style={{ width: 55, height: 55, borderRadius: 3 }}
-                                                        />
-                                                        <Text style={{ fontSize: 4.5, color: '#697386', textAlign: 'center' }}>
-                                                            {lang === 'fr' ? 'Scanner pour payer' : lang === 'en' ? 'Scan to pay' : 'Scan om te betalen'}
-                                                        </Text>
-                                                    </View>
-                                                    <View style={{ flex: 1, flexDirection: 'column' as const, gap: 2 }}>
-                                                        <Text style={{ fontSize: 7.5, fontWeight: 'bold' as const, color: '#1a1f36' }}>
-                                                            {lang === 'fr' ? 'Paiement en ligne' : lang === 'en' ? 'Online Payment' : 'Online Betalen'}
-                                                        </Text>
-                                                        <View style={{ gap: 1 }}>
-                                                            <Text style={{ fontSize: 6.2, color: '#4a5568' }}>
-                                                                {lang === 'fr' ? 'Scannez pour payer par carte de crédit ou Bancontact.' : lang === 'en' ? 'Scan to pay via credit card or Bancontact.' : 'Scan om te betalen met creditcard of Bancontact.'}
-                                                            </Text>
-                                                            <Text style={{ fontSize: 6.2, color: accent, fontWeight: 'bold' as const }}>
-                                                                {lang === 'fr' ? 'Lien de paiement sécurisé' : lang === 'en' ? 'Secure payment link' : 'Beveiligde betaallink'}
-                                                            </Text>
-                                                        </View>
-                                                    </View>
-                                                </View>
-                                            ) : iban ? (
+                                            {iban ? (
                                                 <View style={{ padding: 6, backgroundColor: '#fcfcfc', border: '0.5px solid #e2e8f0', borderRadius: 6, flexDirection: 'row' as const, gap: 8, alignItems: 'center' as const }}>
                                                     <View style={{ alignItems: 'center' as const, gap: 3 }}>
                                                         <Image 
@@ -730,35 +703,10 @@ export const InvoicePDFTemplate = ({
 
                     {/* Summary and Stripe Payment Section */}
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 12, marginHorizontal: isT1 || isT4 ? 32 : 8 }}>
-                        {/* Left Side: Payment Details (EPC QR + Bank Transfer / Stripe) */}
+                        {/* Left Side: Payment Details (EPC QR + Bank Transfer) */}
                         {!isCreditNote && (
                             <View style={{ flex: 1, marginRight: 24, flexDirection: 'column' as const, gap: 6, maxWidth: 280 }}>
-                                {tenantProfile?.paymentProvider === 'stripe' && stripeCheckoutUrl ? (
-                                    <View style={{ padding: 6, backgroundColor: '#fcfcfc', border: '1px solid #e2e8f0', borderRadius: 8, flexDirection: 'row' as const, gap: 8, alignItems: 'center' as const }}>
-                                        <View style={{ alignItems: 'center' as const, gap: 3 }}>
-                                            <Image 
-                                                src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(stripeCheckoutUrl)}`}
-                                                style={{ width: 55, height: 55, borderRadius: 3 }}
-                                            />
-                                            <Text style={{ fontSize: 4.5, color: '#697386', textAlign: 'center' }}>
-                                                {lang === 'fr' ? 'Scanner pour payer' : lang === 'en' ? 'Scan to pay' : 'Scan om te betalen'}
-                                            </Text>
-                                        </View>
-                                        <View style={{ flex: 1, flexDirection: 'column' as const, gap: 2 }}>
-                                            <Text style={{ fontSize: 7.5, fontWeight: 'bold' as const, color: '#1a1f36' }}>
-                                                {lang === 'fr' ? 'Paiement en ligne' : lang === 'en' ? 'Online Payment' : 'Online Betalen'}
-                                            </Text>
-                                            <View style={{ gap: 1 }}>
-                                                <Text style={{ fontSize: 6.2, color: '#4a5568' }}>
-                                                    {lang === 'fr' ? 'Scannez pour payer par carte de crédit ou Bancontact.' : lang === 'en' ? 'Scan to pay via credit card or Bancontact.' : 'Scan om te betalen met creditcard of Bancontact.'}
-                                                </Text>
-                                                <Text style={{ fontSize: 6.2, color: accent, fontWeight: 'bold' as const }}>
-                                                    {lang === 'fr' ? 'Lien de paiement sécurisé' : lang === 'en' ? 'Secure payment link' : 'Beveiligde betaallink'}
-                                                </Text>
-                                            </View>
-                                        </View>
-                                    </View>
-                                ) : iban ? (
+                                {iban ? (
                                     <View style={{ padding: 6, backgroundColor: '#fcfcfc', border: '1px solid #e2e8f0', borderRadius: 8, flexDirection: 'row' as const, gap: 8, alignItems: 'center' as const }}>
                                         <View style={{ alignItems: 'center' as const, gap: 3 }}>
                                             <Image 

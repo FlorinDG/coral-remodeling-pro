@@ -447,36 +447,6 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
         }));
     };
 
-    // Generate secure Stripe checkout URL if provider is Stripe
-    const ensureStripeCheckoutUrl = async (invObj: any) => {
-        const paymentProvider = tenant?.paymentProvider || 'bank_transfer';
-        let checkoutUrl = invObj.properties?.['stripeCheckoutUrl'] as string;
-
-        if (paymentProvider === 'stripe' && !checkoutUrl && !isCreditNote && !isProforma) {
-            toast.loading('Generating secure online payment link...', { id: 'stripe-payments-gen' });
-            try {
-                const { createInvoiceCheckout } = await import('@/app/actions/stripe-payments');
-                const res = await createInvoiceCheckout(id);
-                if (res.success && res.url) {
-                    toast.success('Payment link generated!', { id: 'stripe-payments-gen' });
-                    checkoutUrl = res.url;
-                    // update local store
-                    updatePageProperty(invoicesDbId, id, 'stripeCheckoutUrl', res.url);
-                    // Update object properties in-memory so the PDF renderer gets the value instantly
-                    invObj.properties = {
-                        ...invObj.properties,
-                        stripeCheckoutUrl: res.url
-                    };
-                } else {
-                    toast.error(res.error || 'Failed to generate online payment link.', { id: 'stripe-payments-gen' });
-                }
-            } catch (err: any) {
-                console.error(err);
-                toast.error('Failed to generate online payment link.', { id: 'stripe-payments-gen' });
-            }
-        }
-        return checkoutUrl;
-    };
 
     // Create Credit Nota from this invoice
     const handleCreateCreditNote = async () => {
@@ -791,7 +761,6 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
 
         setIsSending(true);
         try {
-            const checkoutUrl = await ensureStripeCheckoutUrl(invoice);
             const clientRecord = clients.find(c => c.id === clientId);
             const clientEmail = String(clientRecord?.email || '');
             const clientName = String(`${clientRecord?.firstName || ''} ${clientRecord?.lastName || ''}`.trim() || 'Klant');
@@ -820,7 +789,6 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                     vatIncluded={vatIncluded}
                     vatRegime={String(invoice?.properties?.["vatRegime"] || "")}
                     structuredComm={String(invoice?.properties?.["structuredComm"] || "")}
-                    stripeCheckoutUrl={checkoutUrl}
                 />
             );
 
@@ -1063,7 +1031,6 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
             // Wait for DB sync to ensure all row calculations are mathematically synced with the backend store
             await new Promise(r => setTimeout(r, 800));
 
-            const checkoutUrl = await ensureStripeCheckoutUrl(invoice);
 
             // Generate PDF base64 for embedding in UBL
             const doc = (
@@ -1087,7 +1054,6 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                     vatIncluded={vatIncluded}
                     vatRegime={String(invoice?.properties?.["vatRegime"] || "")}
                     structuredComm={String(invoice?.properties?.["structuredComm"] || "")}
-                    stripeCheckoutUrl={checkoutUrl}
                 />
             );
             const blob = await generatePdfBlob(doc, tenant);
@@ -1897,8 +1863,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                                     if (isPreviewing) return;
                                     setIsPreviewing(true);
                                     try {
-                                        const checkoutUrl = await ensureStripeCheckoutUrl(invoice);
-                                        const doc = (
+                                                                    const doc = (
                                             <InvoicePDFTemplate
                                                 blocks={blocks}
                                                 invoiceTitle={String(invoiceTitle)}
@@ -1919,7 +1884,6 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                                                 vatIncluded={vatIncluded}
                                                 vatRegime={String(invoice?.properties?.["vatRegime"] || "")}
                                                 structuredComm={String(invoice?.properties?.["structuredComm"] || "")}
-                                                stripeCheckoutUrl={checkoutUrl}
                                             />
                                         );
                                         const blob = await generatePdfBlob(doc, tenant);
@@ -1944,8 +1908,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                                     if (isDownloading) return;
                                     setIsDownloading(true);
                                     try {
-                                        const checkoutUrl = await ensureStripeCheckoutUrl(invoice);
-                                        const doc = (
+                                                                    const doc = (
                                             <InvoicePDFTemplate
                                                 blocks={blocks}
                                                 invoiceTitle={String(invoiceTitle)}
@@ -1966,7 +1929,6 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                                                 vatIncluded={vatIncluded}
                                                 vatRegime={String(invoice?.properties?.["vatRegime"] || "")}
                                                 structuredComm={String(invoice?.properties?.["structuredComm"] || "")}
-                                                stripeCheckoutUrl={checkoutUrl}
                                             />
                                         );
                                         const blob = await generatePdfBlob(doc, tenant);

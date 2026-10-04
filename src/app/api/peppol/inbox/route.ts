@@ -122,13 +122,20 @@ export async function GET(req: Request) {
 
         const { resolveDatabaseId } = await import('@/lib/kernel/system-databases');
         const lockedDbIds = (tenant.lockedDbIds as Record<string, string>) || {};
-        const suppliersDbId = resolveDatabaseId('db-suppliers', lockedDbIds);
+        // NOTHING stops the Peppol inbox from receiving (Florin 2026-10-04). A missing binding only switches
+        // off what needs it — supplier matching, the copy into the expenses database — loudly, never the
+        // documents themselves. (R1-2 census 2026-10-04: every tenant has both bindings.)
+        const bound = (base: string): string | null => {
+            try { return resolveDatabaseId(base, lockedDbIds); }
+            catch (err) { console.error(`[Peppol Inbox] tenant ${tenantId}: ${describeError(err)} — documents still received`); return null; }
+        };
+        const suppliersDbId = bound('db-suppliers');
 
         // Pre-load supplier contacts for auto-matching by VAT
-        const suppliers = await prisma.globalPage.findMany({
+        const suppliers = suppliersDbId ? await prisma.globalPage.findMany({
             where: { databaseId: suppliersDbId },
             select: { id: true, properties: true },
-        });
+        }) : [];
         const vatToSupplier = new Map<string, string>();
         suppliers.forEach((s) => {
             const vat = (s.properties as any)?.vatNumber || (s.properties as any)?.vat;
@@ -214,8 +221,11 @@ export async function GET(req: Request) {
         }
 
         // ── AUTOMATIC SERVER-SIDE DATABASE SYNC ─────────────────────────────────
-        const expensesDbId = resolveDatabaseId('db-expenses', lockedDbIds);
+        const expensesDbId = bound('db-expenses');
+        let newlyImportedCount = 0;
+        const newlyImportedPages: any[] = [];
 
+        if (expensesDbId) {
         // Ensure database exists
         const existingDb = await prisma.globalDatabase.findUnique({
             where: { id: expensesDbId },
@@ -252,9 +262,6 @@ export async function GET(req: Request) {
         const { v4: uuidv4 } = await import('uuid');
         const { incrementPeppolReceived } = await import('@/lib/plan-limits');
 
-        let newlyImportedCount = 0;
-        const newlyImportedPages: any[] = [];
-
         for (const doc of parsedDocs) {
             if (existingPeppolIds.has(doc.id)) continue;
 
@@ -268,7 +275,7 @@ export async function GET(req: Request) {
                 try {
                     if (safeVat && vatToSupplier.has(safeVat)) {
                         matchedSupplierId = vatToSupplier.get(safeVat) ?? null;
-                    } else {
+                    } else if (suppliersDbId) {
                         // Create db-suppliers GlobalPage
                         const { v4: uuidv4 } = await import('uuid');
                         const newSupplierId = uuidv4();
@@ -417,6 +424,8 @@ export async function GET(req: Request) {
                 lastEditedBy: saved.lastEditedBy,
             });
         }
+
+        }   // if (expensesDbId)
 
         // Return updated document list, count, pages, AND any fetch errors
         return NextResponse.json({

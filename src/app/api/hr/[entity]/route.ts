@@ -17,7 +17,7 @@ import { buildAuditLogData, buildAuditLogOperation } from '@/lib/audit';
 import { resolveReach } from '../lib/actor-reach';
 import { hrWriteRefusal } from '../lib/write-policy';
 import { describeError } from '@/lib/describe-error';
-import { isShiftSubmitted, zonedParts } from '@/lib/kernel/shift-time';
+import { isShiftSubmitted } from '@/lib/kernel/shift-time';
 import { resolveProjects, projectNameMap } from '@/lib/data/projects';
 import crypto from 'crypto';
 import { Resend } from 'resend';
@@ -962,29 +962,7 @@ export async function PATCH(
                                 projectId: reqData.projectId || null,
                             }
                         });
-                        if (reqData.projectId) {
-                            // Wall-clock parts in the business zone (was UTC via toISOString — 2h early).
-                            const inLocal = zonedParts(reqData.clockInTime);
-                            const shiftDate = inLocal.date;
-                            const shiftStart = inLocal.time;
-                            const shiftEnd = zonedParts(reqData.clockOutTime).time;
-                            const shift = await prisma.scheduledShift.create({
-                                data: {
-                                    tenantId: approval.tenantId,
-                                    userId: approval.userId,
-                                    projectId: reqData.projectId,
-                                    shiftDate,
-                                    shiftStart,
-                                    shiftEnd,
-                                    // not 'completed': only the crew member's submit completes a shift
-                                    createdBy: approval.reviewedBy || ctx.userId,
-                                }
-                            });
-                            await prisma.clockEntry.update({
-                                where: { id: entry.id },
-                                data: { shiftId: shift.id }
-                            });
-                        }
+                        // NO ad-hoc shifts (Florin 2026-10-04): the entry keeps its project; no shift is invented.
                     }
                 }
             } catch (err) {

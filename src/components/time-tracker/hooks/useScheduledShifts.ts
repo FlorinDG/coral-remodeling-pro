@@ -314,25 +314,8 @@ export function useScheduledShifts() {
     return pickShiftNow(shifts.filter(s => s.userId === userId && !isShiftSubmitted(s.status)), new Date());
   }, [shifts, userId]);
 
-  const createUserShift = useCallback(async () => {
-    const today = localDateKey(new Date());   // local date — never toISOString() (UTC)
-    const now = new Date();
-    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-    return createShift({
-      userId,
-      shiftDate: today,
-      shiftStart: timeStr,
-      shiftEnd: '17:00',
-      status: 'in-progress',
-    });
-  }, [createShift, userId]);
-
-  const completeUserShift = useCallback(async (shiftId: string) => {
-    const now = new Date();
-    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-    // Sets the ad-hoc shift's END TIME only — it is not completed until the worker submits it.
-    return updateShift(shiftId, { shiftEnd: timeStr });
-  }, [updateShift]);
+  // createUserShift / completeUserShift REMOVED (Florin 2026-10-04): NO ad-hoc shifts. A clock-in without a
+  // planned shift is recorded as such, pending approval; the admin may plan a shift in the past to match it.
 
   const createProject = useCallback(async (nameOrData: string | Partial<Project>, address?: string | null, color?: string) => {
     // Support both legacy (name, address, color) and new ({ name, address, color }) signatures
@@ -388,8 +371,6 @@ export function useScheduledShifts() {
     updateShiftStatus,
     deleteShift,
     getTodayShift,
-    createUserShift,
-    completeUserShift,
     createProject,
     updateProject,
     deleteProject,

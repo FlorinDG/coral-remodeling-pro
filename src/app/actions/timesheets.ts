@@ -1,7 +1,7 @@
 "use server";
 
 import { isTenantHrRole } from '@/lib/roles';
-import { zonedParts, isShiftSubmitted } from '@/lib/kernel/shift-time';
+import { isShiftSubmitted } from '@/lib/kernel/shift-time';
 import { autoLinkIfUnique } from '@/lib/data/entry-shift-match';
 import { isShiftSigned } from '@/lib/data/work-order-lock';
 import prisma from "@/lib/prisma";
@@ -280,28 +280,9 @@ export async function submitLateEntry(params: {
     }
 
     try {
+        // NO ad-hoc shifts (Florin 2026-10-04): only the scheduler creates shifts. Hours with a project and no
+        // shift are recorded as such, the project on the entry; the admin plans a shift afterwards if needed.
         let shiftId: string | null = boundShift?.id ?? null;
-        if (projectId && !boundShift) {
-            // Wall-clock parts in the business zone — toISOString() here was UTC (2h early, wrong day
-            // before 02:00). Kernel: zonedParts (Intl + named zone, no offset arithmetic).
-            const inLocal = zonedParts(clockInTime);
-            const shiftDate = inLocal.date;
-            const shiftStart = inLocal.time;
-            const shiftEnd = zonedParts(clockOutTime).time;
-            const shift = await prisma.scheduledShift.create({
-                data: {
-                    tenantId,
-                    userId: targetUserId,
-                    projectId,
-                    shiftDate,
-                    shiftStart,
-                    shiftEnd,
-                    // not 'completed': only the crew member's submit completes a shift (2026-09-30)
-                    createdBy: session.user.id,
-                }
-            });
-            shiftId = shift.id;
-        }
 
         const clockEntry = await prisma.clockEntry.create({
             data: {
@@ -324,7 +305,7 @@ export async function submitLateEntry(params: {
         });
 
         // SHIFT-LINK-1: no project picked → link to the one planned shift these hours overlap, if unique.
-        if (!shiftId) {
+        if (!shiftId && !projectId) {
             try {
                 shiftId = await autoLinkIfUnique(clockEntry.id, { tenantId, userId: session.user.id });
             } catch (err) {

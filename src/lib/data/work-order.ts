@@ -119,7 +119,9 @@ export async function signWorkOrder(input: { shiftId: string; signerName: string
             entries: d.entries.map(e => ({
                 id: e.id, shiftId: e.shiftId, userId: e.userId,
                 in: e.clockInTime.toISOString(), out: e.clockOutTime ? e.clockOutTime.toISOString() : null,
-                // WO-4b: the worked minutes AS SIGNED (break rule applied) — the PDF prints these, never a recount
+                // WO-4b: the worked minutes AS SIGNED — the break rule applied (30 min deducted automatically on a
+                // stretch over 4 h; the crew member's "no break" tick says none was taken) — never a recount later.
+                noBreak: e.noBreak,
                 minutes: e.clockOutTime ? computeWorkedDuration(e.clockInTime, e.clockOutTime, e.noBreak).totalMinutes : 0,
             })),
         };

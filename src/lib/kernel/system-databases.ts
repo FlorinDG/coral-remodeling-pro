@@ -204,3 +204,14 @@ export function resolveDatabaseId(idOrBase: string, lockedDbIds: Partial<Record<
     if (!bound) throw new UnboundSystemDatabaseError(idOrBase, role);
     return bound;
 }
+
+/**
+ * The same READ, for screens and read paths: an unbound system base is ABSENT (null) — the tenant does not
+ * have that database (FREE has no library / projects / CRM, Florin 2026-10-03). Never a guessed id, never a
+ * fallback to the base. Writes that need the database use resolveDatabaseId (throws) instead.
+ */
+export function lookupDatabaseId(idOrBase: string, lockedDbIds: Partial<Record<string, string>>): string | null {
+    const role = BASE_TO_KEY[idOrBase];
+    if (!role) return idOrBase;
+    return lockedDbIds[role] || null;
+}

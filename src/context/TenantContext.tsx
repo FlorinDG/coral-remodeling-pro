@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, ReactNode, useMemo, useState, useCallback, useEffect } from "react";
-import { resolveDatabaseId } from "@/lib/kernel/system-databases";
+import { lookupDatabaseId } from "@/lib/kernel/system-databases";
 
 interface TenantContextProps {
     activeModules: string[];
@@ -9,7 +9,8 @@ interface TenantContextProps {
     lockedDbIds: Record<string, string>;
     tenant: any; // Full tenant profile
     /** Resolve a base locked DB name (e.g. 'db-invoices') to the tenant-scoped actual ID */
-    resolveDbId: (base: string) => string;
+    /** This tenant's id for a system base ('db-invoices'), or null when the tenant does not have it (R1-2). */
+    resolveDbId: (base: string) => string | null;
     /** true if plan is PRO, ENTERPRISE, FOUNDER, or CUSTOM */
     isPro: boolean;
     /** true if plan is ENTERPRISE, FOUNDER, or CUSTOM */
@@ -25,7 +26,7 @@ const TenantContext = createContext<TenantContextProps>({
     tenant: null,
     // R1-2: no pass-through default. Outside a TenantProvider there is no tenant, so there is no
     // binding to read — a system base asked for here is a bug, and it says so (was: "safe default").
-    resolveDbId: (base) => resolveDatabaseId(base, {}),
+    resolveDbId: (base) => lookupDatabaseId(base, {}),
     isPro: false,
     isEnterprise: false,
     refreshTenant: async () => {},
@@ -77,7 +78,7 @@ export const TenantProvider = ({
             .catch(() => {}); // Non-critical — layout still works without logo
     }, []);
 
-    const resolveDbId = (base: string) => resolveDatabaseId(base, lockedDbIds);
+    const resolveDbId = (base: string) => lookupDatabaseId(base, lockedDbIds);
     const isPro = useMemo(() => ['PRO', 'ENTERPRISE', 'FOUNDER', 'CUSTOM'].includes(planType), [planType]);
     const isEnterprise = useMemo(() => ['ENTERPRISE', 'FOUNDER', 'CUSTOM'].includes(planType), [planType]);
 

@@ -802,3 +802,163 @@ fs.writeFileSync("src/lib/documents/work-order-pdf.ts", code);
 exit: 1
 ```
 
+---
+
+# WO-4a-M4 Plan — The Work Order PDF Without Global Patches
+
+**Planner Directive:** `.agents/workflows/coder-directive-wo-4a-m4.md`
+**Gate 1 Plan Only.**
+
+## 1. Exact Lines to Remove / Modify
+
+In `src/lib/documents/work-order-pdf.ts`:
+- **Lines 2–3:**
+  ```typescript
+  import stream from 'node:stream';
+  import zlib from 'node:zlib';
+  ```
+  *(Deleted: unused once `initDeflate` patch is removed.)*
+- **Lines 6–7:**
+  ```typescript
+  // @ts-expect-error -- @react-pdf/pdfkit lacks bundled type definitions
+  import PDFDocument from '@react-pdf/pdfkit';
+  ```
+  *(Deleted: PDFKit was only imported for the prototype patch.)*
+- **Lines 22–57:**
+  The entire `initDeflate` synchronous flate monkey-patch block:
+  ```typescript
+  // Stabilize PDFKit reference stream compression:
+  ...
+  try {
+      const sampleDoc = new (PDFDocument as any)();
+      const PDFReference = sampleDoc.ref().constructor;
+      ...
+  } catch {
+      // Defensive fallback if environment restricts internal PDFKit patching
+  }
+  ```
+  *(Deleted in full.)*
+- **Lines 758–790:**
+  The `renderLock` mutex and `Math.random` override wrapper inside `renderSignedWorkOrderPdf`:
+  ```typescript
+  let renderLock: Promise<void> = Promise.resolve();
+
+  export async function renderSignedWorkOrderPdf(input: SignedWorkOrderPdfInput): Promise<Buffer> {
+      const prevLock = renderLock;
+      let release!: () => void;
+      renderLock = new Promise<void>((resolve) => {
+          release = resolve;
+      });
+      await prevLock;
+
+      try {
+          const view = buildWorkOrderView(input);
+          const element = WorkOrderPdfDocument({ view });
+
+          const origRandom = Math.random;
+          let seed = 0x434f5241; // 'CORA'
+          Math.random = () => {
+              seed = (seed * 16807) % 2147483647;
+              return (seed - 1) / 2147483646;
+          };
+
+          try {
+              const rawBuffer = await renderToBuffer(element as any);
+              return Buffer.isBuffer(rawBuffer) ? rawBuffer : Buffer.from(rawBuffer);
+          } finally {
+              Math.random = origRandom;
+          }
+      } finally {
+          release();
+      }
+  }
+  ```
+  **Replaced by pure, un-mutexed, un-patched render:**
+  ```typescript
+  export async function renderSignedWorkOrderPdf(input: SignedWorkOrderPdfInput): Promise<Buffer> {
+      const view = buildWorkOrderView(input);
+      const element = WorkOrderPdfDocument({ view });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const rawBuffer = await renderToBuffer(element as any);
+      return Buffer.isBuffer(rawBuffer) ? rawBuffer : Buffer.from(rawBuffer);
+  }
+  ```
+
+In `src/lib/documents/work-order-pdf.tsx`:
+- No edits needed (`export * from './work-order-pdf.ts';`).
+
+---
+
+## 2. How `leaves the process untouched` Reaches the Library's Prototype Without Patching It
+
+In `tests/work-order-pdf.test.ts`:
+To verify that neither `Math.random` nor `PDFReference.prototype.initDeflate` is modified, the test captures their references before rendering:
+1. `const origRandom = Math.random;`
+2. To inspect `PDFReference` without mutating or patching anything:
+   ```typescript
+   // @ts-expect-error -- @react-pdf/pdfkit lacks bundled types
+   import PDFDocument from '@react-pdf/pdfkit';
+
+   // Instantiating a blank in-memory document allows reading ref().constructor
+   // without side-effects or mutations to any prototypes:
+   const sampleDoc = new PDFDocument();
+   const PDFReference = sampleDoc.ref().constructor;
+   const origInitDeflate = PDFReference.prototype.initDeflate;
+   ```
+3. The test dispatches two concurrent renders (`renderSignedWorkOrderPdf(makeValidInput())`).
+4. While the renders are actively running (synchronously before `await Promise.all([p1, p2])`):
+   - Sample `Math.random()` twice: `const r1 = Math.random(); const r2 = Math.random();`
+   - Assert `r1 !== r2` (not stuck on a locked seed).
+   - Assert neither `r1` nor `r2` equals `0.09867238076280092` (the deterministic sequence's first step `((0x434f5241 * 16807 % 2147483647) - 1) / 2147483646`).
+5. After `await Promise.all([p1, p2])`:
+   - Assert `Math.random === origRandom` (exact reference equality).
+   - Assert `PDFReference.prototype.initDeflate === origInitDeflate` (exact reference equality).
+   - Assert `(PDFReference.prototype as any).__deterministicDeflate === undefined`.
+   - Assert both buffers are valid PDFs (`%PDF` magic bytes).
+
+---
+
+## 3. Tests: Replaced, Kept, and Added
+
+### Tests Replaced (2)
+1. **REPLACE** `renderSignedWorkOrderPdf is deterministic: same input produces identical bytes` (lines 236–242):
+   - **With:** `renderSignedWorkOrderPdf leaves the process untouched (Math.random and PDFReference unmodified)`
+   - Captures original `Math.random` and `PDFReference.prototype.initDeflate`, fires concurrent renders, verifies `Math.random` remains unseeded during execution, and asserts prototype and global reference equality afterward.
+2. **REPLACE** `renderSignedWorkOrderPdf produces distinct PDF bytes across nl, fr, and en` (lines 294–313):
+   - **With:** `renderSignedWorkOrderPdf renders all supported languages with distinct view-model labels and units`
+   - Without artificial byte determinism, checking PDF byte inequality could trivially pass on accidental timestamp differences. The test will instead assert that the pure view models differ explicitly per language:
+     - `viewNl.labels.title !== viewFr.labels.title`
+     - `viewNl.totals.formattedDuration` ends with `'u (12:00)'` while `viewFr.totals.formattedDuration` and `viewEn.totals.formattedDuration` end with `'h (12:00)'`
+     - And all three language renders (`nl`, `fr`, `en`) resolve successfully to `%PDF` buffers.
+
+### Tests Kept Unchanged (14)
+- 4 validation throw tests (signerName, imagePng, non-positive total line duration, zero lines).
+- 5 view-model tests (Brussels winter/summer DST, duration formats, language units, Romanian/Cyrillic names, no internal leak).
+- 5 renderer characterization tests:
+  - `%PDF magic bytes` (line 225)
+  - `embeds IBM Plex Sans font in PDF bytes` (line 246)
+  - `handles 40-line fixture across multiple pages with intact totals` (line 259)
+  - `handles missing optional fields without crashing` (line 317)
+  - `handles edge-case long text and multi-line notes without truncation` (line 372)
+- *Assessment:* None of the kept tests assert byte-identity between two distinct renders. They inspect view models, `%PDF` headers, font names, page counts, or field presence, so all stay green without modification.
+
+### Tests Added (0 new beyond the 2 replacements above)
+The 2 replacements fully cover process cleanliness and multi-language parity without process pollution.
+
+---
+
+## 4. Throw Proofs Planned for Report (§3a)
+1. **Throw Proof 1 (Math.random seeding detection):**
+   - Temporarily restore the `Math.random` override inside `renderSignedWorkOrderPdf`.
+   - Verify `leaves the process untouched` fails during/after render.
+2. **Throw Proof 2 (initDeflate patch detection):**
+   - Temporarily restore the `PDFReference.prototype.initDeflate` patch in `work-order-pdf.ts`.
+   - Verify `leaves the process untouched` fails on `PDFReference.prototype.initDeflate === origInitDeflate`.
+3. **Throw Proof 3 (Language ignorance detection):**
+   - Mutate `buildWorkOrderView` to ignore `input.language` (hardcode `'nl'`).
+   - Verify the replaced language test fails on view model labels/unit assertions.
+
+---
+
+## 5. Open Questions
+- None. Directive `coder-directive-wo-4a-m4.md` is fully specified and leaves zero architectural ambiguity.

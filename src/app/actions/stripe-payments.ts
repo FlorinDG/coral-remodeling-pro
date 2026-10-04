@@ -33,8 +33,9 @@ export async function createInvoiceCheckout(invoiceId: string) {
         }
 
         // Get invoice page details
-        const page = await (prisma.globalPage as any).findUnique({
-            where: { id: invoiceId }
+        // R2-1-CENSUS #11: the invoice must be THIS tenant's — a payment link was written onto any invoice id.
+        const page = await prisma.globalPage.findFirst({
+            where: { id: invoiceId, database: { tenantId } }
         });
         if (!page) {
             throw new Error('Invoice not found');

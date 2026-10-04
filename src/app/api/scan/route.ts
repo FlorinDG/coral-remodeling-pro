@@ -555,6 +555,9 @@ export async function POST(req: Request) {
         // ── Save or Update Postgres ───────────────────────────────────────────
         let savedPage;
         if (existingPageId) {
+            // R2-1-CENSUS #21: a re-scan overwrites only a page of THIS tenant (the id comes from the form).
+            const own = await prisma.globalPage.findFirst({ where: { id: existingPageId, database: { tenantId } }, select: { id: true } });
+            if (!own) return NextResponse.json({ error: 'Not found' }, { status: 404 });
             savedPage = await prisma.globalPage.update({
                 where: { id: existingPageId },
                 data: {

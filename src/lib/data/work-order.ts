@@ -17,6 +17,8 @@ import { storage } from '@/lib/storage';
 import { buildAuditLogData, buildAuditLogOperation } from '@/lib/audit';
 import { computeWorkedDuration } from '@/lib/computeWorkedDuration';
 import { workOrderMembers } from './work-order-lock';
+import { zonedParts } from '@/lib/kernel/shift-time';
+import { nextWerkbonNumber } from '@/lib/records/werkbon-number';
 
 type Fail = { ok: false; error: string; detail?: string };
 
@@ -117,33 +119,51 @@ export async function signWorkOrder(input: { shiftId: string; signerName: string
             entries: d.entries.map(e => ({
                 id: e.id, shiftId: e.shiftId, userId: e.userId,
                 in: e.clockInTime.toISOString(), out: e.clockOutTime ? e.clockOutTime.toISOString() : null,
+                // WO-4b: the worked minutes AS SIGNED (break rule applied) — the PDF prints these, never a recount
+                minutes: e.clockOutTime ? computeWorkedDuration(e.clockInTime, e.clockOutTime, e.noBreak).totalMinutes : 0,
             })),
         };
-        const audits: Array<Awaited<ReturnType<typeof buildAuditLogData>>> = [];
-        for (const mb of d.wo.members) {
-            audits.push(await buildAuditLogData({ tenantId: a.tenantId, userId: a.userId }, {
-                entityType: 'shift', entityId: mb.id, action: 'sign', field: null,
-                before: null, after: evidence, reason: 'client signature',
-            }));
-        }
         const ids = d.wo.members.map(mb => mb.id);
+        const year = zonedParts(new Date()).date.slice(0, 4);   // the Brussels year of the signature
         // Re-checked INSIDE a serializable transaction: two phones signing at once, or a clock-in
         // landing between the check above and this write, make one of them fail — never two
-        // signatures, never hours outside the signed evidence.
-        await prisma.$transaction(async tx => {
-            const [already, open] = await Promise.all([
+        // signatures, never hours outside the signed evidence. WO-4b: the work order NUMBER is assigned
+        // here too (WB-YYYY-NNNN, frozen in the evidence); two DIFFERENT work orders signed at the same
+        // moment collide on the sequence → retried (a real double signature still answers already_signed).
+        const signOnce = () => prisma.$transaction(async tx => {
+            const [already, open, issued] = await Promise.all([
                 tx.auditLog.findFirst({ where: { tenantId: a.tenantId, entityType: 'shift', entityId: { in: ids }, action: 'sign' }, select: { id: true } }),
                 tx.clockEntry.count({ where: { tenantId: a.tenantId, shiftId: { in: ids }, clockOutTime: null } }),
+                tx.auditLog.findMany({
+                    where: { tenantId: a.tenantId, entityType: 'shift', action: 'sign', after: { path: ['number'], string_starts_with: `WB-${year}-` } },
+                    select: { after: true },
+                }),
             ]);
             if (already) throw new SignRefused('already_signed');
             if (open) throw new SignRefused('still_clocked_in');
-            for (const [i, mb] of d.wo.members.entries()) {
-                await buildAuditLogOperation(tx, audits[i]);
+            const number = nextWerkbonNumber(issued.map(r => (r.after as { number?: string } | null)?.number), year);
+            const signed = { ...evidence, number };
+            for (const mb of d.wo.members) {
+                await buildAuditLogOperation(tx, await buildAuditLogData({ tenantId: a.tenantId, userId: a.userId }, {
+                    entityType: 'shift', entityId: mb.id, action: 'sign', field: null,
+                    before: null, after: signed, reason: 'client signature',
+                }));
                 await tx.shiftAttachment.create({
                     data: { shiftId: mb.id, name: `Handtekening — ${signerName}.png`, url: signatureKey, type: 'image/png', size: png.length },
                 });
             }
+            return number;
         }, { isolationLevel: 'Serializable' });
+
+        let number: string | null = null;
+        for (let attempt = 1; ; attempt++) {
+            try { number = await signOnce(); break; }
+            catch (err) {
+                if ((err as { code?: string })?.code === 'P2034' && attempt < 3) continue;   // a concurrent signature elsewhere
+                throw err;
+            }
+        }
+        void number;   // WO-4b M1 next: the PDF is generated from the evidence after this commit
         return { ok: true };
     } catch (err) {
         if (err instanceof SignRefused) return { ok: false, error: err.code };

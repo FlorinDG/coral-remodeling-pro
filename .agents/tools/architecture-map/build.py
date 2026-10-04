@@ -7,7 +7,7 @@ stack section is computed from it. The narrative (since-when, critical path, dec
 Florin) is hand-kept in narrative.html next to this file. head.html holds the page's style.
 Default output: /Users/florin/Claude/Artifacts/coralos-architecture-map/index.html
 """
-import datetime, html, os, re, sys
+import datetime, html, json, os, re, sys
 import openpyxl
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -99,8 +99,12 @@ def load():
             continue
         status = str(r[ix['Status']] or 'Open')
         out.append({
+            'i': len(out),
             'id': str(r[ix['ID']]),
             'task': ' '.join(str(r[ix['Task']] or '').split()),
+            'notes': ' '.join(str(r[ix['Notes']] or '').split()),
+            'source': ' '.join(str(r[ix['Source']] or '').split()),
+            'module': str(r[ix['Module']] or ''),
             'status': status,
             'prio': str(r[ix['Priority']] or ''),
             'layer': LAYER_ALIAS.get(r[ix['Map Layer']], r[ix['Map Layer']]),
@@ -128,7 +132,7 @@ def task_rows(items):
     for i in sorted(items, key=key):
         t = i['task'] if len(i['task']) <= 150 else i['task'][:147] + '…'
         cls = 'tr' + ('' if i['open'] else ' closed') + (' p0' if i['open'] and i['prio'] == 'P0' else '')
-        rows.append(f'      <div class="{cls}"><span class="tid">{html.escape(i["id"])}</span>'
+        rows.append(f'      <div class="{cls}" data-i="{i["i"]}"><span class="tid">{html.escape(i["id"])}</span>'
                     f'<span class="tpr">{html.escape(i["prio"])}</span><span class="ttx">{html.escape(t)}</span>'
                     f'<span class="tst">{html.escape(i["status"])}</span></div>')
     return '\n'.join(rows)
@@ -159,9 +163,11 @@ def main():
             for g, rx in groups:
                 if re.search(rx, i['block']):
                     buckets[g].append(i)
+                    i['where'] = f'{tag} · {html.unescape(g)}'
                     break
             else:
                 rest.append(i)
+                i['where'] = f'{tag} · everything else'
         n, o, p = stats(mine)
         rows = [blk(g, buckets[g]) for g, _ in groups if buckets[g]]
         if rest:
@@ -184,6 +190,8 @@ def main():
     narrative = open(os.path.join(HERE, 'narrative.html')).read()
     narrative = narrative.replace('{{ITEMS}}', str(n)).replace('{{DATE}}', date)
     head = open(os.path.join(HERE, 'head.html')).read()
+    keep = ('i', 'id', 'task', 'notes', 'source', 'module', 'status', 'prio', 'where', 'open')
+    items_json = json.dumps([{k: i.get(k) for k in keep} for i in items], ensure_ascii=False).replace('</', '<\\/')
     since, rest = narrative.split('<!-- STACK -->')
     page = f'''<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
@@ -200,6 +208,12 @@ def main():
 <h1>CoralOS — Architecture Map</h1>
 <div class="sub">A projection of <code>.agents/coral-roadmap.xlsx</code> · {n} items · regenerated {date}</div>
 
+<div class="search" id="search">
+  <input id="q" type="search" placeholder="Search a spec — ID (ENT-6, WO-4a-M4) or words (cron, ad-hoc, bestek)…  press /" autocomplete="off" spellcheck="false" aria-label="Search the roadmap">
+  <span id="qcount" class="qcount"></span>
+</div>
+<div id="results" class="results" hidden></div>
+
 <div class="totals">
   <div class="tot"><div class="n">{n}</div><div class="k">items</div></div>
   <div class="tot"><div class="n">{o}</div><div class="k">open</div></div>
@@ -214,11 +228,16 @@ def main():
 {chr(10).join(parts)}
 {rest}
 </div>
+<script type="application/json" id="items">{items_json}</script>
+<script>{SEARCH_JS}</script>
 </body>
 </html>
 '''
     open(OUT, 'w').write(page)
     print(f'{OUT}: {n} items · {o} open · {p} open P0')
+
+
+SEARCH_JS = open(os.path.join(HERE, 'search.js')).read()
 
 
 if __name__ == '__main__':

@@ -19,6 +19,8 @@ import { computeWorkedDuration } from '@/lib/computeWorkedDuration';
 import { workOrderMembers } from './work-order-lock';
 import { zonedParts } from '@/lib/kernel/shift-time';
 import { nextWerkbonNumber } from '@/lib/records/werkbon-number';
+import { generateWerkbon } from './werkbon';
+import { after } from 'next/server';
 
 type Fail = { ok: false; error: string; detail?: string };
 
@@ -165,7 +167,12 @@ export async function signWorkOrder(input: { shiftId: string; signerName: string
                 throw err;
             }
         }
-        void number;   // WO-4b M1 next: the PDF is generated from the evidence after this commit
+        // WO-4b: the PDF, from the frozen evidence, AFTER the response — signing never waits for it and
+        // never fails because of it; a failed PDF is logged and regenerated later from the same evidence.
+        after(async () => {
+            const r = await generateWerkbon(a.tenantId, input.shiftId, { signaturePng: png, byUserId: a.userId });
+            if (!r.ok) console.error(`[signWorkOrder] werkbon ${number} not generated: ${r.error}`);
+        });
         return { ok: true };
     } catch (err) {
         if (err instanceof SignRefused) return { ok: false, error: err.code };

@@ -14,6 +14,11 @@ const nextConfig: any = {
     },
   },
   serverExternalPackages: ['canvas', 'pdf-parse'],
+  // WO-4b: the signed work order PDF loads its IBM Plex fonts from disk (path.join(process.cwd(), …)) —
+  // ship them with every server function that may render it (signing, the review queue).
+  outputFileTracingIncludes: {
+    '/**': ['./src/lib/documents/fonts/**'],
+  },
   typescript: {
     ignoreBuildErrors: false,
   },

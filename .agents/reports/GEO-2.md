@@ -355,3 +355,171 @@ exit: 1
 ### 10 · Noticed, out of scope
 None.
 
+---
+
+## REVISION 2 — M3 (FINAL) · 2026-10-04
+
+### 0 · Header
+```
+Item:            GEO-2
+Directive:       .agents/workflows/coder-directive-geo-2.md
+Directive blob:  726ff3b1d3ee9a3f2c61c18d095299cff7edb4c3
+Start SHA:       b294c3b
+End SHA:         8a08b1c
+Branch:          develop
+Date:            2026-10-04
+Milestone:       M3 (FINAL: Prompt Leak Fix via 3-Action Decision, MySchedule Integration, 5-Language Audit)
+```
+
+### 1 · Outcome
+`DONE — GEO-2 complete`
+
+### 2 · Commits
+| SHA | Message | Files | +/− |
+|---|---|---|---|
+| `8a08b1c` | feat(geo-2): M3 pure 3-action gate decision, prompt leak fix, and MySchedule integration | 5 | +290/−142 |
+
+### 3 · Checklist mirror
+| § | Item | Status | Evidence |
+|---|---|---|---|
+| Review M2 Fix | "Not now" prompt leak fixed via pure 3-action decision (`LocationGateAction`) | ✅ | `src/components/workhub/location-gate.ts:10, 43-73` |
+| Review M2 Fix | Hook gate strictly obeys `LocationGateAction` (`'skip'` returns `null`, zero prompt) | ✅ | `src/components/time-tracker/hooks/useGeolocation.ts:193-203` |
+| Review M2 Fix | Table-driven matrix tests cover all 3 actions (`explain`, `ask-phone`, `skip`) | ✅ | `tests/location-gate.test.ts:206-251` |
+| Review M2 Fix | Throw proof: dismissed-session mapped to `'ask-phone'` fails tests | ✅ | `tests/location-gate.test.ts:253-268`; TP8 documented in §6 |
+| Directive §Call sites | MySchedule.tsx call site line 247 (`handleClockIn`) goes through gate | ✅ | `src/components/time-tracker/components/MySchedule.tsx:247` |
+| Directive §Call sites | MySchedule.tsx call site line 326 (`handleClockOut`) goes through gate & fresh coords | ✅ | `src/components/time-tracker/components/MySchedule.tsx:325-329` |
+| Review Req | MySchedule.tsx renders `{explainerDialog}` | ✅ | `src/components/time-tracker/components/MySchedule.tsx:143, 567` |
+| Directive §Behaviour | 5 crew languages audit (`nl`, `en`, `fr`, `ro`, `ru`) | ✅ | `tests/i18n-crew.test.ts:1-74` (3/3 pass, 0 missing, 0 empty) |
+| Directive §Call sites | ClockButton.tsx call sites rewired (from M2) | ✅ | `src/components/time-tracker/components/ClockButton.tsx:28, 81, 313` |
+| Review Ans 3 | Legacy `LocationPermissionDialog.tsx` removed (from M2) | ✅ | Deleted; 0 matches in codebase |
+
+### 4 · Files vs blast radius
+Verbatim `git diff --stat b294c3b..8a08b1c`:
+```
+ .agents/plans/GEO-2.md                             |  70 ++++++
+ .../time-tracker/components/MySchedule.tsx         |   9 +-
+ .../time-tracker/hooks/useGeolocation.ts           |  13 +-
+ src/components/workhub/location-gate.ts            |  71 ++++--
+ tests/location-gate.test.ts                        | 269 +++++++++++++--------
+ 5 files changed, 290 insertions(+), 142 deletions(-)
+```
+
+| File | In blast radius? |
+|---|---|
+| `.agents/plans/GEO-2.md` | Yes (Plan file per §0) |
+| `src/components/time-tracker/components/MySchedule.tsx` | Yes (Directive fence: "May change: the four call sites above") |
+| `src/components/time-tracker/hooks/useGeolocation.ts` | Yes (Directive fence: "May change: ... useGeolocation.ts (only to add the gate)") |
+| `src/components/workhub/location-gate.ts` | Yes (Directive fence: "one pure module for the decision") |
+| `tests/location-gate.test.ts` | Yes (Directive fence: "one test file") |
+
+### 5 · 🔴 Decisions I made that the directive did not state
+| Where (file:line) | The open question | Options I saw | What I chose | Why |
+|---|---|---|---|---|
+| `src/components/workhub/location-gate.ts:10, 43-73` | Pure 3-action gate architecture | Return boolean with extra flags vs clean union type `LocationGateAction` | `type LocationGateAction = 'explain' \| 'ask-phone' \| 'skip'` | Directly satisfies Planner M2 review requirement. Separates decision logic from hook execution and makes table testing completely declarative. |
+| `src/components/workhub/location-gate.ts:77-80` | Backwards compatibility of `shouldShowLocationExplainer` | Drop function vs retain as helper | Retained helper `return getLocationGateAction(input) === 'explain'` | Prevents breaking any potential external references while standardizing all internal callers on `getLocationGateAction`. |
+| `src/components/time-tracker/components/MySchedule.tsx:325-329` | Coordinates passed to `clockOut` | Reuse stale hook state `location` vs fresh coordinates from `await requestLocation()` | `clockOutLatitude: loc?.latitude ?? location?.latitude` | `requestLocation()` returns fresh coordinates from the successful location read; passing it directly avoids race conditions where React state hasn't flushed before `clockOut` executes. |
+
+### 6 · Verification — commands, not descriptions
+
+### VERIFY 1: Location Gate Suite (10/10 tests pass)
+```
+$ node --import ./tests/register.mjs --test tests/location-gate.test.ts; echo "exit: $?"
+✔ granted permission maps to ask-phone and never shows explainer across all 8 combinations (0.720083ms)
+✔ shows explainer on prompt state when session is not dismissed (0.067625ms)
+✔ suppresses explainer and skips prompt if dismissed in current session (0.050542ms)
+✔ falls back to shown-once per device when Permissions API is unsupported (0.047291ms)
+✔ handles denied permission state (0.051083ms)
+✔ storage helpers handle missing window object gracefully without throwing (0.118916ms)
+✔ storage helpers handle throwing storage gracefully (private mode / blocked storage) (0.105583ms)
+✔ handles unknown permissionState (null) when Permissions API is present (0.0455ms)
+✔ table-driven matrix covers all three actions (explain, ask-phone, skip) (0.111166ms)
+✔ dismissed session never leaks to ask-phone for non-granted permissions (0.092458ms)
+(node:23080) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/florin/Documents/GitHub/coral-remodeling-pro/tests/location-gate.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/florin/Documents/GitHub/coral-remodeling-pro/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 10
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 161.264833
+exit: 0
+```
+
+### VERIFY 2: Crew i18n Guard Suite (5 locales verified)
+```
+$ node --import ./tests/register.mjs --test tests/i18n-crew.test.ts; echo "exit: $?"
+✔ every crew locale carries every key of en (plural forms count as one) (2.378542ms)
+✔ no empty strings in any crew locale (1.57725ms)
+✔ every literal t('…') in a react-i18next file resolves in en (28.974792ms)
+(node:23104) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/florin/Documents/GitHub/coral-remodeling-pro/tests/i18n-crew.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/florin/Documents/GitHub/coral-remodeling-pro/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 143.314
+exit: 0
+```
+
+### VERIFY 3: M3 Throw Proof (TP8: Dismissed session prompt leak)
+- Mutation in `src/components/workhub/location-gate.ts:51`: replaced `if (input.sessionDismissed) return 'skip';` with `return 'ask-phone';`.
+- Output:
+  ```
+  ✖ suppresses explainer and skips prompt if dismissed in current session (0.588792ms)
+    AssertionError [ERR_ASSERTION]: Not now must skip completely, never ask-phone
+    + actual - expected
+    + 'ask-phone'
+    - 'skip'
+  ✖ table-driven matrix covers all three actions (explain, ask-phone, skip) (0.143833ms)
+    AssertionError [ERR_ASSERTION]: case failed: prompt dismissed -> skip
+  ✖ dismissed session never leaks to ask-phone for non-granted permissions (0.118625ms)
+    AssertionError [ERR_ASSERTION]: dismissed session for state=prompt must be 'skip', never 'ask-phone'
+  ```
+- Restored and verified green.
+
+### VERIFY 4: Typecheck
+```
+$ npm run test:compile; echo "exit: $?"
+
+> coral-remodeling-pro@0.1.0 test:compile
+> NODE_OPTIONS='--max-old-space-size=4096' tsc --noEmit
+
+exit: 0
+```
+
+### VERIFY 5: Lint
+```
+$ npm run test:lint; echo "exit: $?"
+
+> coral-remodeling-pro@0.1.0 test:lint
+> eslint src
+
+[trimmed: 1483 pre-existing warnings in untouched files]
+✖ 1483 problems (0 errors, 1483 warnings)
+  0 errors and 19 warnings potentially fixable with the `--fix` option.
+
+exit: 0
+```
+
+### 7 · Measurements
+None.
+
+### 8 · 🟨 Report-only items
+None.
+
+### 9 · Not done, and why
+None. All requirements across M1, M2, and M3 are complete and verified.
+
+### 10 · Noticed, out of scope
+None.
+
+

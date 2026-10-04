@@ -140,7 +140,7 @@ export function MySchedule() {
   const { shifts, loading, error, failedEndpoints, refetch: refetchShifts } = useScheduledShifts();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { activeEntry, clockIn, clockOut } = useClockEntries();
-  const { location, requestLocation, explainerDialog } = useGeolocation();
+  const { requestLocation, explainerDialog } = useGeolocation();
   const [isClockingIn, setIsClockingIn] = useState(false);
   const [isClockingOut, setIsClockingOut] = useState(false);
   const [showGeofenceWarning, setShowGeofenceWarning] = useState<{distance: number, site: string, location: any, shiftId: string} | null>(null);
@@ -325,8 +325,10 @@ export function MySchedule() {
     try {
       const loc = await requestLocation();
       const { error } = await clockOut({
-        clockOutLatitude: loc?.latitude ?? location?.latitude,
-        clockOutLongitude: loc?.longitude ?? location?.longitude,
+        // Only THIS clock-out's fix. No fallback to the hook's last position: after "Not now" (or a failed
+        // fix) that is the clock-in's position, and the clock-out would be recorded where it did not happen.
+        clockOutLatitude: loc?.latitude,
+        clockOutLongitude: loc?.longitude,
       });
       
       if (error) {

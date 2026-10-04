@@ -11,6 +11,8 @@ import { checkExportLock } from '@/lib/records/export-lock';
 import { checkDocumentLock } from '@/lib/records/document-lock';
 import { SYSTEM_DATABASES, BASE_TO_KEY, SystemDatabaseRole } from '@/lib/kernel/system-databases';
 import { systemDatabaseEntitled } from '@/lib/kernel/system-schema-entitlement';
+import { scopeFromSession } from '@/lib/data/scope';
+import { syncInvoicePaymentStatus } from '@/lib/data/invoice-payments';
 import { systemDatabaseId } from '@/lib/data/system-databases';
 import { describeError } from '@/lib/describe-error';
 
@@ -285,6 +287,9 @@ export async function updatePageServerFirst(
  */
 async function handlePaymentMatching(tenantId: string, paymentPage: Page) {
     try {
+        // PAY-1: through the seraph's session scope — a payment can only link to, and change the status of,
+        // an invoice of THIS tenant, whatever id its properties carry (R2-1-CENSUS #6/#7/#8).
+        const db = await scopeFromSession();
         const props = paymentPage.properties;
         const ogm = typeof props.structuredComm === 'string' ? props.structuredComm.trim() : null;
         const amount = typeof props.amount === 'number' ? props.amount : null;
@@ -293,14 +298,12 @@ async function handlePaymentMatching(tenantId: string, paymentPage: Page) {
 
         // If it's already explicitly linked to an invoice by the user, we should recalculate the invoice totals
         if (paymentInvoiceId) {
-            await recalculateInvoiceStatus(tenantId, paymentInvoiceId);
+            await syncInvoicePaymentStatus(db, tenantId, paymentInvoiceId, 'system:payment-match');
             return;
         }
 
-        const allInvoices = await prisma.globalPage.findMany({
-            where: {
-                database: { tenantId, logicalKey: 'invoices' },
-            }
+        const allInvoices = await db.globalPage.findMany({
+            where: { database: { logicalKey: 'invoices' } }
         });
 
         if (ogm) {
@@ -313,14 +316,14 @@ async function handlePaymentMatching(tenantId: string, paymentPage: Page) {
             if (matchedInvoice) {
                 // Link payment to invoice
                 const newProps = { ...paymentPage.properties, invoice: [matchedInvoice.id] };
-                await prisma.globalPage.update({
+                await db.globalPage.update({
                     where: { id: paymentPage.id },
                     data: { 
                         properties: newProps as Prisma.InputJsonValue,
                         lastEditedBy: 'system:payment-match'
                     }
                 });
-                await recalculateInvoiceStatus(tenantId, matchedInvoice.id);
+                await syncInvoicePaymentStatus(db, tenantId, matchedInvoice.id, 'system:payment-match');
                 return;
             }
         }
@@ -342,7 +345,7 @@ async function handlePaymentMatching(tenantId: string, paymentPage: Page) {
             if (suggestedInvoice) {
                 // Set suggestedInvoice field
                 const newProps = { ...paymentPage.properties, suggestedInvoice: [suggestedInvoice.id] };
-                await prisma.globalPage.update({
+                await db.globalPage.update({
                     where: { id: paymentPage.id },
                     data: { 
                         properties: newProps as Prisma.InputJsonValue,
@@ -356,72 +359,5 @@ async function handlePaymentMatching(tenantId: string, paymentPage: Page) {
     }
 }
 
-async function recalculateInvoiceStatus(tenantId: string, invoiceId: string) {
-    const invoice = await prisma.globalPage.findUnique({ where: { id: invoiceId } });
-    if (!invoice) return;
-
-    // Find all payments for this invoice
-    const allPaymentsIn = await prisma.globalPage.findMany({
-        where: {
-            database: { tenantId, logicalKey: 'payments-in' },
-        }
-    });
-
-    let totalPaid = 0;
-    for (const p of allPaymentsIn) {
-        const pProps = p.properties as Record<string, unknown>;
-        const linkedInv = Array.isArray(pProps.invoice) ? pProps.invoice[0] : pProps.invoice;
-        if (linkedInv === invoiceId && typeof pProps.amount === 'number') {
-            totalPaid += pProps.amount;
-        }
-    }
-
-    const invProps = invoice.properties as Record<string, unknown>;
-    const invTotal = typeof invProps.totalIncVat === 'number' ? invProps.totalIncVat : 0;
-    let newStatus = invProps.status;
-
-    if (totalPaid >= invTotal && invTotal > 0) {
-        newStatus = 'opt-paid';
-    } else if (totalPaid > 0) {
-        // We don't have opt-partial-paid in db-invoices schema (only opt-draft, opt-sent, opt-paid, opt-overdue),
-        // but if we did, we'd use it here. If not, maybe leave it or set a custom field.
-        // Actually the instructions say: "update paid/partially-paid status".
-        // Let's assume we can update it to opt-partial-paid, or just opt-paid if fully paid.
-        // Looking at DatabaseClone.tsx, db-invoices does NOT have opt-partial-paid.
-        // Wait, DatabaseClone for db-payments-in financial status has 'opt-partial'. But invoice doesn't.
-        // Let's just set opt-paid if fully paid.
-    }
-
-    if (newStatus !== invProps.status) {
-        const updatedProps = { ...invProps, status: newStatus };
-        await prisma.globalPage.update({
-            where: { id: invoiceId },
-            data: { 
-                properties: updatedProps as Prisma.InputJsonValue,
-                lastEditedBy: 'system:payment-match'
-            }
-        });
-
-        if (newStatus === 'opt-paid') {
-            try {
-                const { notify } = await import('@/lib/notifications');
-                const invTitle = (invProps.title as string) || 'Factuur';
-                const assigneeId = (invoice.assignedTo && invoice.assignedTo.length > 0) ? invoice.assignedTo[0] : (invoice.createdBy || null);
-                await notify(
-                    {
-                        userId: assigneeId,
-                        topic: 'invoices.paid',
-                        title: 'Invoice Paid',
-                        body: `Invoice ${invTitle} has been fully paid.`,
-                        entity: { type: 'invoice', id: invoiceId },
-                        href: `/nl/admin/database/db-invoices/${invoiceId}`
-                    },
-                    { tenantId, db: prisma }
-                );
-            } catch (err) {
-                console.error('[Automation] Failed to create invoices.paid notification:', err);
-            }
-        }
-    }
-}
+// recalculateInvoiceStatus → lib/data/invoice-payments.ts syncInvoicePaymentStatus (PAY-1: one rule, scoped).
 

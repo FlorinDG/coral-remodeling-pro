@@ -15,6 +15,50 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { getStripeInstance, syncPlanToTenant, STRIPE_PRICE_IDS, getPriceId } from '@/lib/stripe';
+import { platformDb, systemScope } from '@/lib/data/scope';
+import { recordStripePayment } from '@/lib/data/invoice-payments';
+import { stripeTenantPaymentRefusal, stripeAmountEuro } from '@/lib/records/stripe-tenant-payment';
+
+/**
+ * PAY-2 · a checkout on a TENANT's own Stripe account. The request body is unsigned, so it only says which
+ * tenant's key to ask; everything else is read from the session Stripe returns to THAT key. A confirmed,
+ * matching payment becomes a payments-in row on that tenant's invoice (through its system scope) and the
+ * invoice's status follows from the payments (PAY-1). Nothing else can happen on this path.
+ */
+async function handleTenantCheckout(body: string): Promise<NextResponse> {
+    try {
+        const raw = JSON.parse(body);
+        if (raw?.type !== 'checkout.session.completed') return NextResponse.json({ error: 'Webhook signature verification failed' }, { status: 400 });
+        const claimedTenantId: string | undefined = raw?.data?.object?.metadata?.tenantId;
+        const sessionId: string | undefined = raw?.data?.object?.id;
+        if (!claimedTenantId || !sessionId) return NextResponse.json({ error: 'Webhook signature verification failed' }, { status: 400 });
+
+        const tenant = await platformDb().tenant.findUnique({ where: { id: claimedTenantId }, select: { id: true, paymentProvider: true, stripeSecretKey: true } });
+        if (!tenant || tenant.paymentProvider !== 'stripe' || !tenant.stripeSecretKey) return NextResponse.json({ error: 'Webhook signature verification failed' }, { status: 400 });
+        const { decrypt } = await import('@/lib/encryption');
+        const key = decrypt(tenant.stripeSecretKey);
+        if (!key) return NextResponse.json({ error: 'Webhook signature verification failed' }, { status: 400 });
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const fetched = await new Stripe(key, { apiVersion: '2022-11-15' as any }).checkout.sessions.retrieve(sessionId);
+        const refusal = stripeTenantPaymentRefusal(fetched as never, tenant.id);
+        if (refusal) {
+            console.warn(`[Stripe Webhook] tenant ${tenant.id} checkout ${sessionId} refused: ${refusal}`);
+            return NextResponse.json({ received: true, recorded: false, reason: refusal });
+        }
+        const db = systemScope(tenant.id, `stripe checkout ${sessionId}`);
+        const result = await recordStripePayment(db, tenant.id, {
+            invoiceId: fetched.metadata!.invoiceId,
+            sessionId,
+            amount: stripeAmountEuro(fetched.amount_total!),
+        });
+        console.log(`[Stripe Webhook] tenant ${tenant.id} checkout ${sessionId}: ${result}`);
+        return NextResponse.json({ received: true, recorded: result !== 'not_found' && result !== 'unbound', result });
+    } catch (err) {
+        console.error('[Stripe Webhook] tenant checkout verification failed:', err);
+        return NextResponse.json({ error: 'Webhook signature verification failed' }, { status: 400 });
+    }
+}
 
 export async function POST(req: Request) {
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -35,62 +79,11 @@ export async function POST(req: Request) {
 
     try {
         event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
-    } catch (err: unknown) {
-        console.log('[Stripe Webhook] Signature verification failed. Trying fallback for tenant checkout session.');
-        try {
-            const rawEvent = JSON.parse(body);
-            if (rawEvent && rawEvent.type === 'checkout.session.completed') {
-                const session = rawEvent.data?.object as Stripe.Checkout.Session;
-                const tenantId = session?.metadata?.tenantId;
-                const invoiceId = session?.metadata?.invoiceId;
-                if (tenantId && invoiceId) {
-                    const { default: prisma } = await import('@/lib/prisma');
-                    const tenant = await prisma.tenant.findUnique({
-                        where: { id: tenantId }
-                    });
-                    if (tenant && tenant.paymentProvider === 'stripe' && tenant.stripeSecretKey) {
-                        const { decrypt } = await import('@/lib/encryption');
-                        const decryptedKey = decrypt(tenant.stripeSecretKey);
-                        if (decryptedKey) {
-                            const tenantStripe = new Stripe(decryptedKey, {
-                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                apiVersion: '2022-11-15' as any
-                            });
-                            const verifiedSession = await tenantStripe.checkout.sessions.retrieve(session.id);
-                            if (verifiedSession && verifiedSession.payment_status === 'paid') {
-                                event = {
-                                    id: rawEvent.id || 'evt_constructed',
-                                    object: 'event',
-                                    api_version: rawEvent.api_version,
-                                    created: rawEvent.created,
-                                    livemode: rawEvent.livemode,
-                                    pending_webhooks: rawEvent.pending_webhooks,
-                                    request: rawEvent.request,
-                                    type: 'checkout.session.completed',
-                                    data: {
-                                        object: verifiedSession
-                                    }
-                                } as unknown as Stripe.Event;
-                                console.log('[Stripe Webhook] Verification succeeded via tenant Stripe API fetch.');
-                            } else {
-                                throw new Error('Retrieved checkout session was not paid');
-                            }
-                        } else {
-                            throw new Error('Tenant Stripe key decryption failed');
-                        }
-                    } else {
-                        throw new Error('Tenant payment provider is not stripe or Stripe key is missing');
-                    }
-                } else {
-                    throw new Error('Missing tenantId or invoiceId in metadata');
-                }
-            } else {
-                throw err;
-            }
-        } catch (fallbackErr) {
-            console.error('[Stripe Webhook] Signature verification and fallback verification failed:', fallbackErr);
-            return NextResponse.json({ error: 'Webhook signature verification failed' }, { status: 400 });
-        }
+    } catch {
+        // Not signed by the PLATFORM. The only other legitimate sender is a tenant's own Stripe account
+        // (its checkout for one of its invoices). That path can only ever record a payment — it never
+        // reaches the platform handlers below (plans, seats, subscription status). PAY-2.
+        return handleTenantCheckout(body);
     }
 
     console.log(`[Stripe Webhook] Received: ${event.type}`);
@@ -104,30 +97,9 @@ export async function POST(req: Request) {
                 const invoiceId = session.metadata?.invoiceId;
 
                 if (invoiceId) {
-                    const { default: prisma } = await import('@/lib/prisma');
-                    const page = await prisma.globalPage.findUnique({
-                        where: { id: invoiceId }
-                    });
-                    if (page) {
-                        const props = page.properties as Record<string, unknown>;
-                        const today = new Date().toISOString().split('T')[0];
-                        const updatedProps = {
-                            ...props,
-                            status: 'opt-paid',
-                            paidDate: today,
-                            paymentMethod: 'pay-card'
-                        };
-                        await prisma.globalPage.update({
-                            where: { id: invoiceId },
-                            data: {
-                                properties: updatedProps,
-                                lastEditedBy: 'system:stripe'
-                            }
-                        });
-                        console.log(`[Stripe Webhook] Invoice ${invoiceId} marked as paid`);
-                    } else {
-                        console.warn(`[Stripe Webhook] Invoice page ${invoiceId} not found`);
-                    }
+                    // A tenant's invoice is paid through the TENANT's Stripe account (handleTenantCheckout), never
+                    // the platform's. A platform-signed session naming an invoice is not ours to act on. PAY-2.
+                    console.warn(`[Stripe Webhook] platform checkout ${session.id} names invoice ${invoiceId} — ignored`);
                     break;
                 }
 

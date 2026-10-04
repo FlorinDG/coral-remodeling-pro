@@ -36,7 +36,7 @@ export async function createInvoiceCheckout(invoiceId: string) {
         // R2-1-CENSUS #11: through the seraph's session scope — the invoice must be THIS tenant's (a payment
         // link was written onto any invoice id). Read and write on the same scoped client.
         const db = await scopeFromSession();
-        const page = await db.globalPage.findFirst({ where: { id: invoiceId } });
+        const page = await db.globalPage.findFirst({ where: { id: invoiceId, database: { logicalKey: 'invoices' } } });   // an INVOICE of this tenant
         if (!page) {
             throw new Error('Invoice not found');
         }

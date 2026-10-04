@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { verifyPortalAccess, setPortalSessionCookie } from "@/lib/portal-auth";
+import { portalScope } from "@/lib/data/scope";
 
 async function handlePortalRequest(request: Request, context: any, explicitPassword?: string | null) {
     const { params } = context;
@@ -46,10 +47,12 @@ async function handlePortalRequest(request: Request, context: any, explicitPassw
         const isCustomer = portal.audience === 'CUSTOMER';
 
         // 1. Fetch portal tasks from the generic tasks module
-        // The PORTAL tenant's tasks database, by its role (R2-1-CENSUS #23) — not BV Coral's hard-coded 'db-tasks'.
-        const rawTasks = await prisma.globalPage.findMany({
+        // The portal's own tenant, through the seraph (PT-5 portalScope) — the tasks database by its role,
+        // not BV Coral's hard-coded 'db-tasks' (R2-1-CENSUS #23).
+        const scoped = portalScope(authResult);
+        const rawTasks = await scoped.globalPage.findMany({
             where: {
-                database: { tenantId: portal.tenantId, logicalKey: 'tasks' },
+                database: { logicalKey: 'tasks' },
                 properties: {
                     path: ['prop-task-portal'],
                     array_contains: portal.id

@@ -13,7 +13,8 @@
  *       create injects tenantId (direct) or verifies the parent belongs to the tenant (via).
  *
  * Adoption is R1-5: callers move to this client file by file, and direct prisma outside lib/data
- * becomes a CI failure. Nothing imports this yet — building the door does not open it.
+ * becomes a CI failure. First adopters (2026-10-04, R2-1-CENSUS holes): Stripe checkout, the scan's
+ * re-scan, client-portal tasks.
  */
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/auth';
@@ -62,6 +63,16 @@ export function systemScope(tenantId: string, reason: string): TenantScopedClien
     if (!reason || !reason.trim()) throw new Error('systemScope: a reason is required');
     console.info(`[systemScope] tenant=${tenantId} reason=${reason}`);
     return buildScopedClient(tenantId);
+}
+
+/**
+ * PT-5 — the THIRD constructor: a client portal (Florin 2026-09-27: the portal's actor is a scope, not a user).
+ * Opened only by a VERIFIED portal access (lib/portal-auth verifyPortalAccess → success) — never by a raw
+ * portal id or tenant id. The tenant is the portal's own, read server-side by the verification.
+ */
+export function portalScope(access: { success: true; portal: { id: string; tenantId: string } }): TenantScopedClient {
+    if (!access?.success || !access.portal?.tenantId) throw new Error('portalScope: no verified portal access');
+    return buildScopedClient(access.portal.tenantId);
 }
 
 /** D4 — the second, named door: Tenant, VerificationToken, and cross-tenant superadmin work. */

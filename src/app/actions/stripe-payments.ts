@@ -1,7 +1,7 @@
 "use server";
 
 import { auth } from '@/auth';
-import prisma from '@/lib/prisma';
+import { scopeFromSession, platformDb } from '@/lib/data/scope';
 import { decrypt } from '@/lib/encryption';
 import Stripe from 'stripe';
 import { describeError } from '@/lib/describe-error';
@@ -15,7 +15,7 @@ export async function createInvoiceCheckout(invoiceId: string) {
         }
 
         // Get tenant details
-        const tenant = await (prisma.tenant as any).findUnique({
+        const tenant = await (platformDb().tenant as any).findUnique({   // Tenant is a platform model (D4)
             where: { id: tenantId }
         });
         if (!tenant) {
@@ -33,10 +33,10 @@ export async function createInvoiceCheckout(invoiceId: string) {
         }
 
         // Get invoice page details
-        // R2-1-CENSUS #11: the invoice must be THIS tenant's — a payment link was written onto any invoice id.
-        const page = await prisma.globalPage.findFirst({
-            where: { id: invoiceId, database: { tenantId } }
-        });
+        // R2-1-CENSUS #11: through the seraph's session scope — the invoice must be THIS tenant's (a payment
+        // link was written onto any invoice id). Read and write on the same scoped client.
+        const db = await scopeFromSession();
+        const page = await db.globalPage.findFirst({ where: { id: invoiceId } });
         if (!page) {
             throw new Error('Invoice not found');
         }
@@ -92,7 +92,7 @@ export async function createInvoiceCheckout(invoiceId: string) {
             stripeCheckoutUrl
         };
 
-        await (prisma.globalPage as any).update({
+        await db.globalPage.update({
             where: { id: invoiceId },
             data: {
                 properties: updatedProps

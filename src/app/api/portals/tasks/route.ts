@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { verifyPortalAccess } from '@/lib/portal-auth';
+import { portalScope, platformDb } from '@/lib/data/scope';
+import { systemDatabaseId } from '@/lib/data/system-databases';
 
 export async function POST(request: Request) {
     try {
@@ -17,12 +19,13 @@ export async function POST(request: Request) {
         }
 
         // R2-1-CENSUS #23: the PORTAL's tenant's tasks database — a hard-coded 'db-tasks' is BV Coral's, so every
-        // other tenant's portal wrote its tasks there. Fail closed: no binding → refused, never a guess.
-        const owner = await prisma.tenant.findUnique({ where: { id: authResult.portal.tenantId }, select: { lockedDbIds: true } });
-        const tasksDbId = ((owner?.lockedDbIds as Record<string, string> | null) || {})['tasks'];
-        if (!tasksDbId) return NextResponse.json({ error: 'unbound_system_database: tasks' }, { status: 409 });
+        // other tenant's portal wrote its tasks there. Seraph: the binding is read by systemDatabaseId (fails
+        // closed — no binding, no guess), the write goes through the portal scope (PT-5).
+        let tasksDbId: string;
+        try { tasksDbId = await systemDatabaseId(authResult.portal.tenantId, 'tasks'); }
+        catch { return NextResponse.json({ error: 'unbound_system_database: tasks' }, { status: 409 }); }
 
-        const task = await prisma.globalPage.create({
+        const task = await portalScope(authResult).globalPage.create({
             data: {
                 databaseId: tasksDbId,
                 createdBy: 'system:portal',
@@ -62,8 +65,9 @@ export async function PUT(request: Request) {
             return NextResponse.json({ error: 'Task ID required' }, { status: 400 });
         }
 
-        // Verify the task exists and is a TASK (its database's role), not a hard-coded id (R2-1-CENSUS #23/#24)
-        const existing = await prisma.globalPage.findUnique({ where: { id }, include: { database: { select: { logicalKey: true, tenantId: true } } } });
+        // Which portal(s) the task names is read before any tenant is known — the platform door (D4), read
+        // only; the WRITE below goes through the granting portal's scope. (R2-1-CENSUS #23/#24)
+        const existing = await platformDb().globalPage.findUnique({ where: { id }, include: { database: { select: { logicalKey: true, tenantId: true } } } });
         if (!existing || existing.database.logicalKey !== 'tasks') {
             return NextResponse.json({ error: 'Not found' }, { status: 404 });
         }
@@ -101,7 +105,7 @@ export async function PUT(request: Request) {
         if (dueDate !== undefined) newProperties['prop-task-due'] = dueDate ? new Date(dueDate).toISOString() : '';
         if (fileUrl !== undefined) newProperties['prop-task-file-url'] = fileUrl || '';
 
-        const task = await prisma.globalPage.update({
+        const task = await portalScope({ success: true, portal: authorizedPortal }).globalPage.update({
             where: { id },
             data: {
                 properties: newProperties,

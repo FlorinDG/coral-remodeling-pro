@@ -8,7 +8,7 @@ import { SYSTEM_DATABASES, BASE_TO_KEY, type SystemDatabaseRole } from '@/lib/ke
 import { canonicalSchemas, type KernelProperty } from '@/lib/kernel/system-schemas';
 import { planSchemaReconcile } from '@/lib/kernel/system-schema-plan';
 import { upgradesFor } from '@/lib/kernel/system-schema-upgrades';
-import { schemaEntitled } from '@/lib/kernel/system-schema-entitlement';
+import { systemDatabaseEntitled } from '@/lib/kernel/system-schema-entitlement';
 
 /** Tenants already reconciled by this server instance — the healthy path costs nothing after the first load. */
 const done = new Set<string>();   // key: tenant + plan + modules — a plan change reconciles again
@@ -36,7 +36,7 @@ export async function reconcileSystemSchemas(
         for (const row of rows) {
             const spec = row.logicalKey ? SYSTEM_DATABASES[row.logicalKey as SystemDatabaseRole] : undefined;
             // Tier gate (Florin 2026-10-03): only the databases this tenant's plan / modules entitle it to.
-            if (!spec || !schemaEntitled(spec.role, entitlement.planType, entitlement.activeModules)) continue;
+            if (!spec || !systemDatabaseEntitled(spec.role, entitlement.planType, entitlement.activeModules)) continue;
             const canonical = spec ? schemas[spec.legacyBase] : undefined;
             if (!canonical) continue;
             const current = (Array.isArray(row.properties) ? row.properties : []) as unknown as KernelProperty[];

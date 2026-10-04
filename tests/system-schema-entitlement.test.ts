@@ -1,31 +1,49 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { schemaEntitled } from '../src/lib/kernel/system-schema-entitlement.ts';
+import { systemDatabaseEntitled } from '../src/lib/kernel/system-schema-entitlement.ts';
+import { SYSTEM_DATABASES, SYSTEM_DATABASE_ROLES } from '../src/lib/kernel/system-databases.ts';
 import { PLAN_MODULES } from '../src/lib/plan-modules.ts';
 
-test('FREE: no library (articles, bestek), no projects / tasks / CRM — invoicing only', () => {
-    const m = PLAN_MODULES.FREE;
-    assert.equal(schemaEntitled('articles', 'FREE', m), false);
-    assert.equal(schemaEntitled('bestek', 'FREE', m), false);
-    assert.equal(schemaEntitled('projects', 'FREE', m), false);
-    assert.equal(schemaEntitled('tasks', 'FREE', m), false);
-    assert.equal(schemaEntitled('crm', 'FREE', m), false);
-    assert.equal(schemaEntitled('invoices', 'FREE', m), true);
-});
+// One rule for columns (KERN-SCHEMA-1) and rows (createPageServerFirst, ENT-6).
 
-test('PRO and up: the (empty) library gets its columns', () => {
-    for (const plan of ['PRO', 'ENTERPRISE', 'FOUNDER']) {
-        assert.equal(schemaEntitled('articles', plan, PLAN_MODULES[plan]), true, plan);
-        assert.equal(schemaEntitled('bestek', plan, PLAN_MODULES[plan]), true, plan);
-        assert.equal(schemaEntitled('projects', plan, PLAN_MODULES[plan]), true, plan);
+test('FREE: invoicing only — no library, projects, tasks, CRM, bobex or HR (ENT-6: none of these may be created)', () => {
+    const m = PLAN_MODULES.FREE;
+    for (const role of ['articles', 'bestek', 'projects', 'tasks', 'crm', 'bobex', 'clients', 'quotations', 'hr'] as const) {
+        assert.equal(systemDatabaseEntitled(role, 'FREE', m), false, role);
+    }
+    for (const role of ['invoices', 'suppliers', 'expenses', 'tickets', 'payments-in', 'payments-out'] as const) {
+        assert.equal(systemDatabaseEntitled(role, 'FREE', m), true, role);
     }
 });
 
-test('a module switched off on a paying plan → that database is not structured', () => {
-    assert.equal(schemaEntitled('projects', 'PRO', ['INVOICING', 'CRM']), false);
+test('PRO and up: the (empty) library, projects, tasks, CRM', () => {
+    for (const plan of ['PRO', 'ENTERPRISE', 'FOUNDER']) {
+        for (const role of ['articles', 'bestek', 'projects', 'tasks', 'crm', 'bobex'] as const) {
+            assert.equal(systemDatabaseEntitled(role, plan, PLAN_MODULES[plan]), true, `${plan} ${role}`);
+        }
+    }
 });
 
-test('no canonical schema (journal, hr) → never', () => {
-    assert.equal(schemaEntitled('journal-general', 'ENTERPRISE', PLAN_MODULES.ENTERPRISE), false);
-    assert.equal(schemaEntitled('hr', 'ENTERPRISE', PLAN_MODULES.ENTERPRISE), false);
+test('HR only where the HR module is granted (ENTERPRISE by default, not PRO)', () => {
+    assert.equal(systemDatabaseEntitled('hr', 'PRO', PLAN_MODULES.PRO), false);
+    assert.equal(systemDatabaseEntitled('hr', 'ENTERPRISE', PLAN_MODULES.ENTERPRISE), true);
+});
+
+test('a module switched off on a paying plan → that database is closed', () => {
+    assert.equal(systemDatabaseEntitled('projects', 'PRO', ['INVOICING', 'CRM']), false);
+    assert.equal(systemDatabaseEntitled('tasks', 'ENTERPRISE', ['INVOICING']), false);
+});
+
+test('the library follows the PLAN, not a module toggle — a FREE tenant with every module still has none', () => {
+    assert.equal(systemDatabaseEntitled('articles', 'FREE', PLAN_MODULES.ENTERPRISE), false);
+    assert.equal(systemDatabaseEntitled('articles', null, PLAN_MODULES.ENTERPRISE), false);
+});
+
+test('journal-general is explicitly ungated (until the Journal decision)', () => {
+    assert.equal(systemDatabaseEntitled('journal-general', 'FREE', PLAN_MODULES.FREE), true);
+});
+
+test('every role is gated or EXPLICITLY ungated — only journal-general is open', () => {
+    const open = SYSTEM_DATABASE_ROLES.filter(r => SYSTEM_DATABASES[r].module === null);
+    assert.deepEqual(open, ['journal-general']);
 });

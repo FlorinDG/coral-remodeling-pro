@@ -37,8 +37,11 @@ export interface SystemDatabaseSpec {
     legacyBase: string;
     displayName: string;
     /**
-     * Entitlement gate module name (e.g. 'INVOICING', 'CRM'),
-     * or explicit null if ungated.
+     * Entitlement gate module name (e.g. 'INVOICING', 'CRM'), or explicit null if ungated.
+     * 'LIBRARY' is not a module toggle: it is derived from the plan (PRO and up — Florin 2026-10-03).
+     * Read ONLY through systemDatabaseEntitled() (system-schema-entitlement.ts) — never compared here and there.
+     * ENT-6 (2026-10-04): projects, tasks, articles, crm, bobex, bestek and hr were null, so a FREE tenant
+     * could create in them; journal-general stays ungated until the Journal decision.
      */
     module: string | null;
 }
@@ -96,37 +99,37 @@ export const SYSTEM_DATABASES: Readonly<Record<SystemDatabaseRole, SystemDatabas
         role:        'projects',
         legacyBase:  'db-1',
         displayName: 'Projects',
-        module:      null,
+        module:      'PROJECTS',
     },
     'tasks': {
         role:        'tasks',
         legacyBase:  'db-tasks',
         displayName: 'Tasks',
-        module:      null,
+        module:      'TASKS',
     },
     'articles': {
         role:        'articles',
         legacyBase:  'db-articles',
         displayName: 'Material Articles',
-        module:      null,
+        module:      'LIBRARY',
     },
     'crm': {
         role:        'crm',
         legacyBase:  'db-crm',
         displayName: 'CRM',
-        module:      null,
+        module:      'CRM',
     },
     'bobex': {
         role:        'bobex',
         legacyBase:  'db-bobex',
         displayName: 'Bobex',
-        module:      null,
+        module:      'CRM',
     },
     'bestek': {
         role:        'bestek',
         legacyBase:  'db-bestek',
         displayName: 'Bestek Templates',
-        module:      null,
+        module:      'LIBRARY',
     },
     'journal-general': {
         role:        'journal-general',
@@ -138,7 +141,7 @@ export const SYSTEM_DATABASES: Readonly<Record<SystemDatabaseRole, SystemDatabas
         role:        'hr',
         legacyBase:  'db-hr',
         displayName: 'HR',
-        module:      null,
+        module:      'HR',
     },
 } as const;
 

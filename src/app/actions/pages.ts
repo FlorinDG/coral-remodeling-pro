@@ -10,6 +10,7 @@ import { generateOGM } from '@/lib/ogm';
 import { checkExportLock } from '@/lib/records/export-lock';
 import { checkDocumentLock } from '@/lib/records/document-lock';
 import { SYSTEM_DATABASES, BASE_TO_KEY, SystemDatabaseRole } from '@/lib/kernel/system-databases';
+import { systemDatabaseEntitled } from '@/lib/kernel/system-schema-entitlement';
 import { systemDatabaseId } from '@/lib/data/system-databases';
 import { describeError } from '@/lib/describe-error';
 
@@ -68,17 +69,18 @@ export async function createPageServerFirst(
         }
     }
 
-    // Module-level authorization — enforced server-side regardless of UI state.
-    // A FREE tenant calling this directly for an INVOICING/CRM database gets denied.
+    // Module-level authorization — enforced server-side regardless of UI state. ONE rule for every system
+    // database (systemDatabaseEntitled — the same the column reconcile reads). ENT-6: before 2026-10-04 eight
+    // roles had no gate, so a FREE tenant could create projects, tasks, articles, CRM, bestek and HR rows.
     const requiredModule = role ? SYSTEM_DATABASES[role]?.module : null;
-    if (requiredModule) {
+    if (role && requiredModule) {
         const tenant = await prisma.tenant.findUnique({
             where: { id: tenantId },
             select: { activeModules: true, planType: true },
         });
         const sessionRole = session?.user?.role;
         const isSuperadmin = sessionRole ? ['SUPERADMIN', 'PLATFORM_ADMIN'].includes(sessionRole) : false;
-        if (!isSuperadmin && !tenant?.activeModules.includes(requiredModule)) {
+        if (!isSuperadmin && !systemDatabaseEntitled(role, tenant?.planType, tenant?.activeModules ?? [])) {
             return {
                 success: false,
                 error: `Access denied — module '${requiredModule}' is not active on your plan.`,

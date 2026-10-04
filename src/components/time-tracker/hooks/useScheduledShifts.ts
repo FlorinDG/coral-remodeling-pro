@@ -125,6 +125,9 @@ export function useScheduledShifts() {
   // Every local change (create / update / delete) bumps this. A reload that STARTED before a change
   // carries the old list — applying it put a just-deleted shift back on screen until a refresh
   // (Florin 2026-10-02). Such a reload is discarded and run again.
+  // SCHED-SYNC-2 (Florin 2026-10-04): bumped when the change STARTS and again when its write RETURNS — a
+  // reload that began between the two read the database before the write committed; it flashed a deleted
+  // shift back for half a second. Both bumps make it stale, so it is discarded and run again.
   const mutationSeq = useRef(0);
 
   /** `silent`: refresh without the loading state (no flash) — used when the tab regains focus. */
@@ -267,6 +270,7 @@ export function useScheduledShifts() {
     mutationSeq.current++;
     try {
       const shift = await hrCreate<ScheduledShift>('shifts', normalized);
+      mutationSeq.current++;   // again AFTER the write: a reload that started mid-write is stale too (SCHED-SYNC-2)
       setRawShifts(prev => [addSnakeCase(withProject(shift)), ...prev]);
       quietReload();   // the server's list, quietly (no loading state → no flash) — see SCHED-SYNC-1 below
       return { data: addSnakeCase(shift), error: null };
@@ -292,6 +296,7 @@ export function useScheduledShifts() {
       setRawShifts(prev => prev.map(s => s.id === id ? addSnakeCase(withProject({ ...s, ...normalized })) : s));
 
       const shift = await hrUpdate<ScheduledShift & { seriesUpdated?: number }>('shifts', id, normalized, scope);
+      mutationSeq.current++;   // SCHED-SYNC-2
       setRawShifts(prev => prev.map(s => s.id === id ? addSnakeCase(withProject({ ...s, ...shift })) : s));
       // SCHED-SYNC-1 (Florin 2026-10-04, third report): an edited / deleted shift still showed its old state
       // until a page refresh. The local patch above stays (instant feedback); the quiet reload after it makes
@@ -313,6 +318,7 @@ export function useScheduledShifts() {
     mutationSeq.current++;
     try {
       const res = await hrDelete<{ seriesDeleted?: number; seriesKept?: number }>('shifts', id, scope);
+      mutationSeq.current++;   // SCHED-SYNC-2
       setRawShifts(prev => prev.filter(s => s.id !== id));
       quietReload();   // SCHED-SYNC-1
       return { error: null, deleted: res?.seriesDeleted ?? 1, kept: res?.seriesKept ?? 0 };

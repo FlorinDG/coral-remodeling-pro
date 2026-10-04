@@ -1,5 +1,5 @@
 # CORAL — CODER QUEUE
-**Current as of 2026-10-01.** This file is always the live queue — superseded items are removed, not renamed.
+**Current as of 2026-10-04.** This file is always the live queue — superseded items are removed, not renamed.
 🛑 **The filename never carries a date.** `PLANNER-HANDOVER.md` §7 points here permanently.
 
 **Work top to bottom. Each item is a separate commit set. Report after each.**
@@ -16,11 +16,10 @@
 **every new test needs a THROW PROOF** (break the real code, show the test fail, restore), and
 **bending a directive is not progress** — a blocked step is STOPPED, never worked around.
 
-## 0 · `WO-4a` — the signed work order PDF renderer — 🟦 PLAN FIRST (protocol §0), then milestones
-📄 `coder-directive-wo-4-pdf.md` — write `.agents/plans/WO-4a.md`, push, STOP for review. Do this BEFORE item 1.
-
-## 0b · `GEO-2` — our location explanation before the phone's prompt — 🟦 PLAN FIRST (protocol §0)
-📄 `coder-directive-geo-2.md` — write `.agents/plans/GEO-2.md`, push, STOP for review. After WO-4a's plan.
+## 0 · `WO-4a-M4` — the work order PDF without global patches — 🟦 PLAN FIRST (protocol §0)
+📄 `coder-directive-wo-4a-m4.md` — append the M4 plan to `.agents/plans/WO-4a.md`, push, STOP for review.
+Removes the `Math.random` seeding and the PDF library prototype patch; WO-4b waits on it.
+*(WO-4a M1–M3 ✅ and GEO-2 M1–M3 ✅ — done 2026-10-03/04.)*
 
 ## 1 · `R2-1-CENSUS` — map every direct GlobalPage write (read-only) + one honest backoff test
 📄 `coder-directive-r2-1-write-census.md` — 33 writes in 18 files, one row each (tenant check · OCC · audit · fate). `src/` read-only.

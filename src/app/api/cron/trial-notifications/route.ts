@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { isCronRequest } from '@/lib/cron-auth';
 import { checkAndExpireTrials } from '@/lib/trial';
 import { TRIAL_MODE_ENABLED } from '@/lib/stripe';
 
@@ -13,10 +14,7 @@ import { TRIAL_MODE_ENABLED } from '@/lib/stripe';
  * Protected by CRON_SECRET environment variable.
  */
 export async function GET(req: Request) {
-    const { searchParams } = new URL(req.url);
-    const secret = searchParams.get('secret');
-
-    if (process.env.CRON_SECRET && secret !== process.env.CRON_SECRET) {
+    if (!isCronRequest(req, { allowQuerySecret: true })) {        // R5-1: one check, fail-closed
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

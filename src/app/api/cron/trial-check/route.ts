@@ -9,6 +9,7 @@
  */
 
 import { NextResponse } from 'next/server';
+import { isCronRequest } from '@/lib/cron-auth';
 import { checkAndExpireTrials } from '@/lib/trial';
 import { TRIAL_MODE_ENABLED } from '@/lib/stripe';
 
@@ -16,10 +17,7 @@ import { checkAndLockPastDueSubscriptions } from '@/lib/dunning';
 
 export async function GET(req: Request) {
     // Verify cron secret to prevent unauthorized calls
-    const authHeader = req.headers.get('authorization');
-    const cronSecret = process.env.CRON_SECRET;
-
-    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+    if (!isCronRequest(req)) {                                  // R5-1: one check, fail-closed
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

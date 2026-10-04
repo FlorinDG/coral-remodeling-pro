@@ -11,13 +11,12 @@
  */
 
 import { NextResponse } from 'next/server';
+import { isCronRequest } from '@/lib/cron-auth';
 import prisma from '@/lib/prisma';
 
 export async function GET(req: Request) {
     // Verify cron secret
-    const authHeader = req.headers.get('authorization');
-    const cronSecret = process.env.CRON_SECRET;
-    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+    if (!isCronRequest(req)) {                                  // R5-1: one check, fail-closed
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

@@ -1,7 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  getLocationGateAction,
   shouldShowLocationExplainer,
+  type LocationGateAction,
+  type GeolocationPermissionState,
 } from '../src/components/workhub/location-gate.ts';
 import {
   GEO_EXPLAINER_DEVICE_KEY,
@@ -14,7 +17,7 @@ import {
 
 // ── 1. GRANTED PERMISSION: NEVER SHOW (TABLE-DRIVEN OVER ALL 8 COMBINATIONS) ──
 
-test('never shows explainer when permission is granted, across all 8 input combinations', () => {
+test('granted permission maps to ask-phone and never shows explainer across all 8 combinations', () => {
   const bools = [true, false];
   let combinationsChecked = 0;
 
@@ -22,17 +25,24 @@ test('never shows explainer when permission is granted, across all 8 input combi
     for (const alreadyShownDevice of bools) {
       for (const sessionDismissed of bools) {
         combinationsChecked++;
-        const result = shouldShowLocationExplainer({
-          permissionState: 'granted',
+        const input = {
+          permissionState: 'granted' as const,
           hasPermissionsApi,
           alreadyShownDevice,
           sessionDismissed,
-        });
+        };
+        const action = getLocationGateAction(input);
+        const shouldShow = shouldShowLocationExplainer(input);
 
         assert.equal(
-          result,
+          action,
+          'ask-phone',
+          `granted must return 'ask-phone' for combination (api=${hasPermissionsApi}, shown=${alreadyShownDevice}, dismissed=${sessionDismissed})`
+        );
+        assert.equal(
+          shouldShow,
           false,
-          `granted must return false for combination (api=${hasPermissionsApi}, shown=${alreadyShownDevice}, dismissed=${sessionDismissed})`
+          `granted must return false for shouldShowLocationExplainer`
         );
       }
     }
@@ -45,105 +55,89 @@ test('never shows explainer when permission is granted, across all 8 input combi
 
 test('shows explainer on prompt state when session is not dismissed', () => {
   // First time on device
-  assert.equal(
-    shouldShowLocationExplainer({
-      permissionState: 'prompt',
-      hasPermissionsApi: true,
-      alreadyShownDevice: false,
-      sessionDismissed: false,
-    }),
-    true,
-    'must show explainer on initial prompt state'
-  );
+  const input1 = {
+    permissionState: 'prompt' as const,
+    hasPermissionsApi: true,
+    alreadyShownDevice: false,
+    sessionDismissed: false,
+  };
+  assert.equal(getLocationGateAction(input1), 'explain');
+  assert.equal(shouldShowLocationExplainer(input1), true);
 
   // Ungranted on device across sessions (worker starts new session still in prompt state)
-  assert.equal(
-    shouldShowLocationExplainer({
-      permissionState: 'prompt',
-      hasPermissionsApi: true,
-      alreadyShownDevice: true,
-      sessionDismissed: false,
-    }),
-    true,
-    'must show explainer again if permission remains ungranted in a new session'
-  );
+  const input2 = {
+    permissionState: 'prompt' as const,
+    hasPermissionsApi: true,
+    alreadyShownDevice: true,
+    sessionDismissed: false,
+  };
+  assert.equal(getLocationGateAction(input2), 'explain');
+  assert.equal(shouldShowLocationExplainer(input2), true);
 });
 
-test('suppresses explainer on prompt state if dismissed in current session', () => {
+test('suppresses explainer and skips prompt if dismissed in current session', () => {
   // Worker clicked 'Not now' earlier in this browser session
-  assert.equal(
-    shouldShowLocationExplainer({
-      permissionState: 'prompt',
-      hasPermissionsApi: true,
-      alreadyShownDevice: false,
-      sessionDismissed: true,
-    }),
-    false,
-    'must not repeatedly nag worker in same session after Not now'
-  );
+  const input1 = {
+    permissionState: 'prompt' as const,
+    hasPermissionsApi: true,
+    alreadyShownDevice: false,
+    sessionDismissed: true,
+  };
+  assert.equal(getLocationGateAction(input1), 'skip', 'Not now must skip completely, never ask-phone');
+  assert.equal(shouldShowLocationExplainer(input1), false);
 
-  assert.equal(
-    shouldShowLocationExplainer({
-      permissionState: 'prompt',
-      hasPermissionsApi: true,
-      alreadyShownDevice: true,
-      sessionDismissed: true,
-    }),
-    false,
-    'must not nag worker in same session when already shown on device'
-  );
+  const input2 = {
+    permissionState: 'prompt' as const,
+    hasPermissionsApi: true,
+    alreadyShownDevice: true,
+    sessionDismissed: true,
+  };
+  assert.equal(getLocationGateAction(input2), 'skip', 'Not now must skip completely when already shown');
+  assert.equal(shouldShowLocationExplainer(input2), false);
 });
 
 // ── 3. FALLBACK WHEN PERMISSIONS API IS UNAVAILABLE ─────────────────────────
 
 test('falls back to shown-once per device when Permissions API is unsupported', () => {
   // First time on device without navigator.permissions
-  assert.equal(
-    shouldShowLocationExplainer({
-      permissionState: null,
-      hasPermissionsApi: false,
-      alreadyShownDevice: false,
-    }),
-    true,
-    'must show explainer once when Permissions API is unavailable'
-  );
+  const input1 = {
+    permissionState: null,
+    hasPermissionsApi: false,
+    alreadyShownDevice: false,
+  };
+  assert.equal(getLocationGateAction(input1), 'explain');
+  assert.equal(shouldShowLocationExplainer(input1), true);
 
-  // Subsequent time on device without navigator.permissions
-  assert.equal(
-    shouldShowLocationExplainer({
-      permissionState: null,
-      hasPermissionsApi: false,
-      alreadyShownDevice: true,
-    }),
-    false,
-    'must not show explainer again on same device when Permissions API is unavailable'
-  );
+  // Subsequent time on device without navigator.permissions (calls phone directly)
+  const input2 = {
+    permissionState: null,
+    hasPermissionsApi: false,
+    alreadyShownDevice: true,
+  };
+  assert.equal(getLocationGateAction(input2), 'ask-phone');
+  assert.equal(shouldShowLocationExplainer(input2), false);
 });
 
 // ── 4. DENIED PERMISSION ────────────────────────────────────────────────────
 
 test('handles denied permission state', () => {
-  // First time on device when browser/site already has denied permission: show once so worker understands
-  assert.equal(
-    shouldShowLocationExplainer({
-      permissionState: 'denied',
-      hasPermissionsApi: true,
-      alreadyShownDevice: false,
-    }),
-    true,
-    'shows once if never explained on this device'
-  );
+  // First time on device when browser/site already has denied permission: explain once
+  const input1 = {
+    permissionState: 'denied' as const,
+    hasPermissionsApi: true,
+    alreadyShownDevice: false,
+  };
+  assert.equal(getLocationGateAction(input1), 'explain');
+  assert.equal(shouldShowLocationExplainer(input1), true);
 
-  // Already explained on device: do not show repeatedly since browser won't re-prompt
-  assert.equal(
-    shouldShowLocationExplainer({
-      permissionState: 'denied',
-      hasPermissionsApi: true,
-      alreadyShownDevice: true,
-    }),
-    false,
-    'do not show when already explained on device for denied permission'
-  );
+  // Already explained on device: skip (cannot prompt anyway without OS change)
+  const input2 = {
+    permissionState: 'denied' as const,
+    hasPermissionsApi: true,
+    alreadyShownDevice: true,
+  };
+  assert.equal(getLocationGateAction(input2), 'skip');
+  assert.equal(shouldShowLocationExplainer(input2), false);
 });
 
 // ── 5. STORAGE HELPERS AND WINDOW FALLBACKS ─────────────────────────────────
@@ -189,25 +183,88 @@ test('storage helpers handle throwing storage gracefully (private mode / blocked
 
 test('handles unknown permissionState (null) when Permissions API is present', () => {
   // Query pending or rejected, but API is present, not yet shown on device
-  assert.equal(
-    shouldShowLocationExplainer({
-      permissionState: null,
-      hasPermissionsApi: true,
-      alreadyShownDevice: false,
-    }),
-    true,
-    'must show explainer if permissionState is null and device has not seen it'
-  );
+  const input1 = {
+    permissionState: null,
+    hasPermissionsApi: true,
+    alreadyShownDevice: false,
+  };
+  assert.equal(getLocationGateAction(input1), 'explain');
+  assert.equal(shouldShowLocationExplainer(input1), true);
 
   // Query pending or rejected, but API is present, already shown on device
-  assert.equal(
-    shouldShowLocationExplainer({
-      permissionState: null,
-      hasPermissionsApi: true,
-      alreadyShownDevice: true,
-    }),
-    false,
-    'must not show explainer if permissionState is null and device has already seen it'
-  );
+  const input2 = {
+    permissionState: null,
+    hasPermissionsApi: true,
+    alreadyShownDevice: true,
+  };
+  assert.equal(getLocationGateAction(input2), 'ask-phone');
+  assert.equal(shouldShowLocationExplainer(input2), false);
 });
+
+// ── 7. TABLE-DRIVEN MATRIX ACROSS ALL 3 ACTIONS (explain, ask-phone, skip) ──
+
+test('table-driven matrix covers all three actions (explain, ask-phone, skip)', () => {
+  const cases: Array<{
+    permissionState: GeolocationPermissionState;
+    hasPermissionsApi: boolean;
+    alreadyShownDevice: boolean;
+    sessionDismissed: boolean;
+    expectedAction: LocationGateAction;
+    name: string;
+  }> = [
+    // granted (always ask-phone)
+    { permissionState: 'granted', hasPermissionsApi: true, alreadyShownDevice: false, sessionDismissed: false, expectedAction: 'ask-phone', name: 'granted initial' },
+    { permissionState: 'granted', hasPermissionsApi: true, alreadyShownDevice: true, sessionDismissed: false, expectedAction: 'ask-phone', name: 'granted already shown' },
+    { permissionState: 'granted', hasPermissionsApi: true, alreadyShownDevice: false, sessionDismissed: true, expectedAction: 'ask-phone', name: 'granted dismissed' },
+    { permissionState: 'granted', hasPermissionsApi: false, alreadyShownDevice: false, sessionDismissed: false, expectedAction: 'ask-phone', name: 'granted no api' },
+
+    // prompt
+    { permissionState: 'prompt', hasPermissionsApi: true, alreadyShownDevice: false, sessionDismissed: false, expectedAction: 'explain', name: 'prompt initial -> explain' },
+    { permissionState: 'prompt', hasPermissionsApi: true, alreadyShownDevice: true, sessionDismissed: false, expectedAction: 'explain', name: 'prompt ungranted next session -> explain' },
+    { permissionState: 'prompt', hasPermissionsApi: true, alreadyShownDevice: false, sessionDismissed: true, expectedAction: 'skip', name: 'prompt dismissed -> skip' },
+    { permissionState: 'prompt', hasPermissionsApi: true, alreadyShownDevice: true, sessionDismissed: true, expectedAction: 'skip', name: 'prompt shown & dismissed -> skip' },
+
+    // denied
+    { permissionState: 'denied', hasPermissionsApi: true, alreadyShownDevice: false, sessionDismissed: false, expectedAction: 'explain', name: 'denied never shown -> explain' },
+    { permissionState: 'denied', hasPermissionsApi: true, alreadyShownDevice: true, sessionDismissed: false, expectedAction: 'skip', name: 'denied already shown -> skip' },
+    { permissionState: 'denied', hasPermissionsApi: true, alreadyShownDevice: false, sessionDismissed: true, expectedAction: 'skip', name: 'denied dismissed -> skip' },
+    { permissionState: 'denied', hasPermissionsApi: true, alreadyShownDevice: true, sessionDismissed: true, expectedAction: 'skip', name: 'denied shown & dismissed -> skip' },
+
+    // unsupported API / null state
+    { permissionState: null, hasPermissionsApi: false, alreadyShownDevice: false, sessionDismissed: false, expectedAction: 'explain', name: 'unsupported api never shown -> explain' },
+    { permissionState: null, hasPermissionsApi: false, alreadyShownDevice: true, sessionDismissed: false, expectedAction: 'ask-phone', name: 'unsupported api already shown -> ask-phone' },
+    { permissionState: null, hasPermissionsApi: false, alreadyShownDevice: false, sessionDismissed: true, expectedAction: 'skip', name: 'unsupported api dismissed -> skip' },
+    { permissionState: null, hasPermissionsApi: false, alreadyShownDevice: true, sessionDismissed: true, expectedAction: 'skip', name: 'unsupported api shown & dismissed -> skip' },
+  ];
+
+  for (const c of cases) {
+    const action = getLocationGateAction({
+      permissionState: c.permissionState,
+      hasPermissionsApi: c.hasPermissionsApi,
+      alreadyShownDevice: c.alreadyShownDevice,
+      sessionDismissed: c.sessionDismissed,
+    });
+    assert.equal(action, c.expectedAction, `case failed: ${c.name}`);
+  }
+});
+
+// ── 8. THROW PROOF TARGET: DISMISSED SESSION MUST MAP TO SKIP, NEVER ASK-PHONE ──
+
+test('dismissed session never leaks to ask-phone for non-granted permissions', () => {
+  const nonGrantedStates: GeolocationPermissionState[] = ['prompt', 'denied', null];
+  for (const permissionState of nonGrantedStates) {
+    const action = getLocationGateAction({
+      permissionState,
+      hasPermissionsApi: true,
+      alreadyShownDevice: false,
+      sessionDismissed: true,
+    });
+    assert.equal(
+      action,
+      'skip',
+      `dismissed session for state=${permissionState} must be 'skip', never 'ask-phone'`
+    );
+  }
+});
+
 

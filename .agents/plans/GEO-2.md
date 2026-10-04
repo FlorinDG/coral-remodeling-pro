@@ -451,3 +451,73 @@ Tests: the table-driven test covers all three outcomes; throw proof: map the dis
 `'ask-phone'` → the test fails.
 
 Then M3 as planned (MySchedule, 5-language audit, compile/lint).
+
+---
+
+## M3 — done · 2026-10-04
+
+### 1. Scope Delivered
+- **Fixed "Not now" Prompt Leak via Pure 3-Action Decision (`src/components/workhub/location-gate.ts`):**
+  - Introduced `LocationGateAction = 'explain' | 'ask-phone' | 'skip'`.
+  - Implemented `getLocationGateAction(input: LocationGateDecisionInput): LocationGateAction`:
+    - `permissionState === 'granted'` $\rightarrow$ `'ask-phone'` (under every combination of inputs).
+    - `sessionDismissed: true` $\rightarrow$ `'skip'` (for all non-granted states: no location, zero prompt to phone for rest of session).
+    - `permissionState === 'denied'` $\rightarrow$ `'explain'` if not shown on device; `'skip'` if already shown on device.
+    - `permissionState === 'prompt'` $\rightarrow$ `'explain'` if not session-dismissed; `'skip'` if session-dismissed.
+    - Fallback (no API or state `null`) $\rightarrow$ `'explain'` if not shown on device; `'ask-phone'` if already shown on device; `'skip'` if session-dismissed.
+  - Retained `shouldShowLocationExplainer` as helper returning `action === 'explain'`.
+- **Hook Gate Enforcement (`src/components/time-tracker/hooks/useGeolocation.ts`):**
+  - Hook evaluates `getLocationGateAction`.
+  - On `'skip'` $\rightarrow$ immediately returns `null` without rendering modal and without calling `navigator.geolocation` (zero prompt leak).
+  - On `'ask-phone'` $\rightarrow$ calls `requestLocationRaw()`.
+  - On `'explain'` $\rightarrow$ opens modal and awaits worker action.
+- **Unit Tests & Throw Proof (`tests/location-gate.test.ts`):**
+  - Added table-driven matrix testing all 3 outcomes (`explain`, `ask-phone`, `skip`).
+  - Added dedicated test `dismissed session never leaks to ask-phone for non-granted permissions`.
+  - **TP8 (Dismissed session leak throw proof):** Mutated `if (input.sessionDismissed) return 'ask-phone';` in `location-gate.ts`. Failed 3 test assertions (`AssertionError: 'ask-phone' !== 'skip'`). Restored and verified green.
+  - 10/10 tests passing.
+- **MySchedule Integration (`src/components/time-tracker/components/MySchedule.tsx`):**
+  - Updated hook destructuring to receive `{ location, requestLocation, explainerDialog }`.
+  - Call site line 247 (`handleClockIn`) calls through unified gate `requestLocation()`.
+  - Call site line 326 (`handleClockOut`) calls through unified gate `requestLocation()` and forwards fresh coordinates to `clockOut`.
+  - Rendered `{explainerDialog}` in component JSX.
+- **5-Language Audit & Parity:**
+  - `tests/i18n-crew.test.ts` verified across `nl`, `en`, `fr`, `ro`, and `ru`: 0 missing keys, 0 empty values (3/3 tests pass).
+- **TypeScript & ESLint:**
+  - `npm run test:compile` $\rightarrow$ Exit 0.
+  - `npm run test:lint` $\rightarrow$ Exit 0 (0 errors, 1483 pre-existing warnings in untouched files).
+
+### 2. Verification Commands & Output
+- **Unit Tests:**
+  `node --import ./tests/register.mjs --test tests/location-gate.test.ts`
+  ```text
+  ✔ granted permission maps to ask-phone and never shows explainer across all 8 combinations (0.568417ms)
+  ✔ shows explainer on prompt state when session is not dismissed (0.076042ms)
+  ✔ suppresses explainer and skips prompt if dismissed in current session (0.056417ms)
+  ✔ falls back to shown-once per device when Permissions API is unsupported (0.055833ms)
+  ✔ handles denied permission state (0.056ms)
+  ✔ storage helpers handle missing window object gracefully without throwing (0.119167ms)
+  ✔ storage helpers handle throwing storage gracefully (private mode / blocked storage) (0.111834ms)
+  ✔ handles unknown permissionState (null) when Permissions API is present (0.045959ms)
+  ✔ table-driven matrix covers all three actions (explain, ask-phone, skip) (0.112917ms)
+  ✔ dismissed session never leaks to ask-phone for non-granted permissions (0.089209ms)
+  ℹ tests 10
+  ℹ suites 0
+  ℹ pass 10
+  ℹ fail 0
+  ```
+- **Crew i18n Guard Suite:**
+  `node --import ./tests/register.mjs --test tests/i18n-crew.test.ts`
+  ```text
+  ✔ every crew locale carries every key of en (plural forms count as one) (3.314583ms)
+  ✔ no empty strings in any crew locale (1.627708ms)
+  ✔ every literal t('…') in a react-i18next file resolves in en (137.640334ms)
+  ℹ tests 3
+  ℹ suites 0
+  ℹ pass 3
+  ℹ fail 0
+  ```
+- **Type Checking:**
+  `npm run test:compile` $\rightarrow$ Exit 0.
+- **Linting:**
+  `npm run test:lint` $\rightarrow$ Exit 0 (0 errors, 1483 pre-existing warnings in untouched files).

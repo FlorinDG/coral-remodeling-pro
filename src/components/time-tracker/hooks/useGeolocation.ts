@@ -2,7 +2,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import type { GeolocationCoordinates } from '@/components/time-tracker/types/timesheet';
-import { shouldShowLocationExplainer } from '@/components/workhub/location-gate';
+import { getLocationGateAction } from '@/components/workhub/location-gate';
 
 const LocationExplainer = dynamic(
   () => import('@/components/workhub/LocationExplainer').then((mod) => mod.LocationExplainer),
@@ -191,17 +191,18 @@ export function useGeolocation(): UseGeolocationResult {
     const alreadyShown = isDeviceExplainerShown();
     const sessionDismissed = isSessionExplainerDismissed();
 
-    const shouldShow = shouldShowLocationExplainer({
+    const action = getLocationGateAction({
       permissionState,
       hasPermissionsApi,
       alreadyShownDevice: alreadyShown,
       sessionDismissed,
     });
 
-    if (!shouldShow) {
-      if (permissionState === 'denied') {
-        return null;
-      }
+    if (action === 'skip') {
+      return null;
+    }
+
+    if (action === 'ask-phone') {
       return requestLocationRaw();
     }
 

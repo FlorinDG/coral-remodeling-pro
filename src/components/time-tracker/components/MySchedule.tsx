@@ -140,7 +140,7 @@ export function MySchedule() {
   const { shifts, loading, error, failedEndpoints, refetch: refetchShifts } = useScheduledShifts();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { activeEntry, clockIn, clockOut } = useClockEntries();
-  const { location, requestLocation } = useGeolocation();
+  const { location, requestLocation, explainerDialog } = useGeolocation();
   const [isClockingIn, setIsClockingIn] = useState(false);
   const [isClockingOut, setIsClockingOut] = useState(false);
   const [showGeofenceWarning, setShowGeofenceWarning] = useState<{distance: number, site: string, location: any, shiftId: string} | null>(null);
@@ -323,10 +323,10 @@ export function MySchedule() {
   const handleClockOut = async () => {
     setIsClockingOut(true);
     try {
-      await requestLocation();
+      const loc = await requestLocation();
       const { error } = await clockOut({
-        clockOutLatitude: location?.latitude,
-        clockOutLongitude: location?.longitude,
+        clockOutLatitude: loc?.latitude ?? location?.latitude,
+        clockOutLongitude: loc?.longitude ?? location?.longitude,
       });
       
       if (error) {
@@ -566,6 +566,7 @@ export function MySchedule() {
           }
         }}
       />
+      {explainerDialog}
     </Card>
   );
 }

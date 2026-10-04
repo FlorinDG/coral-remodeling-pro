@@ -8,6 +8,8 @@
 
 export type GeolocationPermissionState = 'granted' | 'prompt' | 'denied' | null;
 
+export type LocationGateAction = 'explain' | 'ask-phone' | 'skip';
+
 export interface LocationGateDecisionInput {
   /**
    * Permission state from navigator.permissions.query({ name: 'geolocation' }),
@@ -23,43 +25,60 @@ export interface LocationGateDecisionInput {
 }
 
 /**
- * Pure decision function evaluating whether the LocationExplainer modal should be shown.
+ * Pure decision function evaluating the gate action for location requests.
+ *
+ * Actions:
+ * - 'explain'   : Present our LocationExplainer modal before native prompt.
+ * - 'ask-phone' : Request browser geolocation directly (permission already granted or device already explained).
+ * - 'skip'      : Do not request location and do not prompt the phone (e.g. dismissed this session or denied & already explained).
  *
  * Rules:
- * 1. If permission is already 'granted' -> NEVER show (redundant, whatever other inputs are).
- * 2. If Permissions API is unavailable -> Fall back to 'shown once' on device.
- * 3. If permission is 'prompt':
- *    - If dismissed in this session ('Not now') -> do not show again this session.
- *    - Otherwise -> show before phone asks.
- * 4. If permission is 'denied':
- *    - If already explained on device -> do not show (cannot prompt anyway without OS change).
- *    - If never explained on device -> show once so user understands why location is disabled.
- * 5. If permissionState is null (unknown) -> Fall back to 'shown once' on device.
+ * 1. If permission is already 'granted' -> Ask phone directly (under any combination of inputs).
+ * 2. If user dismissed in this session ('Not now') -> 'skip' (no location, NO prompt for rest of session).
+ * 3. If permission is 'denied':
+ *    - If never explained on device -> 'explain' once so user understands why location is disabled.
+ *    - If already explained on device -> 'skip' (cannot prompt anyway without OS change).
+ * 4. If permission is 'prompt' -> 'explain' before native phone prompt.
+ * 5. If Permissions API unavailable or state is null:
+ *    - If never explained on device -> 'explain'.
+ *    - If already explained on device -> 'ask-phone' (browser native handling).
+ */
+export function getLocationGateAction(input: LocationGateDecisionInput): LocationGateAction {
+  // 1. If already granted, ask phone directly (whatever the other inputs are)
+  if (input.permissionState === 'granted') {
+    return 'ask-phone';
+  }
+
+  // 2. "Not now" in this session -> skip (no prompt, no location for rest of session)
+  if (input.sessionDismissed) {
+    return 'skip';
+  }
+
+  // 3. If permission is 'denied'
+  if (input.permissionState === 'denied') {
+    if (!input.alreadyShownDevice) {
+      return 'explain';
+    }
+    return 'skip';
+  }
+
+  // 4. If permission is 'prompt'
+  if (input.permissionState === 'prompt') {
+    return 'explain';
+  }
+
+  // 5. Unknown permission state (null) or Permissions API unavailable
+  if (!input.alreadyShownDevice) {
+    return 'explain';
+  }
+
+  return 'ask-phone';
+}
+
+/**
+ * Convenience helper: returns true when gate action is 'explain'.
  */
 export function shouldShowLocationExplainer(input: LocationGateDecisionInput): boolean {
-  // 1. If already granted, never show (under any combination of inputs)
-  if (input.permissionState === 'granted') {
-    return false;
-  }
-
-  // 2. If permissions API is unavailable, fall back to "shown once per device"
-  if (!input.hasPermissionsApi) {
-    return !input.alreadyShownDevice;
-  }
-
-  // 3. If permission is in 'prompt' state
-  if (input.permissionState === 'prompt') {
-    if (input.sessionDismissed) {
-      return false;
-    }
-    return true;
-  }
-
-  // 4. If permission is 'denied'
-  if (input.permissionState === 'denied') {
-    return !input.alreadyShownDevice;
-  }
-
-  // 5. Unknown permission state (null) -> fall back to shown once
-  return !input.alreadyShownDevice;
+  return getLocationGateAction(input) === 'explain';
 }
+

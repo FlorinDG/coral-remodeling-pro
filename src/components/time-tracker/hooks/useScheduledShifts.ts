@@ -223,6 +223,20 @@ export function useScheduledShifts() {
     fetchAll();
   }, [fetchAll]);
 
+  // SCHED-SYNC-1: ONE quiet reload at a time — a burst of changes (copy week = many creates) shares it.
+  // A change that lands while one runs marks it to run ONCE more, so the last reload always starts after the
+  // last write (else it could fetch before that write is committed and leave the old state on screen).
+  const reloading = useRef(false);
+  const reloadAgain = useRef(false);
+  const quietReload = useCallback(() => {
+    if (reloading.current) { reloadAgain.current = true; return; }
+    reloading.current = true;
+    const run = (): Promise<void> => fetchAll(true).then(() => {
+      if (reloadAgain.current) { reloadAgain.current = false; return run(); }
+    });
+    void run().finally(() => { reloading.current = false; });
+  }, [fetchAll]);
+
   // Another screen (the WorkHub, another tab, a colleague) may have changed shifts: refresh quietly
   // when this tab comes back into view, instead of waiting for a manual reload.
   useEffect(() => {
@@ -254,12 +268,12 @@ export function useScheduledShifts() {
     try {
       const shift = await hrCreate<ScheduledShift>('shifts', normalized);
       setRawShifts(prev => [addSnakeCase(withProject(shift)), ...prev]);
-      // Removed void fetchAll() to prevent matrix flash
+      quietReload();   // the server's list, quietly (no loading state → no flash) — see SCHED-SYNC-1 below
       return { data: addSnakeCase(shift), error: null };
     } catch (err: any) {
       return { data: null, error: err };
     }
-  }, [withProject, fetchAll]);
+  }, [withProject, fetchAll, quietReload]);
 
   /** `scope` (SCH-8): 'following' | 'series' are applied by the SERVER in one statement; the
    *  screen then reloads, and `seriesUpdated` says how many shifts changed. */
@@ -279,16 +293,17 @@ export function useScheduledShifts() {
 
       const shift = await hrUpdate<ScheduledShift & { seriesUpdated?: number }>('shifts', id, normalized, scope);
       setRawShifts(prev => prev.map(s => s.id === id ? addSnakeCase(withProject({ ...s, ...shift })) : s));
-      if (scope && scope !== 'occurrence') void fetchAll(true);
-      // Removing fetchAll() here to prevent full redraws. The background sync or other hooks will handle refresh if needed.
-      // void fetchAll();
+      // SCHED-SYNC-1 (Florin 2026-10-04, third report): an edited / deleted shift still showed its old state
+      // until a page refresh. The local patch above stays (instant feedback); the quiet reload after it makes
+      // the screen equal to the server every time, whatever path left it behind. Silent: no loading flash.
+      quietReload();
       return { data: addSnakeCase(shift), error: null };
     } catch (err: any) {
       // Revert on error (could be improved by keeping old state)
       void fetchAll();
       return { data: null, error: err };
     }
-  }, [withProject, fetchAll]);
+  }, [withProject, fetchAll, quietReload]);
 
   const updateShiftStatus = useCallback(async (id: string, status: string) => {
     return updateShift(id, { status });
@@ -299,12 +314,12 @@ export function useScheduledShifts() {
     try {
       const res = await hrDelete<{ seriesDeleted?: number; seriesKept?: number }>('shifts', id, scope);
       setRawShifts(prev => prev.filter(s => s.id !== id));
-      if (scope && scope !== 'occurrence') void fetchAll(true);
+      quietReload();   // SCHED-SYNC-1
       return { error: null, deleted: res?.seriesDeleted ?? 1, kept: res?.seriesKept ?? 0 };
     } catch (err: any) {
       return { error: err, deleted: 0, kept: 0 };
     }
-  }, [fetchAll]);
+  }, [quietReload]);
 
   // The shift that is NOW for this worker (kernel/shift-time): running, else next today, else last today.
   // Was `.find()` over createdAt order — with two shifts in a day it returned the later-created one —

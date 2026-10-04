@@ -543,9 +543,11 @@ export function ScheduleMatrixView({
                                           
                                           return (
                                             <>
-                                              <div className="flex items-center gap-1.5 mb-0.5">
-                                                <div className={cn("h-1.5 w-1.5 rounded-full flex-shrink-0", getStatusDot(status))} />
-                                                <span className={cn("font-bold truncate", isLeave ? "text-purple-700 dark:text-purple-400 tracking-wide uppercase text-[10px]" : "text-neutral-900 dark:text-white")} title={title}>
+                                              {/* The title in FULL, wrapped — never cut (Florin 2026-10-04: "someone who doesn't
+                                                  recognise it from the first two words has no idea what it's about"). */}
+                                              <div className="flex items-start gap-1.5 mb-0.5">
+                                                <div className={cn("h-1.5 w-1.5 rounded-full flex-shrink-0 mt-[5px]", getStatusDot(status))} />
+                                                <span className={cn("font-bold leading-tight break-words min-w-0", isLeave ? "text-purple-700 dark:text-purple-400 tracking-wide uppercase text-[10px]" : "text-neutral-900 dark:text-white")} title={title}>
                                                   {isLeave ? `🌴 ${title}` : title}
                                                 </span>
                                               </div>

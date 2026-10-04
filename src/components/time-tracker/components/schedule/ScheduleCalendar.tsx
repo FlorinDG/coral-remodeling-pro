@@ -250,17 +250,18 @@ function DesktopCalendarView({ shifts, currentMonth, onShiftClick }: {
                   <div
                     key={shift.id}
                     onClick={() => onShiftClick?.(shift)}
-                    className="text-[10px] px-1.5 py-0.5 rounded truncate cursor-pointer hover:opacity-80 flex items-center gap-1"
+                    className="text-[10px] leading-tight px-1.5 py-0.5 rounded cursor-pointer hover:opacity-80 break-words"
                     style={{ 
                       backgroundColor: projectColor.bg,
                       color: projectColor.value,
                       border: isLeave ? '1px solid rgba(147, 51, 234, 0.2)' : undefined
                     }}
                   >
+                    {/* full title, wrapped — never cut (Florin 2026-10-04) */}
                     {isLeave ? '🌴 ' : ''}
                     <span className={cn("font-bold", isLeave && "uppercase tracking-wide")}>{title}</span>
                     {shift.userName && (
-                      <span className="opacity-75 truncate"> · {shift.userName}</span>
+                      <span className="opacity-75"> · {shift.userName}</span>
                     )}
                   </div>
                 );

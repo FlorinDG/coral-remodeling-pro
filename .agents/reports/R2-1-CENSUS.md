@@ -223,3 +223,25 @@ exit: 0
 - `src/lib/services/payment-plan-service.ts:34`: `updatePaymentPlanAction` accepts `pageId` and directly updates properties with zero session or tenant authentication.
 - `src/app/api/scan/route.ts:558`: `existingPageId` supplied in multipart FormData is updated directly without checking database tenant ownership.
 - `src/app/api/portals/tasks/route.ts:19`: tasks created from portal submissions hardcode `databaseId: 'db-tasks'` rather than resolving the tenant's canonical `lockedDbIds['tasks']`.
+
+---
+
+## Planner review — 2026-10-04 · ACCEPTED
+
+The census is the R2-1 input as asked: 36 writes / 19 files, every column filled, NONEs not softened; the
+backoff test drives the real store with mock timers and its throw proof fails as it should. Good work.
+
+**Verified and FIXED the same day (holes, not just missing checks):**
+- #9/#10 `acceptInvoice` / `acceptQuotation` — public, took ANY record id → now only a SENT record of the right
+  kind (`lib/records/client-accept.ts`, tested) — `9bf19a44`.
+- #11 `createInvoiceCheckout`, #21 scan re-scan — wrote into another tenant's record by id → tenant-scoped — `e48834a6`.
+- #23/#24 portal tasks — hard-coded `'db-tasks'` is BV Coral's binding → the portal tenant's own tasks database — `a2ffa1d5`.
+
+**Corrections to the table:**
+- #14/#15 (financial export) — "fallback to un-scoped 'db-invoices'" was true before R1-2; at your Start SHA the
+  resolver is fail-closed (no fallback). Tenant check now = the tenant's own binding.
+- #16/#17/#19/#20 — ids come from the tenant's own `lockedDbIds`; the R1-2 census verified every binding points at
+  the tenant's own database. Not a hole; still adapters.
+- #36 `updatePaymentPlanAction` — not a server action (no "use server") and has NO callers: dead code → delete.
+- #8 `recalculateInvoiceStatus` — not exported; only reached from tenant-checked callers. Adapter, low risk.
+- #26/#27 crons — cross-tenant by design; fate = adapter with a system scope (R5).

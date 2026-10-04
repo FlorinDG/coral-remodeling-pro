@@ -1,5 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+// @ts-expect-error -- @react-pdf/pdfkit lacks bundled type definitions
+import PDFDocument from '@react-pdf/pdfkit';
 import {
     buildWorkOrderView,
     renderSignedWorkOrderPdf,
@@ -231,14 +233,58 @@ test('renderSignedWorkOrderPdf returns a Buffer starting with %PDF', async () =>
     assert.equal(buf.subarray(0, 4).toString('utf-8'), '%PDF');
 });
 
-// ── 5. REAL RENDERER: DETERMINISM (C1) ──────────────────────────────────────────
+// ── 5. REAL RENDERER: PROCESS UNTOUCHED (WO-4a-M4) ────────────────────────────
 
-test('renderSignedWorkOrderPdf is deterministic: same input produces identical bytes', async () => {
-    const input = makeValidInput();
-    const buf1 = await renderSignedWorkOrderPdf(input);
-    const buf2 = await renderSignedWorkOrderPdf(input);
+test('renderSignedWorkOrderPdf leaves the process untouched (Math.random and PDFReference unmodified)', async () => {
+    const origRandom = Math.random;
 
-    assert.equal(Buffer.compare(buf1, buf2), 0, 'two renders with identical input must produce identical bytes');
+    // Inspect PDFKit PDFReference prototype without patching anything
+    // @ts-expect-error -- @react-pdf/pdfkit lacks bundled type definitions
+    const sampleDoc = new (PDFDocument as any)();
+    const PDFReference = sampleDoc.ref().constructor;
+    const origInitDeflate = PDFReference.prototype.initDeflate;
+
+    // Start two concurrent renders in flight
+    let settled = false;
+    let macrotaskChecks = 0;
+    let randomStayedUntouched = true;
+
+    const p1 = renderSignedWorkOrderPdf(makeValidInput());
+    const p2 = renderSignedWorkOrderPdf(makeValidInput());
+    const allRenders = Promise.all([p1, p2]).finally(() => {
+        settled = true;
+    });
+
+    // Observe while renders are in flight on every macrotask
+    while (!settled) {
+        macrotaskChecks++;
+        if (Math.random !== origRandom) {
+            randomStayedUntouched = false;
+        }
+        await new Promise((resolve) => setImmediate(resolve));
+    }
+
+    const [buf1, buf2] = await allRenders;
+
+    assert.ok(macrotaskChecks > 0, 'must have observed at least one macrotask while renders were in flight');
+    assert.strictEqual(
+        randomStayedUntouched,
+        true,
+        'Math.random must never be modified during in-flight renders'
+    );
+    assert.strictEqual(Math.random, origRandom, 'Math.random reference must be identical after renders');
+    assert.strictEqual(
+        PDFReference.prototype.initDeflate,
+        origInitDeflate,
+        'PDFReference.prototype.initDeflate reference must be identical'
+    );
+    assert.strictEqual(
+        (PDFReference.prototype as any).__deterministicDeflate,
+        undefined,
+        'PDFReference prototype must not carry __deterministicDeflate monkey patch'
+    );
+    assert.equal(buf1.subarray(0, 4).toString('utf-8'), '%PDF');
+    assert.equal(buf2.subarray(0, 4).toString('utf-8'), '%PDF');
 });
 
 // ── 6. REAL RENDERER: EMBEDDED IBM PLEX SANS FONT (C4) ─────────────────────────
@@ -289,27 +335,40 @@ test('renderSignedWorkOrderPdf handles 40-line fixture across multiple pages wit
     assert.ok(pageCount >= 2, `expected at least 2 pages for 40 lines, got ${pageCount}`);
 });
 
-// ── 8. REAL RENDERER: MULTI-LANGUAGE PARITY (M3) ──────────────────────────────
+// ── 8. REAL RENDERER: MULTI-LANGUAGE PARITY (M3 / WO-4a-M4) ────────────────────
 
-test('renderSignedWorkOrderPdf produces distinct PDF bytes across nl, fr, and en', async () => {
+test('renderSignedWorkOrderPdf renders all supported languages with distinct view-model labels and units', async () => {
     const inputNl = makeValidInput({ language: 'nl' });
     const inputFr = makeValidInput({ language: 'fr' });
     const inputEn = makeValidInput({ language: 'en' });
 
+    // Assert the pure view model differs per language (labels + duration unit)
+    const viewNl = buildWorkOrderView(inputNl);
+    const viewFr = buildWorkOrderView(inputFr);
+    const viewEn = buildWorkOrderView(inputEn);
+
+    assert.equal(viewNl.labels.title, 'WERKBON');
+    assert.equal(viewFr.labels.title, 'BON DE TRAVAIL');
+    assert.equal(viewEn.labels.title, 'WORK ORDER');
+
+    assert.notEqual(viewNl.labels.title, viewFr.labels.title);
+    assert.notEqual(viewNl.labels.title, viewEn.labels.title);
+    assert.notEqual(viewFr.labels.title, viewEn.labels.title);
+
+    assert.ok(viewNl.totals.formattedDuration.includes(' u ('), 'nl totals must use Dutch u unit');
+    assert.ok(viewFr.totals.formattedDuration.includes(' h ('), 'fr totals must use French h unit');
+    assert.ok(viewEn.totals.formattedDuration.includes(' h ('), 'en totals must use English h unit');
+
+    // Assert all three languages render valid %PDF buffers
     const [bufNl, bufFr, bufEn] = await Promise.all([
         renderSignedWorkOrderPdf(inputNl),
         renderSignedWorkOrderPdf(inputFr),
         renderSignedWorkOrderPdf(inputEn),
     ]);
 
-    assert.ok(bufNl.subarray(0, 4).toString('utf-8') === '%PDF');
-    assert.ok(bufFr.subarray(0, 4).toString('utf-8') === '%PDF');
-    assert.ok(bufEn.subarray(0, 4).toString('utf-8') === '%PDF');
-
-    // Different languages produce distinct labels, units, and bytes
-    assert.notEqual(Buffer.compare(bufNl, bufFr), 0, 'nl and fr renders must produce different PDF bytes');
-    assert.notEqual(Buffer.compare(bufNl, bufEn), 0, 'nl and en renders must produce different PDF bytes');
-    assert.notEqual(Buffer.compare(bufFr, bufEn), 0, 'fr and en renders must produce different PDF bytes');
+    assert.equal(bufNl.subarray(0, 4).toString('utf-8'), '%PDF');
+    assert.equal(bufFr.subarray(0, 4).toString('utf-8'), '%PDF');
+    assert.equal(bufEn.subarray(0, 4).toString('utf-8'), '%PDF');
 });
 
 // ── 9. REAL RENDERER: EDGE CASES & HARDENING (M3) ──────────────────────────────

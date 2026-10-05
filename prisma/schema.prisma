@@ -133,6 +133,7 @@ model Tenant {
   hrApprovalRequests         HrApprovalRequest[]
   hrSupportMessages          HrSupportMessage[]
   taskNotes                  TaskNote[]
+  comments                   Comment[]
 }
 
 model Lead {
@@ -747,6 +748,7 @@ model GlobalPage {
   database      GlobalDatabase @relation(fields: [databaseId], references: [id], onDelete: Cascade)
   taskNotes     TaskNote[]
   contactShifts ScheduledShift[] @relation("ShiftContact")
+  comments      Comment[]
 
   @@index([databaseId])
   @@index([createdAt])
@@ -1133,4 +1135,25 @@ model TaskNote {
 
   @@index([tenantId, taskId])
   @@index([authorId])
+}
+
+/// COMMENTS-1 (Florin 2026-10-05) · a thread on a record, like ClickUp. Internal only (never in the client portal).
+/// Soft-deleted (deletedAt) so a thread never silently loses its context; resolved per comment.
+model Comment {
+  id         String     @id @default(cuid())
+  tenantId   String
+  pageId     String
+  authorId   String
+  body       String
+  mentions   String[]   @default([])
+  resolvedAt DateTime?
+  resolvedBy String?
+  editedAt   DateTime?
+  deletedAt  DateTime?
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  tenant     Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  page       GlobalPage @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, pageId, createdAt])
 }

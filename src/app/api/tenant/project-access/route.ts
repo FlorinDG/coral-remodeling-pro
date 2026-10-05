@@ -9,7 +9,7 @@
 
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import prisma from '@/lib/prisma';
+import { scopeFromSession } from '@/lib/data/scope';
 import { WORKSPACE_OWNER_ROLES } from '@/lib/roles';
 
 // ── GET — fetch project IDs assigned to a user ───────────────────────────
@@ -23,7 +23,8 @@ export async function GET(req: Request) {
         const userId = searchParams.get('userId');
         if (!userId) return NextResponse.json({ error: 'userId is required' }, { status: 400 });
 
-        const rows = await prisma.userProjectAccess.findMany({
+        const db = await scopeFromSession();
+        const rows = await db.userProjectAccess.findMany({
             where: { tenantId: caller.tenantId, userId },
             select: { projectId: true },
         });
@@ -56,29 +57,31 @@ export async function PUT(req: Request) {
             return NextResponse.json({ error: 'userId and projectIds[] are required' }, { status: 400 });
         }
 
+        const db = await scopeFromSession();
+
         // Verify the target user belongs to this tenant
-        const target = await prisma.user.findFirst({
+        const target = await db.user.findFirst({
             where: { id: userId, tenantId: caller.tenantId },
             select: { id: true },
         });
         if (!target) return NextResponse.json({ error: 'User not found in workspace' }, { status: 404 });
 
         // Atomic replace: delete existing rows, insert new ones
-        await prisma.$transaction([
-            prisma.userProjectAccess.deleteMany({
-                where: { tenantId: caller.tenantId, userId },
-            }),
-            ...(projectIds.length > 0
-                ? [prisma.userProjectAccess.createMany({
+        await db.$transaction(async tx => {
+            await tx.userProjectAccess.deleteMany({
+                where: { tenantId: caller.tenantId!, userId },
+            });
+            if (projectIds.length > 0) {
+                await tx.userProjectAccess.createMany({
                     data: projectIds.map(pid => ({
                         tenantId: caller.tenantId!,
                         userId,
                         projectId: pid,
                     })),
                     skipDuplicates: true,
-                  })]
-                : []),
-        ]);
+                });
+            }
+        });
 
         console.log(`[ProjectAccess] Updated: ${projectIds.length} projects assigned to user ${userId}`);
         return NextResponse.json({ ok: true, userId, projectIds });

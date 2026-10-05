@@ -5,7 +5,7 @@
 
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import prisma from '@/lib/prisma';
+import { scopeFromSession } from '@/lib/data/scope';
 import { WORKSPACE_OWNER_ROLES } from '@/lib/roles';
 import { syncSeatQuantities } from '@/lib/stripe';
 
@@ -25,8 +25,10 @@ export async function PATCH(req: Request, { params }: RouteParams) {
             return NextResponse.json({ error: 'Only workspace owners can manage users' }, { status: 403 });
         }
 
+        const db = await scopeFromSession();
+
         // Verify target user belongs to same tenant
-        const targetUser = await prisma.user.findUnique({ where: { id: userId } });
+        const targetUser = await db.user.findUnique({ where: { id: userId } });
         if (!targetUser || targetUser.tenantId !== admin.tenantId) {
             return NextResponse.json({ error: 'User not found' }, { status: 404 });
         }
@@ -48,7 +50,7 @@ export async function PATCH(req: Request, { params }: RouteParams) {
         if (moduleAccess !== undefined) updateData.moduleAccess = moduleAccess;
         if (name !== undefined) updateData.name = name;
 
-        const updated = await prisma.user.update({
+        const updated = await db.user.update({
             where: { id: userId },
             data: updateData,
             select: {
@@ -90,13 +92,15 @@ export async function DELETE(_req: Request, { params }: RouteParams) {
             return NextResponse.json({ error: 'Cannot remove yourself' }, { status: 400 });
         }
 
+        const db = await scopeFromSession();
+
         // Verify target user belongs to same tenant
-        const targetUser = await prisma.user.findUnique({ where: { id: userId } });
+        const targetUser = await db.user.findUnique({ where: { id: userId } });
         if (!targetUser || targetUser.tenantId !== admin.tenantId) {
             return NextResponse.json({ error: 'User not found' }, { status: 404 });
         }
 
-        await prisma.user.delete({ where: { id: userId } });
+        await db.user.delete({ where: { id: userId } });
 
         console.log(`[Tenant Users] Removed user ${userId} from tenant ${admin.tenantId}`);
 

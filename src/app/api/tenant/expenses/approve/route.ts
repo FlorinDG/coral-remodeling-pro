@@ -11,7 +11,7 @@
 
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import prisma from '@/lib/prisma';
+import { platformDb } from '@/lib/data/scope';
 import { WORKSPACE_OWNER_ROLES } from '@/lib/roles';
 
 const MANAGER_ROLES = [...WORKSPACE_OWNER_ROLES, 'TENANT_ENTERPRISE_MANAGER'] as const;
@@ -25,7 +25,7 @@ export async function POST(req: Request) {
         }
 
         // Enterprise only
-        const tenant = await prisma.tenant.findUnique({
+        const tenant = await platformDb().tenant.findUnique({
             where: { id: user.tenantId },
             select: { planType: true },
         });

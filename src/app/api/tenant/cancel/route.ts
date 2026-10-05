@@ -13,7 +13,7 @@
 
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import prisma from '@/lib/prisma';
+import { platformDb } from '@/lib/data/scope';
 import { PLAN_PRICING, calculatePeppolOverage, getStripeInstance } from '@/lib/stripe';
 
 export async function POST() {
@@ -24,7 +24,7 @@ export async function POST() {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const tenant = await prisma.tenant.findUnique({
+        const tenant = await platformDb().tenant.findUnique({
             where: { id: tenantId },
             select: {
                 planType: true,
@@ -57,7 +57,7 @@ export async function POST() {
                 }, { status: 400 });
             }
 
-            await prisma.tenant.update({
+            await platformDb().tenant.update({
                 where: { id: tenantId },
                 data: {
                     cancellationRequestedAt: now,
@@ -82,7 +82,7 @@ export async function POST() {
             Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1 + noticeMonths, 1)
         );
 
-        await prisma.tenant.update({
+        await platformDb().tenant.update({
             where: { id: tenantId },
             data: {
                 cancellationRequestedAt: now,

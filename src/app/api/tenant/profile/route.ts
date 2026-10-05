@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
-import prisma from '@/lib/prisma';
+import { platformDb } from '@/lib/data/scope';
 import { auth } from '@/auth';
 
 export const dynamic = 'force-dynamic';
@@ -52,7 +52,7 @@ export async function GET() {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const tenant = await (prisma.tenant as any).findUnique({
+        const tenant = await (platformDb().tenant as any).findUnique({
             where: { id: tenantId },
             select: buildSelect()
         });
@@ -85,7 +85,7 @@ export async function PUT(request: Request) {
             }
         }
 
-        const updatedTenant = await (prisma.tenant as any).update({
+        const updatedTenant = await (platformDb().tenant as any).update({
             where: { id: tenantId },
             data,
             select: buildSelect()

@@ -11,7 +11,7 @@
 
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import prisma from '@/lib/prisma';
+import { scopeFromSession } from '@/lib/data/scope';
 
 export async function GET() {
     try {
@@ -19,8 +19,10 @@ export async function GET() {
         const caller = session?.user;
         if (!caller?.tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+        const db = await scopeFromSession();
+
         // Find the tenant's projects database(s) — match by name
-        const projectDbs = await prisma.globalDatabase.findMany({
+        const projectDbs = await db.globalDatabase.findMany({
             where: {
                 tenantId: caller.tenantId,
                 name: { contains: 'project', mode: 'insensitive' },
@@ -34,7 +36,7 @@ export async function GET() {
 
         // Collect pages from all matching databases (usually just one)
         const dbIds = projectDbs.map(d => d.id);
-        const pages = await prisma.globalPage.findMany({
+        const pages = await db.globalPage.findMany({
             where: { databaseId: { in: dbIds } },
             select: {
                 id:         true,

@@ -7,6 +7,9 @@ import type { SystemDatabaseRole } from '@/lib/kernel/system-databases';
 import { revalidatePath } from 'next/cache';
 
 import { auth } from '@/auth';
+import { scopeFromSession } from '@/lib/data/scope';
+import { saveRecord } from '@/lib/data/records';
+import { changedFields } from '@/lib/records/record-intent';
 import { mergeStaleWrite } from '@/lib/records/occ-merge';
 import { checkExportLock, isWipeHazard } from '@/lib/records/export-lock';
 import { checkDocumentLock } from '@/lib/records/document-lock';
@@ -435,166 +438,58 @@ export async function saveGlobalPage(page: Page) {
     if (isWorkforceRole((session?.user as { role?: string } | undefined)?.role)) return { success: false, error: 'Forbidden: workforce' };
 
     try {
-        // Security: ensure the page belongs to a database owned by this tenant.
-        const parentDb = await prisma.globalDatabase.findUnique({
-            where: { id: page.databaseId },
-            select: { tenantId: true, properties: true, logicalKey: true }   // properties ADDED
+        // R2-1 · ADAPTER over the one record door (lib/data/records.ts saveRecord): the store's page becomes an
+        // INTENT for the fields this client changed (against its dirtyBase), applied to the CURRENT row inside one
+        // serializable transaction on the session's scoped client. Same answers as before, so the store's sync
+        // queue is unchanged. Before: tenant check (partial — a missing database let the write through),
+        // read, merge and write were separate steps, and the whole properties object was written back.
+        const db = await scopeFromSession();
+        const props = (page.properties || {}) as Record<string, unknown>;
+        const base = page.dirtyBase as Record<string, unknown> | undefined;
+        const keys = base ? changedFields(props, base) : null;
+        const fields = keys ? Object.fromEntries(keys.map(k => [k, props[k]])) : (page.dirtyBaseBlocks ? {} : props);
+        const r = await saveRecord(db, {
+            pageId: page.id,
+            fields,
+            base: keys && base ? Object.fromEntries(keys.filter(k => k in base).map(k => [k, base[k]])) : undefined,
+            baseUpdatedAt: page.baseUpdatedAt ?? null,
+            blocks: page.dirtyBaseBlocks ? (page.blocks as unknown[]) : undefined,
+            baseBlocksVersion: page.dirtyBaseBlocks ? (page.blocksVersion ?? null) : null,
+        }, {
+            by: page.lastEditedBy || 'admin',
+            meta: { coverImage: page.coverImage, icon: page.icon, order: page.order, driveFolderId: page.driveFolderId },
+            createIfMissing: { databaseId: page.databaseId, properties: props, blocks: (page.blocks as unknown[]) ?? [], createdBy: page.createdBy || 'admin' },
         });
 
-        // If the parent DB exists and belongs to a different tenant, block the write.
-        if (parentDb && parentDb.tenantId !== tenantId) {
-            console.error(`[saveGlobalPage] Tenant mismatch: page ${page.id} → DB ${page.databaseId} owned by ${parentDb.tenantId}, request from ${tenantId}`);
-            return { success: false, error: 'Unauthorized DB access' };
+        if (r.ok) {
+            if (r.ignored.length) console.info(`[saveGlobalPage] computed fields not written for ${page.id}: ${r.ignored.join(', ')}`);
+            if (r.changed) revalidatePath('/admin', 'layout');
+            return { success: true, updatedAt: r.updatedAt, blocksVersion: r.blocksVersion, keptServer: Object.keys(r.keptServer).length ? r.keptServer : undefined };
         }
-
-        // Optimistic Concurrency Control
-        const existingPage = await prisma.globalPage.findUnique({
-            where: { id: page.id },
-            select: { 
-                updatedAt: true, 
-                properties: true, 
-                lastEditedBy: true,
-                blocksVersion: true,
-                blocks: true
-            }
-        });
-
-        if (existingPage) {
-            // R1 safeguard: Never allow [] to overwrite existing document blocks
-            if (isWipeHazard(existingPage.blocks, page.blocks)) {
-                return {
-                    success: false,
-                    error: 'EMPTY_BLOCKS_PROTECTION: Refused to overwrite existing document lines with empty array.',
-                    errorCode: 'EMPTY_BLOCKS_PROTECTION'
-                };
-            }
-
-            const dbProps = Array.isArray(parentDb?.properties) ? (parentDb.properties as Array<{ id: string; name?: string; type?: string }>) : [];
-            const relationPropertyIds = new Set<string>(
-                dbProps.filter(p => p.type === 'relation').map(p => p.id)
-            );
-            const propertyLabels: Record<string, string> = {};
-            for (const prop of dbProps) {
-                if (prop.id && prop.name) propertyLabels[prop.id] = prop.name;
-            }
-
-            // Two core locks: accountant export (invoices) and the DOCUMENT lock (DOC-LOCK-1: a sent /
-            // accepted / rejected quote). Same refusal shape — the store reverts to the server version.
-            const exportViolation = checkExportLock(
-                existingPage.properties,
-                page.properties as Record<string, unknown>,
-                relationPropertyIds,
-                existingPage.blocks,
-                page.blocks
-            );
-            const documentViolation = exportViolation ? null : checkDocumentLock(
-                parentDb?.logicalKey, existingPage.properties, page.properties as Record<string, unknown>, existingPage.blocks, page.blocks);
-            const violation = exportViolation ?? documentViolation;
-            if (violation) {
-                const docTitle = String((existingPage.properties as any)?.title || (page.properties as any)?.title || '');
-                return {
-                    success: false,
-                    error: documentViolation ? '[DocumentLocked]' : '[ExportLocked]',
-                    errorCode: documentViolation ? 'DOCUMENT_LOCKED' : 'EXPORT_LOCKED',
-                    blockedFields: violation.blockedFields,
-                    docTitle,
-                    propertyLabels,
-                    serverProperties: existingPage.properties,
-                    serverBlocks: existingPage.blocks,
-                    serverUpdatedAt: existingPage.updatedAt.toISOString(),
-                    serverBlocksVersion: existingPage.blocksVersion
-                };
-            }
-
+        const code = r.refusal.code;
+        if (code === 'NOT_FOUND') return { success: false, error: 'Unauthorized DB access' };
+        if (code === 'EMPTY_BLOCKS_PROTECTION') {
+            return { success: false, error: 'EMPTY_BLOCKS_PROTECTION: Refused to overwrite existing document lines with empty array.', errorCode: 'EMPTY_BLOCKS_PROTECTION' };
         }
-
-        let finalProperties = page.properties;
-        // Fields where the merge KEPT another user's newer value — returned so the client adopts them
-        // (otherwise its next save, now on the current version, would write the stale value back).
-        let keptServer: Record<string, unknown> | undefined;
-        const finalBlocks = page.blocks !== undefined ? page.blocks : (existingPage?.blocks ?? []);
-
-        if (existingPage && page.baseUpdatedAt) {
-            const serverTime = existingPage.updatedAt.getTime();
-            const clientTime = new Date(page.baseUpdatedAt).getTime();
-            if (serverTime !== clientTime) {
-                // Time mismatch: Attempt field-level 3-way merge
-                let hasHardConflict = false;
-                
-                // 1. Guard blocks: exact version match required only if we are writing blocks
-                if (page.dirtyBaseBlocks && existingPage.blocksVersion !== page.blocksVersion) {
-                    hasHardConflict = true;
-                }
-
-                // 2. Merge properties
-                if (!hasHardConflict) {
-                    // One merge rule for every door (lib/records/occ-merge.ts): the other user's edit to a
-                    // field this client did not touch is KEPT — it was overwritten with the stale value.
-                    const merge = mergeStaleWrite(
-                        (existingPage.properties as Record<string, unknown>) || {},
-                        page.properties as Record<string, unknown>,
-                        page.dirtyBase as Record<string, unknown> | undefined,
-                    );
-                    if (merge.conflict) {
-                        hasHardConflict = true;
-                    } else {
-                        finalProperties = merge.merged as typeof finalProperties;
-                        if (merge.tookServer.length) keptServer = Object.fromEntries(merge.tookServer.map(k => [k, merge.merged[k]]));
-                    }
-                }
-
-                if (hasHardConflict) {
-                    console.warn(`[saveGlobalPage] STALE_WRITE (Conflict) for page ${page.id}. Server: ${serverTime}, Client: ${clientTime}`);
-                    return { 
-                        success: false, 
-                        error: 'STALE_WRITE', 
-                        errorCode: 'STALE_WRITE',
-                        lastEditedBy: existingPage.lastEditedBy,
-                        serverUpdatedAt: existingPage.updatedAt.toISOString(),
-                        serverBlocksVersion: existingPage.blocksVersion
-                    };
-                } else {
-                    console.info(`[saveGlobalPage] Successfully merged stale write for page ${page.id}`);
-                }
-            }
+        if (code === 'STALE_WRITE') {
+            console.warn(`[saveGlobalPage] STALE_WRITE (Conflict) for page ${page.id}`);
+            return { success: false, error: 'STALE_WRITE', errorCode: 'STALE_WRITE', lastEditedBy: r.server?.lastEditedBy, serverUpdatedAt: r.server?.updatedAt, serverBlocksVersion: r.server?.blocksVersion };
         }
-
-
-
-        const newBlocksVersion = page.dirtyBaseBlocks 
-            ? (existingPage?.blocksVersion || 1) + 1 
-            : (existingPage?.blocksVersion || 1);
-
-        const saved = await prisma.globalPage.upsert({
-            where: { id: page.id },
-            update: {
-                coverImage: page.coverImage,
-                icon: page.icon,
-                properties: finalProperties as any,
-                order: page.order,
-                blocks: finalBlocks as any,
-                blocksVersion: newBlocksVersion,
-                lastEditedBy: page.lastEditedBy || 'admin',
-                driveFolderId: page.driveFolderId,
-            },
-            create: {
-                id: page.id,
-                databaseId: page.databaseId,
-                coverImage: page.coverImage,
-                icon: page.icon,
-                properties: page.properties as any,
-                order: page.order,
-                blocks: page.blocks as any,
-                blocksVersion: 1,
-                createdBy: page.createdBy || 'admin',
-                lastEditedBy: page.lastEditedBy || 'admin',
-                driveFolderId: page.driveFolderId,
-            },
-            select: { blocksVersion: true, updatedAt: true }
-        });
-
-        revalidatePath('/admin', 'layout');
-        return { success: true, updatedAt: saved.updatedAt.toISOString(), blocksVersion: saved.blocksVersion, keptServer };
+        // EXPORT_LOCKED / DOCUMENT_LOCKED — the store reverts to the server version and says why.
+        const propertyLabels: Record<string, string> = {};
+        for (const prop of r.dbProperties || []) if (prop.id && prop.name) propertyLabels[prop.id] = prop.name;
+        return {
+            success: false,
+            error: code === 'DOCUMENT_LOCKED' ? '[DocumentLocked]' : '[ExportLocked]',
+            errorCode: code,
+            blockedFields: 'blockedFields' in r.refusal ? r.refusal.blockedFields : [],
+            docTitle: String(r.server?.properties?.title || props.title || ''),
+            propertyLabels,
+            serverProperties: r.server?.properties,
+            serverBlocks: r.server?.blocks,
+            serverUpdatedAt: r.server?.updatedAt,
+            serverBlocksVersion: r.server?.blocksVersion,
+        };
     } catch (e: any) {
         console.error(`[saveGlobalPage] Failed to save page ${page.id} (db: ${page.databaseId}):`, e?.message ?? e);
         return { success: false, error: e?.message ?? String(e) };

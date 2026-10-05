@@ -255,6 +255,7 @@
     "yourProject": "Uw Project"
   },
   "Admin": {
+    "werkbon": {"title": "Werkbon — ondertekend door de klant", "signedBy": "Ondertekend door {name} op {date}", "openPdf": "Werkbon openen (PDF)", "pdfPending": "PDF wordt aangemaakt…", "notSent": "Nog niet verzonden", "sentTo": "Verzonden op {date} aan {to}", "cc": "kopie: {cc}"},
     "accountant_export_button": "Boekhouder export",
     "exportLock": {
       "blocks_only": "{document} is al naar de boekhouder verzonden. De regels kunnen niet meer gewijzigd worden.",

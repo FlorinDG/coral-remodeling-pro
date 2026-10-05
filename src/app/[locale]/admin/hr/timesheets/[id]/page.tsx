@@ -12,9 +12,12 @@ import { Link } from '@/i18n/routing';
 import { resolveFileUrl } from '@/lib/files';
 import { computeWorkedDuration } from '@/lib/computeWorkedDuration';
 import { zonedParts, isShiftSubmitted } from '@/lib/kernel/shift-time';
+import { WerkbonCard } from '@/components/time-tracker/components/werkbon/WerkbonCard';
+import { isWerkbonArtifact } from '@/lib/records/werkbon-status';
+import { isWerkbonFile } from '@/lib/records/werkbon-number';
 
 /** The client's signature, from the work order's FROZEN signing evidence (AuditLog 'sign' on the shift). */
-interface SignEvidence { signerName: string; signedAt: string; signatureKey: string; number?: string }
+interface SignEvidence { signerName: string; signedAt: string; number?: string }
 
 interface Employee {
     id: string;
@@ -55,6 +58,7 @@ export default function WerkbonDetailPage() {
     const [shiftAttachments, setShiftAttachments] = useState<any[]>([]);
     const [signature, setSignature] = useState<SignEvidence | null>(null);
     const [submitted, setSubmitted] = useState(false);
+    const [shiftId, setShiftId] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
 
     const locale = useLocale();
@@ -82,6 +86,7 @@ export default function WerkbonDetailPage() {
 
                     let attachmentsList: any[] = [];
                     let ev: SignEvidence | null = null;
+                    const sid0 = ((rawEntry as any).shiftId as string) || null;
                     if ((rawEntry as any).shiftId) {
                         const sid = (rawEntry as any).shiftId as string;
                         const [atts, logs] = await Promise.all([
@@ -92,8 +97,9 @@ export default function WerkbonDetailPage() {
                         const sign = (Array.isArray(logs) ? logs : []).find((l: any) => l.action === 'sign');
                         ev = sign?.after ? (sign.after as SignEvidence) : null;
                     }
-                    // The signature belongs in the client's signature slot — not among the attachments.
-                    setShiftAttachments(ev ? attachmentsList.filter(a => a.url !== ev!.signatureKey) : attachmentsList);
+                    // The signed PDF has its own block (WerkbonCard); the signature is never shown as a file.
+                    setShiftAttachments(attachmentsList.filter(a => !isWerkbonArtifact({ name: a.name }, isWerkbonFile)));
+                    setShiftId(sid0);
                     setSignature(ev);
                     setSubmitted(isShiftSubmitted(shift?.status));
 
@@ -235,6 +241,9 @@ export default function WerkbonDetailPage() {
                     </div>
                 </div>
 
+                {/* The signed work order — its own labelled block, never among the attachments */}
+                <WerkbonCard shiftId={shiftId} className="mb-12 break-inside-avoid" />
+
                 {/* Photos & Attachments */}
                 {((entry.photos && entry.photos.length > 0) || shiftAttachments.length > 0) && (
                     <div className="mb-12">
@@ -288,9 +297,9 @@ export default function WerkbonDetailPage() {
                         <p className="text-[10px] font-bold text-neutral-400 uppercase">Handtekening Opdrachtgever</p>
                         {signature ? (
                             <>
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img src={resolveFileUrl(signature.signatureKey)} alt={`Handtekening — ${signature.signerName}`} className="ml-auto h-20 object-contain" />
-                                <p className="text-[10px] text-neutral-600 dark:text-neutral-300">{signature.signerName} · {signedDate}</p>
+                                {/* The signature itself is only in the signed PDF (privacy) — here: who, when, which work order. */}
+                                <p className="text-xs font-semibold text-neutral-800 dark:text-neutral-200">✓ {signature.signerName}</p>
+                                <p className="text-[10px] text-neutral-600 dark:text-neutral-300">{signedDate}{signature.number ? ` · ${signature.number}` : ''}</p>
                             </>
                         ) : (
                             <>

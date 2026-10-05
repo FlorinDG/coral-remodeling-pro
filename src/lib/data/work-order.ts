@@ -33,7 +33,7 @@ export interface WorkOrderSummary {
     members: Array<{ shiftId: string; workerName: string | null; entries: Array<{ in: string; out: string | null; minutes: number }> }>;
     totalMinutes: number;
     openEntries: number;
-    signed: null | { signerName: string; signedAt: string; signatureUrl: string };
+    signed: null | { signerName: string; signedAt: string; number: string | null };
 }
 
 async function actor() {
@@ -79,7 +79,8 @@ export async function getWorkOrderSummary(shiftId: string): Promise<{ ok: true; 
             return { in: e.clockInTime.toISOString(), out: e.clockOutTime ? e.clockOutTime.toISOString() : null, minutes };
         }),
     }));
-    const after = (d.signRow?.after || null) as { signerName?: string; signatureKey?: string } | null;
+    // The signature image is NOT handed out (privacy, Florin 2026-10-05): it lives only in the signed PDF.
+    const after = (d.signRow?.after || null) as { signerName?: string; number?: string } | null;
     return {
         ok: true,
         summary: {
@@ -87,7 +88,7 @@ export async function getWorkOrderSummary(shiftId: string): Promise<{ ok: true; 
             totalMinutes: total,
             openEntries: d.entries.filter(e => !e.clockOutTime).length,
             signed: d.signRow && after?.signerName
-                ? { signerName: after.signerName, signedAt: d.signRow.createdAt.toISOString(), signatureUrl: after.signatureKey || '' }
+                ? { signerName: after.signerName, signedAt: d.signRow.createdAt.toISOString(), number: after.number || null }
                 : null,
         },
     };
@@ -152,9 +153,6 @@ export async function signWorkOrder(input: { shiftId: string; signerName: string
                     entityType: 'shift', entityId: mb.id, action: 'sign', field: null,
                     before: null, after: signed, reason: 'client signature',
                 }));
-                await tx.shiftAttachment.create({
-                    data: { shiftId: mb.id, name: `Handtekening — ${signerName}.png`, url: signatureKey, type: 'image/png', size: png.length },
-                });
             }
             return number;
         }, { isolationLevel: 'Serializable' });

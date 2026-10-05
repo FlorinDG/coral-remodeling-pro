@@ -254,6 +254,7 @@
     "yourProject": "Votre Projet"
   },
   "Admin": {
+    "werkbon": {"title": "Bon de travail — signé par le client", "signedBy": "Signé par {name} le {date}", "openPdf": "Ouvrir le bon de travail (PDF)", "pdfPending": "PDF en cours de création…", "notSent": "Pas encore envoyé", "sentTo": "Envoyé le {date} à {to}", "cc": "copie : {cc}"},
     "accountant_export_button": "Export comptable",
     "exportLock": {
       "blocks_only": "{document} a déjà été envoyé au comptable. Les lignes ne peuvent plus être modifiées.",

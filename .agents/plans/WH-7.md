@@ -348,3 +348,9 @@ guessing from the name yourself.
 
 **Fence unchanged** (directive §FENCE). M1 = `shift-editor/model.ts` + `tests/shift-editor-model.test.ts` + the
 report `.agents/reports/WH-7-M1.md`. Push, STOP.
+
+**C7 (Planner 2026-10-05, after Florin's werkbon review)** — the signed work order is its OWN block, not an
+attachment: render `<WerkbonCard shiftId=… />` (`src/components/time-tracker/components/werkbon/WerkbonCard.tsx`,
+read-only, already used by today's dialog) at the top of the details AND attachments tabs, and list attachments
+through `isWerkbonArtifact(att, isWerkbonFile)` (`src/lib/records/werkbon-status.ts`) so the PDF and any legacy
+signature image never appear among them. Do not show the signature image anywhere (privacy).

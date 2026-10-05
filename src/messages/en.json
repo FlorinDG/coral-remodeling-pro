@@ -255,6 +255,7 @@
     "yourProject": "Your Project"
   },
   "Admin": {
+    "werkbon": {"title": "Work order — signed by the client", "signedBy": "Signed by {name} on {date}", "openPdf": "Open work order (PDF)", "pdfPending": "PDF is being created…", "notSent": "Not sent yet", "sentTo": "Sent on {date} to {to}", "cc": "copy: {cc}"},
     "accountant_export_button": "Accountant export",
     "exportLock": {
       "blocks_only": "{document} has already been sent to the accountant. The line items can no longer be changed.",

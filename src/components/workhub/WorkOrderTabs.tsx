@@ -22,7 +22,6 @@ import type { ShiftBriefResult } from '@/lib/data/shift-brief';
 import { saveCrewNote } from '@/lib/data/shift-files';
 import { getWorkOrderSummary, signWorkOrder, type WorkOrderSummary } from '@/lib/data/work-order';
 import { SignaturePad } from '@/components/ui/SignaturePad';
-import { resolveFileUrl } from '@/lib/files';
 import { formatTime } from '@/lib/format/date';
 import { describeError } from '@/lib/describe-error';
 
@@ -217,12 +216,8 @@ function SignTab({ shiftId, onSigned }: { shiftId: string; onSigned: () => void 
       <div className="space-y-3">
         <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900 space-y-1">
           <p className="text-base font-semibold text-emerald-800 dark:text-emerald-300">✓ {t('workOrder.signedBy', { name: summary.signed.signerName })}</p>
-          <p className="text-sm text-muted-foreground">{new Date(summary.signed.signedAt).toLocaleString(i18n.language, { dateStyle: 'medium', timeStyle: 'short', hour12: false })}</p>
+          <p className="text-sm text-muted-foreground">{summary.signed.number ? `${summary.signed.number} · ` : ''}{new Date(summary.signed.signedAt).toLocaleString(i18n.language, { dateStyle: 'medium', timeStyle: 'short', hour12: false })}</p>
         </div>
-        {summary.signed.signatureUrl && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={resolveFileUrl(summary.signed.signatureUrl)} alt={t('workOrder.signTitle')} className="w-full h-32 object-contain rounded-xl border border-border bg-white" />
-        )}
         {lines}
       </div>
     );

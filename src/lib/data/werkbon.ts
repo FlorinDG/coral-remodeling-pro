@@ -8,7 +8,8 @@
  * Never re-rendered once stored: approving and sending use the stored bytes.
  */
 import { storage } from '@/lib/storage';
-import { platformDb, systemScope } from '@/lib/data/scope';
+import { platformDb, systemScope, type TenantScopedClient } from '@/lib/data/scope';
+import { werkbonStatus, type WerkbonStatus } from '@/lib/records/werkbon-status';
 import { workOrderMembers } from '@/lib/data/work-order-lock';
 import { renderSignedWorkOrderPdf } from '@/lib/documents/work-order-pdf';
 import { documentLanguage, addressLine, linesFromEvidence, type SignEvidenceEntry } from '@/lib/records/werkbon-input';
@@ -111,5 +112,29 @@ export async function generateWerkbon(tenantId: string, shiftId: string, opts: {
         before: null, after: { key: storedKey, number: ev.number, fileName, language }, reason: 'signed work order PDF',
     });
     await buildAuditLogOperation(db, audit);   // on the tenant scope, like every other write here
+    // Privacy (Florin 2026-10-05): the signature is never kept as a file of its own. It lives in the signed PDF;
+    // the raw image is deleted once the PDF is stored (kept only until then, so a failed PDF can be regenerated).
+    await storage.delete(ev.signatureKey).catch(err => console.error(`[werkbon] signature ${ev.signatureKey} not deleted:`, err));
     return { ok: true, key: storedKey, number: ev.number, fileName };
+}
+
+/**
+ * The status of the work order a shift belongs to — read from its facts on the given scoped client (the caller's
+ * door: scopeFromSession for the office). Signature on the member shifts; PDF and sends on whichever member is the
+ * anchor (the shift the signing was made from), so all three are read across the members.
+ */
+export async function readWerkbonStatus(db: TenantScopedClient, tenantId: string, shiftId: string): Promise<WerkbonStatus | null> {
+    const wo = await workOrderMembers(tenantId, shiftId);
+    if (!wo) return null;
+    const ids = wo.members.map(m => m.id);
+    const rows = await db.auditLog.findMany({
+        where: { entityType: 'shift', entityId: { in: ids }, action: { in: ['sign', 'werkbon-pdf', 'werkbon-sent'] } },
+        select: { action: true, after: true, createdAt: true },
+        orderBy: { createdAt: 'asc' },
+    });
+    return werkbonStatus({
+        sign: rows.find(r => r.action === 'sign') || null,
+        pdf: rows.find(r => r.action === 'werkbon-pdf') || null,
+        sent: rows.filter(r => r.action === 'werkbon-sent'),
+    });
 }

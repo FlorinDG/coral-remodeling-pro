@@ -3,6 +3,9 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Loader2, Trash2, Paperclip, Upload, FolderOpen, X, FileText, Image, Download, ListTodo, Plus, Check, Trash, Calendar as CalendarIcon, Repeat } from 'lucide-react';
 import { useTasks, useShiftTasks, Task } from '@/components/time-tracker/hooks/useTasks';
 import { AttachmentLink, AttachmentImage } from '@/components/ui/attachment-link';
+import { WerkbonCard } from '@/components/time-tracker/components/werkbon/WerkbonCard';
+import { isWerkbonArtifact } from '@/lib/records/werkbon-status';
+import { isWerkbonFile } from '@/lib/records/werkbon-number';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -146,6 +149,8 @@ export function EditShiftDialog({
     deleteAttachment, 
     setAttachments 
   } = useScheduleAttachments(shift?.id || null);
+  // WO-4b: the signed PDF (and the legacy signature image) are not ordinary attachments — WerkbonCard shows the work order.
+  const ordinaryAttachments = attachments.filter(a => !isWerkbonArtifact({ name: a.name }, isWerkbonFile));
   const [projectAttachments, setProjectAttachments] = useState<ProjectAttachment[]>([]);
   const [attachmentPopoverOpen, setAttachmentPopoverOpen] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
@@ -422,15 +427,16 @@ export function EditShiftDialog({
             <TabsTrigger value="attachments" className="flex items-center gap-1">
               <Paperclip className="h-4 w-4" />
               Files
-              {attachments.length > 0 && (
+              {ordinaryAttachments.length > 0 && (
                 <Badge variant="secondary" className="ml-1 h-5 px-1.5">
-                  {attachments.length}
+                  {ordinaryAttachments.length}
                 </Badge>
               )}
             </TabsTrigger>
           </TabsList>
           
           <TabsContent value="details" className="h-[min(648px,70vh)] overflow-y-auto pr-1">
+            <WerkbonCard shiftId={shift?.id} className="mb-4" />
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <Label>Employee</Label>
@@ -785,6 +791,8 @@ export function EditShiftDialog({
           </TabsContent>
           
           <TabsContent value="attachments" className="space-y-4 h-[min(648px,70vh)] overflow-y-auto pr-1">
+            {/* The signed work order is its own document — shown here, never among the attachments below. */}
+            <WerkbonCard shiftId={shift?.id} />
             {/* Add attachment buttons */}
             {canManage && (
               <div className="flex gap-2">
@@ -860,14 +868,14 @@ export function EditShiftDialog({
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
               </div>
-            ) : attachments.length === 0 ? (
+            ) : ordinaryAttachments.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <Paperclip className="h-8 w-8 mx-auto mb-2 opacity-50" />
                 <p className="text-sm">No files attached to this shift</p>
               </div>
             ) : (
               <div className="space-y-2">
-                {attachments.map(attachment => {
+                {ordinaryAttachments.map(attachment => {
                   const fileType = attachment.type || attachment.file_type || '';
                   const Icon = getFileIcon(fileType);
                   const isImage = fileType.startsWith('image/');

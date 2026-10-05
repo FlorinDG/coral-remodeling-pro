@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 import ModuleTabs from "@/components/admin/ModuleTabs";
 import { getFilteredFinancialTabs } from "@/config/tabs";
 import { usePageTitle } from '@/hooks/usePageTitle';
-import { Plus, Camera, Loader2 } from 'lucide-react';
+import { Plus, Camera, Loader2, Files } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useTenant } from '@/context/TenantContext';
 import { useDatabaseStore } from '@/components/admin/database/store';
@@ -16,6 +16,11 @@ const DatabaseCloneDynamic = dynamic(
     { ssr: false, loading: () => <div className="flex h-[calc(100vh-8rem)] items-center justify-center text-neutral-500">Preparing Tickets Database...</div> }
 );
 
+const AiDocumentImportModal = dynamic(
+    () => import('@/components/admin/expenses/AiDocumentImportModal'),
+    { ssr: false }
+);
+
 const TicketCaptureModal = dynamic(
     () => import('@/components/admin/expenses/TicketCaptureModal'),
     { ssr: false }
@@ -24,6 +29,7 @@ const TicketCaptureModal = dynamic(
 export default function ExpenseTicketsPage() {
     usePageTitle('Expense Tickets');
     const [showCapture, setShowCapture] = useState(false);
+    const [showBulk, setShowBulk] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
     const t = useTranslations('Admin');
     const { planType, resolveDbId } = useTenant();
@@ -63,6 +69,13 @@ export default function ExpenseTicketsPage() {
                         {t('nav.pages.scanUploadTicket') || 'Scan / Upload Ticket'}
                     </button>
                     <button
+                        onClick={() => setShowBulk(true)}
+                        className="flex items-center gap-2 px-3 py-2 bg-indigo-50 dark:bg-indigo-950/20 hover:bg-indigo-100 dark:hover:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/30 text-indigo-700 dark:text-indigo-300 text-xs font-bold rounded-lg transition-colors"
+                    >
+                        <Files className="w-3.5 h-3.5" />
+                        {t('nav.pages.bulkUploadTickets')}
+                    </button>
+                    <button
                         onClick={handleNewManual}
                         disabled={isCreating}
                         className="flex items-center gap-2 px-3 py-2 bg-neutral-100 dark:bg-white/5 hover:bg-neutral-200 dark:hover:bg-white/10 border border-neutral-200 dark:border-white/10 text-neutral-700 dark:text-neutral-300 text-xs font-bold rounded-lg transition-colors disabled:opacity-60"
@@ -79,6 +92,10 @@ export default function ExpenseTicketsPage() {
             </div>
 
             {/* Ticket capture modal */}
+            {showBulk && (
+                <AiDocumentImportModal targetDatabaseId="db-tickets" onClose={() => setShowBulk(false)} onComplete={() => setShowBulk(false)} />
+            )}
+
             {showCapture && (
                 <TicketCaptureModal onClose={() => setShowCapture(false)} />
             )}

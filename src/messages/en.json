@@ -356,6 +356,7 @@
         "createInvoice": "Create Invoice",
         "dashboard": "Dashboard",
         "administrative": "Administrative",
+        "bulkUploadTickets": "Bulk upload tickets",
         "scanUploadTicket": "Scan / Upload Ticket",
         "syncPeppolInbox": "Sync Peppol Inbox",
         "scanUpload": "Scan / Upload",

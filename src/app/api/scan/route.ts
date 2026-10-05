@@ -559,12 +559,14 @@ export async function POST(req: Request) {
             // R2-1-CENSUS #21: through the seraph's session scope — a re-scan overwrites only a page of THIS
             // tenant (the id comes from the form). Read and write on the same scoped client.
             const db = await scopeFromSession();
-            const own = await db.globalPage.findFirst({ where: { id: existingPageId }, select: { id: true } });
+            const own = await db.globalPage.findFirst({ where: { id: existingPageId }, select: { id: true, properties: true } });
             if (!own) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+            // MERGE: the reading fills fields; what the record already carries and the reading does not set
+            // (the linked file — receiptUrl — set by the bulk import) stays. It used to be replaced wholesale.
             savedPage = await db.globalPage.update({
                 where: { id: existingPageId },
                 data: {
-                    properties,
+                    properties: { ...((own.properties as Record<string, unknown>) || {}), ...properties },
                     lastEditedBy: 'system:scan',
                 }
             });

@@ -356,6 +356,7 @@
         "createInvoice": "Factuur Aanmaken",
         "dashboard": "Dashboard",
         "administrative": "Administratief",
+        "bulkUploadTickets": "Tickets in bulk uploaden",
         "scanUploadTicket": "Ticket Scannen",
         "syncPeppolInbox": "Peppol Inbox Synchroniseren",
         "scanUpload": "Scannen / Uploaden",

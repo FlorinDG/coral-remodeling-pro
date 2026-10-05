@@ -355,6 +355,7 @@
         "createInvoice": "Créer une Facture",
         "dashboard": "Tableau de Bord",
         "administrative": "Administratif",
+        "bulkUploadTickets": "Importer des tickets en masse",
         "scanUploadTicket": "Scanner / Télécharger Ticket",
         "syncPeppolInbox": "Synchroniser Boîte Peppol",
         "scanUpload": "Scanner / Télécharger",

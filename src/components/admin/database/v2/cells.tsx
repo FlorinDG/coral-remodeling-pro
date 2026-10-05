@@ -6,7 +6,9 @@
  */
 import React, { useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Check } from 'lucide-react';
+import { Check, ExternalLink, Search, Calculator } from 'lucide-react';
+import { useRelationTarget, resolveRelationTitle } from '@/lib/relations/resolve';
+import type { RollupResult } from '@/lib/records/rollup';
 import { COLOR_STYLES } from '../columns/SelectColumn';
 import { toggleOption } from '@/lib/records/grid-cell';
 import { normaliseDateValue, formatDisplayDate } from '@/lib/records/date-cell';
@@ -102,6 +104,106 @@ export function DateCell({ value, readOnly, onCommit }: { value: unknown; readOn
     return (
         <div className={`w-full h-full px-2 flex items-center text-sm truncate ${readOnly ? '' : 'cursor-pointer'}`} onClick={() => !readOnly && setEditing(true)}>
             {formatDisplayDate(raw)}
+        </div>
+    );
+}
+
+// ── GRID-REPLACE-2 (continued) · relation, rollup, formula, variants ─────────────────────────────────────────
+
+/**
+ * Relation: chips (open the related record in place — CROSS-LINK-1); a click on the cell opens a searchable list of
+ * the target database's records; picking toggles one link and commits the field.
+ */
+export function RelationCell({ value, relationDatabaseId, displayPropertyId, readOnly, onCommit, onOpen }: {
+    value: unknown; relationDatabaseId: string; displayPropertyId?: string; readOnly?: boolean;
+    onCommit: (v: unknown) => void; onOpen: (databaseId: string, pageId: string) => void;
+}) {
+    const ref = useRef<HTMLDivElement>(null);
+    const [open, setOpen] = useState(false);
+    const [q, setQ] = useState('');
+    const [pos, setPos] = useState<{ top: number; left: number; width: number } | null>(null);
+    const target = useRelationTarget(open ? relationDatabaseId : null, { displayPropertyId, autoLoad: true });
+    const ids = (Array.isArray(value) ? value : value ? [value] : []).map(String);
+    const titleOf = (id: string) => resolveRelationTitle(id, { displayPropertyId }) || '…';
+    const resolvedDb = useRelationTarget(relationDatabaseId, { displayPropertyId, autoLoad: false }).databaseId;
+
+    useLayoutEffect(() => {
+        if (!open || !ref.current) return;
+        const r = ref.current.getBoundingClientRect();
+        const top = window.innerHeight - r.bottom < 320 && r.top > 320 ? r.top - 324 : r.bottom + 4;
+        setPos({ top, left: r.left, width: Math.max(r.width, 260) });
+    }, [open]);
+
+    const options = (target.options || []).filter(o => !q.trim() || (o.title || '').toLowerCase().includes(q.trim().toLowerCase())).slice(0, 200);
+
+    return (
+        <div ref={ref} className={`w-full h-full px-2 flex items-center gap-1 overflow-hidden ${readOnly ? '' : 'cursor-pointer'}`} onClick={() => !readOnly && setOpen(true)}>
+            {ids.map(id => (
+                <span key={id} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 whitespace-nowrap group/chip">
+                    {titleOf(id)}
+                    <button type="button" title="Openen" onClick={e => { e.stopPropagation(); onOpen(resolvedDb || relationDatabaseId, id); }}
+                            className="p-0.5 rounded opacity-0 group-hover/chip:opacity-100 text-orange-500 hover:bg-neutral-200 dark:hover:bg-neutral-700">
+                        <ExternalLink className="w-3 h-3" />
+                    </button>
+                </span>
+            ))}
+            {open && pos && typeof document !== 'undefined' && createPortal(
+                <div className="fixed inset-0 z-[99998]" onMouseDown={() => { setOpen(false); setQ(''); }}>
+                    <div className="fixed bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-lg shadow-xl flex flex-col"
+                         style={{ top: pos.top, left: pos.left, width: pos.width, maxHeight: 320 }} onMouseDown={e => e.stopPropagation()}>
+                        <div className="p-2 border-b border-neutral-100 dark:border-white/10 flex items-center gap-2">
+                            <Search className="w-3.5 h-3.5 text-neutral-400" />
+                            <input autoFocus value={q} onChange={e => setQ(e.target.value)} placeholder="Zoeken…"
+                                   onKeyDown={e => { if (e.key === 'Escape') { setOpen(false); setQ(''); } }}
+                                   className="flex-1 bg-transparent text-sm outline-none" />
+                        </div>
+                        <div className="overflow-y-auto py-1">
+                            {target.status === 'unknown-database' && <div className="px-3 py-2 text-xs text-red-500">Doeldatabase niet gevonden</div>}
+                            {target.status !== 'unknown-database' && options.length === 0 && <div className="px-3 py-2 text-xs text-neutral-400">{target.status === 'not-loaded' ? 'Laden…' : '—'}</div>}
+                            {options.map(o => (
+                                <button key={o.id} type="button" onClick={() => onCommit(toggleOption(ids, o.id))}
+                                        className="w-full flex items-center justify-between gap-2 px-3 py-1.5 text-sm text-left hover:bg-neutral-100 dark:hover:bg-white/5">
+                                    <span className="truncate">{o.title}</span>
+                                    {ids.includes(o.id) && <Check className="w-3.5 h-3.5 text-orange-500 shrink-0" />}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>,
+                document.body,
+            )}
+        </div>
+    );
+}
+
+/** Rollup: the related records' field (lib/records/rollup — the one rule), each value opens its record. */
+export function RollupCell({ values, onOpen }: { values: RollupResult[]; onOpen: (databaseId: string, pageId: string) => void }) {
+    if (!values.length) return <div className="w-full h-full px-2 flex items-center text-neutral-300 dark:text-neutral-600 text-sm">—</div>;
+    return (
+        <div className="w-full h-full px-2 flex items-center gap-1 overflow-hidden">
+            {values.map((v, i) => (
+                <span key={i} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs border border-neutral-200 dark:border-white/10 text-neutral-700 dark:text-neutral-300 whitespace-nowrap group/chip">
+                    {v.value}
+                    {v.targetDbId && v.targetPageId && (
+                        <button type="button" title="Openen" onClick={e => { e.stopPropagation(); onOpen(v.targetDbId!, v.targetPageId!); }}
+                                className="p-0.5 rounded opacity-0 group-hover/chip:opacity-100 text-orange-500 hover:bg-neutral-200 dark:hover:bg-neutral-700">
+                            <ExternalLink className="w-3 h-3" />
+                        </button>
+                    )}
+                </span>
+            ))}
+        </div>
+    );
+}
+
+/** Formula: computed on read (formulaEngine), never written. */
+export function FormulaCell({ result }: { result: unknown }) {
+    const isError = result === '#ERROR!';
+    const text = result === null || result === undefined || result === '' || (typeof result === 'number' && !Number.isFinite(result)) ? '—' : String(result);
+    return (
+        <div className="w-full h-full px-2 flex items-center gap-1.5 overflow-hidden">
+            <Calculator className={`w-3 h-3 shrink-0 ${isError ? 'text-red-500' : 'text-neutral-400'}`} />
+            <span className={`truncate text-sm ${isError ? 'text-red-500 font-medium' : 'text-neutral-700 dark:text-neutral-300'}`}>{text}</span>
         </div>
     );
 }

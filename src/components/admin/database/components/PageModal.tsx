@@ -11,7 +11,7 @@ import { useDatabaseStore } from '../store';
 import { useRelationTarget, resolveRelationTitle } from '@/lib/relations/resolve';
 import { X, Maximize2, Minimize2, MoreHorizontal, Edit3, Trash2, Plus, Link, Link2, ExternalLink, ChevronDown, Mail, Phone, MapPin, Upload } from 'lucide-react';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { applyRollupAggregation } from '../columns/RollupColumn';
+import { applyRollupAggregation, collectRollup, locatorOf } from '@/lib/records/rollup';
 import { evaluateFormula } from '../formulaEngine';
 import BlockEditor from './BlockEditor';
 import dynamic from 'next/dynamic';
@@ -61,26 +61,7 @@ const PageRollupViewer = ({ databaseId, pageId, property }: { databaseId: string
 
     const aggregatedValues = React.useMemo(() => {
         if (!page || !rollupPropertyId || !rollupTargetPropertyId) return [];
-        const relationIds = page.properties?.[rollupPropertyId] as string[];
-        if (!relationIds || !Array.isArray(relationIds) || relationIds.length === 0) return [];
-
-        const results: any[] = [];
-        for (const targetPageId of relationIds) {
-            const targetDb = databases.find(db => db.pages.some(p => p.id === targetPageId));
-            if (targetDb) {
-                const targetPage = targetDb.pages.find(p => p.id === targetPageId);
-                if (targetPage) {
-                    const val = targetPage.properties[rollupTargetPropertyId];
-                    if (val !== undefined && val !== null && String(val).trim() !== '') {
-                        results.push({
-                            value: String(val),
-                            targetDbId: targetDb.id,
-                            targetPageId: targetPage.id
-                        });
-                    }
-                }
-            }
-        }
+        const results = collectRollup(page.properties?.[rollupPropertyId], locatorOf(databases), rollupTargetPropertyId);   // lib/records/rollup — one rule
         return applyRollupAggregation(results, property.config?.rollupAggregation);
     }, [page, rollupPropertyId, rollupTargetPropertyId, databases, property.config?.rollupAggregation]);
 

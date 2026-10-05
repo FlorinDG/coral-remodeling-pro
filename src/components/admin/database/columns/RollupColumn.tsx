@@ -2,38 +2,13 @@ import React, { useMemo } from 'react';
 import { useOpenLinkedRecord } from '../hooks/useOpenLinkedRecord';
 import { CellProps, Column } from 'react-datasheet-grid';
 import { useDatabaseStore } from '../store';
+import { collectRollup, applyRollupAggregation, locatorOf } from '@/lib/records/rollup';
 import { Search } from 'lucide-react';
 
 import { ExternalLink } from 'lucide-react';
 
-export interface RollupResult {
-    value: string;
-    targetDbId?: string;
-    targetPageId?: string;
-}
-
-export function applyRollupAggregation(results: RollupResult[], aggregation?: string): RollupResult[] {
-    if (!results || results.length === 0) return [];
-    const agg = aggregation || 'show_original';
-
-    switch (agg) {
-        case 'extract_numbers':
-            return results.map(r => ({ ...r, value: r.value.replace(/[^\d+]/g, '') })).filter(r => Boolean(r.value));
-        case 'sum': {
-            const sum = results.reduce((acc, curr) => acc + (parseFloat(curr.value.replace(/[^\d.-]/g, '')) || 0), 0);
-            return [{ value: String(sum) }];
-        }
-        case 'average': {
-            const sum = results.reduce((acc, curr) => acc + (parseFloat(curr.value.replace(/[^\d.-]/g, '')) || 0), 0);
-            return [{ value: String(Number((sum / results.length).toFixed(2))) }];
-        }
-        case 'count':
-            return [{ value: String(results.length) }];
-        case 'show_original':
-        default:
-            return results;
-    }
-}
+// The rollup rule (collect + aggregate) lives in lib/records/rollup.ts — ONE rule for both grids and the record modal.
+export { applyRollupAggregation, type RollupResult } from '@/lib/records/rollup';
 
 interface RollupComponentProps extends CellProps<any, any> {
     rollupPropertyId: string;
@@ -48,28 +23,7 @@ const RollupComponent = ({ rowData, rollupPropertyId, rollupTargetPropertyId, ro
     const aggregatedValues = useMemo(() => {
         if (!rowData || !rollupPropertyId || !rollupTargetPropertyId) return [];
 
-        const relationIds = rowData.properties?.[rollupPropertyId] as string[];
-        if (!relationIds || !Array.isArray(relationIds) || relationIds.length === 0) return [];
-
-        const results: RollupResult[] = [];
-
-        for (const targetPageId of relationIds) {
-            const targetDb = databases.find(db => db.pages.some(p => p.id === targetPageId));
-            if (targetDb) {
-                const targetPage = targetDb.pages.find(p => p.id === targetPageId);
-                if (targetPage) {
-                    const val = targetPage.properties[rollupTargetPropertyId];
-                    if (val !== undefined && val !== null && String(val).trim() !== '') {
-                        results.push({
-                            value: String(val),
-                            targetDbId: targetDb.id,
-                            targetPageId: targetPage.id
-                        });
-                    }
-                }
-            }
-        }
-
+        const results = collectRollup(rowData.properties?.[rollupPropertyId], locatorOf(databases), rollupTargetPropertyId);
         return applyRollupAggregation(results, rollupAggregation);
     }, [rowData, rollupPropertyId, rollupTargetPropertyId, rollupAggregation, databases]);
 

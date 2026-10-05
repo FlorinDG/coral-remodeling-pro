@@ -9,7 +9,12 @@
 
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import prisma from '@/lib/prisma';
+import { scopeFromSession, platformDb } from '@/lib/data/scope';
+import { emailOwner } from '@/lib/data/identity';
+
+// R1-7: users / employees on the session's scoped client; the e-mail uniqueness check (platform-wide by nature)
+// through lib/data/identity emailOwner; the Tenant row by the session's own tenant id (D4).
+const scoped = () => scopeFromSession();
 import crypto from 'crypto';
 import { Resend } from 'resend';
 import React from 'react';
@@ -24,7 +29,7 @@ export async function GET() {
         const user = session?.user;
         if (!user?.tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-        const accountant = await prisma.user.findFirst({
+        const accountant = await (await scoped()).user.findFirst({
             where: { tenantId: user.tenantId, role: 'ACCOUNTANT' },
             select: {
                 id: true,
@@ -59,7 +64,7 @@ export async function POST(req: Request) {
         }
 
         // Check if tenant already has an accountant
-        const existingAccountant = await prisma.user.findFirst({
+        const existingAccountant = await (await scoped()).user.findFirst({
             where: { tenantId: inviter.tenantId, role: 'ACCOUNTANT' },
         });
         if (existingAccountant) {
@@ -69,13 +74,13 @@ export async function POST(req: Request) {
         }
 
         // Check if email already exists
-        const existing = await prisma.user.findUnique({ where: { email } });
+        const existing = await emailOwner(email);
         if (existing) {
             return NextResponse.json({ error: 'A user with this email already exists' }, { status: 409 });
         }
 
         // Get tenant branding
-        const tenant = await prisma.tenant.findUnique({
+        const tenant = await platformDb().tenant.findUnique({
             where: { id: inviter.tenantId },
             select: { companyName: true, commercialName: true, logoUrl: true, brandColor: true },
         });
@@ -84,7 +89,7 @@ export async function POST(req: Request) {
         const inviteToken = crypto.randomBytes(32).toString('hex');
 
         // Create accountant user
-        const accountant = await prisma.user.create({
+        const accountant = await (await scoped()).user.create({
             data: {
                 email,
                 name: name || email.split('@')[0],
@@ -139,7 +144,7 @@ export async function DELETE() {
         const user = session?.user;
         if (!user?.tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-        const accountant = await prisma.user.findFirst({
+        const accountant = await (await scoped()).user.findFirst({
             where: { tenantId: user.tenantId, role: 'ACCOUNTANT' },
         });
 
@@ -147,7 +152,7 @@ export async function DELETE() {
             return NextResponse.json({ error: 'No accountant found' }, { status: 404 });
         }
 
-        await prisma.user.delete({ where: { id: accountant.id } });
+        await (await scoped()).user.delete({ where: { id: accountant.id } });
 
         console.log(`[Accountant] Revoked ${accountant.email} from tenant ${user.tenantId}`);
 

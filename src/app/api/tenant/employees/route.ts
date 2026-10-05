@@ -8,7 +8,12 @@
 
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import prisma from '@/lib/prisma';
+import { scopeFromSession, platformDb } from '@/lib/data/scope';
+import { emailOwner } from '@/lib/data/identity';
+
+// R1-7: users / employees on the session's scoped client; the e-mail uniqueness check (platform-wide by nature)
+// through lib/data/identity emailOwner; the Tenant row by the session's own tenant id (D4).
+const scoped = () => scopeFromSession();
 import { WORKSPACE_OWNER_ROLES, PLATFORM_ADMIN_ROLES, ROLES } from '@/lib/roles';
 import { syncSeatQuantities } from '@/lib/stripe';
 
@@ -37,7 +42,7 @@ export async function GET() {
         const user = session?.user;
         if (!user?.tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-        const users = await prisma.user.findMany({
+        const users = await (await scoped()).user.findMany({
             where: {
                 tenantId: user.tenantId,
                 role: { in: HR_EMPLOYEE_ROLES },
@@ -106,12 +111,12 @@ export async function POST(req: Request) {
         }
 
         // Check unique email
-        const existing = await prisma.user.findUnique({ where: { email } });
+        const existing = await emailOwner(email);
         if (existing) {
             return NextResponse.json({ error: 'A user with this email already exists' }, { status: 409 });
         }
 
-        const newUser = await prisma.user.create({
+        const newUser = await (await scoped()).user.create({
             data: {
                 tenantId: user.tenantId,
                 name: `${firstName} ${lastName}`.trim(),
@@ -128,12 +133,12 @@ export async function POST(req: Request) {
         });
 
         // Create or link matching Employee record
-        const existingEmployee = await prisma.employee.findUnique({
+        const existingEmployee = await (await scoped()).employee.findUnique({
             where: { email }
         });
 
         if (existingEmployee) {
-            await prisma.employee.update({
+            await (await scoped()).employee.update({
                 where: { id: existingEmployee.id },
                 data: {
                     firstName,
@@ -148,7 +153,7 @@ export async function POST(req: Request) {
                 }
             });
         } else {
-            await prisma.employee.create({
+            await (await scoped()).employee.create({
                 data: {
                     tenantId: user.tenantId,
                     firstName,

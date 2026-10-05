@@ -5,7 +5,12 @@
 
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import prisma from '@/lib/prisma';
+import { scopeFromSession, platformDb } from '@/lib/data/scope';
+import { emailOwner } from '@/lib/data/identity';
+
+// R1-7: users / employees on the session's scoped client; the e-mail uniqueness check (platform-wide by nature)
+// through lib/data/identity emailOwner; the Tenant row by the session's own tenant id (D4).
+const scoped = () => scopeFromSession();
 import { WORKSPACE_OWNER_ROLES, PLATFORM_ADMIN_ROLES, ROLES } from '@/lib/roles';
 import { syncSeatQuantities } from '@/lib/stripe';
 
@@ -33,14 +38,14 @@ export async function PUT(
         }
 
         // Verify ownership — user belongs to this tenant
-        const existing = await prisma.user.findFirst({
+        const existing = await (await scoped()).user.findFirst({
             where: { id: employeeId, tenantId: user.tenantId },
         });
         if (!existing) return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
 
         // Check email uniqueness (excluding self)
         if (email && email !== existing.email) {
-            const emailTaken = await prisma.user.findUnique({ where: { email } });
+            const emailTaken = await emailOwner(email);
             if (emailTaken) {
                 return NextResponse.json({ error: 'A user with this email already exists' }, { status: 409 });
             }
@@ -51,7 +56,7 @@ export async function PUT(
             ? `${firstName ?? existing.name?.split(' ')[0] ?? ''} ${lastName ?? existing.name?.split(' ').slice(1).join(' ') ?? ''}`.trim()
             : undefined;
 
-        const updated = await prisma.user.update({
+        const updated = await (await scoped()).user.update({
             where: { id: employeeId },
             data: {
                 ...(newName !== undefined && { name: newName }),
@@ -65,7 +70,7 @@ export async function PUT(
         });
 
         // Find existing Employee record by userId or email
-        const existingEmployee = await prisma.employee.findFirst({
+        const existingEmployee = await (await scoped()).employee.findFirst({
             where: {
                 OR: [
                     { userId: employeeId },
@@ -76,7 +81,7 @@ export async function PUT(
 
         let empRecord;
         if (existingEmployee) {
-            empRecord = await prisma.employee.update({
+            empRecord = await (await scoped()).employee.update({
                 where: { id: existingEmployee.id },
                 data: {
                     firstName: firstName ?? existing.name?.split(' ')[0] ?? '',
@@ -92,7 +97,7 @@ export async function PUT(
                 }
             });
         } else {
-            empRecord = await prisma.employee.create({
+            empRecord = await (await scoped()).employee.create({
                 data: {
                     tenantId: user.tenantId,
                     firstName: firstName ?? existing.name?.split(' ')[0] ?? '',
@@ -154,14 +159,14 @@ export async function DELETE(
         const { employeeId } = await params;
 
         // Verify ownership
-        const existing = await prisma.user.findFirst({
+        const existing = await (await scoped()).user.findFirst({
             where: { id: employeeId, tenantId: user.tenantId },
         });
         if (!existing) return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
 
         // Soft-delete: set status to INACTIVE instead of hard-deleting the User
         // This preserves shift history, clock entries, etc.
-        await prisma.user.update({
+        await (await scoped()).user.update({
             where: { id: employeeId },
             data: { employeeStatus: 'INACTIVE' },
         });

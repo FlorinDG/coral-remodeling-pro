@@ -7,7 +7,12 @@
 
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import prisma from '@/lib/prisma';
+import { scopeFromSession, platformDb } from '@/lib/data/scope';
+import { emailOwner } from '@/lib/data/identity';
+
+// R1-7: users / employees on the session's scoped client; the e-mail uniqueness check (platform-wide by nature)
+// through lib/data/identity emailOwner; the Tenant row by the session's own tenant id (D4).
+const scoped = () => scopeFromSession();
 import { WORKSPACE_OWNER_ROLES, PLAN_USER_LIMITS } from '@/lib/roles';
 import crypto from 'crypto';
 import { Resend } from 'resend';
@@ -24,7 +29,7 @@ export async function GET() {
         const user = session?.user;
         if (!user?.tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-        const users = await prisma.user.findMany({
+        const users = await (await scoped()).user.findMany({
             where: { tenantId: user.tenantId },
             select: {
                 id: true,
@@ -41,7 +46,7 @@ export async function GET() {
         });
 
         // Get plan limits
-        const tenant = await prisma.tenant.findUnique({
+        const tenant = await platformDb().tenant.findUnique({
             where: { id: user.tenantId },
             select: { planType: true },
         });
@@ -84,13 +89,13 @@ export async function POST(req: Request) {
         }
 
         // Check if email already exists
-        const existing = await prisma.user.findUnique({ where: { email } });
+        const existing = await emailOwner(email);
         if (existing) {
             return NextResponse.json({ error: 'A user with this email already exists' }, { status: 409 });
         }
 
         // Check seat limits (accountants are exempt — they're external collaborators)
-        const tenant = await prisma.tenant.findUnique({
+        const tenant = await platformDb().tenant.findUnique({
             where: { id: inviter.tenantId },
             select: { planType: true, companyName: true, commercialName: true, logoUrl: true, brandColor: true },
         });
@@ -101,7 +106,7 @@ export async function POST(req: Request) {
         // SuperAdmin impersonation bypasses all gating limits to allow full remote setup.
         const isImpersonating = !!session?.user?.isImpersonating;
         if (!isAccountantInvite && maxUsers !== Infinity && !isImpersonating) {
-            const currentCount = await prisma.user.count({
+            const currentCount = await (await scoped()).user.count({
                 where: { tenantId: inviter.tenantId, role: { not: 'ACCOUNTANT' } },
             });
 
@@ -119,7 +124,7 @@ export async function POST(req: Request) {
         const inviteToken = crypto.randomBytes(32).toString('hex');
 
         // Create user record (pending invite) — includes HR fields
-        const newUser = await prisma.user.create({
+        const newUser = await (await scoped()).user.create({
             data: {
                 email,
                 name: name || email.split('@')[0],

@@ -1,5 +1,5 @@
 # CORAL — CODER QUEUE
-**Current as of 2026-10-04.** This file is always the live queue — superseded items are removed, not renamed.
+**Current as of 2026-10-05.** This file is always the live queue — superseded items are removed, not renamed.
 🛑 **The filename never carries a date.** `PLANNER-HANDOVER.md` §7 points here permanently.
 
 **Work top to bottom. Each item is a separate commit set. Report after each.**
@@ -37,6 +37,15 @@ no link without a database id, no unused context; add `showWrapText`. Report `.a
 📄 `coder-directive-r2-1-b.md` — re-measure the census, every direct GlobalPage write → `saveRecord` / `deleteRecord`
 on the caller's scoped door (session / system / portal), or justified in writing. Plan `.agents/plans/R2-1-B.md`, STOP.
 
+## 4 · `LOC-GRID-1` — the new grid speaks the user's language — 🟩 GO after DB-HEADER-1 M2 is reviewed (one milestone, stop)
+📄 `coder-directive-loc-grid-1.md` — every visible string in `v2/NotionGridV2.tsx` + `v2/cells.tsx` → `Admin.grid.*`
+in en/nl/fr/ro; strings only; `tests/i18n.test.ts` is the guard (throw proof). Report `.agents/reports/LOC-GRID-1.md`.
+
+## 5 · `GRID-REPLACE-5` — removing the old grid — 🟩 GO for the PLAN only (stop after the plan)
+📄 `coder-directive-grid-replace-5.md` — inventory, importers, moves, milestones for deleting NotionGrid + DSG +
+the 11 shield sites + the switch. Plan `.agents/plans/GRID-REPLACE-5.md`. Nothing in `src/` changes. Can run any
+time (read-only) — do it while waiting for a review.
+
 ## ✅ `R2-5` — DONE WITH CORRECTIONS (review 2026-10-02, `MORNING-2026-10-02.md` §2)
 Store tests accepted. 11 of 13 OCC tests tested a COPY of the merge loop (§3a) — removed on
 `pending/occ-merge`, replaced by real tests of `lib/records/occ-merge.ts`. Leftover: the backoff-formula
@@ -63,7 +72,7 @@ test in `write-path-store.test.ts` also asserts a copy — fold into the next it
 
 ## THEN, in order
 `TD-4` tail *(5 grandfathered files)* · `KERN-8` · `R1-2`/`R1-3` → `R1-4`+`R1-5` · `ENT-1…24` · `WB-A…E` *(the werkbon — phasing awaits Florin)*.
-Recorded, not queued: `WH-EXPORT-1` (worker timesheet export) · `I18N-TT-1` (the time-tracker locales have no test guard) · `erp-tasks` keeps its own 3-role list (Tasks entitlement) · `AUTH_SECRET` fallback in the unlock cookie · `locked['projects'] || 'db-1'` fail-open (R1-2) · partial unique index on open clock entries (Florin's migration, when wanted) · `/workhub/profile` still English/"Workforce Member".
+Recorded, not queued: `WH-EXPORT-1` (worker timesheet export) · `erp-tasks` keeps its own 3-role list (Tasks entitlement) · `AUTH_SECRET` fallback in the unlock cookie · `locked['projects'] || 'db-1'` fail-open (R1-2) · partial unique index on open clock entries (Florin's migration, when wanted).
 
 ---
 

@@ -32,8 +32,13 @@ import { collectRollup, applyRollupAggregation, locatorOf } from '@/lib/records/
 import { evaluateFormula } from '../formulaEngine';
 import { sortPages, holdOrder } from '@/lib/records/view-sort';
 import { visibleColumns, moveColumn, setColumnWidth } from '@/lib/records/view-scope';
-import { isTextEditable, parseCellInput, cellText, cellChanged } from '@/lib/records/grid-cell';
+import { isTextEditable, parseCellInput, cellText, cellChanged, parseClipboardGrid, pasteValue } from '@/lib/records/grid-cell';
 import { resolveRelationTitle } from '@/lib/relations/resolve';
+import { useSession } from 'next-auth/react';
+import { useTenant } from '@/context/TenantContext';
+import { gridAccess } from '@/lib/records/grid-access';
+import { VAT_FIELD, VAT_LOOKUP_ROLES } from '@/lib/records/vat-lookup';
+import { VatLookupFlyout } from './cells';
 
 const ROW_H = 36;
 
@@ -43,11 +48,13 @@ interface Props {
     hardFilter?: { propertyId: string; value: string };
     onOpenRecord?: (pageId: string) => void;
     hideFooterNew?: boolean;
+    /** A screen's own row guard (invoices: only drafts may be deleted) — same as the old grid's prop. */
+    preventDelete?: boolean | ((row: Page) => boolean);
 }
 
 type Editing = { pageId: string; propId: string; text: string } | null;
 
-export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRecord, hideFooterNew }: Props) {
+export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRecord, hideFooterNew, preventDelete }: Props) {
     const database = useDatabaseStore(s => s.databases.find(d => d.id === databaseId));
     const allDatabases = useDatabaseStore(s => s.databases);
     const updatePageProperty = useDatabaseStore(s => s.updatePageProperty);
@@ -85,6 +92,13 @@ export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRec
     // Keyboard: the active cell (arrows move it; Enter or typing edits a text cell).
     const [active, setActive] = useState<{ pageId: string; propId: string } | null>(null);
 
+    // Who may change records here — the ONE rule (lib/records/grid-access): the accountant reads; the bestek is
+    // read-only below ENTERPRISE. A screen's own row guard (preventDelete) applies on top.
+    const { data: session } = useSession();
+    const { isEnterprise } = useTenant();
+    const access = gridAccess({ userRole: (session?.user as { role?: string } | undefined)?.role, logicalKey: database?.logicalKey, isEnterprise });
+    const editingInput = useRef<HTMLInputElement | null>(null);
+
     const openRecord = useCallback((pageId: string) => {
         if (onOpenRecord) onOpenRecord(pageId);
         else if (database) openLinked(database, pageId);
@@ -104,13 +118,14 @@ export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRec
 
     /** A control cell's value — ONE field, written only when it changed; an exported document stays as it is. */
     const commitValue = useCallback((page: Page, prop: Property, v: unknown) => {
-        if (!database) return;
+        if (!database || !access.edit) return;
         if (page.properties.accountantExportedAt === true) { toast.message('Dit document is geëxporteerd naar de boekhouder en kan niet meer gewijzigd worden.'); return; }
         if (!cellChanged(page.properties[prop.id], v)) return;
         updatePageProperty(database.id, page.id, prop.id, v as never);
-    }, [database, updatePageProperty]);
+    }, [database, updatePageProperty, access.edit]);
 
     const startEdit = (page: Page, prop: Property) => {
+        if (!access.edit) return;
         if (page.properties.accountantExportedAt === true) { toast.message('Dit document is geëxporteerd naar de boekhouder en kan niet meer gewijzigd worden.'); return; }
         setActive({ pageId: page.id, propId: prop.id });
         setEditing({ pageId: page.id, propId: prop.id, text: cellText(prop as never, page.properties[prop.id]) });
@@ -135,6 +150,7 @@ export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRec
             const isEditing = editing?.pageId === page.id && editing.propId === prop.id;
             if (isEditing) {
                 return (
+                    <>
                     <input
                         autoFocus
                         value={editing.text}
@@ -146,13 +162,20 @@ export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRec
                             else if (ev.key === 'Enter') { ev.preventDefault(); leaving.current = true; commit(editing); moveTo(page.id, prop.id, 1, 0); }
                             else if (ev.key === 'Tab') { ev.preventDefault(); leaving.current = true; commit(editing); moveTo(page.id, prop.id, 0, ev.shiftKey ? -1 : 1); }
                         }}
+                        ref={el => { editingInput.current = el; }}
                         className="w-full h-full px-2 text-sm bg-white dark:bg-neutral-900 outline-none ring-2 ring-inset ring-orange-400"
                     />
+                    {/* VAT lookup — the kernel's 'vat' field on contacts / suppliers (lib/records/vat-lookup) */}
+                    {prop.id === VAT_FIELD && VAT_LOOKUP_ROLES.has(database?.logicalKey || '') && (
+                        <VatLookupFlyout text={editing.text} anchor={editingInput} fieldIds={database!.properties.map(p => p.id)}
+                                         onApply={patch => { const p = database!.pages.find(x => x.id === page.id); if (p) for (const [k, v] of Object.entries(patch)) commitValue(p, { id: k } as Property, v); }} />
+                    )}
+                    </>
                 );
             }
             if ((prop.type as string) === 'comments') return <LatestCommentCell pageId={page.id} databaseId={databaseId} onOpen={openRecord} />;
             // GRID-REPLACE-2 · control cells — each commits ONE field through commitValue
-            const locked = page.properties.accountantExportedAt === true;
+            const locked = page.properties.accountantExportedAt === true || !access.edit;
             if (prop.type === 'select' || prop.type === 'multi_select') {
                 return <SelectCell value={value} options={prop.config?.options || []} multi={prop.type === 'multi_select'} readOnly={locked} onCommit={v => commitValue(page, prop, v)} />;
             }
@@ -196,7 +219,7 @@ export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRec
             );
         },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    })), [columns, editing, widthOf, commit, commitValue, openRecord, databaseId, rows, locate, openLinked, database]);
+    })), [columns, editing, widthOf, commit, commitValue, openRecord, databaseId, rows, locate, openLinked, database, access.edit]);
 
     const table = useReactTable({ data: rows, columns: colDefs, getCoreRowModel: getCoreRowModel(), getRowId: r => r.id });
     const virtualizer = useVirtualizer({ count: rows.length, getScrollElement: () => scrollRef.current, estimateSize: () => ROW_H, overscan: 12 });
@@ -208,8 +231,10 @@ export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRec
     const allSelected = rows.length > 0 && rows.every(r => selected.has(r.id));
     const toggleRow = (id: string) => setSelected(prev => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; });
     const deleteSelected = () => {
-        const ids = [...selected].filter(id => rows.some(r => r.id === id));
-        if (!ids.length) return;
+        if (!access.delete || preventDelete === true) return;
+        // a screen's own row guard (e.g. invoices: draft only) — the rest is refused by the door anyway
+        const ids = [...selected].filter(id => { const r = rows.find(x => x.id === id); return r && !(typeof preventDelete === 'function' && preventDelete(r)); });
+        if (!ids.length) { toast.message('Geen van de geselecteerde records kan verwijderd worden (enkel concepten).'); return; }
         if (!window.confirm(`${ids.length} record(s) definitief verwijderen?`)) return;
         // the door refuses an issued document (sent invoice, sent quote, exported record) — the store puts it back and says why
         deletePages(database.id, ids);
@@ -224,7 +249,9 @@ export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRec
                 {selected.size > 0 && (
                     <>
                         <span className="text-xs text-neutral-500">{selected.size} geselecteerd</span>
-                        <button type="button" onClick={deleteSelected} className="inline-flex items-center gap-1 text-xs text-red-600 hover:underline"><Trash2 className="w-3.5 h-3.5" /> Verwijderen</button>
+                        {access.delete && preventDelete !== true && (
+                            <button type="button" onClick={deleteSelected} className="inline-flex items-center gap-1 text-xs text-red-600 hover:underline"><Trash2 className="w-3.5 h-3.5" /> Verwijderen</button>
+                        )}
                         <button type="button" onClick={() => setSelected(new Set())} className="text-xs text-neutral-500 hover:underline">Wissen</button>
                     </>
                 )}
@@ -238,6 +265,42 @@ export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRec
                 </div>
             </div>
             <div ref={scrollRef} className="flex-1 min-h-0 overflow-auto outline-none" tabIndex={0}
+                 onCopy={e => {
+                     if (editing) return;
+                     const titleOf = (id: string) => resolveRelationTitle(id);
+                     let text = '';
+                     if (selected.size > 0) {
+                         text = rows.filter(p => selected.has(p.id))
+                             .map(p => columns.map(c => cellText(c as never, p.properties[c.id], titleOf).replace(/[\t\n]/g, ' ')).join('\t')).join('\n');
+                     } else if (active) {
+                         const p = rows.find(x => x.id === active.pageId), c = columns.find(x => x.id === active.propId);
+                         if (p && c) text = cellText(c as never, p.properties[c.id], titleOf);
+                     }
+                     if (!text) return;
+                     e.preventDefault();
+                     e.clipboardData.setData('text/plain', text);
+                 }}
+                 onPaste={e => {
+                     if (editing || !active || !database) return;
+                     e.preventDefault();
+                     if (!access.edit) { toast.message('Alleen-lezen: hier kan niets geplakt worden.'); return; }
+                     const block = parseClipboardGrid(e.clipboardData.getData('text/plain'));
+                     const r0 = rows.findIndex(p => p.id === active.pageId), c0 = columns.findIndex(p => p.id === active.propId);
+                     let written = 0;
+                     const skipped: string[] = [];
+                     block.forEach((line, i) => line.forEach((txt, j) => {
+                         const page = rows[r0 + i], prop = columns[c0 + j];
+                         if (!page || !prop) { skipped.push('buiten het raster'); return; }
+                         if (page.properties.accountantExportedAt === true) { skipped.push('geëxporteerd'); return; }
+                         const v = pasteValue(prop as never, txt);
+                         if (!v.ok) { skipped.push(`${prop.name}: ${v.reason}`); return; }
+                         if (!cellChanged(page.properties[prop.id], v.value)) return;
+                         updatePageProperty(database.id, page.id, prop.id, v.value as never);   // ONE field per cell
+                         written++;
+                     }));
+                     if (skipped.length) toast.message(`${written} cel(len) geplakt · ${skipped.length} overgeslagen (${Array.from(new Set(skipped)).slice(0, 3).join('; ')})`);
+                     else if (written) toast.success(`${written} cel(len) geplakt`);
+                 }}
                  onKeyDown={e => {
                      if (editing || !active) return;
                      const r = rows.findIndex(p => p.id === active.pageId), c = columns.findIndex(p => p.id === active.propId);
@@ -254,7 +317,7 @@ export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRec
                          const page = rows[r], prop = columns[c];
                          if (!page || !prop || !isTextEditable(prop as never)) return;
                          if (e.key === 'Enter' || e.key === 'F2') { e.preventDefault(); startEdit(page, prop); }
-                         else if (e.key.length === 1 && !e.metaKey && !e.ctrlKey && !e.altKey && page.properties.accountantExportedAt !== true) {
+                         else if (e.key.length === 1 && !e.metaKey && !e.ctrlKey && !e.altKey && access.edit && page.properties.accountantExportedAt !== true) {
                              e.preventDefault(); setEditing({ pageId: page.id, propId: prop.id, text: e.key });   // typing replaces, like a spreadsheet
                          }
                      }
@@ -312,7 +375,7 @@ export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRec
                     </div>
                 </div>
             </div>
-            {!hideFooterNew && (
+            {!hideFooterNew && access.create && (
                 <button type="button"
                         onClick={() => {
                             const page = createPage(database.id, hardFilter ? { [hardFilter.propertyId]: hardFilter.value } : {});

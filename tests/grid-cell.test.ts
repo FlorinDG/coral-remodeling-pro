@@ -41,3 +41,23 @@ test('multi-select toggling, and an unchanged list is no write (throw proof: ref
     assert.deepEqual(parseCellInput({ id: 'c', type: 'currency' }, '1 250,5'), { ok: true, value: 1250.5 });
     assert.equal(cellText({ id: 'd', type: 'date' }, '2026-10-05'), '5 Oct 2026');
 });
+
+import { parseClipboardGrid, pasteValue } from '../src/lib/records/grid-cell.ts';
+
+test('clipboard from Excel: tabs and lines, quoted cells with tabs / newlines / quotes', () => {
+    assert.deepEqual(parseClipboardGrid('a\tb\r\nc\td\r\n'), [['a', 'b'], ['c', 'd']]);
+    assert.deepEqual(parseClipboardGrid('"x\ty"\t"he said ""hi"""\n"two\nlines"\tz'), [['x\ty', 'he said "hi"'], ['two\nlines', 'z']]);
+    assert.deepEqual(parseClipboardGrid('single'), [['single']]);
+});
+
+test('a pasted value per field — never a guess (throw proof: an unknown option name would be stored as text)', () => {
+    const sel = { id: 's', type: 'select', config: { options: [{ id: 'o1', name: 'Open' }, { id: 'o2', name: 'Won' }] } };
+    assert.deepEqual(pasteValue(sel, ' won '), { ok: true, value: 'o2' });
+    assert.deepEqual(pasteValue(sel, 'Lost'), { ok: false, reason: 'unknown_option' });
+    assert.deepEqual(pasteValue({ ...sel, type: 'multi_select' }, 'Open, Won'), { ok: true, value: ['o1', 'o2'] });
+    assert.deepEqual(pasteValue({ id: 'c', type: 'checkbox' }, 'Ja'), { ok: true, value: true });
+    assert.deepEqual(pasteValue({ id: 'd', type: 'date' }, '05/10/2026'), { ok: true, value: '2026-10-05' });
+    assert.deepEqual(pasteValue({ id: 'd', type: 'date' }, 'soon'), { ok: false, reason: 'not_a_date' });
+    assert.deepEqual(pasteValue({ id: 'n', type: 'number' }, '1 250,5'), { ok: true, value: 1250.5 });
+    assert.deepEqual(pasteValue({ id: 'r', type: 'rollup' }, 'x'), { ok: false, reason: 'not_pastable' });
+});

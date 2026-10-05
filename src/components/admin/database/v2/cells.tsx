@@ -12,8 +12,57 @@ import type { RollupResult } from '@/lib/records/rollup';
 import { COLOR_STYLES } from '../columns/SelectColumn';
 import { toggleOption } from '@/lib/records/grid-cell';
 import { normaliseDateValue, formatDisplayDate } from '@/lib/records/date-cell';
+import { normaliseVat, parseCompanyLookup, vatLookupPatch, type CompanyFound } from '@/lib/records/vat-lookup';
 
 type Option = { id: string; name: string; color?: string };
+
+/**
+ * The VAT lookup under the VAT field being typed (contacts / suppliers): once the number can be one, the company is
+ * looked up (/api/company/lookup) and offered — "Toepassen" fills company / address / postcode / city (and the Peppol
+ * flag), each as its own field. Rule: lib/records/vat-lookup.ts. The button acts on mousedown with preventDefault so
+ * the input keeps focus (its blur would end the edit first).
+ */
+export function VatLookupFlyout({ text, anchor, fieldIds, onApply }: {
+    text: string; anchor: React.RefObject<HTMLInputElement | null>; fieldIds?: string[]; onApply: (patch: Record<string, unknown>) => void;
+}) {
+    const vat = normaliseVat(text);
+    const [state, setState] = React.useState<{ vat: string; status: 'loading' | 'found' | 'not_found' | 'error'; found?: CompanyFound } | null>(null);
+    React.useEffect(() => {
+        if (!vat) { setState(null); return; }
+        const ctrl = new AbortController();
+        const t = setTimeout(() => {
+            setState({ vat, status: 'loading' });
+            fetch(`/api/company/lookup?vat=${encodeURIComponent(vat)}`, { signal: ctrl.signal })
+                .then(r => (r.ok ? r.json() : null))
+                .then(d => { const f = parseCompanyLookup(d); setState(f ? { vat, status: 'found', found: f } : { vat, status: 'not_found' }); })
+                .catch(err => { if ((err as Error)?.name !== 'AbortError') setState({ vat, status: 'error' }); });
+        }, 400);
+        return () => { clearTimeout(t); ctrl.abort(); };
+    }, [vat]);
+    const rect = anchor.current?.getBoundingClientRect();
+    if (!state || !rect || typeof document === 'undefined') return null;
+    return createPortal(
+        <div className="fixed z-[99998] w-72 rounded-lg border border-neutral-200 dark:border-white/10 bg-white dark:bg-neutral-900 shadow-xl p-3 text-xs"
+             style={{ top: rect.bottom + 4, left: rect.left }} onMouseDown={e => e.preventDefault()}>
+            <div className="font-mono text-neutral-500 mb-1">{state.vat}</div>
+            {state.status === 'loading' && <div className="text-neutral-500">Opzoeken…</div>}
+            {state.status === 'not_found' && <div className="text-amber-600">Geen onderneming gevonden voor dit nummer.</div>}
+            {state.status === 'error' && <div className="text-red-600">Opzoeken mislukt.</div>}
+            {state.status === 'found' && state.found && (
+                <>
+                    <div className="font-semibold text-neutral-800 dark:text-neutral-200">{state.found.name || '—'}</div>
+                    <div className="text-neutral-500">{[state.found.street, [state.found.postalCode, state.found.city].filter(Boolean).join(' ')].filter(Boolean).join(', ')}</div>
+                    {state.found.peppolActive && <div className="text-emerald-600 mt-0.5">Peppol actief</div>}
+                    <button type="button" className="mt-2 w-full rounded-md py-1.5 font-bold text-white bg-[var(--brand-color,#d35400)]"
+                            onMouseDown={e => { e.preventDefault(); onApply(vatLookupPatch(state.found!, fieldIds ?? ['company', 'address', 'postal', 'city'])); setState(null); }}>
+                        Toepassen
+                    </button>
+                </>
+            )}
+        </div>,
+        document.body,
+    );
+}
 
 function Badge({ opt }: { opt: Option }) {
     const st = COLOR_STYLES[opt.color || 'default'] || COLOR_STYLES.default;

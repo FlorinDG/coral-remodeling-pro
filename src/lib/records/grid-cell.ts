@@ -3,7 +3,7 @@
  * The new grid edits one field at a time: a cell commits { pageId, field, value } (R2-2) — never a row.
  */
 import { parseCellInput as parseNumberText, cellValue as numberValue } from '@/components/admin/database/columns/numberCell';
-import { formatDisplayDate } from './date-cell';
+import { formatDisplayDate, normaliseDateValue } from './date-cell';
 
 export interface CellProperty { id: string; type: string; config?: { options?: Array<{ id: string; name: string; color?: string }> } }
 
@@ -56,4 +56,61 @@ export function cellChanged(before: unknown, after: unknown): boolean {
 export function toggleOption(current: unknown, optionId: string): string[] {
     const list = Array.isArray(current) ? current.map(String) : (typeof current === 'string' && current ? [current] : []);
     return list.includes(optionId) ? list.filter(x => x !== optionId) : [...list, optionId];
+}
+
+// ── Copy / paste (GRID-REPLACE-3) ────────────────────────────────────────────────────────────────────────────
+
+/** Clipboard text (Excel / Sheets / the grid: tab-separated, one line per row) → rows of cells. Quotes respected. */
+export function parseClipboardGrid(text: string): string[][] {
+    const rows: string[][] = [];
+    let row: string[] = [], cell = '', quoted = false;
+    const t = text.replace(/\r\n/g, '\n').replace(/\n$/, '');
+    for (let i = 0; i < t.length; i++) {
+        const ch = t[i];
+        if (quoted) {
+            if (ch === '"' && t[i + 1] === '"') { cell += '"'; i++; }
+            else if (ch === '"') quoted = false;
+            else cell += ch;
+        } else if (ch === '"' && cell === '') quoted = true;
+        else if (ch === '\t') { row.push(cell); cell = ''; }
+        else if (ch === '\n') { row.push(cell); rows.push(row); row = []; cell = ''; }
+        else cell += ch;
+    }
+    row.push(cell); rows.push(row);
+    return rows;
+}
+
+const TRUE_WORDS = new Set(['true', '1', 'x', '✓', 'ja', 'yes', 'oui', 'da', 'waar']);
+
+/**
+ * What a pasted text becomes in a field — or a refusal (never a guessed value): text / numbers as typed
+ * (numbers through the one reading); a select by its option NAME; a multi-select by names separated by ","; a
+ * checkbox from yes-words; a date in any readable form → the calendar day. Computed fields refuse.
+ */
+export function pasteValue(prop: CellProperty, text: string): { ok: true; value: unknown } | { ok: false; reason: string } {
+    const s = text.trim();
+    if (isTextEditable(prop)) {
+        const r = parseCellInput(prop, prop.type === 'text' || prop.id === 'title' ? text : s);
+        return r.ok ? r : { ok: false, reason: r.reason };
+    }
+    const byName = (n: string) => prop.config?.options?.find(o => o.name.trim().toLowerCase() === n.trim().toLowerCase())?.id;
+    switch (prop.type) {
+        case 'select': {
+            if (!s) return { ok: true, value: null };
+            const id = byName(s);
+            return id ? { ok: true, value: id } : { ok: false, reason: 'unknown_option' };
+        }
+        case 'multi_select': {
+            if (!s) return { ok: true, value: [] };
+            const ids = s.split(',').map(n => byName(n));
+            return ids.every(Boolean) ? { ok: true, value: ids as string[] } : { ok: false, reason: 'unknown_option' };
+        }
+        case 'checkbox': return { ok: true, value: TRUE_WORDS.has(s.toLowerCase()) };
+        case 'date': {
+            if (!s) return { ok: true, value: null };
+            const d = normaliseDateValue(s);
+            return /^\d{4}-\d{2}-\d{2}( 🔔)?$/.test(d) ? { ok: true, value: d } : { ok: false, reason: 'not_a_date' };
+        }
+        default: return { ok: false, reason: 'not_pastable' };
+    }
 }

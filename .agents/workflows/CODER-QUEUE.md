@@ -30,6 +30,10 @@ the R1-5 allowlist and lowers `CEILING` by the files removed, from its current v
 📄 `coder-directive-db-header-1.md` — inventory the 19 database screens' headers, propose ONE pure rule
 (`lib/records/db-header.ts`) + one component. Write `.agents/plans/DB-HEADER-1.md`, push, STOP.
 
+## 3 · `R2-1-B` — the remaining direct record writes onto the one door — 🟦 PLAN FIRST (after DB-HEADER-1 plan)
+📄 `coder-directive-r2-1-b.md` — re-measure the census, every direct GlobalPage write → `saveRecord` / `deleteRecord`
+on the caller's scoped door (session / system / portal), or justified in writing. Plan `.agents/plans/R2-1-B.md`, STOP.
+
 ## ✅ `R2-5` — DONE WITH CORRECTIONS (review 2026-10-02, `MORNING-2026-10-02.md` §2)
 Store tests accepted. 11 of 13 OCC tests tested a COPY of the merge loop (§3a) — removed on
 `pending/occ-merge`, replaced by real tests of `lib/records/occ-merge.ts`. Leftover: the backoff-formula

@@ -207,3 +207,34 @@ export function resolveDatabaseId(idOrBase: string, lockedDbIds: Partial<Record<
     if (!bound) throw new UnboundSystemDatabaseError(idOrBase, role);
     return bound;
 }
+
+/**
+ * Which system role does this database play for this tenant? READ, never parsed from the id's shape:
+ *   - a legacy base ('db-articles') → its role;
+ *   - a bound id → the role the tenant's binding gives it;
+ *   - otherwise the database's own logicalKey (when the caller can look it up) — else null (a custom database).
+ * Replaces `id === 'db-articles'` comparisons, which never match a tenant's bound id. The client-side
+ * counterpart of lib/data roleOfDatabase (server, one SELECT of logicalKey), for code holding the binding.
+ */
+export function databaseRoleOf(
+    id: string | null | undefined,
+    lockedDbIds: Partial<Record<string, string>>,
+    logicalKeyOf?: (id: string) => string | null | undefined,
+): SystemDatabaseRole | null {
+    if (!id) return null;
+    if (BASE_TO_KEY[id]) return BASE_TO_KEY[id];
+    for (const role of SYSTEM_DATABASE_ROLES) if (lockedDbIds[role] === id) return role;
+    const key = logicalKeyOf?.(id);
+    return key && (SYSTEM_DATABASE_ROLES as readonly string[]).includes(key) ? key as SystemDatabaseRole : null;
+}
+
+/** Is `id` this tenant's database for the role of `baseOrRole` ('db-1' / 'projects')? */
+export function playsSystemRole(
+    id: string | null | undefined,
+    baseOrRole: string,
+    lockedDbIds: Partial<Record<string, string>>,
+    logicalKeyOf?: (id: string) => string | null | undefined,
+): boolean {
+    const want = BASE_TO_KEY[baseOrRole] ?? ((SYSTEM_DATABASE_ROLES as readonly string[]).includes(baseOrRole) ? baseOrRole : null);
+    return !!want && databaseRoleOf(id, lockedDbIds, logicalKeyOf) === want;
+}

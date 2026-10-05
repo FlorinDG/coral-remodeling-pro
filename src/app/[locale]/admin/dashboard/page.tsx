@@ -119,7 +119,8 @@ export default async function AdminDashboard({ params }: { params: Promise<{ loc
     const hasCRM = activeModules.includes("CRM");
     const hasProjects = activeModules.includes("PROJECTS");
 
-    // Resolve tenant-scoped DB IDs (falls back to bare IDs for legacy tenants)
+    // Tenant-scoped DB ids, from the binding (fail-closed — R1-2). Tasks and projects too: their bare ids
+    // ('db-tasks', 'db-1') matched no tenant's database, so both counts read 0 everywhere.
     const ldb = (tenant?.lockedDbIds as Record<string, string>) || {};
     const dbInvoices    = resolveDatabaseId('db-invoices', ldb);
     const dbExpenses    = resolveDatabaseId('db-expenses', ldb);
@@ -128,7 +129,6 @@ export default async function AdminDashboard({ params }: { params: Promise<{ loc
     const dbQuotations  = resolveDatabaseId('db-quotations', ldb);
     const dbPaymentsIn  = resolveDatabaseId('db-payments-in', ldb);
     const dbPaymentsOut = resolveDatabaseId('db-payments-out', ldb);
-    // Tasks and projects are not locked DBs — use bare IDs
 
     const t = await getTranslations('Admin');
 
@@ -157,9 +157,9 @@ export default async function AdminDashboard({ params }: { params: Promise<{ loc
         hasInvoicing ? countPages(dbClients, tenantId) : Promise.resolve(0),
         hasInvoicing ? countPages(dbSuppliers, tenantId) : Promise.resolve(0),
         hasInvoicing ? countPages(dbQuotations, tenantId) : Promise.resolve(0),
-        hasCRM ? countPages('db-tasks', tenantId) : Promise.resolve(0),
-        hasProjects ? countPages('db-1', tenantId) : Promise.resolve(0),
-        hasCRM ? countPagesByStatus('db-tasks', tenantId, 'prop-task-status', 'opt-todo') : Promise.resolve(0),
+        hasCRM ? countPages(resolveDatabaseId('db-tasks', ldb), tenantId) : Promise.resolve(0),
+        hasProjects ? countPages(resolveDatabaseId('db-1', ldb), tenantId) : Promise.resolve(0),
+        hasCRM ? countPagesByStatus(resolveDatabaseId('db-tasks', ldb), tenantId, 'prop-task-status', 'opt-todo') : Promise.resolve(0),
         hasInvoicing ? countPagesByStatus(dbInvoices, tenantId, 'status', 'opt-draft') : Promise.resolve(0),
     ]);
 

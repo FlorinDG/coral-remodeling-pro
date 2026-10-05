@@ -9,10 +9,9 @@
  *   - pages of the tenant's projects database
  *   - InternalProject
  *
- * 🟨 The projects database is bound as `lockedDbIds.projects || 'db-1'` — the same fallback the
- * erp-projects route used, kept here ONCE so behaviour does not change before the R1-2 binding census.
- * R1-2 (branch track-b/r1-2-kern-8) replaces it with the fail-closed resolver. Tenancy is unaffected:
- * the query is always constrained to `database.tenantId`.
+ * The projects database is the tenant's BOUND one (R1-2, census 32/32 OK 2026-10-04): no binding → no
+ * dynamic projects (the old `|| 'db-1'` named BV Coral's database). The query stays constrained to
+ * `database.tenantId`.
  */
 import prisma from '@/lib/prisma';
 
@@ -33,14 +32,16 @@ export async function resolveProjects(tenantId: string, opts?: { onlyIds?: strin
 
     const tenant = await prisma.tenant.findUnique({ where: { id: tenantId }, select: { lockedDbIds: true } });
     const locked = (tenant?.lockedDbIds as Record<string, string> | null) || {};
-    const projectDbId = locked['projects'] || 'db-1';
+    const projectDbId = locked['projects'] || null;
     const idFilter = opts?.onlyIds ? { id: { in: opts.onlyIds } } : {};
 
     const [pages, internal] = await Promise.all([
-        prisma.globalPage.findMany({
-            where: { databaseId: projectDbId, database: { tenantId }, ...idFilter },
-            select: { id: true, properties: true, createdAt: true },
-        }),
+        projectDbId
+            ? prisma.globalPage.findMany({
+                where: { databaseId: projectDbId, database: { tenantId }, ...idFilter },
+                select: { id: true, properties: true, createdAt: true },
+            })
+            : Promise.resolve([]),
         prisma.internalProject.findMany({
             where: { tenantId, ...idFilter },
             select: { id: true, name: true, projectCode: true, createdAt: true },

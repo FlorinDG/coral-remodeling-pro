@@ -1,6 +1,7 @@
 "use client";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+import { isTenantDatabase } from '@/lib/relations/resolve';
 import React, { useMemo, useEffect, useState, useRef, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { useDatabaseStore } from './store';
@@ -256,7 +257,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
         
         // ENFORCE LICENSING ISOLATION: Hide 'Lead Source' property for Free Tier
         let filteredProps = [...props];
-        if (!hasCRM && databaseId === 'db-clients') {
+        if (!hasCRM && isTenantDatabase(databaseId, 'db-clients')) {
             filteredProps = filteredProps.filter(p => p.name.toLowerCase() !== 'lead source');
         }
 
@@ -626,7 +627,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                     )}
 
                     {/* Bulk Approve (only for Inbox) */}
-                    {database.id === 'db-expenses' && activeViewId === 'vw-expenses-inbox' && selectedRowIds.size > 0 && (
+                    {isTenantDatabase(database.id, 'db-expenses') && activeViewId === 'vw-expenses-inbox' && selectedRowIds.size > 0 && (
                         <button
                             onClick={() => {
                                 const notReady = Array.from(selectedRowIds).filter(rid => {

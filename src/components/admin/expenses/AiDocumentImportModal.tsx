@@ -3,6 +3,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { X, Upload, Loader2, Sparkles, CheckCircle, FileText, AlertCircle, Inbox, ArrowRight } from 'lucide-react';
 import { createPageServerFirst } from '@/app/actions/pages';
+import { isTenantDatabase } from '@/lib/relations/resolve';
 import { uploadFileAction } from '@/app/actions/files';
 import { useDatabaseStore } from '../database/store';
 import { useRouter } from 'next/navigation';
@@ -56,7 +57,7 @@ export default function AiDocumentImportModal({ onClose, targetDatabaseId = 'db-
                 // 2. Upload file
                 const fd = new FormData();
                 fd.append('file', job.file);
-                const uploadRes = await uploadFileAction(fd, targetDatabaseId === 'db-expenses' ? 'purchase-invoice' : 'receipt', pageRes.page.id);
+                const uploadRes = await uploadFileAction(fd, isTenantDatabase(targetDatabaseId, 'db-expenses') ? 'purchase-invoice' : 'receipt', pageRes.page.id);
                 
                 if (!uploadRes.success) throw new Error(uploadRes.error || "Upload failed");
 

@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
+import { isTenantDatabase } from '@/lib/relations/resolve';
 import React, { useState, useRef, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { X, Camera, Upload, FileText, Loader2, Sparkles, Receipt, CheckCircle, AlertCircle, RefreshCw, AlertTriangle, Plus, Trash2 } from 'lucide-react';
@@ -74,9 +75,9 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
     const scansLeft = Math.max(0, scanQuota - scanCount);
 
     const addConfirmedPage = useDatabaseStore(s => s.addConfirmedPage);
-    const isInvoiceMode = targetDatabaseId === 'db-expenses';
-    const projects = useDatabaseStore(s => s.databases.find(db => db.id === 'db-1')?.pages || []);
-    const suppliers = useDatabaseStore(s => s.databases.find(db => db.id === 'db-suppliers')?.pages || []);
+    const isInvoiceMode = isTenantDatabase(targetDatabaseId, 'db-expenses');
+    const projects = useDatabaseStore(s => s.databases.find(db => isTenantDatabase(db.id, 'db-1'))?.pages || []);
+    const suppliers = useDatabaseStore(s => s.databases.find(db => isTenantDatabase(db.id, 'db-suppliers'))?.pages || []);
 
     const [animationDone, setAnimationDone] = useState(false);
     const router = useRouter();

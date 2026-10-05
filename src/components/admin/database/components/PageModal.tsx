@@ -1,6 +1,7 @@
 "use client";
 /* eslint-disable */
 
+import { isTenantDatabase } from '@/lib/relations/resolve';
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useDatabaseStore } from '../store';
@@ -1213,7 +1214,7 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                                                                                                 for (const file of files) {
                                                                                                     const fd = new FormData();
                                                                                                     fd.append('file', file);
-                                                                                                    const res = await uploadFileAction(fd, databaseId === 'db-expenses' ? 'purchase-invoice' : 'receipt', pageId);
+                                                                                                    const res = await uploadFileAction(fd, isTenantDatabase(databaseId, 'db-expenses') ? 'purchase-invoice' : 'receipt', pageId);
                                                                                                     if (res.success && res.key) {
                                                                                                         lastKey = res.key;
                                                                                                     } else {

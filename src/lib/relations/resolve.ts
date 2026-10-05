@@ -1,6 +1,6 @@
 import { useMemo, useEffect } from 'react';
 import type { Database, PageIndexEntry, Page } from '@/components/admin/database/types';
-import { BASE_TO_KEY, resolveDatabaseId, UnboundSystemDatabaseError } from '@/lib/kernel/system-databases';
+import { BASE_TO_KEY, resolveDatabaseId, UnboundSystemDatabaseError, playsSystemRole } from '@/lib/kernel/system-databases';
 
 export interface RelationOption {
     id: string;
@@ -42,6 +42,17 @@ export function bindTenantDatabases(lockedDbIds: Record<string, string> | null |
 }
 export function tenantBinding(): Record<string, string> {
     return _tenantBinding ?? {};
+}
+
+/**
+ * Client side: is `id` this tenant's database for `baseOrRole` ('db-articles' / 'articles')? Through the
+ * registered binding and the store's logicalKey (kernel playsSystemRole) — never `id === 'db-articles'`.
+ */
+export function isTenantDatabase(id: string | null | undefined, baseOrRole: string): boolean {
+    return playsSystemRole(id, baseOrRole, tenantBinding(), dbId => {
+        const dbs: Database[] = getStoreState()?.databases ?? [];
+        return dbs.find(d => d.id === dbId)?.logicalKey ?? null;
+    });
 }
 
 function getStoreState(): any {

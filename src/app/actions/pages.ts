@@ -3,7 +3,6 @@
 import { isWorkforceRole } from '@/lib/roles';
 import { auth } from '@/auth';
 import { v4 as uuidv4 } from 'uuid';
-import { Prisma } from '@prisma/client';
 import { Page, PropertyValue } from '@/components/admin/database/types';
 import { generateOGM } from '@/lib/ogm';
 import { SYSTEM_DATABASES, BASE_TO_KEY, SystemDatabaseRole } from '@/lib/kernel/system-databases';
@@ -235,14 +234,13 @@ async function handlePaymentMatching(tenantId: string, paymentPage: Page) {
 
             if (matchedInvoice) {
                 // Link payment to invoice
-                const newProps = { ...paymentPage.properties, invoice: [matchedInvoice.id] };
-                await db.globalPage.update({
-                    where: { id: paymentPage.id },
-                    data: { 
-                        properties: newProps as Prisma.InputJsonValue,
-                        lastEditedBy: 'system:payment-match'
-                    }
-                });
+                const { buildPaymentMatchIntent } = await import('@/lib/records/actions-record-intents');
+                const { intent, opts } = buildPaymentMatchIntent(paymentPage.id, matchedInvoice.id, paymentPage.updatedAt);
+                const saved = await saveRecord(db, intent, opts);
+                if (!saved.ok) {
+                    console.error('[handlePaymentMatching] saveRecord refusal:', saved.refusal);
+                    return;
+                }
                 await syncInvoicePaymentStatus(db, tenantId, matchedInvoice.id, 'system:payment-match');
                 return;
             }
@@ -264,14 +262,12 @@ async function handlePaymentMatching(tenantId: string, paymentPage: Page) {
 
             if (suggestedInvoice) {
                 // Set suggestedInvoice field
-                const newProps = { ...paymentPage.properties, suggestedInvoice: [suggestedInvoice.id] };
-                await db.globalPage.update({
-                    where: { id: paymentPage.id },
-                    data: { 
-                        properties: newProps as Prisma.InputJsonValue,
-                        lastEditedBy: 'system:payment-match'
-                    }
-                });
+                const { buildPaymentSuggestedMatchIntent } = await import('@/lib/records/actions-record-intents');
+                const { intent, opts } = buildPaymentSuggestedMatchIntent(paymentPage.id, suggestedInvoice.id, paymentPage.updatedAt);
+                const saved = await saveRecord(db, intent, opts);
+                if (!saved.ok) {
+                    console.error('[handlePaymentMatching] saveRecord suggested refusal:', saved.refusal);
+                }
             }
         }
     } catch (e) {

@@ -2,8 +2,6 @@
 import { clientAcceptRefusal } from '@/lib/records/client-accept';
 import { platformDb, systemScope } from '@/lib/data/scope';
 
-import prisma from '@/lib/prisma';
-
 interface AcceptQuotationPayload {
     quoteId: string;
     signatureBase64: string;
@@ -32,20 +30,19 @@ export async function acceptQuotation({ quoteId, signatureBase64, signatureMetho
         if (refusal === 'already_accepted') return { success: false, error: 'This quotation has already been accepted.' };
         if (refusal) return { success: false, error: 'This quotation cannot be accepted.' };
 
-        await systemScope(quote.database.tenantId, `client accepted quotation ${quoteId} via its link`).globalPage.update({
-            where: { id: quoteId },
-            data: {
-                properties: {
-                    ...currentProps,
-                    status: "opt-accepted",
-                    clientSignature: signatureBase64,
-                    signatureMethod,
-                    consentName,
-                    signedAt: new Date().toISOString()
-                },
-                lastEditedBy: 'system:accept-quote'
-            }
-        });
+        const db = systemScope(quote.database.tenantId, `client accepted quotation ${quoteId} via its link`);
+        const { saveRecord } = await import('@/lib/data/records');
+        const { buildAcceptQuoteIntent } = await import('@/lib/records/actions-record-intents');
+        const { intent, opts } = buildAcceptQuoteIntent(
+            quoteId,
+            { signatureBase64, signatureMethod, consentName },
+            quote.updatedAt.toISOString()
+        );
+        const saved = await saveRecord(db, intent, opts);
+
+        if (!saved.ok) {
+            return { success: false, error: `This quotation cannot be accepted (${saved.refusal.code}).` };
+        }
 
         // Auto-create project after successful acceptance — in the quote's own tenant (read above)
         const quoteWithDb = quote;
@@ -74,7 +71,7 @@ export async function acceptQuotation({ quoteId, signatureBase64, signatureMetho
                         entity: { type: 'quote', id: quoteId },
                         href: `/nl/admin/database/db-quotations/${quoteId}`
                     },
-                    { tenantId: quoteWithDb.database.tenantId, db: prisma }
+                    { tenantId: quoteWithDb.database.tenantId, db }
                 ).catch(e => console.error("Failed to create quotes.accepted notification:", e));
 
                 if (tenant?.email) {

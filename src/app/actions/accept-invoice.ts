@@ -32,20 +32,19 @@ export async function acceptInvoice({ invoiceId, signatureBase64, signatureMetho
         if (refusal === 'already_accepted') return { success: false, error: 'This invoice has already been accepted.' };
         if (refusal) return { success: false, error: 'This invoice cannot be accepted.' };
 
-        await systemScope(invoice.database.tenantId, `client accepted invoice ${invoiceId} via its link`).globalPage.update({
-            where: { id: invoiceId },
-            data: {
-                properties: {
-                    ...currentProps,
-                    status: "ACCEPTED",
-                    clientSignature: signatureBase64,
-                    signatureMethod,
-                    consentName,
-                    signedAt: new Date().toISOString()
-                },
-                lastEditedBy: 'system:accept-invoice'
-            }
-        });
+        const db = systemScope(invoice.database.tenantId, `client accepted invoice ${invoiceId} via its link`);
+        const { saveRecord } = await import('@/lib/data/records');
+        const { buildAcceptInvoiceIntent } = await import('@/lib/records/actions-record-intents');
+        const { intent, opts } = buildAcceptInvoiceIntent(
+            invoiceId,
+            { signatureBase64, signatureMethod, consentName },
+            invoice.updatedAt.toISOString()
+        );
+        const saved = await saveRecord(db, intent, opts);
+
+        if (!saved.ok) {
+            return { success: false, error: `This invoice cannot be accepted (${saved.refusal.code}).` };
+        }
 
         return { success: true };
     } catch (error: any) {

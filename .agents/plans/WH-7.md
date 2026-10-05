@@ -376,3 +376,15 @@ filter; `useScheduleAttachments` replaced by `uploadFileAction` + `addShiftFile`
    `shiftMoment(ymd, '00:00')` for the picker's Date and `localDateKey(date)` back (src/lib/kernel/shift-time.ts).
 2. `ShiftLockBanner.tsx` formats `signedAt` with `toLocaleDateString` in the BROWSER's zone — the signing moment is
    shown on the business clock: `zonedParts(signedAt)` (date + time, Brussels).
+
+## PLANNER REVIEW — M3 · 2026-10-05 · ✅ ACCEPTED · GO for M4
+Read: `7437382e` + report `9aa2ad10`. The form submits through `validateShiftForm` → `buildCreateShiftPayloads` (the
+pure model; multi-worker single day = one `seriesId`); one `dialogContent` serves both trigger and controlled modes;
+templates via `hrCreate/hrList/hrDelete`; files via `uploadFileAction` + `addShiftFile` (server door). Both M2
+corrections applied (kernel `shiftMoment`/`localDateKey`; `zonedParts` for `signedAt`). Inert: nothing imports
+`shift-editor/CreateShiftForm` yet.
+**One correction — fix it in M4 (same rule: time only through the kernel):**
+1. `CreateShiftForm.tsx:744,772` and `EditShiftDialog.tsx:382` label the picked day with date-fns
+   `format(shiftMoment(ymd,'00:00'), 'PPP')` — a Brussels-midnight moment formatted in the BROWSER's zone (a laptop
+   abroad shows the day before). Label the day from the ymd itself (`zonedParts(shiftMoment(ymd, '12:00'))` or a
+   kernel day formatter), never from a midnight instant.

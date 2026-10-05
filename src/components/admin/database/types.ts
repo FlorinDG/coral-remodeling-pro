@@ -216,6 +216,8 @@ export interface DatabaseView {
     filterGroups?: FilterGroup[]; // Advanced OR/AND nested filters
     sorts?: SortRule[];     // View-specific sorts
     propertiesState?: ViewPropertyState[]; // Track column widths, visibility, order per view
+    /** Grid: long text wraps and the row grows with it (otherwise one line, truncated). */
+    wrapText?: boolean;
     defaultPropsSeeded?: boolean;
 }
 

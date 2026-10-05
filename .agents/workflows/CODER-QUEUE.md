@@ -16,10 +16,11 @@
 **every new test needs a THROW PROOF** (break the real code, show the test fail, restore), and
 **bending a directive is not progress** — a blocked step is STOPPED, never worked around.
 
-## 0 · `WH-7` — rebuild the shift editor — ✅ M2 ACCEPTED · 🟩 GO M3 (stop after M3)
+## 0 · `WH-7` — rebuild the shift editor — ✅ M3 ACCEPTED · 🟩 GO M4 (stop after M4)
 📄 `coder-directive-wh-7.md` + **`.agents/plans/WH-7.md` § PLANNER REVIEW (C1–C6, binding)**.
-M3 = the create form on the model + the two M2 corrections (plan § PLANNER REVIEW — M2: kernel time in the picker and
-the lock banner). Report `.agents/reports/WH-7-M3.md`. Push, STOP for review.
+M4 = the switch in `ScheduleManagement.tsx`, delete the legacy files, the eslint allowlist cleanup + the ONE M3
+correction (plan § PLANNER REVIEW — M3: label the picked day from the ymd, never a midnight instant in the browser's
+zone). Report `.agents/reports/WH-7-M4.md`. Push, STOP for review.
 *(Done 2026-10-04: WO-4a-M4 ✅ · R2-1-CENSUS ✅ — 4 holes it found were fixed the same day.)*
 
 ## ✅ `R1-7-B1` — DONE, reviewed 2026-10-05 (STOP 1 decided: lib/data/identity emailOwner; 4 files moved by the Planner)

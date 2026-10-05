@@ -10,7 +10,7 @@ Planner 2026-10-05. coral-r3-grid.md R3-B4: "The flag flips only when V2 matches
 | 2 | Sorts (per view) | 🟨 | toolbar → SortToolbar; lib/records/view-sort (one rule for both grids) |
 | 3 | Properties: show / hide columns, "Opmerkingen" hidden until shown | 🟨 | toolbar → PropertiesDropdown; view-scope visibleColumns |
 | 4 | Column order (drag a header) — per view | 🟨 | view-scope moveColumn → DB-DEF-1 view op |
-| 5 | Column width (drag the edge) — per view | 🟨 | view-scope setColumnWidth |
+| 5 | Column width (drag the edge; double-click resets) — per view | 🟨 | view-scope setColumnWidth. FIXED 2026-10-05: the header's column drag started instead and cancelled the pointer — resize never worked |
 | 6 | Sticky header; virtualised rows (large databases) | 🟨 | TanStack Virtual |
 | 7 | Edit text / number / currency / percent / url / email / phone — ONE click | 🟨 | grid-cell parseCellInput |
 | 8 | Edit select / multi-select / checkbox / date | 🟨 | v2/cells.tsx |
@@ -32,7 +32,8 @@ Planner 2026-10-05. coral-r3-grid.md R3-B4: "The flag flips only when V2 matches
 | 24 | Lost edit (N1): type a name, click straight into another cell → BOTH persist after reload (10×) | 🟨 | one field per commit + the record door |
 | 25 | Row order while editing: an edit never moves the row under the cursor | 🟨 | view-sort holdOrder |
 | 26 | Row menu (⋯ on the row number): open / duplicate / delete | 🟨 | v2 RowMenu; grid-access duplicateProperties — never a document, never the stamps (the old grid copied an invoice's status, OGM and export stamp) |
-| 26b | Row drag-reorder | ❓ Florin | NOT ported: the old grid's drag changed the order in the browser only (never saved) and views order by their sorts — decide whether a MANUAL order is wanted (it would be a saved per-view order) |
+| 26b | Row drag-reorder | ✅ dropped | Florin 2026-10-05: no manual row order — views order by their sorts |
+| 26c | Text wrap — "Tekst afbreken" (per view): long text wraps, the row grows | 🟨 | view `wrapText`; rows measured (TanStack Virtual measureElement). Florin: nice to have |
 | 27 | Mobile / touch | ⬜ | to check |
 
 **When every line is ✅ on 2+ databases:** GRID-REPLACE-4 flips the default (V2 for everyone; the switch becomes

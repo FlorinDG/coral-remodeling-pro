@@ -1,5 +1,6 @@
 "use client";
 
+import { isTenantDatabase } from '@/lib/relations/resolve';
 import React, { useEffect, useState, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import { canonicalSchemas } from '@/lib/kernel/system-schemas';
@@ -295,11 +296,11 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
       const unseededViews = database.views.filter(v => !v.defaultPropsSeeded);
       if (unseededViews.length > 0) {
         let hiddenPropsForDb: string[] = [];
-        if (databaseId === 'db-expenses') {
+        if (isTenantDatabase(resolvedId, 'db-expenses')) {
           hiddenPropsForDb = ['betreft', 'source', 'peppolDocId'];
-        } else if (databaseId === 'db-articles') {
+        } else if (isTenantDatabase(resolvedId, 'db-articles')) {
           hiddenPropsForDb = ['prop-art-brand', 'prop-art-packaging', 'prop-art-coverage', 'prop-art-pcs-pack', 'prop-art-min-order', 'prop-art-variants'];
-        } else if (databaseId === 'db-1') {
+        } else if (isTenantDatabase(resolvedId, 'db-1')) {
           hiddenPropsForDb = [
             'prop-admin-department', 'prop-admin-recurring', 'prop-admin-compliance-date',
             'prop-bizdev-opportunity-value', 'prop-bizdev-win-probability', 'prop-bizdev-stage',
@@ -332,106 +333,14 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
       }
     }
 
-    // Migrate: existing projects without a type default to Operations
-    if (databaseId === 'db-1') {
+    // (2026-10-05, Florin "d — go") The client-side data migrations that ran here on every mount are deleted:
+    // they WROTE records from the browser (project type → Operations; invoice / expense docType guessed from a
+    // "CN-" title; every expense without a review status → "Goedgekeurd", i.e. auto-approved past the inbox) and
+    // re-asserted schema options the kernel schema already carries (system-schemas.ts). Data repairs go through
+    // the SQL procedure (.agents/workflows/sql), schema through the kernel — never a browser on page load.
+
+    if (isTenantDatabase(resolvedId, 'db-expenses')) {
       const store = useDatabaseStore.getState();
-      database.pages.forEach(page => {
-        const currentType = page.properties['prop-project-type'];
-        if (!currentType) {
-          store.updatePageProperty(resolvedId, page.id, 'prop-project-type', 'type-operations');
-        }
-      });
-    }
-
-    // Migrate: db-invoices docType population
-    if (databaseId === 'db-invoices') {
-      const store = useDatabaseStore.getState();
-      database.pages.forEach(page => {
-        const currentDocType = page.properties['docType'];
-        if (!currentDocType) {
-          const title = String(page.properties['title'] || '');
-          const newType = title.startsWith('CN-') ? 'opt-credit-note' : 'opt-invoice';
-          store.updatePageProperty(resolvedId, page.id, 'docType', newType);
-        }
-      });
-
-      // Enforce that docType options in db-invoices includes opt-proforma
-      const docTypeProp = database.properties.find(p => p.id === 'docType');
-      if (docTypeProp && docTypeProp.config?.options) {
-        const hasProforma = docTypeProp.config.options.some((opt: { id?: string }) => opt.id === 'opt-proforma');
-        if (!hasProforma) {
-          const updatedOptions = [
-            ...docTypeProp.config.options,
-            { id: 'opt-proforma', name: 'Proforma', color: 'orange' }
-          ];
-          const updatedProperties = database.properties.map(p => 
-            p.id === 'docType' ? { ...p, config: { ...p.config, options: updatedOptions } } : p
-          );
-          store.updateDatabase(resolvedId, { properties: updatedProperties });
-        }
-      }
-
-      // Enforce that status options in db-invoices include opt-credited and opt-partially-credited
-      const statusProp = database.properties.find(p => p.id === 'status');
-      if (statusProp && statusProp.config?.options) {
-        const options = statusProp.config.options || [];
-        const hasCredited = options.some((opt: { id?: string }) => opt.id === 'opt-credited');
-        const hasPartiallyCredited = options.some((opt: { id?: string }) => opt.id === 'opt-partially-credited');
-        
-        if (!hasCredited || !hasPartiallyCredited) {
-          const updatedOptions = [...options];
-          if (!hasCredited) {
-            updatedOptions.push({ id: 'opt-credited', name: t('engine_status_credited', locale), color: 'pink' });
-          }
-          if (!hasPartiallyCredited) {
-            updatedOptions.push({ id: 'opt-partially-credited', name: t('engine_status_partially_credited', locale), color: 'pink' });
-          }
-          const updatedProperties = database.properties.map(p => 
-            p.id === 'status' ? { ...p, config: { ...p.config, options: updatedOptions } } : p
-          );
-          store.updateDatabase(resolvedId, { properties: updatedProperties });
-        }
-      }
-
-      // Enforce that parentInvoiceId is a relation to db-invoices
-      const parentInvoiceProp = database.properties.find(p => p.id === 'parentInvoiceId');
-      const expectedTargetDbId = resolveDbId('db-invoices');
-      if (parentInvoiceProp && (parentInvoiceProp.type !== 'relation' || parentInvoiceProp.config?.relationDatabaseId !== expectedTargetDbId)) {
-        const updatedProperties = database.properties.map(p => 
-          p.id === 'parentInvoiceId' ? { 
-            ...p, 
-            type: 'relation' as const, 
-            config: { relationDatabaseId: expectedTargetDbId, relationDisplayPropertyId: 'title' } 
-          } : p
-        );
-      }
-    }
-
-    // Migrate: db-expenses docType and reviewStatus population
-    if (databaseId === 'db-expenses') {
-      const store = useDatabaseStore.getState();
-      database.pages.forEach(page => {
-        let needsUpdate = false;
-        
-        // Migrate docType
-        const currentDocType = page.properties['docType'];
-        if (!currentDocType) {
-          const isCN = page.properties['source'] === 'src-credit-note' || page.properties['status'] === 'opt-credited' || String(page.properties['title'] || '').startsWith('CN-');
-          page.properties['docType'] = isCN ? 'opt-credit-note' : 'opt-invoice';
-          needsUpdate = true;
-        }
-
-        // Migrate reviewStatus
-        if (!page.properties['reviewStatus']) {
-          page.properties['reviewStatus'] = 'Goedgekeurd';
-          needsUpdate = true;
-        }
-
-        if (needsUpdate) {
-          store.updatePages(resolvedId, [{ id: page.id, properties: page.properties }]);
-        }
-      });
-
       // Migrate: add Inbox view if missing
       const hasInbox = database.views.some(v => v.id === 'vw-expenses-inbox');
       if (!hasInbox) {

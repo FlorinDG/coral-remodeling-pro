@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
+import { isTenantDatabase } from '@/lib/relations/resolve';
+import { articleCounters, nextArticleCodes } from '@/lib/records/article-import';
 import { create } from 'zustand';
 import { persist, createJSONStorage, StateStorage } from 'zustand/middleware';
 import { get, set, del } from 'idb-keyval';
@@ -25,27 +27,9 @@ const syncDb = (db: Database | undefined) => {
 };
 
 
-/**
- * Helper to check if a database ID matches a "base" ID (e.g. 'db-invoices').
- * Handles both bare IDs and scoped IDs via role and logicalKey.
- */
-const isBaseDb = (id: string, base: string) => {
-    if (id === base) return true;
-    const baseRole: SystemDatabaseRole | null = base in SYSTEM_DATABASES
-        ? (base as SystemDatabaseRole)
-        : (base in BASE_TO_KEY ? BASE_TO_KEY[base] : null);
-    if (!baseRole) return false;
-    const idRole: SystemDatabaseRole | null = id in SYSTEM_DATABASES
-        ? (id as SystemDatabaseRole)
-        : (id in BASE_TO_KEY ? BASE_TO_KEY[id] : null);
-    if (idRole === baseRole) return true;
-    const dbs = useDatabaseStore.getState?.()?.databases;
-    if (dbs) {
-        const db = dbs.find(d => d.id === id);
-        if (db?.logicalKey === baseRole) return true;
-    }
-    return false;
-};
+/** Is `id` this tenant's database for `base` ('db-invoices' / 'invoices')? The ONE rule (kernel playsSystemRole
+ *  via resolve.isTenantDatabase): base → role, bound id → role by the binding, else the database's logicalKey. */
+const isBaseDb = (id: string, base: string) => isTenantDatabase(id, base);
 
 /**
  * Save a page to Postgres. If the parent DB is provided and may not yet exist
@@ -1232,30 +1216,11 @@ export const useDatabaseStore = create<DatabaseState>()(
                         fullProperties['structuredComm'] = generateOGM(fullProperties['title']);
                     }
 
-                    // Custom Auto-Numbering for Articles (ART-XX-XXX)
-                    if (databaseId === 'db-articles' && !fullProperties['prop-art-id']) {
-                        let groupCode = '00';
-                        const groupVal = fullProperties['prop-art-group'];
-                        if (groupVal === 'opt-ruwbouw') groupCode = '01';
-                        else if (groupVal === 'opt-afwerking') groupCode = '02';
-                        else if (groupVal === 'opt-elektriciteit') groupCode = '03';
-                        else if (groupVal === 'opt-sanitaire') groupCode = '04';
-                        else if (groupVal === 'opt-ventilatie') groupCode = '05';
-                        else if (groupVal === 'opt-verwarming') groupCode = '06';
-
-                        let maxNum = 0;
-                        db.pages.forEach((p: Page) => {
-                            const artId = p.properties['prop-art-id'] as string;
-                            if (artId && artId.startsWith(`ART-${groupCode}-`)) {
-                                const m = artId.match(new RegExp(`ART-${groupCode}-(\\d+)`));
-                                if (m && m[1]) {
-                                    const parsed = parseInt(m[1], 10);
-                                    if (parsed > maxNum) maxNum = parsed;
-                                }
-                            }
-                        });
-                        const nextStr = String(maxNum + 1).padStart(4, '0');
-                        fullProperties['prop-art-id'] = `ART-${groupCode}-${nextStr}`;
+                    // ART code for a new library article (lib/records/article-import — one rule, by ROLE)
+                    if (isTenantDatabase(databaseId, 'db-articles') && !fullProperties['prop-art-id']) {
+                        const counters = articleCounters(db.pages.map((p: Page) => p.properties['prop-art-id']));
+                        const [code] = nextArticleCodes([{ group: fullProperties['prop-art-group'] }], counters);
+                        if (code) fullProperties['prop-art-id'] = code;
                     }
 
                     db.properties.forEach((prop: Property) => {
@@ -1394,40 +1359,16 @@ export const useDatabaseStore = create<DatabaseState>()(
                         databases: state.databases.map(db => {
                             if (db.id !== databaseId) return db;
 
-                            // Evaluate max sequence counters for articles
-                            const currentArticleMax: Record<string, number> = {};
-                            if (databaseId === 'db-articles') {
-                                db.pages.forEach((p: Page) => {
-                                    const artId = p.properties['prop-art-id'] as string;
-                                    if (artId && artId.startsWith('ART-')) {
-                                        const m = artId.match(/ART-(\d{2})-(\d+)/);
-                                        if (m && m[1] && m[2]) {
-                                            const groupCode = m[1];
-                                            const pNum = parseInt(m[2], 10);
-                                            if (!currentArticleMax[groupCode] || pNum > currentArticleMax[groupCode]) {
-                                                currentArticleMax[groupCode] = pNum;
-                                            }
-                                        }
-                                    }
-                                });
-                            }
+                            // ART codes continue each group's sequence (lib/records/article-import, by ROLE)
+                            const isArticles = isTenantDatabase(databaseId, 'db-articles');
+                            const currentArticleMax = isArticles ? articleCounters(db.pages.map((p: Page) => p.properties['prop-art-id'])) : {};
 
                             const newPages: Page[] = pagesProperties.map((initialProperties, index) => {
                                 const pProps = { ...initialProperties };
 
-                                if (databaseId === 'db-articles' && !pProps['prop-art-id']) {
-                                    let groupCode = '00';
-                                    const groupVal = pProps['prop-art-group'];
-                                    if (groupVal === 'opt-ruwbouw') groupCode = '01';
-                                    else if (groupVal === 'opt-afwerking') groupCode = '02';
-                                    else if (groupVal === 'opt-elektriciteit') groupCode = '03';
-                                    else if (groupVal === 'opt-sanitaire') groupCode = '04';
-                                    else if (groupVal === 'opt-ventilatie') groupCode = '05';
-                                    else if (groupVal === 'opt-verwarming') groupCode = '06';
-
-                                    if (!currentArticleMax[groupCode]) currentArticleMax[groupCode] = 0;
-                                    currentArticleMax[groupCode]++;
-                                    pProps['prop-art-id'] = `ART-${groupCode}-${String(currentArticleMax[groupCode]).padStart(4, '0')}`;
+                                if (isArticles && !pProps['prop-art-id']) {
+                                    const [code] = nextArticleCodes([{ group: pProps['prop-art-group'] }], currentArticleMax);
+                                    if (code) pProps['prop-art-id'] = code;
                                 }
 
                                 return {
@@ -2175,35 +2116,6 @@ export const useDatabaseStore = create<DatabaseState>()(
                 const mergedDbs = currentState.databases.map(currentDb => {
                     const savedDb = persistedState.databases.find((d: Database) => d.id === currentDb.id);
                     if (savedDb) {
-                        // User Schema Migration Request for 'db-bestek'
-                        if (savedDb.id === 'db-bestek') {
-                            const oldTitleProp = savedDb.properties.find((p: Property) => p.id === 'title');
-                            const numericArtikelProp = savedDb.properties.find((p: Property) => p.name === 'Artikel' && p.id !== 'title');
-
-                            if (numericArtikelProp) {
-                                const numericId = numericArtikelProp.id;
-
-                                // Transplant data
-                                if (savedDb.pages) {
-                                    savedDb.pages.forEach((page: Page) => {
-                                        if (page.properties[numericId] !== undefined) {
-                                            page.properties['title'] = page.properties[numericId];
-                                            delete page.properties[numericId];
-                                        }
-                                    });
-                                }
-
-                                // Elevate to primary title
-                                numericArtikelProp.id = 'title';
-                            }
-
-                            // Delete the old "Artikel" (title), "Category", and "Code Reference" properties eternally
-                            savedDb.properties = savedDb.properties.filter((p: Property) =>
-                                p.name !== 'Category' &&
-                                p.name !== 'Code Reference' &&
-                                p !== oldTitleProp
-                            );
-                        }
                         // Merge properties: preserve user's dynamic CSV columns while inheriting codebase static updates
                         const mergedProperties = [...(savedDb.properties || [])];
                         currentDb.properties.forEach((devProp: Property) => {
@@ -2216,8 +2128,7 @@ export const useDatabaseStore = create<DatabaseState>()(
                             }
                         });
 
-                        // Strip out legacy view-5 from db-1 to prevent duplicate timeline tabs
-                        const mergedViews = (savedDb.views || currentDb.views).filter((v: any) => !(currentDb.id === 'db-1' && v.id === 'view-5'));
+                        const mergedViews = (savedDb.views || currentDb.views);
 
                         
                         let migratedViews = [...mergedViews];

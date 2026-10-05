@@ -1,4 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { isTenantDatabase } from '@/lib/relations/resolve';
+import { articleCounters, nextArticleCodes, articleImportPlan } from '@/lib/records/article-import';
 import React, { useState, useRef } from 'react';
 import Link from 'next/link';
 import { useLocale } from 'next-intl';
@@ -251,18 +253,8 @@ export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: Spreadsh
         // Sequence Tracker for ART-XX-XXXX
         const counters: Record<string, number> = {};
 
-        // Load existing IDs heavily from DB to avoid collision (Only for db-articles specific sequencing)
-        if (databaseId === 'db-articles') {
-            targetDb.pages.forEach(p => {
-                const idVal = String(p.properties['prop-art-id'] || '');
-                const match = idVal.match(/ART-(\d{2})-(\d{4})/);
-                if (match) {
-                    const group = match[1];
-                    const seq = parseInt(match[2], 10);
-                    if (!counters[group] || seq > counters[group]) counters[group] = seq;
-                }
-            });
-        }
+        const isArticles = isTenantDatabase(databaseId, 'db-articles');   // read by role, never `=== 'db-articles'`
+        if (isArticles) Object.assign(counters, articleCounters(targetDb.pages.map(p => p.properties['prop-art-id'])));
 
         // Pre-process any "Create New Property" requests natively before mapping data
         const localMapping = { ...mapping };
@@ -339,7 +331,7 @@ export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: Spreadsh
                     else if (dbProp.type === 'select') {
                         const rawVal = String(val).trim();
 
-                        if (databaseId === 'db-articles' && dbProp.name === 'Artikelgroep') {
+                        if (isArticles && dbProp.name === 'Artikelgroep') {
                             const lg = rawVal.toLowerCase();
                             if (lg.includes('ruwbouw')) val = 'opt-ruwbouw';
                             else if (lg.includes('afwerking')) val = 'opt-afwerking';
@@ -423,67 +415,24 @@ export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: Spreadsh
         const pagesToCreate: any[] = [];
         const pagesToUpdate: { id: string, properties: any }[] = [];
         
-        if (databaseId === 'db-articles') {
+        if (isArticles) {
             const titlePropId = refreshedDb.properties.find((p) => p.name === 'Title' || p.name === 'Naam' || p.id === 'title')?.id || 'title';
             const supplierPropId = refreshedDb.properties.find((p) => p.name.toLowerCase().includes('supplier') || p.name.toLowerCase().includes('leverancier') || p.name.toLowerCase().includes('lever'))?.id;
-            
-            rawPagesToProcess.forEach(newRowProps => {
-                const newTitle = String(newRowProps[titlePropId] || '').toLowerCase().trim();
-                const newSupplierId = supplierPropId && Array.isArray(newRowProps[supplierPropId]) ? newRowProps[supplierPropId][0] : null;
-
-                const match = refreshedDb.pages.find(p => String(p.properties[titlePropId] || '').toLowerCase().trim() === newTitle);
-
-                if (match) {
-                    const existingSupplierId = supplierPropId && Array.isArray(match.properties[supplierPropId]) ? match.properties[supplierPropId][0] : null;
-                    
-                    if (existingSupplierId === newSupplierId) {
-                        // Same article, same supplier -> UPDATE (Upsert)
-                        // Verify if it's an exact doublon
-                        const isExactDuplicate = refreshedDb.properties.every(p => {
-                            const newV = newRowProps[p.id];
-                            const oldV = match.properties[p.id];
-                            return JSON.stringify(newV) === JSON.stringify(oldV) || (!newV && !oldV);
-                        });
-                        
-                        if (!isExactDuplicate) {
-                            pagesToUpdate.push({ id: match.id, properties: newRowProps });
-                        } // Else skip exact duplicate (ignore)
-                    } else {
-                        // Same article, different supplier -> CREATE NEW
-                        pagesToCreate.push(newRowProps);
-                    }
-                } else {
-                    pagesToCreate.push(newRowProps);
-                }
+            const plan = articleImportPlan(rawPagesToProcess, refreshedDb.pages, {
+                title: titlePropId, supplier: supplierPropId, compare: refreshedDb.properties.map(p => p.id),
             });
-        } else {
-            pagesToCreate.push(...rawPagesToProcess);
-        }
+            pagesToCreate.push(...plan.create);
+            pagesToUpdate.push(...plan.update);
 
-        // Apply Sequence ID Generation to new items
-        if (databaseId === 'db-articles') {
+            // ART codes for the new articles, continuing each group's sequence
             const groupPropId = refreshedDb.properties.find(p => p.name === 'Artikelgroep' || p.id === 'prop-art-group')?.id;
             const autoIdProp = refreshedDb.properties.find((p) => p.id === 'prop-art-id' || p.name === 'ID')?.id;
-            
-            pagesToCreate.forEach(props => {
-                let groupCode = '00';
-                if (groupPropId && props[groupPropId]) {
-                    const groupVal = props[groupPropId];
-                    if (groupVal === 'opt-ruwbouw') groupCode = '01';
-                    else if (groupVal === 'opt-afwerking') groupCode = '02';
-                    else if (groupVal === 'opt-elektriciteit') groupCode = '03';
-                    else if (groupVal === 'opt-sanitaire') groupCode = '04';
-                    else if (groupVal === 'opt-ventilatie') groupCode = '05';
-                    else if (groupVal === 'opt-verwarming') groupCode = '06';
-                }
-
-                if (!counters[groupCode]) counters[groupCode] = 0;
-                counters[groupCode]++;
-
-                if (autoIdProp) {
-                    props[autoIdProp] = `ART-${groupCode}-${String(counters[groupCode]).padStart(4, '0')}`;
-                }
-            });
+            if (autoIdProp) {
+                const codes = nextArticleCodes(pagesToCreate.map(r => ({ group: groupPropId ? r[groupPropId] : undefined, code: r[autoIdProp] })), counters);
+                codes.forEach((c, i) => { if (c) pagesToCreate[i][autoIdProp] = c; });
+            }
+        } else {
+            pagesToCreate.push(...rawPagesToProcess);
         }
 
         const totalToProcess = pagesToCreate.length + pagesToUpdate.length;

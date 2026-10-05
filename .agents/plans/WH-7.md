@@ -354,3 +354,13 @@ attachment: render `<WerkbonCard shiftId=… />` (`src/components/time-tracker/c
 read-only, already used by today's dialog) at the top of the details AND attachments tabs, and list attachments
 through `isWerkbonArtifact(att, isWerkbonFile)` (`src/lib/records/werkbon-status.ts`) so the PDF and any legacy
 signature image never appear among them. Do not show the signature image anywhere (privacy).
+
+---
+
+## PLANNER REVIEW — M1 · 2026-10-05 · ✅ ACCEPTED · GO for M2 (stop after M2)
+Verified, not read: `node:test` 17/17; dates only through the kernel (`addDaysYmd` / `weekdayOfYmd`, no `Date`);
+payloads camelCase; the lock is the signature row only. **Throw proof reproduced by the Planner:** the recurring
+expansion mutated to `Date` + `toISOString` → 1 red under `TZ=Europe/Brussels`. Good work.
+**One correction for M2:** `CreateShiftPayload` / `UpdateShiftPayload` are hand-written interfaces — derive them
+from `ScheduledShift` (`Pick<…>` / `Partial<Pick<…>>` of `useScheduledShifts.ts`) so a field rename there fails the
+compile here instead of drifting. M2 = the edit dialog on the model (incl. C7 `WerkbonCard` + `isWerkbonArtifact`).

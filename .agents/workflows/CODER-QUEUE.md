@@ -16,10 +16,10 @@
 **every new test needs a THROW PROOF** (break the real code, show the test fail, restore), and
 **bending a directive is not progress** — a blocked step is STOPPED, never worked around.
 
-## 0 · `WH-7` — rebuild the shift editor — ✅ PLAN APPROVED WITH CORRECTIONS · 🟩 GO M1 (stop after M1)
+## 0 · `WH-7` — rebuild the shift editor — ✅ M1 ACCEPTED · 🟩 GO M2 (stop after M2)
 📄 `coder-directive-wh-7.md` + **`.agents/plans/WH-7.md` § PLANNER REVIEW (C1–C6, binding)**.
-M1 = the pure model + its tests (node:test, throw proofs, camelCase payloads, kernel calendar days, lock = signature
-only, characterised against today). Report `.agents/reports/WH-7-M1.md`. Push, STOP for review.
+M2 = the edit dialog on the model (plan § PLANNER REVIEW — M1: derive payload types from ScheduledShift; C7 WerkbonCard).
+Report `.agents/reports/WH-7-M2.md`. Push, STOP for review. R1-7-B1 may run while M2 waits for review.
 *(Done 2026-10-04: WO-4a-M4 ✅ · R2-1-CENSUS ✅ — 4 holes it found were fixed the same day.)*
 
 ## 1 · `R1-7-B1` — 16 call sites onto the seraph — 🟩 GO after WH-7 M1 is pushed (no plan gate)

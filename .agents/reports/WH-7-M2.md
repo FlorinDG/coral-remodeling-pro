@@ -22,7 +22,7 @@ Date:            2026-10-05
 | SHA | Message | Files | +/− |
 |---|---|---|---|
 | `dfbb97aa` | `feat(wh-7): M2 — shift edit dialog on pure model` | 5 | +1345/−26 |
-| `pending` | `docs(report): WH-7-M2` | 1 | +170 |
+| `be0d1e6a` | `docs(report): WH-7-M2` | 1 | +132 |
 
 ---
 

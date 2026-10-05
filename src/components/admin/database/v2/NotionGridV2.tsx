@@ -159,7 +159,7 @@ export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRec
 
     const colDefs = useMemo<ColumnDef<Page>[]>(() => columns.map(prop => ({
         id: prop.id,
-        header: () => <span className="truncate">{prop.name}</span>,
+        header: () => <span className="truncate">{tAdmin.has(`db.col.${prop.id}`) ? tAdmin(`db.col.${prop.id}` as never) : prop.name}</span>,   // the old grid's ColumnHeader convention
         size: widthOf(prop.id),
         cell: ({ row }) => {
             const page = row.original;
@@ -190,7 +190,7 @@ export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRec
                     </>
                 );
             }
-            if ((prop.type as string) === 'comments') return <LatestCommentCell pageId={page.id} databaseId={databaseId} onOpen={openRecord} />;
+            if ((prop.type as string) === 'comments') return <LatestCommentCell pageId={page.id} databaseId={databaseId} onOpen={openRecord} editable wrap={wrap} />;
             // GRID-REPLACE-2 · control cells — each commits ONE field through commitValue
             const locked = page.properties.accountantExportedAt === true || !access.edit;
             if (prop.type === 'select' || prop.type === 'multi_select') {
@@ -236,7 +236,7 @@ export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRec
             );
         },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    })), [columns, editing, widthOf, commit, commitValue, openRecord, databaseId, rows, locate, openLinked, database, access.edit, wrap]);
+    })), [columns, editing, widthOf, commit, commitValue, openRecord, databaseId, rows, locate, openLinked, database, access.edit, wrap, tAdmin]);
 
     const table = useReactTable({ data: rows, columns: colDefs, getCoreRowModel: getCoreRowModel(), getRowId: r => r.id });
     const virtualizer = useVirtualizer({ count: rows.length, getScrollElement: () => scrollRef.current, estimateSize: () => ROW_H, overscan: 12 });

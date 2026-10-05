@@ -254,7 +254,7 @@
     "yourProject": "Votre Projet"
   },
   "Admin": {
-    "comments": {"title": "Commentaires", "placeholder": "Écrire un commentaire… (@ pour mentionner quelqu'un)", "send": "Publier", "resolve": "Résoudre", "reopen": "Rouvrir", "edit": "Modifier", "delete": "Supprimer", "save": "Enregistrer", "cancel": "Annuler", "empty": "Pas encore de commentaires.", "resolved": "résolu", "edited": "modifié", "deleteConfirm": "Supprimer ce commentaire ?", "failed": "Échec"},
+    "comments": {"title": "Commentaires", "placeholder": "Écrire un commentaire… (@ pour mentionner quelqu'un)", "send": "Publier", "resolve": "Résoudre", "reopen": "Rouvrir", "edit": "Modifier", "delete": "Supprimer", "save": "Enregistrer", "cancel": "Annuler", "empty": "Pas encore de commentaires.", "resolved": "résolu", "edited": "modifié", "deleteConfirm": "Supprimer ce commentaire ?", "failed": "Échec", "summary": "{count, plural, one {# commentaire} other {# commentaires}}{open, plural, =0 {} other {, # ouvert(s)}}", "newPlaceholder": "Nouveau commentaire…"},
     "werkbon": {"title": "Bon de travail — signé par le client", "signedBy": "Signé par {name} le {date}", "openPdf": "Ouvrir le bon de travail (PDF)", "pdfPending": "PDF en cours de création…", "notSent": "Pas encore envoyé", "sentTo": "Envoyé le {date} à {to}", "cc": "copie : {cc}"},
     "accountant_export_button": "Export comptable",
     "exportLock": {
@@ -492,6 +492,7 @@
         "creating": "Création..."
       },
       "col": {
+        "comments": "Commentaires",
         "email": "E-mail",
         "phone": "Téléphone",
         "company": "Société",

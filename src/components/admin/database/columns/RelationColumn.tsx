@@ -116,10 +116,15 @@ const RelationComponent = ({ rowData, setRowData, focus, active, stopEditing, re
                         <Link className="w-3 h-3 opacity-50" />
                         <span className="px-0.5">{item.title}</span>
                         <button
-                            onClick={(e) => {
+                            // The grid (react-datasheet-grid) activates the cell on a DOCUMENT mousedown and re-renders it into edit
+                            // mode — this link was gone before its click fired. Act on mousedown and keep it from the grid.
+                            onMouseDown={(e) => {
+                                if (e.button !== 0) return;
+                                e.preventDefault();
                                 e.stopPropagation();
                                 openLinked(targetDatabase ?? resolvedDbId, item.id);
                             }}
+                            onClick={(e) => e.stopPropagation()}
                             className="p-0.5 rounded opacity-0 group-hover:opacity-100 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-all ml-0.5 text-orange-500 hover:text-orange-600"
                             title="Open related record"
                         >

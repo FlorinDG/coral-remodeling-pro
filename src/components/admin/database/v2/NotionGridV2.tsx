@@ -16,7 +16,12 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { useReactTable, getCoreRowModel, flexRender, type ColumnDef } from '@tanstack/react-table';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { Lock, Maximize2, Plus, Trash2, Download } from 'lucide-react';
+import { Lock, Maximize2, Plus, Trash2, Download, Upload, CheckCircle2 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
+import { SpreadsheetImportModal } from '../components/SpreadsheetImportModal';
+import { AccountantExportDialog } from '../components/AccountantExportDialog';
+import { canRunAccountantExport } from '@/lib/roles';
+import { ACCOUNTANT_EXPORT_SOURCES } from '@/lib/kernel/system-databases';
 import PropertiesDropdown from '../components/PropertiesDropdown';
 import FilterToolbar from '../components/FilterToolbar';
 import SortToolbar from '../components/SortToolbar';
@@ -36,7 +41,7 @@ import { isTextEditable, parseCellInput, cellText, cellChanged, parseClipboardGr
 import { resolveRelationTitle } from '@/lib/relations/resolve';
 import { useSession } from 'next-auth/react';
 import { useTenant } from '@/context/TenantContext';
-import { gridAccess } from '@/lib/records/grid-access';
+import { gridAccess, bulkApproveCheck, licensedColumns, EXPENSES_INBOX_VIEW, REVIEW_READY, REVIEW_APPROVED } from '@/lib/records/grid-access';
 import { VAT_FIELD, VAT_LOOKUP_ROLES } from '@/lib/records/vat-lookup';
 import { VatLookupFlyout } from './cells';
 
@@ -50,11 +55,13 @@ interface Props {
     hideFooterNew?: boolean;
     /** A screen's own row guard (invoices: only drafts may be deleted) — same as the old grid's prop. */
     preventDelete?: boolean | ((row: Page) => boolean);
+    /** A system database's fields are the kernel's — no CSV import of new columns (same as the old grid). */
+    lockedSchema?: boolean;
 }
 
 type Editing = { pageId: string; propId: string; text: string } | null;
 
-export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRecord, hideFooterNew, preventDelete }: Props) {
+export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRecord, hideFooterNew, preventDelete, lockedSchema }: Props) {
     const database = useDatabaseStore(s => s.databases.find(d => d.id === databaseId));
     const allDatabases = useDatabaseStore(s => s.databases);
     const updatePageProperty = useDatabaseStore(s => s.updatePageProperty);
@@ -79,7 +86,11 @@ export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRec
     if (!editing) frozenIds.current = null;
     const rows = useMemo(() => holdOrder(frozenIds.current, sorted), [sorted, editing]);   // eslint-disable-line react-hooks/exhaustive-deps
 
-    const columns = useMemo(() => visibleColumns(database?.properties || [], activeView?.propertiesState), [database?.properties, activeView?.propertiesState]);
+    const { activeModules } = useTenant();
+    const hasCRM = (activeModules || []).includes('CRM');
+    const columns = useMemo(() => licensedColumns(visibleColumns(database?.properties || [], activeView?.propertiesState), { logicalKey: database?.logicalKey, hasCRM }), [database?.properties, database?.logicalKey, activeView?.propertiesState, hasCRM]);
+    const [importOpen, setImportOpen] = useState(false);
+    const [exportOpen, setExportOpen] = useState(false);
     // Column width: the view's, or the live one while the handle is dragged (pointer capture — no document listeners).
     const [liveWidth, setLiveWidth] = useState<{ id: string; w: number } | null>(null);
     const widthOf = useCallback((propId: string) => (liveWidth?.id === propId ? liveWidth.w : undefined)
@@ -96,6 +107,7 @@ export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRec
     // read-only below ENTERPRISE. A screen's own row guard (preventDelete) applies on top.
     const { data: session } = useSession();
     const { isEnterprise } = useTenant();
+    const tAdmin = useTranslations('Admin');
     const access = gridAccess({ userRole: (session?.user as { role?: string } | undefined)?.role, logicalKey: database?.logicalKey, isEnterprise });
     const editingInput = useRef<HTMLInputElement | null>(null);
 
@@ -255,7 +267,31 @@ export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRec
                         <button type="button" onClick={() => setSelected(new Set())} className="text-xs text-neutral-500 hover:underline">Wissen</button>
                     </>
                 )}
+                {/* the purchase-invoice inbox: approve the selected records the reading marked "Klaar" — one field each */}
+                {selected.size > 0 && access.edit && database.logicalKey === 'expenses' && activeView?.id === EXPENSES_INBOX_VIEW && (
+                    <button type="button" className="inline-flex items-center gap-1 text-xs text-emerald-600 hover:underline"
+                            onClick={() => {
+                                const chk = bulkApproveCheck(rows.filter(r => selected.has(r.id)));
+                                if (!chk.ok) { toast.message(`Alleen records die "${REVIEW_READY}" zijn kunnen samen goedgekeurd worden (${chk.notReady.length} nog niet).`); return; }
+                                if (!window.confirm(`${chk.ids.length} record(s) goedkeuren?`)) return;
+                                for (const id of chk.ids) updatePageProperty(database.id, id, 'reviewStatus', REVIEW_APPROVED);
+                                setSelected(new Set());
+                            }}>
+                        <CheckCircle2 className="w-3.5 h-3.5" /> Goedkeuren
+                    </button>
+                )}
                 <div className="ml-auto flex items-center gap-1">
+                    {canRunAccountantExport((session?.user as { role?: string } | undefined)?.role, !!(session?.user as { isImpersonating?: boolean } | undefined)?.isImpersonating)
+                        && ACCOUNTANT_EXPORT_SOURCES.includes(database.logicalKey as never) && (
+                        <button type="button" onClick={() => setExportOpen(true)} className="flex items-center gap-1.5 px-2 py-1 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded">
+                            📦 {tAdmin('accountant_export_button')}
+                        </button>
+                    )}
+                    {access.create && !lockedSchema && (
+                        <button type="button" onClick={() => setImportOpen(true)} className="flex items-center gap-1.5 px-2 py-1 text-xs text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-white/5 rounded">
+                            <Upload className="w-3.5 h-3.5" /> Import
+                        </button>
+                    )}
                     {activeView && <PropertiesDropdown databaseId={database.id} viewId={activeView.id} />}
                     {activeView && <FilterToolbar databaseId={database.id} viewId={activeView.id} />}
                     {activeView && <SortToolbar databaseId={database.id} viewId={activeView.id} />}
@@ -375,6 +411,8 @@ export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRec
                     </div>
                 </div>
             </div>
+            <SpreadsheetImportModal isOpen={importOpen} onClose={() => setImportOpen(false)} databaseId={database.id} />
+            <AccountantExportDialog isOpen={exportOpen} onClose={() => setExportOpen(false)} />
             {!hideFooterNew && access.create && (
                 <button type="button"
                         onClick={() => {

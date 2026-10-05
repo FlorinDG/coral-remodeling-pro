@@ -645,6 +645,7 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
       >
         {activeView.type === 'table' && gridV2 && (
           <NotionGridV2Dynamic databaseId={database.id} viewId={activeView.id} hardFilter={defaultFilter} onOpenRecord={onOpenRecord} hideFooterNew={!!hideFooterNew}
+            lockedSchema={isLockedSchemaDB && !isUngated && !hasDatabases}
             preventDelete={role === 'invoices' ? (row) => { const s = String((row?.properties as Record<string, unknown>)?.status || 'opt-draft'); return s !== 'opt-draft'; } : undefined} />
         )}
         {activeView.type === 'table' && !gridV2 && <NotionGridDynamic databaseId={database.id} viewId={activeView.id} renderTabs={headerTabs} lockedSchema={isLockedSchemaDB && !isUngated && !hasDatabases} preventDelete={role === 'invoices' ? (row: Record<string, unknown>) => { const s = String((row?.properties as Record<string, unknown>)?.status || row?.status || 'opt-draft'); return s !== 'opt-draft'; } : undefined} hideFooterNew={!!hideFooterNew} hardFilter={defaultFilter} onOpenRecord={onOpenRecord} />}

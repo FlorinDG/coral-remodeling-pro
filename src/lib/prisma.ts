@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client'
 
 const prismaClientSingleton = () => {
+  // eslint-disable-next-line no-restricted-syntax -- the ONE client (R1-5); everything else goes through the seraph
   return new PrismaClient()
 }
 

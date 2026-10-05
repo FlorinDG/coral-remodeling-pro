@@ -1,13 +1,14 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from "@prisma/client";
+import { scopeFromSession, type TenantScopedClient } from '@/lib/data/scope';
 import { ImapFlow } from 'imapflow';
 import { simpleParser } from 'mailparser';
 import { getGmailOAuth2Client } from './connect/google/route';
 import { auth } from '@/auth';
 
-const prisma = new PrismaClient();
+// R1-5: this route built its OWN `new PrismaClient()` — a second, unscoped client the import gate could not
+// see (and a new connection pool per cold start). Reads and writes now go through the session's scoped client.
 
-async function ensureValidToken(account: { id: string; email: string; accessToken?: string | null; refreshToken?: string | null; expiresAt?: Date | null }) {
+async function ensureValidToken(db: TenantScopedClient, account: { id: string; email: string; accessToken?: string | null; refreshToken?: string | null; expiresAt?: Date | null }) {
     if (!account.accessToken || !account.refreshToken) return account.accessToken;
     
     // If not expired, return current token (with 1 minute buffer)
@@ -25,7 +26,7 @@ async function ensureValidToken(account: { id: string; email: string; accessToke
         
         const { credentials } = await oauth2Client.refreshAccessToken();
         
-        await prisma.connectedEmailAccount.update({
+        await db.connectedEmailAccount.update({
             where: { id: account.id },
             data: {
                 accessToken: credentials.access_token,
@@ -54,7 +55,8 @@ export async function GET(request: Request) {
         if (!tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         // 1. Retrieve the credentials from the database for this tenant
-        const accounts = await prisma.connectedEmailAccount.findMany({
+        const db = await scopeFromSession();
+        const accounts = await db.connectedEmailAccount.findMany({
             where: { tenantId, isActive: true }
         });
 
@@ -70,7 +72,7 @@ export async function GET(request: Request) {
         }
 
         // 2. Initialize the direct IMAP client (supporting both password and OAuth2)
-        const validToken = await ensureValidToken(targetAccount);
+        const validToken = await ensureValidToken(db, targetAccount);
 
         client = new ImapFlow({
             host: targetAccount.imapHost || 'imap.gmail.com',

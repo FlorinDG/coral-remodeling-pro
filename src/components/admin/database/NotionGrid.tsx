@@ -1,6 +1,7 @@
 "use client";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+import { sortPages, holdOrder } from '@/lib/records/view-sort';
 import { isHiddenInView } from '@/lib/records/view-scope';
 import { isTenantDatabase } from '@/lib/relations/resolve';
 import React, { useMemo, useEffect, useState, useRef, useCallback } from 'react';
@@ -452,96 +453,14 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
     // Execute Client-Side Sorting
     const sortedPages = useMemo(() => {
         if (!database) return [];
-        const activeSorts = activeView?.sorts ?? [];
-
-        // Partition: newly created pages are forced to the top
-        const newPages: Page[] = [];
-        const regularPages: Page[] = [];
-
-        filteredPages.forEach(p => {
-            const isRecent = Date.now() - new Date(p.createdAt).getTime() < 120000;
-            if (isRecent) {
-                newPages.push(p);
-            } else {
-                regularPages.push(p);
-            }
-        });
-
-        // Use Intl.Collator with numeric: true for natural sorting (e.g., "10" > "2")
-        const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
-
-        const sortedRegular = [...regularPages].sort((a, b) => {
-            if (!activeSorts || activeSorts.length === 0) {
-                // Default: Newest on top
-                return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-            }
-
-            for (const sort of activeSorts) {
-                const valA = a.properties[sort.propertyId];
-                const valB = b.properties[sort.propertyId];
-
-                if (valA === valB) continue;
-
-                const isAsc = sort.direction === 'ascending';
-
-                // Handle nulls/empties consistently
-                if (valA === undefined || valA === null || valA === '') return isAsc ? 1 : -1;
-                if (valB === undefined || valB === null || valB === '') return isAsc ? -1 : 1;
-
-                const strA = String(valA || '').trim();
-                const strB = String(valB || '').trim();
-
-                // 1. Numerical parse attempt (only for pure numbers)
-                const cleanA = strA.replace(',', '.');
-                const cleanB = strB.replace(',', '.');
-                const valNumA = Number(cleanA);
-                const valNumB = Number(cleanB);
-                const isNumA = cleanA !== '' && !isNaN(valNumA) && isFinite(valNumA);
-                const isNumB = cleanB !== '' && !isNaN(valNumB) && isFinite(valNumB);
-
-                let result = 0;
-                if (isNumA && isNumB) {
-                    result = valNumA - valNumB;
-                } else {
-                    result = collator.compare(strA, strB);
-                }
-
-                if (result !== 0) {
-                    return isAsc ? result : -result;
-                }
-            }
-
-            return 0;
-        });
-
-        // Combine new pages at the very top (sorted newest first) followed by sorted regular pages
-        newPages.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-        const naturalSorted = [...newPages, ...sortedRegular];
-
+        // ONE ordering rule for both grids (lib/records/view-sort.ts — moved out of here unchanged).
+        const naturalSorted = sortPages(filteredPages, activeView?.sorts ?? [], Date.now());
         if (isEditing) {
-            if (!frozenPagesRef.current) {
-                frozenPagesRef.current = naturalSorted;
-            }
-            const naturalMap = new Map(naturalSorted.map(p => [p.id, p]));
-            const ordered: Page[] = [];
-
-            frozenPagesRef.current.forEach(fp => {
-                const latestPage = naturalMap.get(fp.id);
-                if (latestPage) {
-                    ordered.push(latestPage);
-                    naturalMap.delete(fp.id);
-                }
-            });
-
-            naturalMap.forEach(p => {
-                ordered.push(p);
-            });
-
-            return ordered;
-        } else {
-            frozenPagesRef.current = null;
-            return naturalSorted;
+            if (!frozenPagesRef.current) frozenPagesRef.current = naturalSorted;
+            return holdOrder(frozenPagesRef.current.map(p => p.id), naturalSorted);
         }
+        frozenPagesRef.current = null;
+        return naturalSorted;
     }, [database, filteredPages, activeView?.sorts, isEditing]);
 
     // Convert sorted filtered pages to row data by flattening properties to the top level for data-sheet-grid access

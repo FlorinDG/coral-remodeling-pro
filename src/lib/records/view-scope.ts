@@ -57,3 +57,11 @@ export const HIDDEN_BY_DEFAULT_TYPES: ReadonlySet<string> = new Set(['comments']
 export function isHiddenInView(state: { hidden?: boolean } | undefined, prop: { type?: string }): boolean {
     return state?.hidden ?? HIDDEN_BY_DEFAULT_TYPES.has(prop.type || '');
 }
+
+/** The columns a view shows, in its order: hidden ones out (the view's choice, else the type default), unknown order last. */
+export function visibleColumns<P extends { id: string; type?: string }>(properties: P[], state: ViewPropertyState[] | null | undefined): P[] {
+    const byId = new Map((state || []).map(s => [s.propertyId, s]));
+    return properties
+        .filter(p => !isHiddenInView(byId.get(p.id), p))
+        .sort((a, b) => (byId.get(a.id)?.order ?? 999) - (byId.get(b.id)?.order ?? 999));
+}

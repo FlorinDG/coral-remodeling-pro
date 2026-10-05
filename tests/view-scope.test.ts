@@ -49,3 +49,11 @@ test('the comments field starts hidden; a view that shows it shows it; other fie
     assert.equal(isHiddenInView(undefined, { type: 'text' }), false);
     assert.equal(isHiddenInView({ hidden: true }, { type: 'text' }), true);
 });
+
+import { visibleColumns } from '../src/lib/records/view-scope.ts';
+
+test('a view\'s columns: hidden out, the comments field only when shown, ordered by the view', () => {
+    const props = [{ id: 'title', type: 'text' }, { id: 'a', type: 'text' }, { id: 'b', type: 'text' }, { id: 'comments', type: 'comments' }];
+    assert.deepEqual(visibleColumns(props, [{ propertyId: 'b', order: 0 }, { propertyId: 'title', order: 1 }, { propertyId: 'a', hidden: true }]).map(p => p.id), ['b', 'title']);
+    assert.deepEqual(visibleColumns(props, [{ propertyId: 'comments', hidden: false, order: 0 }]).map(p => p.id), ['comments', 'title', 'a', 'b']);
+});

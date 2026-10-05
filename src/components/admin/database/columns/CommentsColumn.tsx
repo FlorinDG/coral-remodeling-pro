@@ -14,17 +14,16 @@ function when(iso: string): string {
     return `${p.date.slice(8, 10)}/${p.date.slice(5, 7)} ${p.time}`;
 }
 
-interface Props extends CellProps<any, any> { databaseId: string; onOpen: (pageId: string) => void }
-
-function CommentsCell({ rowData, databaseId, onOpen }: Props) {
+/** The cell's content, independent of the grid component (used by the old grid and NotionGridV2). */
+export function LatestCommentCell({ pageId, databaseId, onOpen }: { pageId: string; databaseId: string; onOpen: (pageId: string) => void }) {
     const load = useLatestComments(s => s.load);
-    const latest = useLatestComments(s => s.byDb[databaseId]?.[rowData?.id]);
+    const latest = useLatestComments(s => s.byDb[databaseId]?.[pageId]);
     useEffect(() => { load(databaseId); }, [databaseId, load]);
     return (
         <div
             className="w-full h-full px-2 flex items-center gap-1.5 text-xs cursor-pointer overflow-hidden"
-            // the grid claims a DOCUMENT mousedown and swaps the cell — act on mousedown and keep it from the grid
-            onMouseDown={(e) => { if (e.button !== 0) return; e.preventDefault(); e.stopPropagation(); onOpen(rowData.id); }}
+            // the old grid claims a DOCUMENT mousedown and swaps the cell — act on mousedown and keep it from the grid
+            onMouseDown={(e) => { if (e.button !== 0) return; e.preventDefault(); e.stopPropagation(); onOpen(pageId); }}
             title={latest ? `${latest.authorName}: ${latest.body}` : undefined}
         >
             {latest ? (
@@ -40,6 +39,12 @@ function CommentsCell({ rowData, databaseId, onOpen }: Props) {
             )}
         </div>
     );
+}
+
+interface Props extends CellProps<any, any> { databaseId: string; onOpen: (pageId: string) => void }
+
+function CommentsCell({ rowData, databaseId, onOpen }: Props) {
+    return <LatestCommentCell pageId={rowData?.id} databaseId={databaseId} onOpen={onOpen} />;
 }
 
 export const commentsColumn = (databaseId: string, onOpen: (pageId: string) => void): Column<any, any> => ({

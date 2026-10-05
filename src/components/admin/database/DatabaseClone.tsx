@@ -1,5 +1,6 @@
 "use client";
 
+import { useGridV2 } from '@/components/admin/database/v2/grid-v2-flag';
 import { surfaceKey, viewsForSurface, seedSurfaceView } from '@/lib/records/view-scope';
 import { isTenantDatabase } from '@/lib/relations/resolve';
 import React, { useEffect, useState, useMemo } from 'react';
@@ -21,6 +22,11 @@ import { getGlobalDatabases } from '@/app/actions/global-databases';
 
 const NotionGridDynamic = dynamic(
   () => import('@/components/admin/database/NotionGrid'),
+  { ssr: false, loading: () => <div className="w-full h-[600px] bg-neutral-50 dark:bg-neutral-900/50 animate-pulse rounded-b-xl border-x border-b border-neutral-200 dark:border-white/10" /> }
+);
+
+const NotionGridV2Dynamic = dynamic(
+  () => import('@/components/admin/database/v2/NotionGridV2'),
   { ssr: false, loading: () => <div className="w-full h-[600px] bg-neutral-50 dark:bg-neutral-900/50 animate-pulse rounded-b-xl border-x border-b border-neutral-200 dark:border-white/10" /> }
 );
 
@@ -81,6 +87,10 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
   const isLockedSchemaDB = role != null;
   const isStoreUngated = useDatabaseStore(state => state.isSchemaUngated(databaseId));
   const isSuperAdmin = (session?.user?.role as string) === 'SUPERADMIN' || (session?.user?.role as string) === 'PLATFORM_ADMIN';
+  // GRID-REPLACE-1: the new grid, per database, switched on by the superadmin (also while impersonating) to try it.
+  const canTryGridV2 = isSuperAdmin || !!(session?.user as { isImpersonating?: boolean } | undefined)?.isImpersonating;
+  const [gridV2Flag, setGridV2] = useGridV2(resolvedId);
+  const gridV2 = canTryGridV2 && gridV2Flag;
   const isUngated = isStoreUngated || isSuperAdmin;
 
     const handleOpenEditor = (pageId: string) => {
@@ -424,6 +434,14 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
         </Link>
       )}
 
+      {canTryGridV2 && (
+        <button type="button" onClick={() => setGridV2(!gridV2Flag)}
+                title="GRID-REPLACE-1 — het nieuwe raster voor deze database (enkel in deze browser)"
+                className={`flex items-center gap-1.5 px-3 py-1 mx-1 mb-[5px] rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors shrink-0 ${gridV2Flag ? 'bg-orange-500 text-white' : 'bg-neutral-100 dark:bg-white/5 text-neutral-500 hover:text-orange-600'}`}>
+          Raster V2 {gridV2Flag ? 'aan' : 'uit'}
+        </button>
+      )}
+
       {(!hideViewTabs && supportedViews.length > 0) && (
         <div className="flex items-end gap-1 overflow-x-auto no-scrollbar h-full pt-1">
           {supportedViews.map((view) => {
@@ -625,7 +643,10 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
         className={`flex-1 min-w-0 min-h-0 w-full h-full relative ${projectIdParam || openParam ? 'pointer-events-none' : ''}`}
         inert={projectIdParam || openParam ? true : undefined}
       >
-        {activeView.type === 'table' && <NotionGridDynamic databaseId={database.id} viewId={activeView.id} renderTabs={headerTabs} lockedSchema={isLockedSchemaDB && !isUngated && !hasDatabases} preventDelete={role === 'invoices' ? (row: Record<string, unknown>) => { const s = String((row?.properties as Record<string, unknown>)?.status || row?.status || 'opt-draft'); return s !== 'opt-draft'; } : undefined} hideFooterNew={!!hideFooterNew} hardFilter={defaultFilter} onOpenRecord={onOpenRecord} />}
+        {activeView.type === 'table' && gridV2 && (
+          <NotionGridV2Dynamic databaseId={database.id} viewId={activeView.id} hardFilter={defaultFilter} onOpenRecord={onOpenRecord} hideFooterNew={!!hideFooterNew} />
+        )}
+        {activeView.type === 'table' && !gridV2 && <NotionGridDynamic databaseId={database.id} viewId={activeView.id} renderTabs={headerTabs} lockedSchema={isLockedSchemaDB && !isUngated && !hasDatabases} preventDelete={role === 'invoices' ? (row: Record<string, unknown>) => { const s = String((row?.properties as Record<string, unknown>)?.status || row?.status || 'opt-draft'); return s !== 'opt-draft'; } : undefined} hideFooterNew={!!hideFooterNew} hardFilter={defaultFilter} onOpenRecord={onOpenRecord} />}
         {activeView.type === 'board' && <KanbanViewDynamic databaseId={database.id} viewId={activeView.id} renderTabs={headerTabs} hardFilter={defaultFilter} onOpenRecord={onOpenRecord} onOpenEditor={handleOpenEditor} />}
         {activeView.type === 'calendar' && <CalendarViewDynamic databaseId={database.id} viewId={activeView.id} renderTabs={headerTabs} />}
         {activeView.type === 'timeline' && <TimelineViewDynamic databaseId={database.id} viewId={activeView.id} renderTabs={headerTabs} />}

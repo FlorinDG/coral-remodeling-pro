@@ -254,16 +254,14 @@ function TimesheetsContent() {
             setInvoicing(false);
         }
     };
-    // TS-INV-2 · the selected hours become a draft invoice (rate typed here; one line per worker per day)
-    const [billDialog, setBillDialog] = useState(false);
-    const [billRate, setBillRate] = useState('');
+    // TS-INV-2 · the selected hours become a DRAFT invoice, one line per worker per day. No rate and no project
+    // check here (Florin 2026-10-05): price, client and project are set by a person in the invoice editor.
     const [billing, setBilling] = useState(false);
     const createInvoiceFromHours = async () => {
-        const rate = Number(billRate.replace(',', '.'));
-        if (!(rate > 0)) { toast.error(t('billError.rate_required')); return; }
+        if (billing) return;
         setBilling(true);
         try {
-            const r = await invoiceSelectedHours(Array.from(selectedEntries), rate);
+            const r = await invoiceSelectedHours(Array.from(selectedEntries));
             if (!r.ok) {
                 toast.error(t(`billError.${r.error}`, { detail: r.detail ?? '' }), { duration: 8000 });
                 return;
@@ -272,7 +270,6 @@ function TimesheetsContent() {
             // (its server fallback rebuilds an invoice WITHOUT lines and client).
             useDatabaseStore.getState().addConfirmedPage(r.page);
             toast.success(t('billCreated', { count: r.invoiced, skipped: r.skipped }));
-            setBillDialog(false);
             setSelectedEntries(new Set());
             router.push(`/admin/financials/income/invoices/${r.page.id}`);
         } catch (err) {
@@ -526,7 +523,7 @@ function TimesheetsContent() {
                         </DropdownMenu>
 
                         <Button variant="outline" className="h-10 rounded-xl border-blue-200 text-blue-700 hover:bg-blue-50 disabled:opacity-40"
-                            disabled={selectedEntries.size === 0} onClick={() => setBillDialog(true)}
+                            disabled={selectedEntries.size === 0 || billing} onClick={createInvoiceFromHours}
                             title={selectedEntries.size === 0 ? t('billSelectFirst') : undefined}>
                             <FileText className="w-4 h-4 mr-2" />
                             {t('billButton')}{selectedEntries.size > 0 ? ` (${selectedEntries.size})` : ''}
@@ -618,27 +615,7 @@ function TimesheetsContent() {
                     </div>
                 </div>
 
-                <Dialog open={billDialog} onOpenChange={setBillDialog}>
-                    <DialogContent className="max-w-md">
-                        <DialogHeader><DialogTitle>{t('billButton')}</DialogTitle></DialogHeader>
-                        <p className="text-sm text-neutral-600 dark:text-neutral-400">{t('billHint', { count: selectedEntries.size })}</p>
-                        <label className="space-y-1 block">
-                            <span className="text-xs font-semibold text-neutral-500">{t('billRate')}</span>
-                            <div className="flex items-center gap-2">
-                                <span className="text-sm text-neutral-500">€</span>
-                                <input inputMode="decimal" autoFocus value={billRate} onChange={e => setBillRate(e.target.value)}
-                                    placeholder="45,00" className="h-10 w-32 px-3 rounded-md border border-border bg-background text-base tabular-nums" />
-                                <span className="text-sm text-neutral-500">/ u {t('billExVat')}</span>
-                            </div>
-                        </label>
-                        <DialogFooter>
-                            <Button variant="outline" onClick={() => setBillDialog(false)}>{t('cancel', { fallback: 'Annuleren' })}</Button>
-                            <Button onClick={createInvoiceFromHours} disabled={billing || !billRate} className="bg-blue-600 hover:bg-blue-700 text-white">
-                                {billing && <Loader2 className="w-4 h-4 animate-spin mr-1" />}{t('billCreate')}
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                {/* TS-INV-2: no rate dialog — the draft opens in the invoice editor, priced there by a person. */}
 
                 <Dialog open={invoiceDialog} onOpenChange={setInvoiceDialog}>
                     <DialogContent className="max-w-md">

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
-import prisma from "@/lib/prisma";
+import { scopeFromSession } from "@/lib/data/scope";
 
 export async function GET(req: NextRequest) {
     const session = await auth();
@@ -28,11 +28,13 @@ export async function GET(req: NextRequest) {
         ]
     };
 
+    const db = await scopeFromSession();
+
     if (status === 'unread') {
         where.readAt = null;
     }
 
-    const items = await prisma.notification.findMany({
+    const items = await db.notification.findMany({
         where,
         take: limit + 1,
         ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
@@ -48,14 +50,14 @@ export async function GET(req: NextRequest) {
     let unreadCount = 0;
     if (status === 'unread') {
         unreadCount = items.length; // Approximate if over limit, but let's do a real count
-        unreadCount = await prisma.notification.count({
+        unreadCount = await db.notification.count({
             where: {
                 ...where,
                 readAt: null
             }
         });
     } else {
-        unreadCount = await prisma.notification.count({
+        unreadCount = await db.notification.count({
             where: {
                 ...where,
                 readAt: null

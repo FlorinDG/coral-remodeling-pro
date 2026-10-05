@@ -185,8 +185,6 @@ const eslintConfig = defineConfig([
       "src/app/api/hr/timesheet-reports/route.ts",
       "src/app/api/integrations/parse-pdf/route.ts",
       "src/app/api/leads/route.ts",
-      "src/app/api/notifications/mark-read/route.ts",
-      "src/app/api/notifications/route.ts",
       "src/app/api/peppol/inbox/*id*/route.ts",
       "src/app/api/peppol/inbox/route.ts",
       "src/app/api/peppol/onboard/route.ts",

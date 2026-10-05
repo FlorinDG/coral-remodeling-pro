@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
-import prisma from "@/lib/prisma";
+import { scopeFromSession } from "@/lib/data/scope";
 
 export async function POST(req: NextRequest) {
     const session = await auth();
@@ -13,6 +13,8 @@ export async function POST(req: NextRequest) {
     if (!tenantId || !userId) {
         return new NextResponse("Unauthorized", { status: 401 });
     }
+
+    const db = await scopeFromSession();
 
     const body = await req.json().catch(() => ({}));
     const { ids, entityId, all } = body;
@@ -36,7 +38,7 @@ export async function POST(req: NextRequest) {
         return new NextResponse("Bad Request", { status: 400 });
     }
 
-    await prisma.notification.updateMany({
+    await db.notification.updateMany({
         where,
         data: {
             readAt: new Date()

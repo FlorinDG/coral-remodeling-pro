@@ -30,3 +30,22 @@ export function seedSurfaceView<V extends ScopedView>(views: V[] | null | undefi
     if (!base) return null;
     return { ...base, id: newId, surface, filters: [], sorts: [] };
 }
+
+// ── Decision A (Florin 2026-10-05): the SCHEMA decides which fields exist; each VIEW decides order and visibility ──
+
+export interface ViewPropertyState { propertyId: string; hidden?: boolean; order?: number; width?: number }
+export interface ViewWithState { id: string; name?: string; surface?: string | null; propertiesState?: ViewPropertyState[] }
+
+/** The views (names) in which a field is hidden — shown next to the field on the schema page. */
+export function hiddenIn(views: ViewWithState[] | null | undefined, propertyId: string): string[] {
+    return (views || []).filter(v => (v.propertiesState || []).some(ps => ps.propertyId === propertyId && ps.hidden)).map(v => v.name || v.id);
+}
+
+/**
+ * A view's column state in the SCHEMA's order — "apply the schema order to this view". Hidden flags and any other
+ * per-column state (width…) are kept; fields the view did not know yet come in visible.
+ */
+export function schemaOrderFor(view: ViewWithState, schemaIds: string[]): ViewPropertyState[] {
+    const byId = new Map((view.propertiesState || []).map(ps => [ps.propertyId, ps]));
+    return schemaIds.map((id, i) => ({ ...(byId.get(id) || {}), propertyId: id, hidden: byId.get(id)?.hidden ?? false, order: i }));
+}

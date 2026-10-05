@@ -362,8 +362,8 @@ export async function getGlobalPageIndex(): Promise<PageIndexEntry[]> {
 
 
 /**
- * Upserts a Database configuration (its schema, properties, views).
- * Does not mutate pages.
+ * Creates a database (its schema, properties, views) when it does not exist yet. CREATE-ONLY since DB-DEF-1:
+ * an existing database is never overwritten here. Does not mutate pages.
  */
 export async function saveGlobalDatabase(db: Database) {
     const session = await auth();
@@ -378,6 +378,9 @@ export async function saveGlobalDatabase(db: Database) {
         if (existing && existing.tenantId !== tenantId) {
             return { success: false, error: 'Unauthorized' };
         }
+        // DB-DEF-1 (2026-10-05): CREATE-ONLY. An existing database's definition changes by operations
+        // (app/actions/database-definition.ts) — this whole-definition write let any stale screen undo newer edits.
+        if (existing) return { success: true, created: false };
 
         await prisma.globalDatabase.upsert({
             where: { id: safeId(db.id) },

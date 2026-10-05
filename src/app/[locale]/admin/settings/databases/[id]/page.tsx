@@ -13,6 +13,8 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import FormulaEditorModal from '@/components/admin/database/components/FormulaEditorModal';
 import { BASE_TO_KEY, SYSTEM_DATABASES } from '@/lib/kernel/system-databases';
+import { canonicalFieldIds } from '@/lib/kernel/system-schemas';
+import { hiddenIn, schemaOrderFor } from '@/lib/records/view-scope';
 import SearchableSelect from '@/components/ui/SearchableSelect';
 import { useSession } from 'next-auth/react';
 import { useTenant } from '@/context/TenantContext';
@@ -122,18 +124,14 @@ export default function DatabaseConfigurator() {
     const isStoreUngated = useDatabaseStore(state => state.isSchemaUngated(databaseId));
     const isUngated = isStoreUngated || isSuperadmin;
 
-    // In ungated mode: system properties are those originally defined in the canonical schema.
-    // We detect them by checking if they appear before any custom property was added.
-    // For simplicity: if the DB is system & ungated, all properties known to DEFAULT_PROPERTIES_MAP
-    // in DatabaseClone are "canonical". We approximate by storing canonical IDs at first access.
+    // The system fields are the KERNEL's canonical list for this database's role — the same list the server
+    // door enforces (DB-DEF-1). It was guessed from the id's shape, which marked CRM's UUID fields as custom.
     const canonicalPropertyIds = React.useMemo(() => {
         if (!isSchemaLocked || !isUngated || !database) return new Set<string>();
-        // All property IDs that are NOT uuid-formatted (user-generated via addProperty) are canonical
-        // This works because addProperty generates uuid v4 IDs, while system properties use
-        // readable IDs like 'title', 'status', 'prop-inv-amount', etc.
-        const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-        return new Set(database.properties.filter(p => !uuidPattern.test(p.id)).map(p => p.id));
-    }, [isSchemaLocked, isUngated, database]);
+        const role = database.logicalKey || (databaseId in BASE_TO_KEY ? BASE_TO_KEY[databaseId] : null);
+        return canonicalFieldIds(role ? SYSTEM_DATABASES[role].legacyBase : null);
+    }, [isSchemaLocked, isUngated, database, databaseId]);
+    const updateView = useDatabaseStore(state => state.updateView);
 
     if (!database) {
         return (
@@ -218,6 +216,24 @@ export default function DatabaseConfigurator() {
 
             {/* Configurator Table */}
             <div className="flex-1 overflow-auto p-8">
+                {/* Decision A (Florin 2026-10-05): the schema decides WHICH fields exist; every view decides their
+                    order and visibility. A view can take the schema's order here (hidden columns stay hidden). */}
+                {database.views.length > 0 && (
+                    <div className="mb-4 flex flex-wrap items-center gap-2 text-xs">
+                        <span className="font-bold text-neutral-500 uppercase tracking-wider text-[10px]">Weergaven</span>
+                        {database.views.map(v => (
+                            <button
+                                key={v.id}
+                                type="button"
+                                onClick={() => updateView(databaseId, v.id, { propertiesState: schemaOrderFor(v, database.properties.map(p => p.id)) as never })}
+                                className="px-2.5 py-1 rounded-lg border border-neutral-200 dark:border-white/10 hover:border-orange-400 hover:text-orange-600 transition-colors"
+                                title="Kolomvolgorde van het schema toepassen op deze weergave (verborgen kolommen blijven verborgen)"
+                            >
+                                {v.name}{v.surface ? ` · ${v.surface}` : ''} — schemavolgorde toepassen
+                            </button>
+                        ))}
+                    </div>
+                )}
                 <DragDropContext onDragEnd={handleDragEnd}>
                     <Droppable droppableId="properties">
                         {(provided) => (
@@ -319,6 +335,9 @@ export default function DatabaseConfigurator() {
                                                                             {isCanonical && <span className="text-[9px] px-1.5 py-0.5 rounded bg-neutral-100 text-neutral-500 dark:bg-white/5 dark:text-neutral-400 font-bold uppercase tracking-wider whitespace-nowrap flex items-center gap-0.5"><Lock className="w-2.5 h-2.5" /> System</span>}
                                                                         </div>
                                                                         <span className="text-[9px] text-neutral-400 font-mono pl-1">ID: {prop.id}</span>
+                                                                        {hiddenIn(database.views, prop.id).length > 0 && (
+                                                                            <span className="ml-2 text-[9px] text-amber-600 dark:text-amber-400">verborgen in: {hiddenIn(database.views, prop.id).join(', ')}</span>
+                                                                        )}
                                                                     </div>
                                                                 </div>
                                                             </td>

@@ -7,6 +7,8 @@ import { get, set, del } from 'idb-keyval';
 import { v4 as uuidv4 } from 'uuid';
 import { mintDatabaseId } from '@/lib/database-identity';
 import { Database, Page, Property, PropertyValue, PropertyType, PropertyConfig, FilterRule, SortRule, Block, DatabaseView, ViewPropertyState, PageIndexEntry } from './types';
+import { changeDatabaseDefinition } from '@/app/actions/database-definition';
+import { diffDefinition, type Definition } from '@/lib/records/database-definition';
 import { saveGlobalDatabase, saveGlobalPage, saveGlobalPagesBatch, deleteGlobalDatabase, deleteGlobalPage, getDatabasePages } from '@/app/actions/global-databases';
 import { generateOGM } from '@/lib/ogm';
 import { toast } from 'sonner';
@@ -19,13 +21,62 @@ export function extractPageTitle(properties: Record<string, any> | undefined): s
 }
 
 // Helper to fire-and-forget syncs to Postgres without blocking UI
-const syncDb = (db: Database | undefined) => {
-    if (db) saveGlobalDatabase(db).catch((err) => {
-        console.error(err);
-        toast.error('Failed to save database configuration');
-    });
+/**
+ * DB-DEF-1 · a definition change (fields, views, name) goes to the server as OPERATIONS — the difference between
+ * the database before and after this action (lib/records/database-definition) — never the whole definition, which
+ * let any screen holding an older copy undo newer edits (Florin 2026-10-05: schema settings "don't get applied").
+ * Saves for one database run in order; the server's definition is taken back once no newer change is pending.
+ * A refused or failed save says so.
+ */
+const definitionOf = (db: Database): Definition => ({
+    name: db.name, description: db.description ?? null, icon: db.icon ?? null, coverImage: db.coverImage ?? null,
+    properties: db.properties as unknown as Definition['properties'],
+    views: db.views as unknown as Definition['views'],
+});
+const definitionChain = new Map<string, Promise<void>>();
+const definitionPending = new Map<string, number>();
+const REFUSAL_TEXT: Record<string, string> = {
+    canonical_field_delete: 'een systeemveld kan niet verwijderd worden',
+    canonical_field_retype: 'het type van een systeemveld kan niet veranderd worden',
+    title_field: 'het titelveld kan niet verwijderd worden',
+    last_view: 'de laatste weergave kan niet verwijderd worden',
+    invalid: 'ongeldige wijziging',
 };
-
+const syncDb = (prev: Database | undefined, next: Database | undefined) => {
+    if (!prev || !next || prev.id !== next.id) return;
+    const ops = diffDefinition(definitionOf(prev), definitionOf(next));
+    if (!ops.length) return;
+    const id = next.id;
+    definitionPending.set(id, (definitionPending.get(id) || 0) + 1);
+    const run = async () => {
+        let res: Awaited<ReturnType<typeof changeDatabaseDefinition>> | null = null;
+        try { res = await changeDatabaseDefinition(id, ops); }
+        catch (err) { console.error('[DB-DEF-1] save failed', err); }
+        const left = (definitionPending.get(id) || 1) - 1;
+        definitionPending.set(id, left);
+        if (!res || !res.ok) {
+            toast.error(`Instellingen van de database niet opgeslagen${res && !res.ok ? ` — ${res.error}` : ''}`);
+            return;
+        }
+        if (res.refused.length) toast.error(`Niet toegepast: ${Array.from(new Set(res.refused.map(r => REFUSAL_TEXT[r.reason] || r.reason))).join(', ')}`);
+        if (left > 0) return;   // a newer local change is on its way — its answer will carry the server's state
+        const d = res.definition;
+        useDatabaseStore.setState(s => ({
+            databases: s.databases.map(db => db.id === id ? {
+                ...db,
+                name: d.name ?? db.name,
+                description: d.description ?? null,
+                icon: d.icon ?? null,
+                coverImage: d.coverImage ?? null,
+                properties: d.properties as unknown as Property[],
+                views: d.views as unknown as DatabaseView[],
+                updatedAt: res!.ok ? res!.updatedAt : db.updatedAt,
+            } : db),
+        }));
+    };
+    const chained = (definitionChain.get(id) || Promise.resolve()).then(run, run);
+    definitionChain.set(id, chained);
+};
 
 /** Is `id` this tenant's database for `base` ('db-invoices' / 'invoices')? The ONE rule (kernel playsSystemRole
  *  via resolve.isTenantDatabase): base → role, bound id → role by the binding, else the database's logicalKey. */
@@ -895,16 +946,17 @@ export const useDatabaseStore = create<DatabaseState>()(
                 };
 
                 set((state) => ({ databases: [...state.databases, newDatabase] }));
-                syncDb(newDatabase);
+                // A NEW database: created once (saveGlobalDatabase is create-only); its later changes go as operations.
+                saveGlobalDatabase(newDatabase).catch((err) => { console.error(err); toast.error('Database kon niet aangemaakt worden'); });
                 return newDatabase;
             },
 
             updateDatabase: (id, updates) => {
+                const prev = get().databases.find(d => d.id === id);
                 set((state) => ({
                     databases: state.databases.map(db => db.id === id ? { ...db, ...updates, updatedAt: new Date().toISOString() } : db)
                 }));
-                const updated = get().databases.find(d => d.id === id);
-                if (updated) syncDb(updated);
+                syncDb(prev, get().databases.find(d => d.id === id));
             },
 
             updateDatabaseOrder: (sourceIndex, destinationIndex) => {
@@ -1000,6 +1052,7 @@ export const useDatabaseStore = create<DatabaseState>()(
             // --- VIEW OPERATIONS ---
 
             addView: (databaseId, view) => {
+                const prev = get().databases.find(d => d.id === databaseId);
                 set((state) => ({
                     databases: state.databases.map(db => {
                         if (db.id === databaseId) {
@@ -1009,10 +1062,11 @@ export const useDatabaseStore = create<DatabaseState>()(
                         return db;
                     })
                 }));
-                syncDb(get().databases.find(d => d.id === databaseId));
+                syncDb(prev, get().databases.find(d => d.id === databaseId));
             },
 
             updateView: (databaseId, viewId, updates) => {
+                const prev = get().databases.find(d => d.id === databaseId);
                 set((state) => ({
                     databases: state.databases.map(db => {
                         if (db.id === databaseId && db.views) {
@@ -1024,10 +1078,11 @@ export const useDatabaseStore = create<DatabaseState>()(
                         return db;
                     })
                 }));
-                syncDb(get().databases.find(d => d.id === databaseId));
+                syncDb(prev, get().databases.find(d => d.id === databaseId));
             },
 
             updateViewPropertyState: (databaseId, viewId, propertyId, updates) => {
+                const prev = get().databases.find(d => d.id === databaseId);
                 set((state) => ({
                     databases: state.databases.map(db => {
                         if (db.id === databaseId && db.views) {
@@ -1056,10 +1111,11 @@ export const useDatabaseStore = create<DatabaseState>()(
                         return db;
                     })
                 }));
-                syncDb(get().databases.find(d => d.id === databaseId));
+                syncDb(prev, get().databases.find(d => d.id === databaseId));
             },
 
             updateViewPropertyOrder: (databaseId, viewId, sourceIndex, destinationIndex) => {
+                const prev = get().databases.find(d => d.id === databaseId);
                 set((state) => ({
                     databases: state.databases.map(db => {
                         if (db.id === databaseId && db.views) {
@@ -1096,10 +1152,11 @@ export const useDatabaseStore = create<DatabaseState>()(
                         return db;
                     })
                 }));
-                syncDb(get().databases.find(d => d.id === databaseId));
+                syncDb(prev, get().databases.find(d => d.id === databaseId));
             },
 
             deleteView: (databaseId, viewId) => {
+                const prev = get().databases.find(d => d.id === databaseId);
                 set((state) => ({
                     databases: state.databases.map(db => {
                         if (db.id === databaseId && db.views) {
@@ -1109,11 +1166,12 @@ export const useDatabaseStore = create<DatabaseState>()(
                         return db;
                     })
                 }));
-                syncDb(get().databases.find(d => d.id === databaseId));
+                syncDb(prev, get().databases.find(d => d.id === databaseId));
             },
 
             // Property Operations
             addProperty: (databaseId, name, type, config) => {
+                const prev = get().databases.find(d => d.id === databaseId);
                 const newId = uuidv4();
                 set((state) => ({
                     databases: state.databases.map(db => {
@@ -1126,11 +1184,12 @@ export const useDatabaseStore = create<DatabaseState>()(
                         };
                     })
                 }));
-                syncDb(get().databases.find(d => d.id === databaseId));
+                syncDb(prev, get().databases.find(d => d.id === databaseId));
                 return newId;
             },
 
             updateProperty: (databaseId, propertyId, updates) => {
+                const prev = get().databases.find(d => d.id === databaseId);
                 set((state) => ({
                     databases: state.databases.map(db => {
                         if (db.id !== databaseId) return db;
@@ -1141,10 +1200,11 @@ export const useDatabaseStore = create<DatabaseState>()(
                         };
                     })
                 }));
-                syncDb(get().databases.find(d => d.id === databaseId));
+                syncDb(prev, get().databases.find(d => d.id === databaseId));
             },
 
             deleteProperty: (databaseId, propertyId) => {
+                const prev = get().databases.find(d => d.id === databaseId);
                 set((state) => ({
                     databases: state.databases.map(db => {
                         if (db.id !== databaseId) return db;
@@ -1155,10 +1215,11 @@ export const useDatabaseStore = create<DatabaseState>()(
                         };
                     })
                 }));
-                syncDb(get().databases.find(d => d.id === databaseId));
+                syncDb(prev, get().databases.find(d => d.id === databaseId));
             },
 
             updatePropertyOrder: (databaseId, sourceIndex, destinationIndex) => {
+                const prev = get().databases.find(d => d.id === databaseId);
                 set((state) => ({
                     databases: state.databases.map(db => {
                         if (db.id !== databaseId) return db;
@@ -1174,10 +1235,11 @@ export const useDatabaseStore = create<DatabaseState>()(
                         };
                     })
                 }));
-                syncDb(get().databases.find(d => d.id === databaseId));
+                syncDb(prev, get().databases.find(d => d.id === databaseId));
             },
 
             updatePropertyOptionOrder: (databaseId, propertyId, sourceIndex, destinationIndex) => {
+                const prev = get().databases.find(d => d.id === databaseId);
                 set((state) => ({
                     databases: state.databases.map(db => {
                         if (db.id !== databaseId) return db;
@@ -1196,7 +1258,7 @@ export const useDatabaseStore = create<DatabaseState>()(
                         };
                     })
                 }));
-                syncDb(get().databases.find(d => d.id === databaseId));
+                syncDb(prev, get().databases.find(d => d.id === databaseId));
             },
 
             createPage: (databaseId, initialProperties = {}, customId, initialBlocks) => {
@@ -1938,6 +2000,7 @@ export const useDatabaseStore = create<DatabaseState>()(
             },
 
             addFilter: (databaseId, viewId, filter) => {
+                const prev = get().databases.find(d => d.id === databaseId);
                 set((state) => ({
                     databases: state.databases.map(db => {
                         if (db.id !== databaseId) return db;
@@ -1949,10 +2012,11 @@ export const useDatabaseStore = create<DatabaseState>()(
                             };
                     })
                 }));
-                syncDb(get().databases.find(d => d.id === databaseId));
+                syncDb(prev, get().databases.find(d => d.id === databaseId));
             },
 
             updateFilter: (databaseId, viewId, filterId, updates) => {
+                const prev = get().databases.find(d => d.id === databaseId);
                 set((state) => ({
                     databases: state.databases.map(db => {
                         if (db.id !== databaseId) return db;
@@ -1964,10 +2028,11 @@ export const useDatabaseStore = create<DatabaseState>()(
                             };
                     })
                 }));
-                syncDb(get().databases.find(d => d.id === databaseId));
+                syncDb(prev, get().databases.find(d => d.id === databaseId));
             },
 
             removeFilter: (databaseId, viewId, filterId) => {
+                const prev = get().databases.find(d => d.id === databaseId);
                 set((state) => ({
                     databases: state.databases.map(db => {
                         if (db.id !== databaseId) return db;
@@ -1979,10 +2044,11 @@ export const useDatabaseStore = create<DatabaseState>()(
                             };
                     })
                 }));
-                syncDb(get().databases.find(d => d.id === databaseId));
+                syncDb(prev, get().databases.find(d => d.id === databaseId));
             },
 
             clearFilters: (databaseId, viewId) => {
+                const prev = get().databases.find(d => d.id === databaseId);
                 set((state) => ({
                     databases: state.databases.map(db => {
                         if (db.id !== databaseId) return db;
@@ -1994,10 +2060,11 @@ export const useDatabaseStore = create<DatabaseState>()(
                             };
                     })
                 }));
-                syncDb(get().databases.find(d => d.id === databaseId));
+                syncDb(prev, get().databases.find(d => d.id === databaseId));
             },
 
             addSort: (databaseId, viewId, sort) => {
+                const prev = get().databases.find(d => d.id === databaseId);
                 set((state) => ({
                     databases: state.databases.map(db => {
                         if (db.id !== databaseId) return db;
@@ -2009,10 +2076,11 @@ export const useDatabaseStore = create<DatabaseState>()(
                             };
                     })
                 }));
-                syncDb(get().databases.find(d => d.id === databaseId));
+                syncDb(prev, get().databases.find(d => d.id === databaseId));
             },
 
             updateSort: (databaseId, viewId, sortId, updates) => {
+                const prev = get().databases.find(d => d.id === databaseId);
                 set((state) => ({
                     databases: state.databases.map(db => {
                         if (db.id !== databaseId) return db;
@@ -2024,10 +2092,11 @@ export const useDatabaseStore = create<DatabaseState>()(
                             };
                     })
                 }));
-                syncDb(get().databases.find(d => d.id === databaseId));
+                syncDb(prev, get().databases.find(d => d.id === databaseId));
             },
 
             removeSort: (databaseId, viewId, sortId) => {
+                const prev = get().databases.find(d => d.id === databaseId);
                 set((state) => ({
                     databases: state.databases.map(db => {
                         if (db.id !== databaseId) return db;
@@ -2039,10 +2108,11 @@ export const useDatabaseStore = create<DatabaseState>()(
                             };
                     })
                 }));
-                syncDb(get().databases.find(d => d.id === databaseId));
+                syncDb(prev, get().databases.find(d => d.id === databaseId));
             },
 
             clearSorts: (databaseId, viewId) => {
+                const prev = get().databases.find(d => d.id === databaseId);
                 set((state) => ({
                     databases: state.databases.map(db => {
                         if (db.id !== databaseId) return db;
@@ -2054,7 +2124,7 @@ export const useDatabaseStore = create<DatabaseState>()(
                             };
                     })
                 }));
-                syncDb(get().databases.find(d => d.id === databaseId));
+                syncDb(prev, get().databases.find(d => d.id === databaseId));
             },
 
             // Schema Ungating — superadmin-controlled custom properties on system DBs

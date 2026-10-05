@@ -4,7 +4,6 @@ import { surfaceKey, viewsForSurface, seedSurfaceView } from '@/lib/records/view
 import { isTenantDatabase } from '@/lib/relations/resolve';
 import React, { useEffect, useState, useMemo } from 'react';
 import dynamic from 'next/dynamic';
-import { canonicalSchemas } from '@/lib/kernel/system-schemas';
 import { useDatabaseStore } from '@/components/admin/database/store';
 import { LayoutGrid, Table2, Calendar as CalendarIcon, Plus, GanttChartSquare, Settings, Clock, ChevronDown, Edit, Trash2 } from 'lucide-react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
@@ -267,37 +266,11 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
     return () => document.removeEventListener('mousedown', handleClick);
   }, [viewMenuOpenId]);
 
-  // ── Default hardcoded property schemas for free-tier CRM databases ──
-  const DEFAULT_PROPERTIES_MAP: Record<string, Property[]> = useMemo(() => canonicalSchemas(resolveDbId) as unknown as Record<string, Property[]>, [resolveDbId]);
-
-  // ── Schema Enforcement: Ensure locked databases have the correct hardcoded properties ──
+  // ── View defaults on first open (views only — never fields). The fields of a system database are the KERNEL's,
+  // reconciled on the server at every layout load (KERN-SCHEMA-1); the browser-side copy of that enforcement that
+  // lived here (missing canonical fields, the accountantExportedAt type) is deleted — DB-DEF-1, 2026-10-05.
   useEffect(() => {
     if (!hydrated || !database) return;
-    const expectedProps = DEFAULT_PROPERTIES_MAP[databaseId]; // lookup by base ID
-    if (!expectedProps) return;
-    if (!isLockedSchemaDB) return;
-
-    // We only enforce that canonical properties EXIST. 
-    // We NEVER overwrite their name, type, or config, and we NEVER delete custom properties.
-    // This allows Superadmins to safely customize system schemas without regular users' browsers reverting them.
-    const currentIds = new Set(database.properties.map(p => p.id));
-    const missingProps = expectedProps.filter((expected: Property) => !currentIds.has(expected.id));
-
-    if (missingProps.length > 0) {
-      console.log(`[Schema Enforcement] ${resolvedId}: adding ${missingProps.length} missing canonical properties`);
-      const updatedProperties = [...database.properties, ...missingProps];
-      useDatabaseStore.getState().updateDatabase(resolvedId, { properties: updatedProperties });
-    }
-
-    // Force 'accountantExportedAt' to be a checkbox if it exists but has a different type (legacy migration)
-    const accountantProp = database.properties.find(p => p.id === 'accountantExportedAt');
-    if (accountantProp && accountantProp.type !== 'checkbox') {
-      console.log(`[Schema Enforcement] Updating ${resolvedId} property accountantExportedAt to type checkbox`);
-      const updatedProperties = database.properties.map(p => 
-        p.id === 'accountantExportedAt' ? { ...p, type: 'checkbox' as const } : p
-      );
-      useDatabaseStore.getState().updateDatabase(resolvedId, { properties: updatedProperties });
-    }
 
     // Seed default hidden columns ONCE per view, flagging defaultPropsSeeded: true
     // on both paths (seeded vs already configured) so absence of state is never re-inferred.
@@ -371,7 +344,7 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
         });
       }
     }
-  }, [hydrated, database, databaseId, resolvedId, isLockedSchemaDB, isUngated, DEFAULT_PROPERTIES_MAP, locale, resolveDbId]);
+  }, [hydrated, database, resolvedId]);
 
 
   // ── Self-healing: if the store doesn't have this DB after hydration,

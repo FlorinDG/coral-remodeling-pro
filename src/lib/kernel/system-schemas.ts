@@ -528,3 +528,13 @@ export function canonicalSchemas(resolveDbId: (base: string) => string): Record<
   ],
 });
 }
+
+/**
+ * The canonical field ids of a system database, by its legacy base ('db-crm') — the fields a tenant can never
+ * delete or retype (DB-DEF-1: the server door and the schema page read the same list; the page used to guess
+ * them from the id's shape, which failed for the databases whose canonical ids are UUIDs, e.g. CRM).
+ */
+export function canonicalFieldIds(legacyBase: string | null | undefined): Set<string> {
+    if (!legacyBase) return new Set();
+    return new Set((canonicalSchemas(b => b)[legacyBase] || []).map(p => p.id));
+}

@@ -14,7 +14,7 @@
  * Rules: lib/records/view-sort.ts, grid-cell.ts, view-scope.ts — shared with the old grid, never copied.
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useReactTable, getCoreRowModel, flexRender, type ColumnDef } from '@tanstack/react-table';
+import { useReactTable, getCoreRowModel, type ColumnDef, type CellContext, type HeaderContext } from '@tanstack/react-table';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { Lock, Maximize2, Plus, Trash2, Download, Upload, CheckCircle2, WrapText } from 'lucide-react';
 import { useTranslations } from 'next-intl';
@@ -37,7 +37,7 @@ import { collectRollup, applyRollupAggregation, locatorOf } from '@/lib/records/
 import { evaluateFormula } from '../formulaEngine';
 import { sortPages, holdOrder } from '@/lib/records/view-sort';
 import { visibleColumns, moveColumn, setColumnWidth } from '@/lib/records/view-scope';
-import { isTextEditable, parseCellInput, cellText, cellChanged, parseClipboardGrid, pasteValue } from '@/lib/records/grid-cell';
+import { isTextEditable, parseCellInput, cellText, cellDisplay, NUMERIC_TYPES, cellChanged, parseClipboardGrid, pasteValue } from '@/lib/records/grid-cell';
 import { resolveRelationTitle } from '@/lib/relations/resolve';
 import { useSession } from 'next-auth/react';
 import { useTenant } from '@/context/TenantContext';
@@ -57,11 +57,13 @@ interface Props {
     preventDelete?: boolean | ((row: Page) => boolean);
     /** A system database's fields are the kernel's — no CSV import of new columns (same as the old grid). */
     lockedSchema?: boolean;
+    /** The screen's header — view tabs, schema link, the V2 switch (DatabaseClone) — same slot as the old grid's. */
+    renderTabs?: React.ReactNode;
 }
 
 type Editing = { pageId: string; propId: string; text: string } | null;
 
-export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRecord, hideFooterNew, preventDelete, lockedSchema }: Props) {
+export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRecord, hideFooterNew, preventDelete, lockedSchema, renderTabs }: Props) {
     const database = useDatabaseStore(s => s.databases.find(d => d.id === databaseId));
     const allDatabases = useDatabaseStore(s => s.databases);
     const updatePageProperty = useDatabaseStore(s => s.updatePageProperty);
@@ -100,6 +102,7 @@ export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRec
         if (database && activeView) updateView(database.id, activeView.id, { propertiesState: next });   // → DB-DEF-1 view op
     }, [database, activeView, updateView]);
     const [dragCol, setDragCol] = useState<string | null>(null);
+    const [dropCol, setDropCol] = useState<string | null>(null);
     // The resize handle sits inside the draggable header: while it is held, the header's drag is refused (the column
     // drag used to start instead and cancel the pointer — resize never worked).
     const resizing = useRef(false);
@@ -128,7 +131,7 @@ export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRec
         const page = database.pages.find(p => p.id === e.pageId);
         if (!prop || !page) return;
         const parsed = parseCellInput(prop as never, e.text);
-        if (!parsed.ok) { toast.error(`${prop.name}: geen getal`); return; }
+        if (!parsed.ok) { toast.error(`${prop.name}: ${parsed.reason === 'not_an_email' ? 'geen geldig e-mailadres' : 'geen getal'}`); return; }
         if (!cellChanged(page.properties[prop.id], parsed.value)) return;
         updatePageProperty(database.id, page.id, prop.id, parsed.value as never);
     }, [database, updatePageProperty]);
@@ -161,6 +164,9 @@ export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRec
         id: prop.id,
         header: () => <span className="truncate">{tAdmin.has(`db.col.${prop.id}`) ? tAdmin(`db.col.${prop.id}` as never) : prop.name}</span>,   // the old grid's ColumnHeader convention
         size: widthOf(prop.id),
+        // Called as a FUNCTION below, never through flexRender: flexRender mounts it as a component, and this function is
+        // new on every store change — every cell remounted, so the click that ended an edit landed on a node that no
+        // longer existed (Florin: "some rows need two clicks"; a select's open list closed by itself).
         cell: ({ row }) => {
             const page = row.original;
             const value = page.properties[prop.id];
@@ -217,11 +223,11 @@ export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRec
                 const axes = Array.isArray(value) ? (value as Array<{ name?: string }>) : [];
                 return <div className="w-full h-full px-2 flex items-center text-xs text-neutral-500 truncate">{axes.map(a => a.name).filter(Boolean).join(' · ') || '—'}</div>;
             }
-            const text = cellText(prop as never, value, id => resolveRelationTitle(id));
+            const text = cellDisplay(prop as never, value, id => resolveRelationTitle(id));
             const editable = isTextEditable(prop as never);
             return (
                 <div
-                    className={`w-full h-full px-2 flex gap-1 text-sm ${wrap ? 'items-start py-2' : 'items-center truncate'} ${editable ? 'cursor-text' : 'text-neutral-600 dark:text-neutral-400'}`}
+                    className={`w-full h-full px-2 flex gap-1 text-sm ${wrap ? 'items-start py-2' : 'items-center truncate'} ${NUMERIC_TYPES.has(prop.type) ? 'justify-end tabular-nums' : ''} ${editable ? 'cursor-text' : 'text-neutral-600 dark:text-neutral-400'}`}
                     onClick={() => { if (editable) startEdit(page, prop); }}
                 >
                     <span className={`${wrap ? 'whitespace-pre-wrap break-words min-w-0' : 'truncate'} ${prop.id === 'title' ? 'font-medium' : ''}`}>{text}</span>
@@ -261,6 +267,11 @@ export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRec
 
     return (
         <div className="flex flex-col h-full min-h-0 border border-neutral-200 dark:border-white/10 rounded-b-xl overflow-hidden bg-white dark:bg-black">
+            {renderTabs && (
+                <div className="px-3 pt-2.5 border-b border-neutral-200 dark:border-white/10 bg-neutral-50 dark:bg-neutral-900 flex items-end relative z-[60]">
+                    <div className="flex items-end pr-2 min-w-0 overflow-x-auto no-scrollbar">{renderTabs}</div>
+                </div>
+            )}
             {/* Toolbar — the same components as the old grid (no copies); DB-HEADER-1 moves them into the one header. */}
             <div className="flex items-center gap-2 px-2 py-1.5 border-b border-neutral-200 dark:border-white/10">
                 <span className="text-[10px] font-bold uppercase tracking-widest text-orange-600">Raster V2</span>
@@ -381,11 +392,16 @@ export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRec
                             <div key={h.id} style={{ width: widthOf(h.id) }}
                                  draggable
                                  onDragStart={e => { if (resizing.current) { e.preventDefault(); return; } setDragCol(h.id); e.dataTransfer.effectAllowed = 'move'; }}
-                                 onDragOver={e => { if (dragCol && dragCol !== h.id) e.preventDefault(); }}
-                                 onDrop={e => { e.preventDefault(); if (dragCol) saveColumns(moveColumn(activeView?.propertiesState, columns.map(c => c.id), dragCol, h.id)); setDragCol(null); }}
-                                 onDragEnd={() => setDragCol(null)}
-                                 className={`relative shrink-0 h-9 px-2 flex items-center border-r border-neutral-200 dark:border-white/5 cursor-grab select-none ${dragCol === h.id ? 'opacity-40' : ''}`}>
-                                {flexRender(h.column.columnDef.header, h.getContext())}
+                                 onDragOver={e => { if (dragCol && dragCol !== h.id) { e.preventDefault(); if (dropCol !== h.id) setDropCol(h.id); } }}
+                                 onDragLeave={() => { if (dropCol === h.id) setDropCol(null); }}
+                                 onDrop={e => { e.preventDefault(); if (dragCol) saveColumns(moveColumn(activeView?.propertiesState, columns.map(c => c.id), dragCol, h.id)); setDragCol(null); setDropCol(null); }}
+                                 onDragEnd={() => { setDragCol(null); setDropCol(null); }}
+                                 className={`relative shrink-0 h-9 px-2 flex items-center border-r border-neutral-200 dark:border-white/5 cursor-grab select-none ${dragCol === h.id ? 'opacity-40' : ''} ${dragCol && dropCol === h.id ? 'bg-orange-50 dark:bg-orange-500/10' : ''}`}>
+                                {/* where the column lands: the side it is inserted on (moveColumn takes the target's place) */}
+                                {dragCol && dropCol === h.id && (
+                                    <span aria-hidden className={`absolute top-0 bottom-0 w-0.5 bg-orange-500 ${columns.findIndex(c => c.id === dragCol) < columns.findIndex(c => c.id === h.id) ? 'right-0' : 'left-0'}`} />
+                                )}
+                                {(h.column.columnDef.header as (c: HeaderContext<Page, unknown>) => React.ReactNode)(h.getContext())}
                                 <div
                                     title="Breedte"
                                     className="absolute right-0 top-0 h-full w-1.5 cursor-col-resize hover:bg-orange-400/60"
@@ -429,7 +445,7 @@ export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRec
                                         <div key={cell.id} style={{ width: widthOf(cell.column.id) }}
                                              onMouseDown={() => setActive({ pageId: row.id, propId: cell.column.id })}
                                              className={`shrink-0 ${wrap ? '' : 'h-full'} border-r border-neutral-100 dark:border-white/5 overflow-hidden ${active?.pageId === row.id && active.propId === cell.column.id && !editing ? 'ring-2 ring-inset ring-orange-300' : ''}`}>
-                                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                                            {(cell.column.columnDef.cell as (c: CellContext<Page, unknown>) => React.ReactNode)(cell.getContext())}
                                         </div>
                                     ))}
                                 </div>

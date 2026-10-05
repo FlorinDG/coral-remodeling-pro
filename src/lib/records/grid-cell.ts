@@ -4,6 +4,8 @@
  */
 import { parseCellInput as parseNumberText, cellValue as numberValue } from '@/components/admin/database/columns/numberCell';
 import { formatDisplayDate, normaliseDateValue } from './date-cell';
+import { formatPhone, isEmailAddress } from './phone';
+import { zonedParts } from '@/lib/kernel/shift-time';
 
 export interface CellProperty { id: string; type: string; config?: { options?: Array<{ id: string; name: string; color?: string }> } }
 
@@ -17,14 +19,52 @@ export function isTextEditable(prop: CellProperty): boolean {
     return prop.id === 'title' || TEXT_EDIT_TYPES.has(prop.type);
 }
 
-/** Typed text → the value stored. A number accepts "1,5" and "1.5"; an empty number is null; text is kept as typed. */
-export function parseCellInput(prop: CellProperty, text: string): { ok: true; value: unknown } | { ok: false; reason: 'not_a_number' } {
+/**
+ * Typed text → the value stored. A number accepts "1,5" and "1.5"; an empty number is null; a phone is written the
+ * Belgian way (lib/records/phone); an email must be an address; other text is kept as typed.
+ */
+export type CellRefusal = 'not_a_number' | 'not_an_email';
+export function parseCellInput(prop: CellProperty, text: string): { ok: true; value: unknown } | { ok: false; reason: CellRefusal } {
     if (prop.type === 'number' || prop.type === 'currency' || prop.type === 'percent') {
         // the one number reading (columns/numberCell.ts); empty → null, letters REFUSE (never a silent empty)
         const n = parseNumberText(text);
         return n === null && text.trim() !== '' ? { ok: false, reason: 'not_a_number' } : { ok: true, value: n };
     }
+    if (prop.type === 'phone') return { ok: true, value: formatPhone(text) };
+    if (prop.type === 'email') return isEmailAddress(text) ? { ok: true, value: text.trim() } : { ok: false, reason: 'not_an_email' };
     return { ok: true, value: text };
+}
+
+const AMOUNT = new Intl.NumberFormat('nl-BE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const DECIMAL = new Intl.NumberFormat('nl-BE', { maximumFractionDigits: 10 });
+
+/** Types shown right-aligned (amounts and numbers line up). */
+export const NUMERIC_TYPES: ReadonlySet<string> = new Set(['number', 'currency', 'percent']);
+
+/**
+ * What a cell SHOWS when it is not being edited — the Belgian way: "€ 1.234,56", "21 %", "1.250,5", phones grouped,
+ * timestamps on the business clock "05/10/2026 18:44". Editing starts from `cellText` (the plain value).
+ */
+export function cellDisplay(prop: CellProperty, value: unknown, titleOf?: (id: string) => string | null): string {
+    if (value === null || value === undefined || value === '') return '';
+    switch (prop.type) {
+        case 'number': case 'currency': case 'percent': {
+            const v = numberValue(value, prop.id);
+            const n = typeof v === 'number' ? v : Number(String(v ?? '').replace(',', '.'));
+            if (v === null || v === undefined || v === '' || !Number.isFinite(n)) return cellText(prop, value, titleOf);
+            if (prop.type === 'currency') return `€ ${AMOUNT.format(n)}`;
+            if (prop.type === 'percent') return `${DECIMAL.format(n)} %`;
+            return DECIMAL.format(n);
+        }
+        case 'phone': return typeof value === 'string' ? formatPhone(value) : cellText(prop, value, titleOf);
+        case 'created_time': case 'last_edited_time': {
+            const t = typeof value === 'string' || typeof value === 'number' ? Date.parse(String(value)) : NaN;
+            if (!Number.isFinite(t)) return cellText(prop, value, titleOf);
+            const p = zonedParts(new Date(t));
+            return `${p.date.slice(8, 10)}/${p.date.slice(5, 7)}/${p.date.slice(0, 4)} ${p.time}`;
+        }
+        default: return cellText(prop, value, titleOf);
+    }
 }
 
 /** The stored value → the text a cell shows (and starts editing from). */

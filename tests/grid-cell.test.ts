@@ -61,3 +61,20 @@ test('a pasted value per field — never a guess (throw proof: an unknown option
     assert.deepEqual(pasteValue({ id: 'n', type: 'number' }, '1 250,5'), { ok: true, value: 1250.5 });
     assert.deepEqual(pasteValue({ id: 'r', type: 'rollup' }, 'x'), { ok: false, reason: 'not_pastable' });
 });
+
+import { cellDisplay, parseCellInput as parseInput } from '../src/lib/records/grid-cell.ts';
+
+test('display the Belgian way: € amounts, %, decimals, phones, timestamps on the business clock (throw proof: "1250.5")', () => {
+    assert.equal(cellDisplay({ id: 'totalIncVat', type: 'currency' }, 1234.5), '€ 1.234,50');
+    assert.equal(cellDisplay({ id: 'v', type: 'percent' }, 21), '21 %');
+    assert.equal(cellDisplay({ id: 'n', type: 'number' }, 1250.5), '1.250,5');
+    assert.equal(cellDisplay({ id: 'n', type: 'number' }, null), '');
+    assert.equal(cellDisplay({ id: 'p', type: 'phone' }, '0470123456'), '0470 12 34 56');
+    assert.equal(cellDisplay({ id: 'c', type: 'created_time' }, '2026-10-05T16:44:00.000Z'), '05/10/2026 18:44');
+});
+
+test('typing a phone writes it the Belgian way; a bad email is refused, never stored', () => {
+    assert.deepEqual(parseInput({ id: 'p', type: 'phone' }, '+32470123456'), { ok: true, value: '+32 470 12 34 56' });
+    assert.deepEqual(parseInput({ id: 'e', type: 'email' }, ' jan@coral-group.be '), { ok: true, value: 'jan@coral-group.be' });
+    assert.deepEqual(parseInput({ id: 'e', type: 'email' }, 'jan@'), { ok: false, reason: 'not_an_email' });
+});

@@ -94,8 +94,9 @@ export function SelectCell({ value, options, multi, readOnly, onCommit }: {
     return (
         <div ref={ref} className={`w-full h-full px-2 flex items-center gap-1 overflow-hidden ${readOnly ? '' : 'cursor-pointer'}`} onClick={() => !readOnly && setOpen(true)}>
             {selected.map(id => { const o = options.find(x => x.id === id); return o ? <Badge key={id} opt={o} /> : <span key={id} className="text-xs text-neutral-400">{id}</span>; })}
+            {/* a portal's clicks still bubble to the cell in React — stopped at the backdrop, or a pick / an outside click reopened the list */}
             {open && pos && typeof document !== 'undefined' && createPortal(
-                <div className="fixed inset-0 z-[99998]" onMouseDown={() => setOpen(false)}>
+                <div className="fixed inset-0 z-[99998]" onMouseDown={() => setOpen(false)} onClick={e => e.stopPropagation()}>
                     <div
                         className="fixed bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-lg shadow-xl py-1 overflow-y-auto"
                         style={{ top: pos.top, left: pos.left, minWidth: pos.width, maxHeight: 280 }}
@@ -197,7 +198,7 @@ export function RelationCell({ value, relationDatabaseId, displayPropertyId, rea
                 </span>
             ))}
             {open && pos && typeof document !== 'undefined' && createPortal(
-                <div className="fixed inset-0 z-[99998]" onMouseDown={() => { setOpen(false); setQ(''); }}>
+                <div className="fixed inset-0 z-[99998]" onMouseDown={() => { setOpen(false); setQ(''); }} onClick={e => e.stopPropagation()}>
                     <div className="fixed bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-lg shadow-xl flex flex-col"
                          style={{ top: pos.top, left: pos.left, width: pos.width, maxHeight: 320 }} onMouseDown={e => e.stopPropagation()}>
                         <div className="p-2 border-b border-neutral-100 dark:border-white/10 flex items-center gap-2">

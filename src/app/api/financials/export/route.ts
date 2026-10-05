@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import prisma from '@/lib/prisma';
+import { scopeFromSession, platformDb } from '@/lib/data/scope';
+import { resolveDatabaseId } from '@/lib/kernel/system-databases';
+import { selectForExport, vatSplit, signedSplit, signed, KIND_LABEL, type ExportDoc, type ExportKind, type ExportSource } from '@/lib/records/accountant-export';
 import { storage, resolveDocumentKey } from '@/lib/storage';
 import { buildAuditLogData, buildAuditLogOperation } from '@/lib/audit';
 import JSZip from 'jszip';
@@ -8,78 +10,16 @@ import { describeError } from '@/lib/describe-error';
 
 export const runtime = 'nodejs';
 
+/*
+ * The accountant export — on the seraph (2026-10-05, Florin: "guards in place, all over — there will be a day
+ * when many accountants access many tenant accounts"). Every read and write goes through the session's scoped
+ * client: a page outside the session's tenant cannot be read, stamped or audited. The rules (what goes, as
+ * what, with which sign) are lib/records/accountant-export.ts. Sources: invoices (incl. credit notes),
+ * expenses (incl. credit notes), tickets.
+ */
+
 function cleanFileName(name: string): string {
     return name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
-}
-
-function calculateVatSplit(page: any) {
-    const split = {
-        base21: 0, vat21: 0,
-        base12: 0, vat12: 0,
-        base6: 0, vat6: 0,
-        base0: 0, vat0: 0,
-    };
-
-    const blocks = Array.isArray(page.blocks) ? page.blocks : [];
-    const lines = blocks.filter((b: any) => b.type === 'financial-row');
-
-    if (lines.length > 0) {
-        lines.forEach((line: any) => {
-            const base = parseFloat(String(line.properties?.lineTotal || 0));
-            const rate = parseFloat(String(line.properties?.vatRate || 0));
-            const vat = base * (rate / 100);
-
-            if (Math.abs(rate - 21) < 0.5) {
-                split.base21 += base;
-                split.vat21 += vat;
-            } else if (Math.abs(rate - 12) < 0.5) {
-                split.base12 += base;
-                split.vat12 += vat;
-            } else if (Math.abs(rate - 6) < 0.5) {
-                split.base6 += base;
-                split.vat6 += vat;
-            } else if (rate === 0) {
-                split.base0 += base;
-                split.vat0 += vat;
-            } else {
-                // Fallback: put under 21%
-                split.base21 += base;
-                split.vat21 += vat;
-            }
-        });
-    } else {
-        const totalEx = parseFloat(String(page.properties?.totalExVat || 0));
-        const totalVat = parseFloat(String(page.properties?.totalVat || 0));
-        
-        if (totalEx !== 0) {
-            const ratio = totalVat / totalEx;
-            if (Math.abs(ratio - 0.21) < 0.05) {
-                split.base21 = totalEx;
-                split.vat21 = totalVat;
-            } else if (Math.abs(ratio - 0.12) < 0.05) {
-                split.base12 = totalEx;
-                split.vat12 = totalVat;
-            } else if (Math.abs(ratio - 0.06) < 0.05) {
-                split.base6 = totalEx;
-                split.vat6 = totalVat;
-            } else {
-                if (totalVat === 0) {
-                    split.base0 = totalEx;
-                    split.vat0 = 0;
-                } else {
-                    split.base21 = totalEx;
-                    split.vat21 = totalVat;
-                }
-            }
-        }
-    }
-
-    // Round to 2 decimals
-    for (const key of Object.keys(split) as Array<keyof typeof split>) {
-        split[key] = Math.round(split[key] * 100) / 100;
-    }
-
-    return split;
 }
 
 import { canRunAccountantExport } from '@/lib/roles';
@@ -111,88 +51,55 @@ export async function GET(req: Request) {
             return NextResponse.json({ error: 'startDate and endDate are required' }, { status: 400 });
         }
 
-        const tenant = await prisma.tenant.findUnique({
-            where: { id: tenantId },
-            select: { lockedDbIds: true }
-        });
-
+        const db = await scopeFromSession();
+        // Tenant is a platform model (D4); only its binding is read, for the session's own tenant.
+        const tenant = await platformDb().tenant.findUnique({ where: { id: tenantId }, select: { lockedDbIds: true } });
         if (!tenant) {
             return NextResponse.json({ error: 'Tenant not found' }, { status: 404 });
         }
-
-        const { resolveDatabaseId } = await import('@/lib/kernel/system-databases');
         const lockedDbIds = (tenant.lockedDbIds as Record<string, string>) || {};
-        const invoicesDbId = resolveDatabaseId('db-invoices', lockedDbIds);
-        const expensesDbId = resolveDatabaseId('db-expenses', lockedDbIds);
+        const sourceDb: Record<ExportSource, string> = {
+            invoices: resolveDatabaseId('db-invoices', lockedDbIds),
+            expenses: resolveDatabaseId('db-expenses', lockedDbIds),
+            tickets: resolveDatabaseId('db-tickets', lockedDbIds),
+        };
         const clientsDbId = resolveDatabaseId('db-clients', lockedDbIds);
         const suppliersDbId = resolveDatabaseId('db-suppliers', lockedDbIds);
 
-        // Fetch database pages
-        const [invoices, expenses, clients, suppliers] = await Promise.all([
-            prisma.globalPage.findMany({ where: { databaseId: invoicesDbId } }),
-            prisma.globalPage.findMany({ where: { databaseId: expensesDbId } }),
-            prisma.globalPage.findMany({ where: { databaseId: clientsDbId } }),
-            prisma.globalPage.findMany({ where: { databaseId: suppliersDbId } }),
+        const pageSelect = { id: true, properties: true, blocks: true } as const;
+        const [invoices, expenses, tickets, clients, suppliers] = await Promise.all([
+            db.globalPage.findMany({ where: { databaseId: sourceDb.invoices }, select: pageSelect }),
+            db.globalPage.findMany({ where: { databaseId: sourceDb.expenses }, select: pageSelect }),
+            db.globalPage.findMany({ where: { databaseId: sourceDb.tickets }, select: pageSelect }),
+            db.globalPage.findMany({ where: { databaseId: clientsDbId }, select: { id: true, properties: true } }),
+            db.globalPage.findMany({ where: { databaseId: suppliersDbId }, select: { id: true, properties: true } }),
         ]);
 
         const clientMap = new Map(clients.map(c => [c.id, c]));
         const supplierMap = new Map(suppliers.map(s => [s.id, s]));
 
-        const isDraft = (p: any) => {
-            const s = String((p.properties as any)?.status || '').toLowerCase();
-            return s === 'opt-draft' || s === 'draft';
-        };
+        type Doc = ExportDoc & { blocks: unknown };
+        const asDocs = (pages: typeof invoices, source: ExportSource): Doc[] =>
+            pages.map(p => ({ id: p.id, source, properties: (p.properties as Record<string, unknown>) || {}, blocks: p.blocks }));
+        const opts = { startDate, endDate, includeAlreadyExported };
+        const sales = selectForExport(asDocs(invoices, 'invoices'), opts);
+        const purchases = selectForExport([...asDocs(expenses, 'expenses'), ...asDocs(tickets, 'tickets')], opts);
 
-        const getDocDate = (p: any) => {
-            const d = (p.properties as any)?.invoiceDate || (p.properties as any)?.date;
-            return typeof d === 'string' ? d.split('T')[0] : '';
-        };
-
-        const isUndated = (p: any) => !getDocDate(p);
-
-        const undatedInvoices = invoices.filter(isUndated);
-        const undatedExpenses = expenses.filter(isUndated);
-        const undatedCount = undatedInvoices.length + undatedExpenses.length;
-
-        const dateInRange = (p: any) => {
-            const dateStr = getDocDate(p);
-            return Boolean(dateStr && dateStr >= startDate && dateStr <= endDate);
-        };
-
-        const invoicesInRange = invoices.filter(dateInRange);
-        const expensesInRange = expenses.filter(dateInRange);
-
-        const excludedDraftInvoices = invoicesInRange.filter(isDraft);
-        const excludedDraftExpenses = expensesInRange.filter(isDraft);
-        const totalExcludedDrafts = excludedDraftInvoices.length + excludedDraftExpenses.length;
-
-        const nonDraftInvoices = invoicesInRange.filter(p => !isDraft(p));
-        const nonDraftExpenses = expensesInRange.filter(p => !isDraft(p));
-
-        const alreadyExportedInvoices = nonDraftInvoices.filter(p => (p.properties as any)?.accountantExportedAt === true);
-        const alreadyExportedExpenses = nonDraftExpenses.filter(p => (p.properties as any)?.accountantExportedAt === true);
-        const alreadyExportedCount = alreadyExportedInvoices.length + alreadyExportedExpenses.length;
-
-        // When includeAlreadyExported is false (default), documents with accountantExportedAt === true are excluded from the ZIP content
-        const filteredInvoices = includeAlreadyExported
-            ? nonDraftInvoices
-            : nonDraftInvoices.filter(p => (p.properties as any)?.accountantExportedAt !== true);
-
-        const filteredExpenses = includeAlreadyExported
-            ? nonDraftExpenses
-            : nonDraftExpenses.filter(p => (p.properties as any)?.accountantExportedAt !== true);
-
+        const filteredInvoices = sales.toExport;
+        const filteredExpenses = purchases.toExport;
+        const undatedDocs = [...sales.undated, ...purchases.undated];
+        const totalExcludedDrafts = sales.drafts.length + purchases.drafts.length;
+        const alreadyExportedCount = sales.alreadyExported.length + purchases.alreadyExported.length;
         const toExportCount = filteredInvoices.length + filteredExpenses.length;
 
         // EXPDLG-1 & SP-3: Server-side preview of counts prior to running the export
         if (isPreview) {
-            const mapDocSample = (p: any) => ({
-                id: p.id,
-                title: String((p.properties as any)?.title || 'Zonder nummer / titel'),
-                type: p.databaseId?.includes('ticket') ? 'Ticket' : ((p.properties as any)?.docType === 'opt-credit-note' ? 'Creditnota' : 'Factuur'),
-            });
-            const undatedSamples = [...undatedInvoices, ...undatedExpenses].map(mapDocSample);
-
+            const kindOf = (d: Doc): ExportKind => d.source === 'tickets' ? 'ticket' : (d.properties?.docType === 'opt-credit-note' ? 'credit-note' : 'invoice');
+            const undatedSamples = undatedDocs.map(d => ({
+                id: d.id,
+                title: String(d.properties?.title || 'Zonder nummer / titel'),
+                type: KIND_LABEL[kindOf(d)],
+            }));
             return NextResponse.json({
                 success: true,
                 period: { startDate, endDate },
@@ -200,11 +107,10 @@ export async function GET(req: Request) {
                 toExportCount,
                 alreadyExportedCount,
                 draftCount: totalExcludedDrafts,
-                undatedCount,
+                undatedCount: undatedDocs.length,
                 undatedDocuments: undatedSamples,
             });
         }
-
 
         // Resolve helpers
         const getClientName = (page: any) => {
@@ -245,6 +151,7 @@ export async function GET(req: Request) {
 
         // 1. Sales CSV (Verkoopdagboek)
         const salesHeaders = [
+            "Documenttype",
             "Factuurnummer",
             "Factuurdatum",
             "Klantnaam",
@@ -265,16 +172,17 @@ export async function GET(req: Request) {
         let salesRows = [salesHeaders.join(';')];
         for (const inv of filteredInvoices) {
             const props = (inv.properties as any) || {};
-            const split = calculateVatSplit(inv);
+            const split = signedSplit(inv.kind, vatSplit(inv as any));
             const row = [
+                KIND_LABEL[inv.kind],
                 props.title || '',
                 props.invoiceDate || '',
                 `"${getClientName(inv).replace(/"/g, '""')}"`,
                 getClientVat(inv),
                 `"${(props.betreft || '').replace(/"/g, '""')}"`,
-                props.totalExVat || 0,
-                props.totalVat || 0,
-                props.totalIncVat || 0,
+                signed(inv.kind, Number(props.totalExVat) || 0),
+                signed(inv.kind, Number(props.totalVat) || 0),
+                signed(inv.kind, Number(props.totalIncVat) || 0),
                 split.base21,
                 split.vat21,
                 split.base12,
@@ -290,6 +198,7 @@ export async function GET(req: Request) {
 
         // 2. Purchases CSV (Aankoopdagboek)
         const purchasesHeaders = [
+            "Documenttype",
             "Factuurnummer",
             "Factuurdatum",
             "Leveranciernaam",
@@ -316,8 +225,31 @@ export async function GET(req: Request) {
         let purchasesRows = [purchasesHeaders.join(';')];
         for (const exp of filteredExpenses) {
             const props = (exp.properties as any) || {};
-            const split = calculateVatSplit(exp);
-            const row = [
+            let row: Array<string | number>;
+            if (exp.kind === 'ticket') {
+                // A ticket carries one total (incl. VAT) and no VAT split: the accountant books it from the receipt.
+                row = [
+                    KIND_LABEL.ticket,
+                    '',
+                    String(props.date || '').split('T')[0],
+                    `"${String(props.title || '').replace(/"/g, '""')}"`,
+                    '',
+                    `"${String(props.notes || '').replace(/"/g, '""')}"`,
+                    props.currency === 'cur-usd' ? 'USD' : props.currency === 'cur-gbp' ? 'GBP' : 'EUR',
+                    '',
+                    props.category || '',
+                    '',
+                    props.paymentMethod || '',
+                    '',
+                    '', '', Number(props.amount) || 0,
+                    '', '', '', '', '', '', '', '',
+                ];
+                purchasesRows.push(row.join(';'));
+                continue;
+            }
+            const split = signedSplit(exp.kind, vatSplit(exp as any));
+            row = [
+                KIND_LABEL[exp.kind],
                 props.title || '',
                 props.invoiceDate || '',
                 `"${getSupplierName(exp).replace(/"/g, '""')}"`,
@@ -329,9 +261,9 @@ export async function GET(req: Request) {
                 props.ledgerAccount || '',
                 props.paymentMethod || '',
                 props.paidDate || '',
-                props.totalExVat || 0,
-                props.totalVat || 0,
-                props.totalIncVat || 0,
+                signed(exp.kind, Number(props.totalExVat) || 0),
+                signed(exp.kind, Number(props.totalVat) || 0),
+                signed(exp.kind, Number(props.totalIncVat) || 0),
                 split.base21,
                 split.vat21,
                 split.base12,
@@ -421,8 +353,8 @@ export async function GET(req: Request) {
                     if (!fileData || fileData.length === 0) {
                         throw new Error('Bestand is leeg');
                     }
-                    const supplierName = getSupplierName(exp);
-                    const fileName = cleanFileName(`aankoop_${expNum}_${supplierName}.pdf`);
+                    const supplierName = exp.kind === 'ticket' ? String((exp.properties as any)?.title || 'ticket') : getSupplierName(exp);
+                    const fileName = cleanFileName(`${exp.kind === 'ticket' ? 'ticket' : 'aankoop'}_${expNum}_${supplierName}.pdf`);
                     pdfFolder?.file(fileName, fileData);
                 } catch (err: any) {
                     console.error('[financials/export] Failed to read purchase PDF:', err);
@@ -456,100 +388,50 @@ export async function GET(req: Request) {
         const actorIdentifier = actorName ? `${actorName} (${actorEmail || actorRole})` : (actorEmail || actorUserId);
         const exportTimestamp = new Date().toISOString();
 
-        const invoiceUpdates = filteredInvoices
-            .filter(inv => (inv.properties as any)?.accountantExportedAt !== true)
-            .map(inv => {
-                const props = {
-                    ...((inv.properties as any) || {}),
-                    accountantExportedAt: true,
-                    accountantExportedBy: actorIdentifier,
-                    accountantExportedById: actorUserId,
-                    accountantExportedTimestamp: exportTimestamp,
-                };
-                return prisma.globalPage.update({
-                    where: { id: inv.id },
-                    data: {
-                        properties: props,
-                        lastEditedBy: actorEmail || actorUserId || 'system:accountant-export'
-                    }
-                });
-            });
-
         const auditScope = {
             tenantId,
             userId: actorUserId,
             userName: actorName,
             userEmail: actorEmail,
-            user: {
-                id: actorUserId,
-                name: actorName,
-                email: actorEmail,
-                role: actorRole,
-            }
+            user: { id: actorUserId, name: actorName, email: actorEmail, role: actorRole },
         };
 
-        const invoiceAuditData = await Promise.all(
-            filteredInvoices
-                .filter(inv => (inv.properties as any)?.accountantExportedAt !== true)
-                .map(inv => buildAuditLogData(auditScope, {
-                    entityType: 'globalPage',
-                    entityId: inv.id,
-                    action: 'accountant-export',
-                    field: 'accountantExportedAt',
-                    before: { accountantExportedAt: false },
-                    after: {
-                        accountantExportedAt: true,
-                        accountantExportedBy: actorIdentifier,
-                        accountantExportedTimestamp: exportTimestamp,
-                        role: actorRole,
-                    },
-                    reason: `Accountant export for period ${periodStr}`,
-                }))
-        );
-        const invoiceAuditLogs = invoiceAuditData.map(data => buildAuditLogOperation(prisma, data));
-
-        const expenseUpdates = filteredExpenses
-            .filter(exp => (exp.properties as any)?.accountantExportedAt !== true)
-            .map(exp => {
-                const props = {
-                    ...((exp.properties as any) || {}),
-                    accountantExportedAt: true,
-                    accountantExportedBy: actorIdentifier,
-                    accountantExportedById: actorUserId,
-                    accountantExportedTimestamp: exportTimestamp,
-                };
-                return prisma.globalPage.update({
-                    where: { id: exp.id },
-                    data: {
-                        properties: props,
-                        lastEditedBy: actorEmail || actorUserId || 'system:accountant-export'
-                    }
-                });
-            });
-
-        const expenseAuditData = await Promise.all(
-            filteredExpenses
-                .filter(exp => (exp.properties as any)?.accountantExportedAt !== true)
-                .map(exp => buildAuditLogData(auditScope, {
-                    entityType: 'globalPage',
-                    entityId: exp.id,
-                    action: 'accountant-export',
-                    field: 'accountantExportedAt',
-                    before: { accountantExportedAt: false },
-                    after: {
-                        accountantExportedAt: true,
-                        accountantExportedBy: actorIdentifier,
-                        accountantExportedTimestamp: exportTimestamp,
-                        role: actorRole,
-                    },
-                    reason: `Accountant export for period ${periodStr}`,
-                }))
-        );
-        const expenseAuditLogs = expenseAuditData.map(data => buildAuditLogOperation(prisma, data));
-
-        const allOps = [...invoiceUpdates, ...expenseUpdates, ...invoiceAuditLogs, ...expenseAuditLogs];
-        if (allOps.length > 0) {
-            await prisma.$transaction(allOps);
+        // Stamp + audit every newly exported document (invoices, credit notes, expenses, tickets) — on the
+        // session's scoped client, in ONE transaction: all stamped, or none.
+        const toStamp = [...filteredInvoices, ...filteredExpenses].filter(d => d.properties?.accountantExportedAt !== true);
+        const auditData = await Promise.all(toStamp.map(d => buildAuditLogData(auditScope, {
+            entityType: 'globalPage',
+            entityId: d.id,
+            action: 'accountant-export',
+            field: 'accountantExportedAt',
+            before: { accountantExportedAt: false },
+            after: {
+                accountantExportedAt: true,
+                accountantExportedBy: actorIdentifier,
+                accountantExportedTimestamp: exportTimestamp,
+                role: actorRole,
+            },
+            reason: `Accountant export for period ${periodStr}`,
+        })));
+        if (toStamp.length > 0) {
+            await db.$transaction(async tx => {
+                for (const d of toStamp) {
+                    await tx.globalPage.update({
+                        where: { id: d.id },
+                        data: {
+                            properties: {
+                                ...d.properties,
+                                accountantExportedAt: true,
+                                accountantExportedBy: actorIdentifier,
+                                accountantExportedById: actorUserId,
+                                accountantExportedTimestamp: exportTimestamp,
+                            } as object,
+                            lastEditedBy: actorEmail || actorUserId || 'system:accountant-export',
+                        },
+                    });
+                }
+                for (const data of auditData) await buildAuditLogOperation(tx, data);
+            }, { timeout: 60_000 });
         }
 
         return new NextResponse(new Uint8Array(zipBuffer), {

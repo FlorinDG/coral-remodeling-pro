@@ -1,5 +1,7 @@
 "use client";
 
+import { exportPeriod, type PeriodPreset } from '@/lib/records/accountant-export';
+import { zonedParts } from '@/lib/kernel/shift-time';
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import SearchableSelect from '@/components/ui/SearchableSelect';
@@ -55,48 +57,9 @@ export function AccountantExportDialog({
 
     // Resolve date range from preset
     const { from, to } = useMemo(() => {
-        const now = new Date();
-        let f = dateFrom;
-        let t = dateTo;
-
-        if (preset !== 'custom') {
-            const y = now.getFullYear();
-            const m = now.getMonth();
-            switch (preset) {
-                case 'last-month': {
-                    const d = new Date(y, m - 1, 1);
-                    f = d.toISOString().split('T')[0];
-                    t = new Date(y, m, 0).toISOString().split('T')[0];
-                    break;
-                }
-                case 'last-trimester': {
-                    const qStart = Math.floor(m / 3) * 3;
-                    f = new Date(y, qStart - 3, 1).toISOString().split('T')[0];
-                    t = new Date(y, qStart, 0).toISOString().split('T')[0];
-                    break;
-                }
-                case 'last-semester': {
-                    if (m < 6) {
-                        f = `${y - 1}-07-01`;
-                        t = `${y - 1}-12-31`;
-                    } else {
-                        f = `${y}-01-01`;
-                        t = `${y}-06-30`;
-                    }
-                    break;
-                }
-                case 'this-year':
-                    f = `${y}-01-01`;
-                    t = now.toISOString().split('T')[0];
-                    break;
-                case 'last-year':
-                case 'last-calendar-year':
-                    f = `${y - 1}-01-01`;
-                    t = `${y - 1}-12-31`;
-                    break;
-            }
-        }
-        return { from: f, to: t };
+        if (preset === 'custom') return { from: dateFrom, to: dateTo };
+        // Calendar dates from today's BUSINESS date — never toISOString of a local midnight (shifted a day in Brussels).
+        return exportPeriod(preset as PeriodPreset, zonedParts(new Date()).date);
     }, [preset, dateFrom, dateTo]);
 
     // Fetch live counts from server preview endpoint

@@ -16,7 +16,8 @@ import { applyRecordIntent, deleteRefusal, type RecordIntent, type RecordRefusal
 export interface RecordMeta { coverImage?: string | null; icon?: string | null; order?: number | null; driveFolderId?: string | null }
 
 /** When the record does not exist yet (a page minted by the browser), it is created in this database. */
-export interface CreateIfMissing { databaseId: string; properties: Record<string, unknown>; blocks?: unknown[]; createdBy: string }
+/** `assignedTo` is the ROW's column (access-control and the WorkHub "My tasks" read it), not a property. */
+export interface CreateIfMissing { databaseId: string; properties: Record<string, unknown>; blocks?: unknown[]; createdBy: string; assignedTo?: string[] }
 
 export type SaveRecordResult =
     | { ok: true; created: boolean; changed: boolean; updatedAt: string; blocksVersion: number; properties: Record<string, unknown>; keptServer: Record<string, unknown>; ignored: string[] }
@@ -45,7 +46,7 @@ export async function saveRecord(
                     properties: c.properties as Prisma.InputJsonValue,
                     blocks: (c.blocks ?? []) as Prisma.InputJsonValue,
                     blocksVersion: 1,
-                    createdBy: c.createdBy, lastEditedBy: opts.by,
+                    createdBy: c.createdBy, lastEditedBy: opts.by, assignedTo: c.assignedTo ?? [],
                     coverImage: opts.meta?.coverImage ?? null, icon: opts.meta?.icon ?? null,
                     order: opts.meta?.order ?? null, driveFolderId: opts.meta?.driveFolderId ?? null,
                 },

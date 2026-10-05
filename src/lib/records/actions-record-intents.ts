@@ -161,6 +161,7 @@ export function buildTaskCreateData(
                 properties: taskFields,
                 blocks: [],
                 createdBy: userId,
+                assignedTo: input.assignee ? [input.assignee] : [],
             },
         },
     };

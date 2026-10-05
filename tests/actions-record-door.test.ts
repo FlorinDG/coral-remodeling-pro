@@ -251,6 +251,8 @@ test('R2-1-B M1: buildTaskCreateData creates task via saveRecord with createIfMi
     assert.equal(pages.get('task-1')!.order, 4);
     assert.equal(pages.get('task-1')!.createdBy, 'manager-1');
     assert.equal(pages.get('task-1')!.lastEditedBy, 'manager-1');
+    // Planner review: the row's assignedTo column — "My tasks" and access-control read it (throw proof: it was lost)
+    assert.deepEqual(pages.get('task-1')!.assignedTo, ['worker-7']);
 });
 
 test('R2-1-B M1: buildTaskStatusIntent sets completed-at for opt-done and clears it otherwise', async () => {

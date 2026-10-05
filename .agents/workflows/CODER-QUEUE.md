@@ -24,7 +24,7 @@ only, characterised against today). Report `.agents/reports/WH-7-M1.md`. Push, S
 
 ## 1 · `R1-7-B1` — 16 call sites onto the seraph — 🟩 GO after WH-7 M1 is pushed (no plan gate)
 📄 `coder-directive-r1-7-b1.md` — notifications → calendar → tenant, one commit per module; each migrated file leaves
-the R1-5 allowlist and lowers `CEILING` (113 → 97). STOP on any cross-tenant read. Report `.agents/reports/R1-7-B1.md`.
+the R1-5 allowlist and lowers `CEILING` by the files removed, from its current value. STOP on any cross-tenant read. Report `.agents/reports/R1-7-B1.md`.
 
 ## 2 · `DB-HEADER-1` — one database header across the ERP — 🟦 PLAN FIRST (after R1-7-B1)
 📄 `coder-directive-db-header-1.md` — inventory the 19 database screens' headers, propose ONE pure rule

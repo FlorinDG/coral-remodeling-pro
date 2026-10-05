@@ -26,7 +26,7 @@ The doors (`src/lib/data/scope.ts`, read it first):
 
 Per file: replace `import prisma from '@/lib/prisma'` and every `prisma.X` with the right door. Then in the SAME
 commit: remove the file from the R1-5 allowlist in `eslint.config.mjs` and lower `CEILING` in
-`tests/seraph-gate.test.ts` by the number of files removed (113 → 111 → 107 → 97).
+`tests/seraph-gate.test.ts` by the number of files removed — from its CURRENT value (the Planner also removes files: 112 on 2026-10-05).
 
 ## 🛑 STOP and report (do not work around) when
 1. A query must see **another tenant's** rows or a row before a tenant is known (e.g. a user looked up by e-mail

@@ -1,17 +1,15 @@
 'use server';
 
 import { isWorkforceRole } from '@/lib/roles';
-import prisma from '@/lib/prisma';
 import { auth } from '@/auth';
 import { v4 as uuidv4 } from 'uuid';
 import { Prisma } from '@prisma/client';
 import { Page, PropertyValue } from '@/components/admin/database/types';
 import { generateOGM } from '@/lib/ogm';
-import { checkExportLock } from '@/lib/records/export-lock';
-import { checkDocumentLock } from '@/lib/records/document-lock';
 import { SYSTEM_DATABASES, BASE_TO_KEY, SystemDatabaseRole } from '@/lib/kernel/system-databases';
 import { systemDatabaseEntitled } from '@/lib/kernel/system-schema-entitlement';
-import { scopeFromSession } from '@/lib/data/scope';
+import { scopeFromSession, platformDb } from '@/lib/data/scope';
+import { saveRecord } from '@/lib/data/records';
 import { syncInvoicePaymentStatus } from '@/lib/data/invoice-payments';
 import { systemDatabaseId } from '@/lib/data/system-databases';
 import { describeError } from '@/lib/describe-error';
@@ -33,42 +31,20 @@ export async function createPageServerFirst(
     // (a crew phone held the tenant's database ids and could call these by hand — incl. deleting a database).
     if (isWorkforceRole((session?.user as { role?: string } | undefined)?.role)) return { success: false, error: 'Forbidden: workforce' };
 
-    // Resolve role and canonical databaseId
+    // The database: a system base / role resolves through the tenant's binding (fail-closed); any other id must be
+    // a database of THIS tenant (scoped client). R2-1: no stub database is ever created here — provisioning is the
+    // only creator of databases (R1); a missing binding is a provisioning defect and says so.
+    const db = await scopeFromSession();
     let role: SystemDatabaseRole | null = null;
     let resolvedDbId = databaseId;
-
-    if (databaseId in SYSTEM_DATABASES) {
-        role = databaseId as SystemDatabaseRole;
-    } else if (databaseId in BASE_TO_KEY) {
-        role = BASE_TO_KEY[databaseId];
+    if (databaseId in SYSTEM_DATABASES || databaseId in BASE_TO_KEY) {
+        role = databaseId in SYSTEM_DATABASES ? (databaseId as SystemDatabaseRole) : BASE_TO_KEY[databaseId];
+        try { resolvedDbId = await systemDatabaseId(tenantId, role); }
+        catch { return { success: false, error: `Database '${role}' is not provisioned for this workspace` }; }
     } else {
-        const existingDb = await prisma.globalDatabase.findFirst({
-            where: { id: databaseId, tenantId },
-            select: { id: true, logicalKey: true },
-        });
-        if (existingDb) {
-            resolvedDbId = existingDb.id;
-            role = (existingDb.logicalKey as SystemDatabaseRole) || null;
-        } else {
-            const tenant = await prisma.tenant.findUnique({
-                where: { id: tenantId },
-                select: { lockedDbIds: true }
-            });
-            const locked = (tenant?.lockedDbIds as Record<string, string> | null) || {};
-            const entry = Object.entries(locked).find(([, id]) => id === databaseId);
-            if (entry) {
-                role = entry[0] as SystemDatabaseRole;
-                resolvedDbId = entry[1];
-            }
-        }
-    }
-
-    if (role && resolvedDbId === databaseId) {
-        try {
-            resolvedDbId = await systemDatabaseId(tenantId, role);
-        } catch {
-            // Keep resolvedDbId as databaseId if not bound
-        }
+        const own = await db.globalDatabase.findFirst({ where: { id: databaseId }, select: { id: true, logicalKey: true } });
+        if (!own) return { success: false, error: 'Database not found' };
+        role = (own.logicalKey as SystemDatabaseRole) || null;
     }
 
     // Module-level authorization — enforced server-side regardless of UI state. ONE rule for every system
@@ -76,7 +52,7 @@ export async function createPageServerFirst(
     // roles had no gate, so a FREE tenant could create projects, tasks, articles, CRM, bestek and HR rows.
     const requiredModule = role ? SYSTEM_DATABASES[role]?.module : null;
     if (role && requiredModule) {
-        const tenant = await prisma.tenant.findUnique({
+        const tenant = await platformDb().tenant.findUnique({
             where: { id: tenantId },
             select: { activeModules: true, planType: true },
         });
@@ -91,37 +67,7 @@ export async function createPageServerFirst(
     }
 
     try {
-        // Ensure parent DB exists — upsert a stub if it's a first-session locked DB
-        const existingDb = await prisma.globalDatabase.findUnique({
-            where: { id: resolvedDbId },
-            select: { id: true, tenantId: true }
-        });
-
-        if (existingDb && existingDb.tenantId !== tenantId) {
-            return { success: false, error: 'Unauthorized' };
-        }
-
-        if (!existingDb) {
-            // Locked DB not yet in Postgres — create a minimal stub
-            await prisma.globalDatabase.create({
-                data: {
-                    id: resolvedDbId,
-                    tenantId,
-                    logicalKey: role,
-                    name: resolvedDbId,
-                    properties: [],
-                    views: [],
-                    activeFilters: [],
-                    activeSorts: [],
-                    isTemplate: false,
-                    ownerId: 'system',
-                }
-            });
-        }
-
-        // Use the resolved ID for all downstream operations
         databaseId = resolvedDbId;
-
         const pageId = customId || uuidv4();
 
         // --- OGM Generation for Invoices ---
@@ -129,37 +75,34 @@ export async function createPageServerFirst(
             properties['structuredComm'] = generateOGM(properties['title'] as string);
         }
 
-        // Get current max order
-        const maxOrderRow = await prisma.globalPage.findFirst({
+        // Next order in this database
+        const maxOrderRow = await db.globalPage.findFirst({
             where: { databaseId },
             orderBy: { order: 'desc' },
             select: { order: true }
         });
         const order = (maxOrderRow?.order ?? -1) + 1;
 
-        const saved = await prisma.globalPage.create({
-            data: {
-                id: pageId,
-                databaseId,
-                properties: properties as Prisma.InputJsonValue,
-                order,
-                blocks: [],
-                createdBy: 'user',
-                lastEditedBy: 'user',
-            }
+        // R2-1: through the one record door — created in a database of this tenant, persisted state returned.
+        const r = await saveRecord(db, { pageId }, {
+            by: 'user',
+            meta: { order },
+            createIfMissing: { databaseId, properties: properties as Record<string, unknown>, blocks: [], createdBy: 'user' },
         });
+        if (!r.ok) return { success: false, error: r.refusal.code === 'NOT_FOUND' ? 'Database not found' : r.refusal.code };
+        if (!r.created) return { success: false, error: 'A record with this id already exists' };
 
         const page: Page = {
-            id: saved.id,
-            databaseId: saved.databaseId,
-            properties: saved.properties as Record<string, PropertyValue>,
-            order: saved.order ?? 0,
+            id: pageId,
+            databaseId,
+            properties: r.properties as Record<string, PropertyValue>,
+            order,
             blocks: [],
-            blocksVersion: 1,
-            createdAt: saved.createdAt.toISOString(),
-            updatedAt: saved.updatedAt.toISOString(),
-            createdBy: saved.createdBy,
-            lastEditedBy: saved.lastEditedBy,
+            blocksVersion: r.blocksVersion,
+            createdAt: r.updatedAt,
+            updatedAt: r.updatedAt,
+            createdBy: 'user',
+            lastEditedBy: 'user',
         };
 
         // --- Matching Logic for Incoming Payments ---
@@ -190,60 +133,37 @@ export async function updatePageServerFirst(
     if (isWorkforceRole((session?.user as { role?: string } | undefined)?.role)) return { success: false, error: 'Forbidden: workforce' };
 
     try {
-        // Auth: confirm the page's DB belongs to this tenant
-        const existing = await prisma.globalPage.findUnique({
-            where: { id: pageId },
-            include: { database: { select: { tenantId: true, properties: true, logicalKey: true } } }
-        });
+        // R2-1: through the one record door, on the session's scoped client — the given fields are written onto the
+        // CURRENT row (the others stay as they are); the locks are the door's; the persisted row is returned.
+        const db = await scopeFromSession();
+        const before = await db.globalPage.findFirst({ where: { id: pageId }, select: { properties: true, database: { select: { logicalKey: true } } } });
+        if (!before) return { success: false, error: 'Page not found' };
 
-        if (!existing) return { success: false, error: 'Page not found' };
-        if (existing.database.tenantId !== tenantId) return { success: false, error: 'Unauthorized' };
-
-        const dbProps = Array.isArray(existing.database.properties) ? (existing.database.properties as Array<{ id: string; name?: string; type?: string }>) : [];
-        const relationPropertyIds = new Set<string>(
-            dbProps.filter(p => p.type === 'relation').map(p => p.id)
-        );
-        const propertyLabels: Record<string, string> = {};
-        for (const prop of dbProps) {
-            if (prop.id && prop.name) propertyLabels[prop.id] = prop.name;
-        }
-
-        const exportViolation = checkExportLock(
-            existing.properties,
-            properties as Record<string, unknown>,
-            relationPropertyIds,
-            existing.blocks,
-            undefined
-        );
-        const documentViolation = exportViolation ? null : checkDocumentLock(   // DOC-LOCK-1
-            existing.database.logicalKey, existing.properties, properties as Record<string, unknown>, existing.blocks, undefined);
-        const violation = exportViolation ?? documentViolation;
-        if (violation) {
-            const docTitle = String((existing.properties as any)?.title || (properties as any)?.title || '');
-            return {
-                success: false,
-                error: documentViolation ? '[DocumentLocked]' : '[ExportLocked]',
-                errorCode: documentViolation ? 'DOCUMENT_LOCKED' : 'EXPORT_LOCKED',
-                blockedFields: violation.blockedFields,
-                docTitle,
-                propertyLabels
-            };
-        }
-
-
-        const saved = await prisma.globalPage.update({
-            where: { id: pageId },
-            data: {
-                properties: properties as Prisma.InputJsonValue,
-                lastEditedBy: 'user',
+        const r = await saveRecord(db, { pageId, fields: properties as Record<string, unknown> }, { by: 'user' });
+        if (!r.ok) {
+            const code = r.refusal.code;
+            if (code === 'EXPORT_LOCKED' || code === 'DOCUMENT_LOCKED') {
+                const propertyLabels: Record<string, string> = {};
+                for (const prop of r.dbProperties || []) if (prop.id && prop.name) propertyLabels[prop.id] = prop.name;
+                return {
+                    success: false,
+                    error: code === 'DOCUMENT_LOCKED' ? '[DocumentLocked]' : '[ExportLocked]',
+                    errorCode: code,
+                    blockedFields: 'blockedFields' in r.refusal ? r.refusal.blockedFields : [],
+                    docTitle: String(r.server?.properties?.title || (properties as Record<string, unknown>).title || ''),
+                    propertyLabels,
+                };
             }
-        });
+            return { success: false, error: code === 'NOT_FOUND' ? 'Page not found' : code, errorCode: code };
+        }
 
-        const role = (existing.database.logicalKey as SystemDatabaseRole) || null;
+        const saved = await db.globalPage.findFirst({ where: { id: pageId } });
+        if (!saved) return { success: false, error: 'Page not found' };
+        const role = (before.database?.logicalKey as SystemDatabaseRole) || null;
 
         // Automation Trigger: If Quote status changed to ACCEPTED, create Project
-        const oldStatus = (existing.properties as Record<string, unknown>)?.status;
-        const newStatus = (properties as Record<string, unknown>)?.status;
+        const oldStatus = (before.properties as Record<string, unknown>)?.status;
+        const newStatus = (saved.properties as Record<string, unknown>)?.status;
         const isQuoteDb = role === 'quotations';
 
         if (isQuoteDb && oldStatus !== newStatus && (newStatus === 'opt-accepted' || newStatus === 'ACCEPTED')) {

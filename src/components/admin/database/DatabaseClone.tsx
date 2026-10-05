@@ -1,25 +1,22 @@
 "use client";
 
 import { useOldGrid } from '@/components/admin/database/v2/grid-v2-flag';
-import { useTranslations } from 'next-intl';
 import { surfaceKey, viewsForSurface, seedSurfaceView } from '@/lib/records/view-scope';
 import { isTenantDatabase } from '@/lib/relations/resolve';
 import React, { useEffect, useState, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import { useDatabaseStore } from '@/components/admin/database/store';
-import { LayoutGrid, Table2, Calendar as CalendarIcon, Plus, GanttChartSquare, Settings, Clock, ChevronDown, Edit, Trash2 } from 'lucide-react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
-import Link from 'next/link';
-import { createPortal } from 'react-dom';
 import PageModal from '@/components/admin/database/components/PageModal';
 import { useTenant } from '@/context/TenantContext';
 import { useSession } from 'next-auth/react';
-import { Property, DatabaseView } from './types';
+import { DatabaseView } from './types';
 import { SERVER_PROVISIONED_BASES } from '@/lib/systemDatabases';
 import { BASE_TO_KEY } from '@/lib/kernel/system-databases';
-import { t } from '@/lib/document-i18n';
 import { useLocale } from 'next-intl';
 import { getGlobalDatabases } from '@/app/actions/global-databases';
+import DatabaseHeader from '@/components/admin/database/components/DatabaseHeader';
+import { gridAccess } from '@/lib/records/grid-access';
 
 const NotionGridDynamic = dynamic(
   () => import('@/components/admin/database/NotionGrid'),
@@ -92,8 +89,12 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
   // GRID-REPLACE-4: the new grid for everyone; anyone may fall back to the old one on a database for a week.
   const [oldGrid, setOldGrid] = useOldGrid(resolvedId);
   const gridV2 = !oldGrid;
-  const tGrid = useTranslations('Admin');
   const isUngated = isStoreUngated || isSuperAdmin;
+  const access = useMemo(() => gridAccess({
+    userRole: session?.user?.role as string | undefined,
+    logicalKey: role,
+    isEnterprise: activeModules.includes('ENTERPRISE'),
+  }), [session?.user?.role, role, activeModules]);
 
     const handleOpenEditor = (pageId: string) => {
     if (role === 'quotations') {
@@ -130,31 +131,8 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
     return views;
   }, [database, isImmutableContactDB, hasCRM, surface]);
 
-  // Renaming state
-  const [renamingViewId, setRenamingViewId] = useState<string | null>(null);
-  const [renamingValue, setRenamingValue] = useState("");
-  const [showViewTypeSelector, setShowViewTypeSelector] = useState(false);
-  const [selectorPosition, setSelectorPosition] = useState({ top: 0, left: 0 });
-
-  // View context menu state
-  const [viewMenuOpenId, setViewMenuOpenId] = useState<string | null>(null);
-  const [viewMenuPosition, setViewMenuPosition] = useState({ top: 0, left: 0 });
-  const viewMenuRef = React.useRef<HTMLDivElement>(null);
-
   const updateView = useDatabaseStore(state => state.updateView);
   const addView = useDatabaseStore(state => state.addView);
-
-  const handleRenameStart = (viewId: string, currentName: string) => {
-    setRenamingViewId(viewId);
-    setRenamingValue(currentName);
-  };
-
-  const handleRenameSave = () => {
-    if (renamingViewId && renamingValue.trim()) {
-      updateView(resolvedId, renamingViewId, { name: renamingValue.trim() });
-    }
-    setRenamingViewId(null);
-  };
 
   const handleAddView = (type: 'table' | 'board' | 'calendar' | 'timeline') => {
     const names = { table: 'Table', board: 'Board', calendar: 'Calendar', timeline: 'Timeline' };
@@ -164,7 +142,6 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
       ...(surface ? { surface } : {}),
       config: type === 'board' ? { groupByPropertyId: 'status' } : {}
     });
-    setShowViewTypeSelector(false);
   };
 
   const handleSetViewType = (viewId: string, type: 'table' | 'board' | 'calendar' | 'timeline') => {
@@ -175,7 +152,6 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
       updates.config = {};
     }
     updateView(resolvedId, viewId, updates);
-    setViewMenuOpenId(null);
   };
 
   const handleDeleteView = (viewId: string) => {
@@ -190,27 +166,7 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
         }
       }
       useDatabaseStore.getState().deleteView(resolvedId, viewId);
-      setViewMenuOpenId(null);
     }
-  };
-
-  const handleOpenViewMenu = (e: React.MouseEvent, viewId: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    let top = 0;
-    let left = 0;
-    if (e.type === 'contextmenu') {
-      top = e.clientY + 5;
-      left = e.clientX;
-    } else {
-      const rect = e.currentTarget.getBoundingClientRect();
-      top = rect.bottom + 5;
-      left = rect.left;
-    }
-    
-    setViewMenuOpenId(viewId);
-    setViewMenuPosition({ top, left });
   };
 
   // Initialize synchronously to avoid a second re-render after mounting
@@ -250,33 +206,6 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
     });
     return unsub;
   }, []);
-
-  const viewSelectorRef = React.useRef<HTMLDivElement>(null);
-  const addViewButtonRef = React.useRef<HTMLButtonElement>(null);
-
-  // Close view selector on click outside
-  useEffect(() => {
-    if (!showViewTypeSelector) return;
-    const handleClick = (e: MouseEvent) => {
-      // In a Portal, we need to check if the click was inside the portal content
-      if (viewSelectorRef.current?.contains(e.target as Node)) return;
-      if (addViewButtonRef.current?.contains(e.target as Node)) return;
-      setShowViewTypeSelector(false);
-    };
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, [showViewTypeSelector]);
-
-  // Close view context menu on click outside
-  useEffect(() => {
-    if (!viewMenuOpenId) return;
-    const handleClick = (e: MouseEvent) => {
-      if (viewMenuRef.current?.contains(e.target as Node)) return;
-      setViewMenuOpenId(null);
-    };
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, [viewMenuOpenId]);
 
   // ── View defaults on first open (views only — never fields). The fields of a system database are the KERNEL's,
   // reconciled on the server at every layout load (KERN-SCHEMA-1); the browser-side copy of that enforcement that
@@ -415,245 +344,45 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
     );
   }
 
-  const getViewIcon = (type: string) => {
-    switch (type) {
-      case 'table': return <Table2 className="w-4 h-4" />;
-      case 'board': return <LayoutGrid className="w-4 h-4" />;
-      case 'calendar': return <CalendarIcon className="w-4 h-4" />;
-      case 'timeline': return <Clock className="w-4 h-4" />;
-      default: return <Table2 className="w-4 h-4" />;
-    }
-  };
-
-  const headerTabs = (
-    <>
-      {headerExtra}
-
-      {/* EDIT SCHEMA FIELDS GLOBAL BUTTON — Shown for non-system DBs or ungated system DBs */}
-      {(!isLockedSchemaDB || isUngated) && (
-        <Link href={`/admin/settings/databases/${resolvedId}`} className="flex items-center gap-1.5 text-neutral-500 hover:text-[var(--brand-color,#d35400)] px-3 py-1 mx-2 mb-[5px] bg-neutral-100 dark:bg-white/5 hover:bg-[var(--brand-color,#d35400)]/10 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors shrink-0">
-          <Settings className="w-3.5 h-3.5" /> {isUngated ? 'Edit Custom Fields' : 'Edit Schema Fields'}
-        </Link>
-      )}
-
-      {activeView?.type === 'table' && (
-        <button type="button" onClick={() => setOldGrid(!oldGrid)}
-                title={tGrid('grid.switchHint')}
-                className={`flex items-center gap-1.5 px-3 py-1 mx-1 mb-[5px] rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors shrink-0 ${oldGrid ? 'bg-orange-500 text-white' : 'bg-neutral-100 dark:bg-white/5 text-neutral-500 hover:text-orange-600'}`}>
-          {oldGrid ? tGrid('grid.backToNew') : tGrid('grid.useOld')}
-        </button>
-      )}
-
-      {(!hideViewTabs && supportedViews.length > 0) && (
-        <div className="flex items-end gap-1 overflow-x-auto no-scrollbar h-full pt-1">
-          {supportedViews.map((view) => {
-            const isActive = view.id === activeViewId;
-            const isRenaming = renamingViewId === view.id;
-
-            return (
-              <div key={view.id} className="relative flex items-center group">
-                {isRenaming ? (
-                  <div className="flex items-center bg-white dark:bg-neutral-800 rounded-t-lg px-2 py-1 mb-[-1px] border-b-2 border-orange-500 shadow-sm z-10">
-                    <input
-                      autoFocus
-                      className="text-sm font-semibold bg-transparent outline-none w-24 text-neutral-900 dark:text-white"
-                      value={renamingValue}
-                      onChange={(e) => setRenamingValue(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleRenameSave();
-                        if (e.key === 'Escape') setRenamingViewId(null);
-                      }}
-                      onBlur={handleRenameSave}
-                    />
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => setActiveViewId(view.id)}
-                    onDoubleClick={() => handleRenameStart(view.id, view.name)}
-                    onContextMenu={(e) => handleOpenViewMenu(e, view.id)}
-                    className={`flex items-center gap-2 pl-3 pr-2 py-2.5 pb-2 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap -mb-[1px] ${isActive
-                      ? 'border-neutral-900 dark:border-white text-neutral-900 dark:text-white'
-                      : 'border-transparent text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300'
-                      }`}
-                  >
-                    {getViewIcon(view.type)}
-                    <span>{view.name}</span>
-                    <span
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleOpenViewMenu(e, view.id);
-                      }}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity ml-1 p-0.5 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 inline-flex items-center justify-center"
-                    >
-                      <ChevronDown className="w-3.5 h-3.5" />
-                    </span>
-                  </button>
-                )}
-              </div>
-            );
-          })}
-
-          {(hasDatabases) && (
-            <div className="relative">
-              <button
-                ref={addViewButtonRef}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  console.log('Plus button clicked');
-                  if (addViewButtonRef.current) {
-                    const rect = addViewButtonRef.current.getBoundingClientRect();
-                    setSelectorPosition({ top: rect.bottom + 5, left: rect.left });
-                  }
-                  setShowViewTypeSelector(prev => !prev);
-                }}
-                className={`p-1.5 ml-1 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors mb-1.5 rounded-md ${showViewTypeSelector ? 'bg-neutral-100 dark:bg-white/10' : ''}`}
-                title="Add View"
-              >
-                <Plus className="w-4 h-4" />
-              </button>
-
-              {showViewTypeSelector && typeof document !== 'undefined' && createPortal(
-                <div 
-                  ref={viewSelectorRef}
-                  style={{ 
-                    position: 'fixed', 
-                    top: selectorPosition.top, 
-                    left: selectorPosition.left,
-                    zIndex: 9999
-                  }}
-                  className="w-44 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl shadow-2xl p-1.5 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-100 ring-4 ring-black/5"
-                >
-                  <div className="px-3 py-1.5 text-[10px] font-bold text-neutral-400 uppercase tracking-wider border-b border-neutral-100 dark:border-white/5 mb-1">
-                    Add View Type
-                  </div>
-                  <button onClick={() => handleAddView('table')} className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5 rounded-lg transition-colors text-left">
-                    <Table2 className="w-4 h-4" /> Table
-                  </button>
-                  <button onClick={() => handleAddView('board')} className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5 rounded-lg transition-colors text-left">
-                    <LayoutGrid className="w-4 h-4" /> Board
-                  </button>
-                  <button onClick={() => handleAddView('calendar')} className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5 rounded-lg transition-colors text-left">
-                    <CalendarIcon className="w-4 h-4" /> Calendar
-                  </button>
-                  <button onClick={() => handleAddView('timeline')} className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5 rounded-lg transition-colors text-left">
-                    <GanttChartSquare className="w-4 h-4" /> Timeline
-                  </button>
-                </div>,
-                document.body
-              )}
-            </div>
-          )}
-        </div>
-      )}
-
-      {viewMenuOpenId && typeof document !== 'undefined' && (() => {
-        const targetView = supportedViews.find(v => v.id === viewMenuOpenId);
-        if (!targetView) return null;
-        return createPortal(
-          <div
-            ref={viewMenuRef}
-            style={{
-              position: 'fixed',
-              top: viewMenuPosition.top,
-              left: viewMenuPosition.left,
-              zIndex: 9999
-            }}
-            className="w-48 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl shadow-2xl p-1.5 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-100 ring-4 ring-black/5"
-          >
-            <div className="px-3 py-1.5 text-[10px] font-bold text-neutral-400 uppercase tracking-wider border-b border-neutral-100 dark:border-white/5 mb-1">
-              View Options
-            </div>
-            
-            <button
-              onClick={() => {
-                handleRenameStart(targetView.id, targetView.name);
-                setViewMenuOpenId(null);
-              }}
-              className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5 rounded-lg transition-colors text-left"
-            >
-              <Edit className="w-4 h-4 text-neutral-400" /> Rename View
-            </button>
-            
-            <div className="mt-1.5 border-t border-neutral-100 dark:border-white/5 pt-1.5">
-              <div className="px-3 py-1 text-[9px] font-bold text-neutral-400 uppercase tracking-wider mb-1">
-                Change Type To
-              </div>
-              <button
-                onClick={() => handleSetViewType(targetView.id, 'table')}
-                className={`flex items-center gap-2 w-full px-3 py-1.5 text-sm rounded-lg transition-colors text-left ${
-                  targetView.type === 'table'
-                    ? 'bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 font-medium'
-                    : 'text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5'
-                }`}
-              >
-                <Table2 className="w-4 h-4" /> Table
-              </button>
-              <button
-                onClick={() => handleSetViewType(targetView.id, 'board')}
-                className={`flex items-center gap-2 w-full px-3 py-1.5 text-sm rounded-lg transition-colors text-left ${
-                  targetView.type === 'board'
-                    ? 'bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 font-medium'
-                    : 'text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5'
-                }`}
-              >
-                <LayoutGrid className="w-4 h-4" /> Board
-              </button>
-              <button
-                onClick={() => handleSetViewType(targetView.id, 'calendar')}
-                className={`flex items-center gap-2 w-full px-3 py-1.5 text-sm rounded-lg transition-colors text-left ${
-                  targetView.type === 'calendar'
-                    ? 'bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 font-medium'
-                    : 'text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5'
-                }`}
-              >
-                <CalendarIcon className="w-4 h-4" /> Calendar
-              </button>
-              <button
-                onClick={() => handleSetViewType(targetView.id, 'timeline')}
-                className={`flex items-center gap-2 w-full px-3 py-1.5 text-sm rounded-lg transition-colors text-left ${
-                  targetView.type === 'timeline'
-                    ? 'bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 font-medium'
-                    : 'text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5'
-                }`}
-              >
-                <Clock className="w-4 h-4" /> Timeline
-              </button>
-            </div>
-            
-            {supportedViews.length > 1 && (
-              <div className="mt-1.5 border-t border-neutral-100 dark:border-white/5 pt-1.5">
-                <button
-                  onClick={() => handleDeleteView(targetView.id)}
-                  className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg transition-colors text-left"
-                >
-                  <Trash2 className="w-4 h-4 text-red-500" /> Delete View
-                </button>
-              </div>
-            )}
-          </div>,
-          document.body
-        );
-      })()}
-    </>
-  );
-
   return (
     <div className="flex flex-col w-full h-full min-w-0 min-h-0 bg-transparent relative">
+      <DatabaseHeader
+        database={database}
+        activeView={activeView}
+        supportedViews={supportedViews}
+        activeViewId={activeViewId}
+        onSelectView={setActiveViewId}
+        onAddView={handleAddView}
+        onRenameView={(viewId, name) => updateView(resolvedId, viewId, { name })}
+        onSetViewType={handleSetViewType}
+        onDeleteView={handleDeleteView}
+        headerExtra={headerExtra}
+        hideViewTabs={hideViewTabs}
+        surfaceKey={surface}
+        userRole={session?.user?.role as string | undefined}
+        isSuperadmin={isSuperAdmin}
+        isImpersonating={!!(session?.user as { isImpersonating?: boolean } | undefined)?.isImpersonating}
+        access={access}
+        isLockedSchema={isLockedSchemaDB && !isUngated && !hasDatabases}
+        isUngated={isUngated}
+        hasDatabases={hasDatabases}
+        oldGrid={oldGrid}
+        onToggleOldGrid={() => setOldGrid(!oldGrid)}
+        hardFilter={defaultFilter}
+      />
       <div 
         className={`flex-1 min-w-0 min-h-0 w-full h-full relative ${projectIdParam || openParam ? 'pointer-events-none' : ''}`}
         inert={projectIdParam || openParam ? true : undefined}
       >
         {activeView.type === 'table' && gridV2 && (
-          <NotionGridV2Dynamic databaseId={database.id} viewId={activeView.id} renderTabs={headerTabs} hardFilter={defaultFilter} onOpenRecord={onOpenRecord} hideFooterNew={!!hideFooterNew}
+          <NotionGridV2Dynamic databaseId={database.id} viewId={activeView.id} hideToolbar hardFilter={defaultFilter} onOpenRecord={onOpenRecord} hideFooterNew={!!hideFooterNew}
             lockedSchema={isLockedSchemaDB && !isUngated && !hasDatabases}
             preventDelete={role === 'invoices' ? (row) => { const s = String((row?.properties as Record<string, unknown>)?.status || 'opt-draft'); return s !== 'opt-draft'; } : undefined} />
         )}
-        {activeView.type === 'table' && !gridV2 && <NotionGridDynamic databaseId={database.id} viewId={activeView.id} renderTabs={headerTabs} lockedSchema={isLockedSchemaDB && !isUngated && !hasDatabases} preventDelete={role === 'invoices' ? (row: Record<string, unknown>) => { const s = String((row?.properties as Record<string, unknown>)?.status || row?.status || 'opt-draft'); return s !== 'opt-draft'; } : undefined} hideFooterNew={!!hideFooterNew} hardFilter={defaultFilter} onOpenRecord={onOpenRecord} />}
-        {activeView.type === 'board' && <KanbanViewDynamic databaseId={database.id} viewId={activeView.id} renderTabs={headerTabs} hardFilter={defaultFilter} onOpenRecord={onOpenRecord} onOpenEditor={handleOpenEditor} />}
-        {activeView.type === 'calendar' && <CalendarViewDynamic databaseId={database.id} viewId={activeView.id} renderTabs={headerTabs} />}
-        {activeView.type === 'timeline' && <TimelineViewDynamic databaseId={database.id} viewId={activeView.id} renderTabs={headerTabs} />}
+        {activeView.type === 'table' && !gridV2 && <NotionGridDynamic databaseId={database.id} viewId={activeView.id} hideHeader lockedSchema={isLockedSchemaDB && !isUngated && !hasDatabases} preventDelete={role === 'invoices' ? (row: Record<string, unknown>) => { const s = String((row?.properties as Record<string, unknown>)?.status || row?.status || 'opt-draft'); return s !== 'opt-draft'; } : undefined} hideFooterNew={!!hideFooterNew} hardFilter={defaultFilter} onOpenRecord={onOpenRecord} />}
+        {activeView.type === 'board' && <KanbanViewDynamic databaseId={database.id} viewId={activeView.id} hideHeader hardFilter={defaultFilter} onOpenRecord={onOpenRecord} onOpenEditor={handleOpenEditor} />}
+        {activeView.type === 'calendar' && <CalendarViewDynamic databaseId={database.id} viewId={activeView.id} hideHeader />}
+        {activeView.type === 'timeline' && <TimelineViewDynamic databaseId={database.id} viewId={activeView.id} hideHeader />}
       </div>
 
       {projectIdParam && (

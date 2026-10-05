@@ -77,9 +77,10 @@ interface NotionGridProps {
     hideFooterNew?: boolean;
     hardFilter?: { propertyId: string; value: string };
     onOpenRecord?: (pageId: string) => void;
+    hideHeader?: boolean;
 }
 
-export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchema, preventDelete, hideFooterNew, hardFilter, onOpenRecord }: NotionGridProps) {
+export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchema, preventDelete, hideFooterNew, hardFilter, onOpenRecord, hideHeader }: NotionGridProps) {
     const router = useRouter();
     const t = useTranslations('Admin');
     const { data: session } = useSession();
@@ -496,6 +497,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
 
     return (
         <div className="flex flex-col h-full bg-white dark:bg-black w-full border border-neutral-200 dark:border-white/10 rounded-xl shadow-sm relative">
+            {!hideHeader && (
             <div className="px-3 pt-2.5 pb-0 border-b border-[rgba(0,0,0,0.1)] dark:border-white/10 bg-neutral-50 dark:bg-neutral-900 flex items-end justify-between relative z-[60] flex-wrap gap-2">
                 <div className="flex items-end pr-2 shrink-0">
                     {renderTabs ? renderTabs : (
@@ -609,6 +611,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                     )}
                 </div>
             </div>
+            )}
 
             {/* ── Export lock banner (non-accountant users) ────────────────────── */}
             {!isAccountant && (() => {

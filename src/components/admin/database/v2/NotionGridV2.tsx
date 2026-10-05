@@ -59,11 +59,13 @@ interface Props {
     lockedSchema?: boolean;
     /** The screen's header — view tabs, schema link, the V2 switch (DatabaseClone) — same slot as the old grid's. */
     renderTabs?: React.ReactNode;
+    /** Hide toolbar when managed externally by DatabaseHeader */
+    hideToolbar?: boolean;
 }
 
 type Editing = { pageId: string; propId: string; text: string } | null;
 
-export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRecord, hideFooterNew, preventDelete, lockedSchema, renderTabs }: Props) {
+export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRecord, hideFooterNew, preventDelete, lockedSchema, renderTabs, hideToolbar }: Props) {
     const database = useDatabaseStore(s => s.databases.find(d => d.id === databaseId));
     const allDatabases = useDatabaseStore(s => s.databases);
     const updatePageProperty = useDatabaseStore(s => s.updatePageProperty);
@@ -273,56 +275,60 @@ export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRec
                 </div>
             )}
             {/* Toolbar — the same components as the old grid (no copies); DB-HEADER-1 moves them into the one header. */}
-            <div className="flex items-center gap-2 px-2 py-1.5 border-b border-neutral-200 dark:border-white/10">
-                {selected.size > 0 && (
-                    <>
-                        <span className="text-xs text-neutral-500">{selected.size} geselecteerd</span>
-                        {access.delete && preventDelete !== true && (
-                            <button type="button" onClick={deleteSelected} className="inline-flex items-center gap-1 text-xs text-red-600 hover:underline"><Trash2 className="w-3.5 h-3.5" /> Verwijderen</button>
-                        )}
-                        <button type="button" onClick={() => setSelected(new Set())} className="text-xs text-neutral-500 hover:underline">Wissen</button>
-                    </>
-                )}
-                {/* the purchase-invoice inbox: approve the selected records the reading marked "Klaar" — one field each */}
-                {selected.size > 0 && access.edit && database.logicalKey === 'expenses' && activeView?.id === EXPENSES_INBOX_VIEW && (
-                    <button type="button" className="inline-flex items-center gap-1 text-xs text-emerald-600 hover:underline"
-                            onClick={() => {
-                                const chk = bulkApproveCheck(rows.filter(r => selected.has(r.id)));
-                                if (!chk.ok) { toast.message(`Alleen records die "${REVIEW_READY}" zijn kunnen samen goedgekeurd worden (${chk.notReady.length} nog niet).`); return; }
-                                if (!window.confirm(`${chk.ids.length} record(s) goedkeuren?`)) return;
-                                for (const id of chk.ids) updatePageProperty(database.id, id, 'reviewStatus', REVIEW_APPROVED);
-                                setSelected(new Set());
-                            }}>
-                        <CheckCircle2 className="w-3.5 h-3.5" /> Goedkeuren
-                    </button>
-                )}
-                <div className="ml-auto flex items-center gap-1">
-                    {canRunAccountantExport((session?.user as { role?: string } | undefined)?.role, !!(session?.user as { isImpersonating?: boolean } | undefined)?.isImpersonating)
-                        && ACCOUNTANT_EXPORT_SOURCES.includes(database.logicalKey as never) && (
-                        <button type="button" onClick={() => setExportOpen(true)} className="flex items-center gap-1.5 px-2 py-1 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded">
-                            📦 {tAdmin('accountant_export_button')}
+            {(!hideToolbar || selected.size > 0) && (
+                <div className="flex items-center gap-2 px-2 py-1.5 border-b border-neutral-200 dark:border-white/10">
+                    {selected.size > 0 && (
+                        <>
+                            <span className="text-xs text-neutral-500">{selected.size} geselecteerd</span>
+                            {access.delete && preventDelete !== true && (
+                                <button type="button" onClick={deleteSelected} className="inline-flex items-center gap-1 text-xs text-red-600 hover:underline"><Trash2 className="w-3.5 h-3.5" /> Verwijderen</button>
+                            )}
+                            <button type="button" onClick={() => setSelected(new Set())} className="text-xs text-neutral-500 hover:underline">Wissen</button>
+                        </>
+                    )}
+                    {/* the purchase-invoice inbox: approve the selected records the reading marked "Klaar" — one field each */}
+                    {selected.size > 0 && access.edit && database.logicalKey === 'expenses' && activeView?.id === EXPENSES_INBOX_VIEW && (
+                        <button type="button" className="inline-flex items-center gap-1 text-xs text-emerald-600 hover:underline"
+                                onClick={() => {
+                                    const chk = bulkApproveCheck(rows.filter(r => selected.has(r.id)));
+                                    if (!chk.ok) { toast.message(`Alleen records die "${REVIEW_READY}" zijn kunnen samen goedgekeurd worden (${chk.notReady.length} nog niet).`); return; }
+                                    if (!window.confirm(`${chk.ids.length} record(s) goedkeuren?`)) return;
+                                    for (const id of chk.ids) updatePageProperty(database.id, id, 'reviewStatus', REVIEW_APPROVED);
+                                    setSelected(new Set());
+                                }}>
+                            <CheckCircle2 className="w-3.5 h-3.5" /> Goedkeuren
                         </button>
                     )}
-                    {access.create && !lockedSchema && (
-                        <button type="button" onClick={() => setImportOpen(true)} className="flex items-center gap-1.5 px-2 py-1 text-xs text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-white/5 rounded">
-                            <Upload className="w-3.5 h-3.5" /> Import
-                        </button>
+                    {!hideToolbar && (
+                        <div className="ml-auto flex items-center gap-1">
+                            {canRunAccountantExport((session?.user as { role?: string } | undefined)?.role, !!(session?.user as { isImpersonating?: boolean } | undefined)?.isImpersonating)
+                                && ACCOUNTANT_EXPORT_SOURCES.includes(database.logicalKey as never) && (
+                                <button type="button" onClick={() => setExportOpen(true)} className="flex items-center gap-1.5 px-2 py-1 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded">
+                                    📦 {tAdmin('accountant_export_button')}
+                                </button>
+                            )}
+                            {access.create && !lockedSchema && (
+                                <button type="button" onClick={() => setImportOpen(true)} className="flex items-center gap-1.5 px-2 py-1 text-xs text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-white/5 rounded">
+                                    <Upload className="w-3.5 h-3.5" /> Import
+                                </button>
+                            )}
+                            {activeView && <PropertiesDropdown databaseId={database.id} viewId={activeView.id} />}
+                            {activeView && <FilterToolbar databaseId={database.id} viewId={activeView.id} />}
+                            {activeView && <SortToolbar databaseId={database.id} viewId={activeView.id} />}
+                            {activeView && (
+                                <button type="button" aria-pressed={wrap} title="Lange tekst over meerdere regels tonen (per weergave)"
+                                        onClick={() => updateView(database.id, activeView.id, { wrapText: !wrap })}
+                                        className={`flex items-center gap-1.5 px-2 py-1 text-xs rounded ${wrap ? 'bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300' : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-white/5'}`}>
+                                    <WrapText className="w-3.5 h-3.5" /> Tekst afbreken
+                                </button>
+                            )}
+                            <button type="button" onClick={exportCsv} className="flex items-center gap-1.5 px-2 py-1 text-xs text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-white/5 rounded">
+                                <Download className="w-3.5 h-3.5" /> Export
+                            </button>
+                        </div>
                     )}
-                    {activeView && <PropertiesDropdown databaseId={database.id} viewId={activeView.id} />}
-                    {activeView && <FilterToolbar databaseId={database.id} viewId={activeView.id} />}
-                    {activeView && <SortToolbar databaseId={database.id} viewId={activeView.id} />}
-                    {activeView && (
-                        <button type="button" aria-pressed={wrap} title="Lange tekst over meerdere regels tonen (per weergave)"
-                                onClick={() => updateView(database.id, activeView.id, { wrapText: !wrap })}
-                                className={`flex items-center gap-1.5 px-2 py-1 text-xs rounded ${wrap ? 'bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300' : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-white/5'}`}>
-                            <WrapText className="w-3.5 h-3.5" /> Tekst afbreken
-                        </button>
-                    )}
-                    <button type="button" onClick={exportCsv} className="flex items-center gap-1.5 px-2 py-1 text-xs text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-white/5 rounded">
-                        <Download className="w-3.5 h-3.5" /> Export
-                    </button>
                 </div>
-            </div>
+            )}
             <div ref={scrollRef} className="flex-1 min-h-0 overflow-auto outline-none" tabIndex={0}
                  onCopy={e => {
                      if (editing) return;

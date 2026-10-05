@@ -70,6 +70,7 @@ interface KanbanViewProps {
     onOpenRecord?: (pageId: string) => void;
     onOpenEditor?: (pageId: string) => void;
     hardFilter?: { propertyId: string; value: any };
+    hideHeader?: boolean;
 }
 
 interface KanbanColumn {
@@ -528,7 +529,7 @@ function SortableColumn({
 }
 
 // ── Main Component ─────────────────────────────────────────────────────────────
-export default function KanbanView({ databaseId, viewId, renderTabs, hardFilter, onOpenRecord, onOpenEditor }: KanbanViewProps) {
+export default function KanbanView({ databaseId, viewId, renderTabs, hardFilter, onOpenRecord, onOpenEditor, hideHeader }: KanbanViewProps) {
     const [activePageId, setActivePageId] = useState<string | null>(null);
     const database = useDatabaseStore(state => state.getDatabase(databaseId));
     const updatePageProperty = useDatabaseStore(state => state.updatePageProperty);
@@ -627,7 +628,7 @@ export default function KanbanView({ databaseId, viewId, renderTabs, hardFilter,
         return (
             <div className="flex flex-col h-full bg-white dark:bg-black w-full border border-neutral-200 dark:border-white/10 rounded-xl overflow-hidden shadow-sm">
                 <div className="px-3 pt-2.5 pb-0 border-b border-[rgba(0,0,0,0.1)] dark:border-white/10 bg-neutral-50 dark:bg-neutral-900 flex items-end justify-between relative z-[60] flex-wrap gap-2">
-                    <div className="flex items-end pr-2 shrink-0">{renderTabs || <h2 className="text-lg font-semibold text-neutral-900 dark:text-white pb-2">{database.name}</h2>}</div>
+                    <div className="flex items-end pr-2 shrink-0">{renderTabs || (!hideHeader ? <h2 className="text-lg font-semibold text-neutral-900 dark:text-white pb-2">{database.name}</h2> : null)}</div>
                     
                     <div className="flex items-center gap-2 pb-2">
                         <DropdownMenu>
@@ -765,12 +766,12 @@ export default function KanbanView({ databaseId, viewId, renderTabs, hardFilter,
         <div className="flex flex-col h-full bg-white dark:bg-black w-full border border-neutral-200 dark:border-white/10 rounded-xl overflow-hidden shadow-sm relative">
             <div className="px-3 pt-2.5 pb-0 border-b border-[rgba(0,0,0,0.1)] dark:border-white/10 bg-neutral-50 dark:bg-neutral-900 flex items-end justify-between relative z-[60] flex-wrap gap-2">
                 <div className="flex items-end pr-2 shrink-0">
-                    {renderTabs ? renderTabs : (
+                    {renderTabs ? renderTabs : !hideHeader ? (
                         <h2 className="text-lg font-semibold text-neutral-900 dark:text-white flex items-center gap-2 pb-2">
                             {database.icon && <span>{database.icon}</span>}
                             {database.name}
                         </h2>
-                    )}
+                    ) : null}
                 </div>
 
                 <div className="flex items-center gap-2 pb-2">

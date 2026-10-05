@@ -2,21 +2,25 @@
  * DB-HEADER-1 · One Database Header Across the ERP
  * Canonical pure rule deciding screen tabs, view tabs, actions, toolbar buttons, and schema pill.
  *
- * Reuses canonical rules from their real homes (C1):
+ * Reuses canonical rules from their real homes (C1, R1):
  * - canRunAccountantExport: src/lib/roles.ts
  * - ACCOUNTANT_EXPORT_SOURCES: src/lib/kernel/system-databases.ts
- * - systemDatabaseEntitled: src/lib/kernel/system-schema-entitlement.ts
+ * - gridAccess, EXPENSES_INBOX_VIEW: src/lib/records/grid-access.ts
  *
  * Rules:
- * - No visible text in the rule (C2): returns i18n keys for labels.
- * - Labels from data (C3): screenTabs come from data.
- * - Parity first (C4): only actions that exist today are declared.
- * - Serves both NotionGrid and NotionGridV2 (C6).
+ * - R1: Who may change: ONE rule (re-uses access: GridAccess from gridAccess).
+ * - R2: Import / delete gates: access.create && !ctx.isLockedSchema, access.delete.
+ * - R3: showGridV2Toggle not modeled in rule (left in DatabaseClone).
+ * - R4: All returned keys must exist in messages/*.json.
+ * - R5: No databaseId -> no schemaLink.
+ * - R6: showWrapText for table views; unused context pruned.
  */
 
 import type { SystemDatabaseRole } from '@/lib/kernel/system-databases';
 import { ACCOUNTANT_EXPORT_SOURCES } from '@/lib/kernel/system-databases';
 import { canRunAccountantExport } from '@/lib/roles';
+import type { GridAccess } from '@/lib/records/grid-access';
+import { EXPENSES_INBOX_VIEW } from '@/lib/records/grid-access';
 
 export interface ScreenTabItem {
     id: string;
@@ -51,7 +55,7 @@ export interface ToolbarItemConfig {
     showImportCsv: boolean;
     showBulkApprove: boolean;
     showBulkDelete: boolean;
-    showGridV2Toggle: boolean;
+    showWrapText: boolean;
     preventDeleteMessageKey?: string;
 }
 
@@ -67,11 +71,9 @@ export interface DatabaseHeaderContext {
     /** User context for permission gating. */
     userRole?: string | null;
     isSuperadmin?: boolean;
-    isAccountant?: boolean;
     isImpersonating?: boolean;
-    /** Tenant plan and entitlement. */
-    planType?: string | null;
-    activeModules?: string[];
+    /** Permission and access gates from gridAccess(...) */
+    access: GridAccess;
     /** View & record state. */
     selectedRowCount?: number;
     totalRowCount?: number;
@@ -79,10 +81,6 @@ export interface DatabaseHeaderContext {
     activeViewId?: string | null;
     isLockedSchema?: boolean;
     isUngated?: boolean;
-    hasDatabasesPermission?: boolean;
-    gridV2Enabled?: boolean;
-    /** For read-only gated bestek */
-    isBestekReadOnly?: boolean;
     /** Optional screen tabs (e.g. CRM pipelines or Project types) */
     screenTabs?: ScreenTabItem[] | null;
 }
@@ -109,20 +107,7 @@ export interface DatabaseHeaderResult {
     } | null;
 }
 
-/** Strictly locked system financial databases */
-const FINANCIAL_DOCUMENT_ROLES: readonly (SystemDatabaseRole | 'custom')[] = [
-    'invoices',
-    'expenses',
-    'tickets',
-    'payments-in',
-    'payments-out',
-];
-
 export function computeDatabaseHeader(ctx: DatabaseHeaderContext): DatabaseHeaderResult {
-    const isFinancialDoc = FINANCIAL_DOCUMENT_ROLES.includes(ctx.role);
-    const isAccountant = !!ctx.isAccountant;
-    const isBestekReadOnly = !!ctx.isBestekReadOnly;
-    const isUngated = !!ctx.isUngated || !!ctx.isSuperadmin;
     const selectedCount = ctx.selectedRowCount ?? 0;
     const totalCount = ctx.totalRowCount ?? 0;
 
@@ -143,16 +128,15 @@ export function computeDatabaseHeader(ctx: DatabaseHeaderContext): DatabaseHeade
     const actions: ActionItem[] = [];
     if (ctx.role === 'tickets') {
         actions.push(
-            { id: 'scan-ticket', labelKey: 'financials.expenses.scanTicket', icon: 'camera', variant: 'primary' },
-            { id: 'bulk-upload-tickets', labelKey: 'financials.expenses.bulkUpload', icon: 'files', variant: 'secondary' },
-            { id: 'manual-ticket', labelKey: 'financials.expenses.manualEntry', icon: 'plus', variant: 'outline' }
+            { id: 'scan-ticket', labelKey: 'Admin.nav.pages.scanUploadTicket', icon: 'camera', variant: 'primary' },
+            { id: 'bulk-upload-tickets', labelKey: 'Admin.nav.pages.bulkUploadTickets', icon: 'files', variant: 'secondary' },
+            { id: 'manual-ticket', labelKey: 'Admin.nav.pages.manualTicket', icon: 'plus', variant: 'outline' }
         );
     } else if (ctx.role === 'expenses' && (!ctx.surfaceKey || ctx.surfaceKey === 'docType=opt-invoice')) {
-        // Purchase invoices screen action bar
         actions.push(
-            { id: 'scan-invoice', labelKey: 'financials.expenses.scanInvoice', icon: 'camera', variant: 'primary' },
-            { id: 'manual-invoice', labelKey: 'financials.expenses.manualInvoice', icon: 'plus', variant: 'outline' },
-            { id: 'peppol-sync', labelKey: 'financials.expenses.peppolSync', icon: 'refresh', variant: 'badge' }
+            { id: 'scan-invoice', labelKey: 'Admin.nav.pages.scanUpload', icon: 'camera', variant: 'primary' },
+            { id: 'manual-invoice', labelKey: 'Admin.nav.pages.manualInvoice', icon: 'plus', variant: 'outline' },
+            { id: 'peppol-sync', labelKey: 'Admin.nav.pages.syncPeppolInbox', icon: 'refresh', variant: 'badge' }
         );
     }
 
@@ -164,24 +148,24 @@ export function computeDatabaseHeader(ctx: DatabaseHeaderContext): DatabaseHeade
     const showAccountantExport =
         isAccountantSource && canRunAccountantExport(ctx.userRole, ctx.isImpersonating);
 
-    // Import is allowed unless accountant, read-only bestek, or locked financial doc (unless ungated)
-    const showImportCsv =
-        !isAccountant &&
-        !isBestekReadOnly &&
-        (!isFinancialDoc || isUngated);
+    // R2: Import gate = access.create && !ctx.isLockedSchema
+    const showImportCsv = ctx.access.create && !ctx.isLockedSchema;
 
-    // Bulk approve: only for expenses inbox with selected rows
+    // R1: Bulk approve for expenses inbox with selected rows
     const isExpensesInbox =
         ctx.role === 'expenses' &&
-        (ctx.activeViewId === 'vw-expenses-inbox' || ctx.surfaceKey === 'inbox');
+        ctx.activeViewId === EXPENSES_INBOX_VIEW;
     const showBulkApprove = isExpensesInbox && selectedCount > 0;
 
-    // Bulk delete: allowed unless accountant or read-only bestek
-    const showBulkDelete = !isAccountant && !isBestekReadOnly;
+    // R2: Bulk delete gate = access.delete
+    const showBulkDelete = ctx.access.delete;
     const preventDeleteMessageKey =
         ctx.role === 'invoices' || ctx.role === 'expenses'
-            ? 'admin.databases.draftOnlyDelete'
+            ? 'Admin.dbHeader.draftOnlyDelete'
             : undefined;
+
+    // R6: Wrap text toggle enabled for table views
+    const showWrapText = !ctx.activeViewType || ctx.activeViewType === 'table';
 
     const toolbar: ToolbarItemConfig = {
         showProperties: true,
@@ -192,37 +176,20 @@ export function computeDatabaseHeader(ctx: DatabaseHeaderContext): DatabaseHeade
         showImportCsv,
         showBulkApprove,
         showBulkDelete,
-        showGridV2Toggle: true,
+        showWrapText,
         preventDeleteMessageKey,
     };
 
-    // 6. Schema Link Pill (C2: returns labelKey)
+    // 6. Schema Link Pill (R5: no databaseId -> no link; respects edit access & lockedSchema)
     let schemaLink: DatabaseHeaderResult['schemaLink'] = null;
-    const resolvedId = ctx.databaseId || (ctx.role !== 'custom' ? ctx.role : 'custom');
-    const href = `/admin/settings/databases/${resolvedId}`;
-
-    if (!isAccountant) {
-        if (isFinancialDoc) {
-            // Locked schema — only visible when ungated
-            if (isUngated) {
-                schemaLink = {
-                    show: true,
-                    href,
-                    labelKey: 'admin.databases.editCustomFields',
-                };
-            }
-        } else if (ctx.role === 'articles' || ctx.role === 'bestek') {
+    if (ctx.databaseId && ctx.access.edit) {
+        if (!ctx.isLockedSchema || ctx.isUngated) {
             schemaLink = {
                 show: true,
-                href,
-                labelKey: 'admin.databases.editCustomFields',
-            };
-        } else {
-            // Custom or non-financial system DB (clients, suppliers, crm, bobex, projects, quotations)
-            schemaLink = {
-                show: true,
-                href,
-                labelKey: isUngated ? 'admin.databases.editCustomFields' : 'admin.databases.editSchemaFields',
+                href: `/admin/settings/databases/${ctx.databaseId}`,
+                labelKey: (ctx.isUngated || ctx.role === 'articles' || ctx.role === 'bestek')
+                    ? 'Admin.dbHeader.editCustomFields'
+                    : 'Admin.dbHeader.editSchemaFields',
             };
         }
     }

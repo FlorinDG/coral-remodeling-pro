@@ -1,9 +1,29 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import {
     computeDatabaseHeader,
     type DatabaseHeaderContext,
 } from '../src/lib/records/db-header.ts';
+import { gridAccess, EXPENSES_INBOX_VIEW } from '../src/lib/records/grid-access.ts';
+
+const FULL_ACCESS = { edit: true, create: true, delete: true };
+
+// Helper to resolve dot-notated translation keys against nl.json
+const nlMessages = JSON.parse(
+    readFileSync(join(process.cwd(), 'src/messages/nl.json'), 'utf8')
+);
+
+function getTranslation(path: string): string | undefined {
+    const parts = path.split('.');
+    let curr: unknown = nlMessages;
+    for (const part of parts) {
+        if (!curr || typeof curr !== 'object') return undefined;
+        curr = (curr as Record<string, unknown>)[part];
+    }
+    return typeof curr === 'string' ? curr : undefined;
+}
 
 // ── 1. TITLE & BASICS ─────────────────────────────────────────────────────────
 
@@ -13,6 +33,8 @@ test('computeDatabaseHeader: formats title and row counts correctly', () => {
         databaseName: 'Klanten',
         databaseIcon: '👤',
         totalRowCount: 42,
+        access: FULL_ACCESS,
+        activeViewType: 'table',
     });
 
     assert.equal(res.title.name, 'Klanten');
@@ -23,7 +45,7 @@ test('computeDatabaseHeader: formats title and row counts correctly', () => {
     assert.equal(res.toolbar.showFilter, true);
     assert.equal(res.toolbar.showSort, true);
     assert.equal(res.toolbar.showExportCsv, true);
-    assert.equal(res.toolbar.showGridV2Toggle, true);
+    assert.equal(res.toolbar.showWrapText, true);
 });
 
 // ── 2. VIEW TABS & SCREEN TABS (Q1, C3) ──────────────────────────────────────
@@ -38,9 +60,9 @@ test('computeDatabaseHeader: CRM and Bobex always show view tabs (Q1) and carry 
         role: 'crm',
         databaseName: 'CRM',
         screenTabs,
+        access: FULL_ACCESS,
     });
 
-    // View tabs must be true (Q1: enables per-view filters and Kanban/Table views)
     assert.equal(res.showViewTabs, true);
     assert.deepEqual(res.screenTabs, screenTabs);
     assert.equal(res.actions.length, 0); // C4: No ad-hoc actions slipped in
@@ -56,6 +78,7 @@ test('computeDatabaseHeader: Projects carries project type tabs from data (C3)',
         role: 'projects',
         databaseName: 'Projects',
         screenTabs,
+        access: FULL_ACCESS,
     });
 
     assert.equal(res.showViewTabs, true);
@@ -63,47 +86,60 @@ test('computeDatabaseHeader: Projects carries project type tabs from data (C3)',
     assert.equal(res.actions.length, 0);
 });
 
-// ── 3. PARITY ACTIONS (C4) ────────────────────────────────────────────────────
+// ── 3. PARITY ACTIONS (C4, R4) ────────────────────────────────────────────────
 
-test('computeDatabaseHeader: tickets declares exactly scan, bulk, and manual actions with i18n keys (C2, C4)', () => {
+test('computeDatabaseHeader: tickets declares exactly scan, bulk, and manual actions with valid i18n keys (C2, C4, R4)', () => {
     const res = computeDatabaseHeader({
         role: 'tickets',
         databaseName: 'Tickets',
+        access: FULL_ACCESS,
     });
 
     assert.equal(res.actions.length, 3);
     assert.equal(res.actions[0].id, 'scan-ticket');
-    assert.equal(res.actions[0].labelKey, 'financials.expenses.scanTicket');
+    assert.equal(res.actions[0].labelKey, 'Admin.nav.pages.scanUploadTicket');
     assert.equal(res.actions[0].variant, 'primary');
 
     assert.equal(res.actions[1].id, 'bulk-upload-tickets');
-    assert.equal(res.actions[1].labelKey, 'financials.expenses.bulkUpload');
+    assert.equal(res.actions[1].labelKey, 'Admin.nav.pages.bulkUploadTickets');
     assert.equal(res.actions[1].variant, 'secondary');
 
     assert.equal(res.actions[2].id, 'manual-ticket');
-    assert.equal(res.actions[2].labelKey, 'financials.expenses.manualEntry');
+    assert.equal(res.actions[2].labelKey, 'Admin.nav.pages.manualTicket');
     assert.equal(res.actions[2].variant, 'outline');
+
+    // Every key resolves in nl.json
+    for (const act of res.actions) {
+        const tr = getTranslation(act.labelKey);
+        assert.ok(tr && tr.length > 0, `Action key ${act.labelKey} must resolve in nl.json`);
+    }
 });
 
-test('computeDatabaseHeader: purchase invoices declares scan, manual, and peppol-sync actions (C4)', () => {
+test('computeDatabaseHeader: purchase invoices declares scan, manual, and peppol-sync actions with valid i18n keys (C4, R4)', () => {
     const res = computeDatabaseHeader({
         role: 'expenses',
         surfaceKey: 'docType=opt-invoice',
         databaseName: 'Aankoopfacturen',
+        access: FULL_ACCESS,
     });
 
     assert.equal(res.actions.length, 3);
     assert.equal(res.actions[0].id, 'scan-invoice');
-    assert.equal(res.actions[0].labelKey, 'financials.expenses.scanInvoice');
+    assert.equal(res.actions[0].labelKey, 'Admin.nav.pages.scanUpload');
     assert.equal(res.actions[0].variant, 'primary');
 
     assert.equal(res.actions[1].id, 'manual-invoice');
-    assert.equal(res.actions[1].labelKey, 'financials.expenses.manualInvoice');
+    assert.equal(res.actions[1].labelKey, 'Admin.nav.pages.manualInvoice');
     assert.equal(res.actions[1].variant, 'outline');
 
     assert.equal(res.actions[2].id, 'peppol-sync');
-    assert.equal(res.actions[2].labelKey, 'financials.expenses.peppolSync');
+    assert.equal(res.actions[2].labelKey, 'Admin.nav.pages.syncPeppolInbox');
     assert.equal(res.actions[2].variant, 'badge');
+
+    for (const act of res.actions) {
+        const tr = getTranslation(act.labelKey);
+        assert.ok(tr && tr.length > 0, `Action key ${act.labelKey} must resolve in nl.json`);
+    }
 });
 
 test('computeDatabaseHeader: other screens have no declared actions (C4 parity constraint)', () => {
@@ -123,6 +159,7 @@ test('computeDatabaseHeader: other screens have no declared actions (C4 parity c
         const res = computeDatabaseHeader({
             role,
             databaseName: String(role),
+            access: FULL_ACCESS,
         });
         assert.equal(res.actions.length, 0, `Role ${role} must not have ad-hoc actions under C4`);
     }
@@ -136,6 +173,7 @@ test('computeDatabaseHeader: accountant export visible ONLY for authorized sourc
         role: 'invoices',
         databaseName: 'Invoices',
         userRole: 'ACCOUNTANT',
+        access: gridAccess({ userRole: 'ACCOUNTANT', logicalKey: 'invoices', isEnterprise: false }),
     });
     assert.equal(resAuth.toolbar.showAccountantExport, true);
 
@@ -143,6 +181,7 @@ test('computeDatabaseHeader: accountant export visible ONLY for authorized sourc
         role: 'expenses',
         databaseName: 'Expenses',
         userRole: 'OWNER',
+        access: gridAccess({ userRole: 'OWNER', logicalKey: 'expenses', isEnterprise: false }),
     });
     assert.equal(resOwner.toolbar.showAccountantExport, true);
 
@@ -150,6 +189,7 @@ test('computeDatabaseHeader: accountant export visible ONLY for authorized sourc
         role: 'tickets',
         databaseName: 'Tickets',
         userRole: 'ADMIN',
+        access: gridAccess({ userRole: 'ADMIN', logicalKey: 'tickets', isEnterprise: false }),
     });
     assert.equal(resTickets.toolbar.showAccountantExport, true);
 
@@ -158,6 +198,7 @@ test('computeDatabaseHeader: accountant export visible ONLY for authorized sourc
         role: 'invoices',
         databaseName: 'Invoices',
         userRole: 'EMPLOYEE',
+        access: gridAccess({ userRole: 'EMPLOYEE', logicalKey: 'invoices', isEnterprise: false }),
     });
     assert.equal(resUnauth.toolbar.showAccountantExport, false);
 
@@ -166,123 +207,182 @@ test('computeDatabaseHeader: accountant export visible ONLY for authorized sourc
         role: 'clients',
         databaseName: 'Clients',
         userRole: 'ACCOUNTANT',
+        access: gridAccess({ userRole: 'ACCOUNTANT', logicalKey: 'clients', isEnterprise: false }),
     });
     assert.equal(resWrongSource.toolbar.showAccountantExport, false);
 });
 
-// ── 5. IMPORT, BULK APPROVE, & DELETE GATING ──────────────────────────────────
+// ── 5. IMPORT, BULK APPROVE, & DELETE GATING (R1, R2, R6) ─────────────────────
 
-test('computeDatabaseHeader: import blocked for locked financial databases unless ungated', () => {
-    // Standard financial doc -> Import CSV blocked
+test('computeDatabaseHeader: import blocked for locked schema or lack of create access (R2)', () => {
+    // Locked schema -> Import CSV blocked
     const resLocked = computeDatabaseHeader({
         role: 'invoices',
         databaseName: 'Invoices',
+        access: FULL_ACCESS,
+        isLockedSchema: true,
     });
     assert.equal(resLocked.toolbar.showImportCsv, false);
 
-    // Ungated financial doc -> Import CSV allowed
-    const resUngated = computeDatabaseHeader({
-        role: 'invoices',
-        databaseName: 'Invoices',
-        isUngated: true,
-    });
-    assert.equal(resUngated.toolbar.showImportCsv, true);
-
-    // Standard client database -> Import CSV allowed
-    const resClients = computeDatabaseHeader({
+    // Unlocked schema with create access -> Import CSV allowed
+    const resUnlocked = computeDatabaseHeader({
         role: 'clients',
         databaseName: 'Clients',
+        access: FULL_ACCESS,
+        isLockedSchema: false,
     });
-    assert.equal(resClients.toolbar.showImportCsv, true);
+    assert.equal(resUnlocked.toolbar.showImportCsv, true);
 
-    // Bestek read-only -> Import CSV blocked
+    // Accountant (create = false) -> Import CSV blocked
+    const resAccountant = computeDatabaseHeader({
+        role: 'clients',
+        databaseName: 'Clients',
+        access: gridAccess({ userRole: 'ACCOUNTANT', logicalKey: 'clients', isEnterprise: false }),
+        isLockedSchema: false,
+    });
+    assert.equal(resAccountant.toolbar.showImportCsv, false);
+
+    // Bestek without enterprise (create = false) -> Import CSV blocked
     const resBestek = computeDatabaseHeader({
         role: 'bestek',
         databaseName: 'Bestek',
-        isBestekReadOnly: true,
+        access: gridAccess({ userRole: 'ADMIN', logicalKey: 'bestek', isEnterprise: false }),
+        isLockedSchema: false,
     });
     assert.equal(resBestek.toolbar.showImportCsv, false);
 });
 
-test('computeDatabaseHeader: bulk approve only enabled for expenses inbox with selected rows', () => {
+test('computeDatabaseHeader: bulk approve only enabled for expenses inbox with selected rows (R1)', () => {
     // Expenses inbox with 3 selected rows -> Bulk approve visible
     const resInboxSelected = computeDatabaseHeader({
         role: 'expenses',
-        activeViewId: 'vw-expenses-inbox',
+        activeViewId: EXPENSES_INBOX_VIEW,
         selectedRowCount: 3,
         databaseName: 'Expenses',
+        access: FULL_ACCESS,
     });
     assert.equal(resInboxSelected.toolbar.showBulkApprove, true);
 
     // Expenses inbox with 0 selected rows -> Bulk approve hidden
     const resInboxZero = computeDatabaseHeader({
         role: 'expenses',
-        activeViewId: 'vw-expenses-inbox',
+        activeViewId: EXPENSES_INBOX_VIEW,
         selectedRowCount: 0,
         databaseName: 'Expenses',
+        access: FULL_ACCESS,
     });
     assert.equal(resInboxZero.toolbar.showBulkApprove, false);
 
-    // Another database with selected rows -> Bulk approve hidden
-    const resClients = computeDatabaseHeader({
-        role: 'clients',
-        selectedRowCount: 5,
-        databaseName: 'Clients',
+    // Another view id -> Bulk approve hidden
+    const resOtherView = computeDatabaseHeader({
+        role: 'expenses',
+        activeViewId: 'vw-other',
+        selectedRowCount: 3,
+        databaseName: 'Expenses',
+        access: FULL_ACCESS,
     });
-    assert.equal(resClients.toolbar.showBulkApprove, false);
+    assert.equal(resOtherView.toolbar.showBulkApprove, false);
 });
 
-test('computeDatabaseHeader: delete shows draftOnlyDelete messageKey for invoices and expenses', () => {
+test('computeDatabaseHeader: delete shows draftOnlyDelete messageKey for invoices and expenses (R2, R4)', () => {
     const resInv = computeDatabaseHeader({
         role: 'invoices',
         databaseName: 'Invoices',
+        access: FULL_ACCESS,
     });
     assert.equal(resInv.toolbar.showBulkDelete, true);
-    assert.equal(resInv.toolbar.preventDeleteMessageKey, 'admin.databases.draftOnlyDelete');
+    assert.equal(resInv.toolbar.preventDeleteMessageKey, 'Admin.dbHeader.draftOnlyDelete');
+    assert.ok(getTranslation(resInv.toolbar.preventDeleteMessageKey!));
 
     const resExp = computeDatabaseHeader({
         role: 'expenses',
         databaseName: 'Expenses',
+        access: FULL_ACCESS,
     });
     assert.equal(resExp.toolbar.showBulkDelete, true);
-    assert.equal(resExp.toolbar.preventDeleteMessageKey, 'admin.databases.draftOnlyDelete');
+    assert.equal(resExp.toolbar.preventDeleteMessageKey, 'Admin.dbHeader.draftOnlyDelete');
+    assert.ok(getTranslation(resExp.toolbar.preventDeleteMessageKey!));
 
     const resCust = computeDatabaseHeader({
         role: 'custom',
         databaseName: 'Custom',
+        access: FULL_ACCESS,
     });
     assert.equal(resCust.toolbar.showBulkDelete, true);
     assert.equal(resCust.toolbar.preventDeleteMessageKey, undefined);
+
+    // Delete blocked when access.delete is false
+    const resNoDelete = computeDatabaseHeader({
+        role: 'invoices',
+        databaseName: 'Invoices',
+        access: { edit: true, create: true, delete: false },
+    });
+    assert.equal(resNoDelete.toolbar.showBulkDelete, false);
 });
 
-// ── 6. SCHEMA LINK PILL (C2) ──────────────────────────────────────────────────
+test('computeDatabaseHeader: wrap text is only shown on table views (R6)', () => {
+    const resTable = computeDatabaseHeader({
+        role: 'clients',
+        databaseName: 'Clients',
+        access: FULL_ACCESS,
+        activeViewType: 'table',
+    });
+    assert.equal(resTable.toolbar.showWrapText, true);
 
-test('computeDatabaseHeader: schema pill returns proper i18n labelKey and gating (C2)', () => {
+    const resBoard = computeDatabaseHeader({
+        role: 'clients',
+        databaseName: 'Clients',
+        access: FULL_ACCESS,
+        activeViewType: 'board',
+    });
+    assert.equal(resBoard.toolbar.showWrapText, false);
+});
+
+// ── 6. SCHEMA LINK PILL (C2, R4, R5) ──────────────────────────────────────────
+
+test('computeDatabaseHeader: schema pill returns null if databaseId is missing (R5)', () => {
+    const resNoId = computeDatabaseHeader({
+        role: 'clients',
+        databaseName: 'Clients',
+        access: FULL_ACCESS,
+        databaseId: null,
+    });
+    assert.equal(resNoId.schemaLink, null);
+});
+
+test('computeDatabaseHeader: schema pill returns proper i18n labelKey and gating (C2, R4, R5)', () => {
     // Custom database: Edit Schema Fields
     const resCustom = computeDatabaseHeader({
         role: 'custom',
         databaseId: 'db-custom-1',
         databaseName: 'Custom',
+        access: FULL_ACCESS,
     });
     assert.ok(resCustom.schemaLink);
     assert.equal(resCustom.schemaLink?.show, true);
-    assert.equal(resCustom.schemaLink?.labelKey, 'admin.databases.editSchemaFields');
+    assert.equal(resCustom.schemaLink?.labelKey, 'Admin.dbHeader.editSchemaFields');
     assert.equal(resCustom.schemaLink?.href, '/admin/settings/databases/db-custom-1');
+    assert.ok(getTranslation(resCustom.schemaLink!.labelKey));
 
     // Articles / Bestek: Edit Custom Fields
     const resArticles = computeDatabaseHeader({
         role: 'articles',
         databaseId: 'db-articles',
         databaseName: 'Articles',
+        access: FULL_ACCESS,
     });
     assert.ok(resArticles.schemaLink);
-    assert.equal(resArticles.schemaLink?.labelKey, 'admin.databases.editCustomFields');
+    assert.equal(resArticles.schemaLink?.labelKey, 'Admin.dbHeader.editCustomFields');
+    assert.ok(getTranslation(resArticles.schemaLink!.labelKey));
 
     // Locked financial database without ungated: hidden
     const resInvoices = computeDatabaseHeader({
         role: 'invoices',
         databaseId: 'db-invoices',
         databaseName: 'Invoices',
+        access: FULL_ACCESS,
+        isLockedSchema: true,
+        isUngated: false,
     });
     assert.equal(resInvoices.schemaLink, null);
 
@@ -291,17 +391,21 @@ test('computeDatabaseHeader: schema pill returns proper i18n labelKey and gating
         role: 'invoices',
         databaseId: 'db-invoices',
         databaseName: 'Invoices',
+        access: FULL_ACCESS,
+        isLockedSchema: true,
         isUngated: true,
     });
     assert.ok(resInvoicesUngated.schemaLink);
     assert.equal(resInvoicesUngated.schemaLink?.show, true);
-    assert.equal(resInvoicesUngated.schemaLink?.labelKey, 'admin.databases.editCustomFields');
+    assert.equal(resInvoicesUngated.schemaLink?.labelKey, 'Admin.dbHeader.editCustomFields');
+    assert.ok(getTranslation(resInvoicesUngated.schemaLink!.labelKey));
 
-    // Accountant user: schema pill always hidden
+    // Accountant user: edit access is false -> schema pill hidden
     const resAccountant = computeDatabaseHeader({
         role: 'custom',
+        databaseId: 'db-custom-1',
         databaseName: 'Custom',
-        isAccountant: true,
+        access: gridAccess({ userRole: 'ACCOUNTANT', logicalKey: 'custom', isEnterprise: false }),
     });
     assert.equal(resAccountant.schemaLink, null);
 });
@@ -309,16 +413,15 @@ test('computeDatabaseHeader: schema pill returns proper i18n labelKey and gating
 // ── 7. THROW PROOFS ───────────────────────────────────────────────────────────
 
 test('THROW PROOF: accountant export cannot leak to unauthorized roles or sources', () => {
-    // If someone mutates the rule to check only isAccountantSource and ignores canRunAccountantExport:
     const ctx: DatabaseHeaderContext = {
         role: 'invoices',
         databaseName: 'Invoices',
         userRole: 'EMPLOYEE', // Not authorized
+        access: gridAccess({ userRole: 'EMPLOYEE', logicalKey: 'invoices', isEnterprise: false }),
     };
     const res = computeDatabaseHeader(ctx);
     assert.equal(res.toolbar.showAccountantExport, false);
 
-    // If mutated to unconditionally show accountant export:
     assert.doesNotThrow(() => {
         if (res.toolbar.showAccountantExport !== false) {
             throw new Error('LEAK: showAccountantExport showed for EMPLOYEE');
@@ -326,14 +429,32 @@ test('THROW PROOF: accountant export cannot leak to unauthorized roles or source
     });
 });
 
-test('THROW PROOF: schemaLink returns only valid i18n keys, never raw visible text (C2)', () => {
-    const res = computeDatabaseHeader({
-        role: 'clients',
-        databaseName: 'Clients',
-    });
+test('THROW PROOF: every returned i18n key resolves to a valid string in nl.json (R4)', () => {
+    // Generate results for multiple combinations
+    const testCases: DatabaseHeaderContext[] = [
+        { role: 'tickets', databaseName: 'Tickets', databaseId: 'db-tickets', access: FULL_ACCESS },
+        { role: 'expenses', surfaceKey: 'docType=opt-invoice', databaseName: 'Expenses', databaseId: 'db-expenses', access: FULL_ACCESS },
+        { role: 'invoices', databaseName: 'Invoices', databaseId: 'db-invoices', access: FULL_ACCESS },
+        { role: 'clients', databaseName: 'Clients', databaseId: 'db-clients', access: FULL_ACCESS },
+        { role: 'custom', databaseName: 'Custom', databaseId: 'db-custom', access: FULL_ACCESS },
+    ];
 
-    assert.ok(res.schemaLink);
-    // Throw proof: assert it never equals raw english string 'Edit Schema Fields'
-    assert.notEqual(res.schemaLink.labelKey, 'Edit Schema Fields');
-    assert.equal(res.schemaLink.labelKey, 'admin.databases.editSchemaFields');
+    for (const ctx of testCases) {
+        const res = computeDatabaseHeader(ctx);
+
+        for (const act of res.actions) {
+            const tr = getTranslation(act.labelKey);
+            if (!tr) throw new Error(`Missing translation for action key: ${act.labelKey}`);
+        }
+
+        if (res.toolbar.preventDeleteMessageKey) {
+            const tr = getTranslation(res.toolbar.preventDeleteMessageKey);
+            if (!tr) throw new Error(`Missing translation for preventDeleteMessageKey: ${res.toolbar.preventDeleteMessageKey}`);
+        }
+
+        if (res.schemaLink) {
+            const tr = getTranslation(res.schemaLink.labelKey);
+            if (!tr) throw new Error(`Missing translation for schemaLink.labelKey: ${res.schemaLink.labelKey}`);
+        }
+    }
 });

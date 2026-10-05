@@ -13,9 +13,10 @@ interface CalendarViewProps {
     databaseId: string;
     viewId: string;
     renderTabs?: React.ReactNode;
+    hideHeader?: boolean;
 }
 
-export default function CalendarView({ databaseId, viewId, renderTabs }: CalendarViewProps) {
+export default function CalendarView({ databaseId, viewId, renderTabs, hideHeader }: CalendarViewProps) {
     const database = useDatabaseStore(state => state.getDatabase(databaseId));
     const router = useRouter();
 
@@ -90,6 +91,7 @@ export default function CalendarView({ databaseId, viewId, renderTabs }: Calenda
 
     return (
         <div className="flex flex-col h-full bg-white dark:bg-black w-full border border-neutral-200 dark:border-white/10 rounded-xl overflow-hidden shadow-sm relative styled-calendar">
+            {!hideHeader && (
             <div className="px-3 pt-2.5 pb-0 border-b border-[rgba(0,0,0,0.1)] dark:border-white/10 bg-neutral-50 dark:bg-neutral-900 flex items-end justify-between relative z-[60] flex-wrap gap-2">
                 <div className="flex items-end pr-2 shrink-0">
                     {renderTabs ? renderTabs : (
@@ -100,6 +102,7 @@ export default function CalendarView({ databaseId, viewId, renderTabs }: Calenda
                     )}
                 </div>
             </div>
+            )}
 
             <div className="flex-1 w-full h-full p-6 overflow-y-auto no-scrollbar relative min-h-0">
                 <style jsx global>{`

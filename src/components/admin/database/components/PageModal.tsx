@@ -2,6 +2,7 @@
 /* eslint-disable */
 
 import { isTenantDatabase } from '@/lib/relations/resolve';
+import { urlFieldHref } from '@/lib/files';
 import CommentThread from '@/components/admin/comments/CommentThread';
 import { useOpenLinkedRecord } from '../hooks/useOpenLinkedRecord';
 import React, { useState, useEffect, useRef } from 'react';
@@ -1206,7 +1207,7 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                                                                                 />
                                                                                 {page.properties[prop.id] && (
                                                                                     <a
-                                                                                        href={String(page.properties[prop.id]).startsWith('http') ? String(page.properties[prop.id]) : `https://${page.properties[prop.id]}`}
+                                                                                        href={urlFieldHref(page.properties[prop.id])}
                                                                                         target="_blank"
                                                                                         rel="noopener noreferrer"
                                                                                         className="flex-shrink-0 p-1.5 rounded-md hover:bg-orange-100 dark:hover:bg-orange-900/30 text-neutral-400 hover:text-orange-600 dark:hover:text-orange-400 transition-colors opacity-0 group-hover:opacity-100"

@@ -14,6 +14,20 @@ export function resolveFileUrl(url: string | null | undefined): string {
     return url;
 }
 
+/**
+ * The href of a URL-type field. A stored FILE (a storage key 't_…' — e.g. "Bonnetje" / receiptUrl, written by the
+ * scan and the bulk import) opens through the file route; a web address as is; a bare domain gets https://.
+ * Before: every value got "https://" prepended, so a storage key became a host name ("Safari can't find the
+ * server t_cmn…", Florin 2026-10-05).
+ */
+export function urlFieldHref(value: unknown): string {
+    const v = String(value ?? '').trim();
+    if (!v) return '';
+    if (v.startsWith('t_') || v.startsWith('/api/files/')) return resolveFileUrl(v);
+    if (/^(https?:|mailto:|tel:|data:)/i.test(v)) return v;
+    return `https://${v}`;
+}
+
 export interface StoredPhoto { key: string; name: string; type: string }
 
 /**

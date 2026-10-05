@@ -1,6 +1,7 @@
 "use client";
 /* eslint-disable */
 
+import { urlFieldHref } from '@/lib/files';
 import { useOpenLinkedRecord } from '../hooks/useOpenLinkedRecord';
 import React, { useState, useEffect, useRef } from 'react';
 import { useDatabaseStore } from '../store';
@@ -586,7 +587,7 @@ function PropertyRow({
         );
     } else if (property.type === 'url') {
         const strVal = String(value || '');
-        const href = strVal && !strVal.startsWith('http') ? `https://${strVal}` : strVal;
+        const href = urlFieldHref(strVal);   // a stored file opens through the file route (lib/files)
         valueEl = (
             <div className="flex items-center gap-1 w-full">
                 <DebouncedInput value={value} onChange={val => onChange(property.id, val)} isReadOnly={isReadOnly} inputBase={inputBase} placeholder="https://..." />

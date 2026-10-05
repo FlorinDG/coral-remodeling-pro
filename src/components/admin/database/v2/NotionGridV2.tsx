@@ -31,7 +31,7 @@ import { SelectCell, CheckboxCell, DateCell, RelationCell, RollupCell, FormulaCe
 import { collectRollup, applyRollupAggregation, locatorOf } from '@/lib/records/rollup';
 import { evaluateFormula } from '../formulaEngine';
 import { sortPages, holdOrder } from '@/lib/records/view-sort';
-import { visibleColumns } from '@/lib/records/view-scope';
+import { visibleColumns, moveColumn, setColumnWidth } from '@/lib/records/view-scope';
 import { isTextEditable, parseCellInput, cellText, cellChanged } from '@/lib/records/grid-cell';
 import { resolveRelationTitle } from '@/lib/relations/resolve';
 
@@ -73,7 +73,17 @@ export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRec
     const rows = useMemo(() => holdOrder(frozenIds.current, sorted), [sorted, editing]);   // eslint-disable-line react-hooks/exhaustive-deps
 
     const columns = useMemo(() => visibleColumns(database?.properties || [], activeView?.propertiesState), [database?.properties, activeView?.propertiesState]);
-    const widthOf = useCallback((propId: string) => activeView?.propertiesState?.find(s => s.propertyId === propId)?.width || (propId === 'title' ? 260 : 160), [activeView?.propertiesState]);
+    // Column width: the view's, or the live one while the handle is dragged (pointer capture — no document listeners).
+    const [liveWidth, setLiveWidth] = useState<{ id: string; w: number } | null>(null);
+    const widthOf = useCallback((propId: string) => (liveWidth?.id === propId ? liveWidth.w : undefined)
+        ?? activeView?.propertiesState?.find(s => s.propertyId === propId)?.width ?? (propId === 'title' ? 260 : 160), [activeView?.propertiesState, liveWidth]);
+    const updateView = useDatabaseStore(s => s.updateView);
+    const saveColumns = useCallback((next: NonNullable<typeof activeView>['propertiesState']) => {
+        if (database && activeView) updateView(database.id, activeView.id, { propertiesState: next });   // → DB-DEF-1 view op
+    }, [database, activeView, updateView]);
+    const [dragCol, setDragCol] = useState<string | null>(null);
+    // Keyboard: the active cell (arrows move it; Enter or typing edits a text cell).
+    const [active, setActive] = useState<{ pageId: string; propId: string } | null>(null);
 
     const openRecord = useCallback((pageId: string) => {
         if (onOpenRecord) onOpenRecord(pageId);
@@ -102,6 +112,7 @@ export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRec
 
     const startEdit = (page: Page, prop: Property) => {
         if (page.properties.accountantExportedAt === true) { toast.message('Dit document is geëxporteerd naar de boekhouder en kan niet meer gewijzigd worden.'); return; }
+        setActive({ pageId: page.id, propId: prop.id });
         setEditing({ pageId: page.id, propId: prop.id, text: cellText(prop as never, page.properties[prop.id]) });
     };
 
@@ -110,7 +121,8 @@ export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRec
         let c = columns.findIndex(p => p.id === fromProp) + dCol;
         while (c >= 0 && c < columns.length && !isTextEditable(columns[c] as never)) c += dCol || 1;
         const page = rows[r], prop = columns[c];
-        if (page && prop && isTextEditable(prop as never)) startEdit(page, prop); else setEditing(null);
+        if (page && prop && isTextEditable(prop as never)) startEdit(page, prop);
+        else { setEditing(null); requestAnimationFrame(() => scrollRef.current?.focus()); }   // keyboard stays in the grid
     };
 
     const colDefs = useMemo<ColumnDef<Page>[]>(() => columns.map(prop => ({
@@ -130,7 +142,7 @@ export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRec
                         onChange={ev => setEditing({ ...editing, text: ev.target.value })}
                         onBlur={() => { if (leaving.current) { leaving.current = false; return; } commit(editing); setEditing(null); }}
                         onKeyDown={ev => {
-                            if (ev.key === 'Escape') { ev.preventDefault(); leaving.current = true; setEditing(null); }
+                            if (ev.key === 'Escape') { ev.preventDefault(); leaving.current = true; setEditing(null); requestAnimationFrame(() => scrollRef.current?.focus()); }
                             else if (ev.key === 'Enter') { ev.preventDefault(); leaving.current = true; commit(editing); moveTo(page.id, prop.id, 1, 0); }
                             else if (ev.key === 'Tab') { ev.preventDefault(); leaving.current = true; commit(editing); moveTo(page.id, prop.id, 0, ev.shiftKey ? -1 : 1); }
                         }}
@@ -225,7 +237,28 @@ export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRec
                     </button>
                 </div>
             </div>
-            <div ref={scrollRef} className="flex-1 min-h-0 overflow-auto">
+            <div ref={scrollRef} className="flex-1 min-h-0 overflow-auto outline-none" tabIndex={0}
+                 onKeyDown={e => {
+                     if (editing || !active) return;
+                     const r = rows.findIndex(p => p.id === active.pageId), c = columns.findIndex(p => p.id === active.propId);
+                     const go = (dr: number, dc: number) => {
+                         const nr = Math.max(0, Math.min(rows.length - 1, r + dr)), nc = Math.max(0, Math.min(columns.length - 1, c + dc));
+                         if (rows[nr] && columns[nc]) { setActive({ pageId: rows[nr].id, propId: columns[nc].id }); virtualizer.scrollToIndex(nr); }
+                     };
+                     if (e.key === 'ArrowDown') { e.preventDefault(); go(1, 0); }
+                     else if (e.key === 'ArrowUp') { e.preventDefault(); go(-1, 0); }
+                     else if (e.key === 'ArrowRight' || (e.key === 'Tab' && !e.shiftKey)) { e.preventDefault(); go(0, 1); }
+                     else if (e.key === 'ArrowLeft' || (e.key === 'Tab' && e.shiftKey)) { e.preventDefault(); go(0, -1); }
+                     else if (e.key === 'Escape') setActive(null);
+                     else {
+                         const page = rows[r], prop = columns[c];
+                         if (!page || !prop || !isTextEditable(prop as never)) return;
+                         if (e.key === 'Enter' || e.key === 'F2') { e.preventDefault(); startEdit(page, prop); }
+                         else if (e.key.length === 1 && !e.metaKey && !e.ctrlKey && !e.altKey && page.properties.accountantExportedAt !== true) {
+                             e.preventDefault(); setEditing({ pageId: page.id, propId: prop.id, text: e.key });   // typing replaces, like a spreadsheet
+                         }
+                     }
+                 }}>
                 <div style={{ width: totalWidth, minWidth: '100%' }}>
                     {/* header */}
                     <div className="sticky top-0 z-10 flex bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-white/10 text-xs font-semibold text-neutral-500">
@@ -233,8 +266,23 @@ export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRec
                             <input type="checkbox" aria-label="Alles selecteren" checked={allSelected} onChange={() => setSelected(allSelected ? new Set() : new Set(rows.map(r => r.id)))} className="w-3.5 h-3.5 accent-orange-500" />
                         </div>
                         {table.getHeaderGroups()[0]?.headers.map(h => (
-                            <div key={h.id} style={{ width: widthOf(h.id) }} className="shrink-0 h-9 px-2 flex items-center border-r border-neutral-200 dark:border-white/5">
+                            <div key={h.id} style={{ width: widthOf(h.id) }}
+                                 draggable
+                                 onDragStart={e => { setDragCol(h.id); e.dataTransfer.effectAllowed = 'move'; }}
+                                 onDragOver={e => { if (dragCol && dragCol !== h.id) e.preventDefault(); }}
+                                 onDrop={e => { e.preventDefault(); if (dragCol) saveColumns(moveColumn(activeView?.propertiesState, columns.map(c => c.id), dragCol, h.id)); setDragCol(null); }}
+                                 onDragEnd={() => setDragCol(null)}
+                                 className={`relative shrink-0 h-9 px-2 flex items-center border-r border-neutral-200 dark:border-white/5 cursor-grab select-none ${dragCol === h.id ? 'opacity-40' : ''}`}>
                                 {flexRender(h.column.columnDef.header, h.getContext())}
+                                <div
+                                    title="Breedte"
+                                    className="absolute right-0 top-0 h-full w-1.5 cursor-col-resize hover:bg-orange-400/60"
+                                    draggable={false}
+                                    onDragStart={e => e.preventDefault()}
+                                    onPointerDown={e => { e.stopPropagation(); (e.target as HTMLElement).setPointerCapture(e.pointerId); setLiveWidth({ id: h.id, w: widthOf(h.id) }); (e.target as HTMLElement).dataset.x = String(e.clientX); (e.target as HTMLElement).dataset.w = String(widthOf(h.id)); }}
+                                    onPointerMove={e => { const el = e.target as HTMLElement; if (!el.hasPointerCapture(e.pointerId)) return; setLiveWidth({ id: h.id, w: Math.max(60, Number(el.dataset.w) + e.clientX - Number(el.dataset.x)) }); }}
+                                    onPointerUp={e => { const el = e.target as HTMLElement; if (!el.hasPointerCapture(e.pointerId)) return; el.releasePointerCapture(e.pointerId); const w = Number(el.dataset.w) + e.clientX - Number(el.dataset.x); setLiveWidth(null); saveColumns(setColumnWidth(activeView?.propertiesState, h.id, w)); }}
+                                />
                             </div>
                         ))}
                     </div>
@@ -252,7 +300,9 @@ export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRec
                                                className={`w-3.5 h-3.5 accent-orange-500 ${selected.has(row.id) ? '' : 'hidden group-hover:block'}`} />
                                     </div>
                                     {row.getVisibleCells().map(cell => (
-                                        <div key={cell.id} style={{ width: widthOf(cell.column.id) }} className="shrink-0 h-full border-r border-neutral-100 dark:border-white/5 overflow-hidden">
+                                        <div key={cell.id} style={{ width: widthOf(cell.column.id) }}
+                                             onMouseDown={() => setActive({ pageId: row.id, propId: cell.column.id })}
+                                             className={`shrink-0 h-full border-r border-neutral-100 dark:border-white/5 overflow-hidden ${active?.pageId === row.id && active.propId === cell.column.id && !editing ? 'ring-2 ring-inset ring-orange-300' : ''}`}>
                                             {flexRender(cell.column.columnDef.cell, cell.getContext())}
                                         </div>
                                     ))}

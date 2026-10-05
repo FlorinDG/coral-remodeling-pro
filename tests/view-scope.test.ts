@@ -57,3 +57,20 @@ test('a view\'s columns: hidden out, the comments field only when shown, ordered
     assert.deepEqual(visibleColumns(props, [{ propertyId: 'b', order: 0 }, { propertyId: 'title', order: 1 }, { propertyId: 'a', hidden: true }]).map(p => p.id), ['b', 'title']);
     assert.deepEqual(visibleColumns(props, [{ propertyId: 'comments', hidden: false, order: 0 }]).map(p => p.id), ['comments', 'title', 'a', 'b']);
 });
+
+import { moveColumn, setColumnWidth } from '../src/lib/records/view-scope.ts';
+
+test('moving a column re-orders the visible ones and keeps widths / hidden flags (throw proof: hidden ones lost)', () => {
+    const st = [{ propertyId: 'title', order: 0, width: 260 }, { propertyId: 'a', order: 1 }, { propertyId: 'h', hidden: true, order: 2 }, { propertyId: 'b', order: 3 }];
+    const next = moveColumn(st, ['title', 'a', 'b'], 'b', 'title');
+    assert.deepEqual(next.map(s => s.propertyId), ['b', 'title', 'a', 'h']);
+    assert.equal(next.find(s => s.propertyId === 'title')!.width, 260);
+    assert.equal(next.find(s => s.propertyId === 'h')!.hidden, true);
+    assert.deepEqual(next.map(s => s.order), [0, 1, 2, 3]);
+});
+
+test('a width is set per view, clamped', () => {
+    assert.equal(setColumnWidth([], 'a', 20)[0].width, 60);
+    assert.equal(setColumnWidth([{ propertyId: 'a', hidden: true }], 'a', 333.4)[0].width, 333);
+    assert.equal(setColumnWidth([{ propertyId: 'a', hidden: true }], 'a', 333)[0].hidden, true);
+});

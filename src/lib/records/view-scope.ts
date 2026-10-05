@@ -65,3 +65,26 @@ export function visibleColumns<P extends { id: string; type?: string }>(properti
         .filter(p => !isHiddenInView(byId.get(p.id), p))
         .sort((a, b) => (byId.get(a.id)?.order ?? 999) - (byId.get(b.id)?.order ?? 999));
 }
+
+/**
+ * A column moved in a view (drag in the grid header): the view's column state with the VISIBLE columns in their new
+ * order; hidden ones keep their place after them; widths / hidden flags kept. `visibleIds` is what the grid shows.
+ */
+export function moveColumn(state: ViewPropertyState[] | null | undefined, visibleIds: string[], fromId: string, toId: string): ViewPropertyState[] {
+    const order = [...visibleIds];
+    const from = order.indexOf(fromId), to = order.indexOf(toId);
+    if (from < 0 || to < 0 || from === to) return (state || []).map(s => ({ ...s }));
+    order.splice(to, 0, order.splice(from, 1)[0]);
+    const byId = new Map((state || []).map(s => [s.propertyId, s]));
+    const rest = (state || []).filter(s => !order.includes(s.propertyId)).map(s => s.propertyId);
+    return [...order, ...rest].map((id, i) => ({ ...(byId.get(id) || {}), propertyId: id, order: i }));
+}
+
+/** A column's width set in a view (resize in the grid header); clamped to a usable range. */
+export function setColumnWidth(state: ViewPropertyState[] | null | undefined, propertyId: string, width: number): ViewPropertyState[] {
+    const w = Math.max(60, Math.min(900, Math.round(width)));
+    const list = (state || []).map(s => ({ ...s }));
+    const i = list.findIndex(s => s.propertyId === propertyId);
+    if (i >= 0) list[i].width = w; else list.push({ propertyId, width: w });
+    return list;
+}

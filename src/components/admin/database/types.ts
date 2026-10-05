@@ -209,6 +209,8 @@ export interface DatabaseView {
         timelineGroupByPropertyId?: string; // Row grouping (select/person)
         timelineScale?: 'day' | 'week' | 'month' | 'quarter';
     };
+    /** VIEW-SCOPE-1: the screen this view belongs to (lib/records/view-scope surfaceKey); absent = the database's own screen. */
+    surface?: string;
     filters?: FilterRule[]; // View-specific filters
     filterGroups?: FilterGroup[]; // Advanced OR/AND nested filters
     sorts?: SortRule[];     // View-specific sorts

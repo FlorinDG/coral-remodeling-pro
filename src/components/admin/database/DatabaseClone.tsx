@@ -1,5 +1,6 @@
 "use client";
 
+import { surfaceKey, viewsForSurface, seedSurfaceView } from '@/lib/records/view-scope';
 import { isTenantDatabase } from '@/lib/relations/resolve';
 import React, { useEffect, useState, useMemo } from 'react';
 import dynamic from 'next/dynamic';
@@ -104,16 +105,19 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
   }
 
   // Restrict to Single View "All Contacts" for Free Tier on Contact Databases
+  // VIEW-SCOPE-1: this screen's own views (a screen with a fixed filter — credit notes, proformas, a project type —
+  // never shares views, and so never filters or sorts, with another screen of the same database).
+  const surface = surfaceKey(defaultFilter);
   const supportedViews = useMemo(() => {
     if (!database) return [];
-    let views = [...database.views];
+    let views = viewsForSurface(database.views, surface);
     if (isImmutableContactDB && !hasCRM) {
       if (views.length > 0) {
         views = [views.find(v => v.name.toLowerCase().includes('all')) || views[0]];
       }
     }
     return views;
-  }, [database, isImmutableContactDB, hasCRM]);
+  }, [database, isImmutableContactDB, hasCRM, surface]);
 
   // Renaming state
   const [renamingViewId, setRenamingViewId] = useState<string | null>(null);
@@ -146,6 +150,7 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
     addView(resolvedId, {
       name: names[type],
       type,
+      ...(surface ? { surface } : {}),
       config: type === 'board' ? { groupByPropertyId: 'status' } : {}
     });
     setShowViewTypeSelector(false);
@@ -199,20 +204,25 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
 
   // Initialize synchronously to avoid a second re-render after mounting
   const [activeViewId, setActiveViewId] = useState<string | null>(() => {
-    const supportedViews = database?.views || [];
-    return supportedViews.length > 0 ? supportedViews[0].id : null;
+    const own = viewsForSurface(database?.views, surface);
+    return own.length > 0 ? own[0].id : null;
   });
 
-  // Keep activeViewId synced if the current view is somehow deleted
+  // A screen without views of its own gets one, once: the base layout without the base view's filters/sorts.
   useEffect(() => {
-    if (database && activeViewId) {
-      const supportedViews = database.views;
-      const viewExists = supportedViews.some(v => v.id === activeViewId);
-      if (!viewExists && supportedViews.length > 0) {
-        setActiveViewId(supportedViews[0].id);
-      }
+    if (!database || !surface) return;
+    if (viewsForSurface(database.views, surface).length > 0) return;
+    const seeded = seedSurfaceView(database.views, surface, crypto.randomUUID());
+    if (seeded) useDatabaseStore.getState().addView(resolvedId, seeded);
+  }, [database, surface, resolvedId]);
+
+  // Keep activeViewId on one of THIS screen's views (deleted, not yet seeded, or another screen's)
+  useEffect(() => {
+    if (!database) return;
+    if (!activeViewId || !supportedViews.some(v => v.id === activeViewId)) {
+      if (supportedViews.length > 0) setActiveViewId(supportedViews[0].id);
     }
-  }, [database, activeViewId]);
+  }, [database, activeViewId, supportedViews]);
 
   // Auto-instantiate uninitialized databases instead of showing a manual button
   const [autoInitializing, setAutoInitializing] = useState(false);
@@ -400,14 +410,15 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
     );
   }
 
-  const activeView = supportedViews.find(v => v.id === activeViewId) || supportedViews[0] || database.views[0];
+  const activeView = supportedViews.find(v => v.id === activeViewId) || supportedViews[0];
 
   // Guard: database exists but has no views yet (newly provisioned stub with views: []).
   // Create a default table view and wait for it to be stored before rendering.
   if (!activeView) {
-    if (!autoInitializing) {
+    // A screen with base views to start from is seeded by the effect above (VIEW-SCOPE-1) — not here.
+    if (!autoInitializing && !(surface && database.views.length > 0)) {
       setAutoInitializing(true);
-      useDatabaseStore.getState().addView(resolvedId, { name: 'All', type: 'table', propertiesState: [] });
+      useDatabaseStore.getState().addView(resolvedId, { name: 'All', type: 'table', propertiesState: [], ...(surface ? { surface } : {}) });
       // addView is synchronous in the store — next render will have a view.
       setAutoInitializing(false);
     }

@@ -48,6 +48,7 @@ import { ScheduledShift, Project } from '@/components/time-tracker/hooks/useSche
 import { WorkerOption } from '@/components/time-tracker/types/timesheet';
 import { hrList } from '@/lib/hr-api';
 import { format } from 'date-fns';
+import { shiftMoment, localDateKey } from '@/lib/kernel/shift-time';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -97,16 +98,12 @@ const STATUS_OPTIONS = ['Scheduled', 'Active', 'In Progress', 'Completed', 'Canc
 
 const getParsedDate = (dateStr: string) => {
   if (!dateStr) return undefined;
-  const [year, month, day] = dateStr.split('-').map(Number);
-  return new Date(year, month - 1, day);
+  return shiftMoment(dateStr, '00:00');
 };
 
 const formatDateStr = (date: Date | undefined) => {
   if (!date) return '';
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
+  return localDateKey(date);
 };
 
 export function EditShiftDialog({

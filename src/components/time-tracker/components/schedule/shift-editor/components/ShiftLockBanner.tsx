@@ -1,11 +1,15 @@
-"use client";
-
-import React from 'react';
 import { Lock } from 'lucide-react';
+import { zonedParts } from '@/lib/kernel/shift-time';
 import { ShiftLockState } from '../model';
 
 interface ShiftLockBannerProps {
   lock: ShiftLockState;
+}
+
+function formatBrussels(isoTs: string | undefined): string | undefined {
+  if (!isoTs) return undefined;
+  const p = zonedParts(isoTs);
+  return `${p.date.slice(8, 10)}/${p.date.slice(5, 7)}/${p.date.slice(0, 4)} ${p.time}`;
 }
 
 export function ShiftLockBanner({ lock }: ShiftLockBannerProps) {
@@ -13,15 +17,7 @@ export function ShiftLockBanner({ lock }: ShiftLockBannerProps) {
 
   const signer = lock.signedBy || 'klant';
   const signedNumber = lock.signedNumber ? `Werkbon ${lock.signedNumber}` : 'Werkbon';
-  const signedAtFormatted = lock.signedAt
-    ? new Date(lock.signedAt).toLocaleDateString('nl-BE', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      })
-    : undefined;
+  const signedAtFormatted = formatBrussels(lock.signedAt);
 
   return (
     <div className="mx-6 mt-4 p-4 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 text-amber-900 dark:text-amber-200 flex items-start gap-3 shadow-sm">

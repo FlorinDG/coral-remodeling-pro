@@ -14,6 +14,7 @@ import {
   weekdayOfYmd,
   daysBetweenYmd,
 } from '@/lib/kernel/shift-time';
+import type { ScheduledShift } from '@/components/time-tracker/hooks/useScheduledShifts';
 
 export type ShiftScheduleType = 'single' | 'recurring' | 'leave';
 export type ShiftEditScope = 'occurrence' | 'following' | 'series';
@@ -47,45 +48,46 @@ export interface ShiftValidationResult {
 /**
  * Payloads sent to onCreateShift / useScheduledShifts.createShift.
  * Strictly camelCase matching ScheduledShift.
+ * Derived from ScheduledShift per Planner review (C2, M1/M2).
  */
-export interface CreateShiftPayload {
-  userId: string;
-  projectId?: string | null;
+export type CreateShiftPayload = Pick<
+  ScheduledShift,
+  'userId' | 'shiftDate' | 'shiftStart' | 'shiftEnd' | 'status'
+> & {
+  projectId?: ScheduledShift['projectId'];
+  role?: ScheduledShift['role'];
+  notes?: ScheduledShift['notes'];
+  shiftName?: ScheduledShift['shiftName'];
+  seriesId?: ScheduledShift['seriesId'];
   contactPageId?: string | null;
-  shiftDate: string;
-  shiftStart: string;
-  shiftEnd: string;
-  role?: string | null;
-  notes?: string | null;
   siteAddress?: string | null;
   materialsEnabled: boolean;
-  status: string;
-  shiftName?: string;
-  seriesId?: string;
-}
+};
 
 /**
  * Payloads sent to onUpdateShift / useScheduledShifts.updateShift.
  * Strictly camelCase matching ScheduledShift.
+ * Derived from ScheduledShift per Planner review (C2, M1/M2).
  */
-export interface UpdateShiftPayload {
-  userId?: string;
-  projectId?: string | null;
-  contactPageId?: string | null;
-  shiftDate?: string;
-  shiftStart?: string;
-  shiftEnd?: string;
-  role?: string | null;
-  notes?: string | null;
-  siteAddress?: string | null;
-  materialsEnabled?: boolean;
-  seriesId?: string;
-}
+export type UpdateShiftPayload = Partial<
+  Pick<
+    ScheduledShift,
+    'userId' | 'shiftDate' | 'shiftStart' | 'shiftEnd'
+  > & {
+    projectId?: ScheduledShift['projectId'];
+    role?: ScheduledShift['role'];
+    notes?: ScheduledShift['notes'];
+    seriesId?: ScheduledShift['seriesId'];
+    contactPageId?: string | null;
+    siteAddress?: string | null;
+    materialsEnabled?: boolean;
+  }
+>;
 
 export interface ShiftAuditLogEntry {
   action: string;
   createdAt?: string;
-  after?: any;
+  after?: unknown;
 }
 
 export interface ShiftLockState {

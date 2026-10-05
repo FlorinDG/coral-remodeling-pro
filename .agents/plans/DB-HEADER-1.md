@@ -254,3 +254,27 @@ items show. Moving code OUT of NotionGrid is allowed (R3-C freeze = no new behav
 **Answers:** Q1 yes — CRM shows view tabs (Florin: filters per view). Q2 yes, per C5. Q3 yes.
 #19 (planning / Gantt) is not a DatabaseClone screen — out of scope, noted.
 M1 = `src/lib/records/db-header.ts` + `tests/db-header.test.ts` (node:test, throw proofs) + report. Push, STOP.
+
+## PLANNER REVIEW — M1 · 2026-10-05 · ✅ ACCEPTED (inert: nothing imports it) · corrections R1–R6 land FIRST in M2
+Read `3ee25c65` + report `20d1c1fb`. C1 kernel/roles reuse for the accountant export ✅, C2 keys not text ✅, C3 tabs
+from data ✅, C4 actions = what exists ✅. But it re-derives rules that already have a home — the thing C1 forbids:
+
+**R1 · Who may change: ONE rule.** `lib/records/grid-access.ts` already holds it (`gridAccess`: the accountant reads,
+the bestek read-only below ENTERPRISE; `EXPENSES_INBOX_VIEW`; `licensedColumns`). The context takes
+`access: GridAccess` (the caller passes `gridAccess(...)`), not `isAccountant` / `isBestekReadOnly` flags; the inbox
+test uses `EXPENSES_INBOX_VIEW`. Delete `surfaceKey === 'inbox'` — no such surface key exists (`view-scope surfaceKey`
+is `field=value`).
+**R2 · Import / delete gates = the grid's today.** Import: `access.create && !ctx.isLockedSchema` (the screen already
+computes `lockedSchema`); delete: `access.delete` — the per-row guard (`preventDelete`) stays the screen's, the door
+refuses issued documents. Drop the own `FINANCIAL_DOCUMENT_ROLES` list for these.
+**R3 · `showGridV2Toggle`** is superadmin / impersonating only (`v2/grid-v2-flag.ts`), not `true` for everyone — and
+it is deleted at GRID-REPLACE-5.
+**R4 · The keys must exist.** 8 of 9 returned keys are not in `src/messages/*.json` (`draftOnlyDelete`,
+`editCustomFields`, `editSchemaFields`, `scanTicket`, `bulkUpload`, `manualEntry`, `scanInvoice`, `peppolSync`).
+Reuse the keys the screens use today where they exist; add the rest in en/nl/fr/ro. Throw proof: a test that every
+key the rule can return resolves in `nl.json`.
+**R5 · Schema link:** no `databaseId` → no link (the fallback `/admin/settings/databases/<role>` is not a database).
+**R6 · Unused context** (`planType`, `activeModules`, `hasDatabasesPermission`, `gridV2Enabled`, `activeViewType`):
+remove what the rule does not decide from (C6: `gridV2Enabled` decides nothing).
+**New since M1:** the V2 toolbar gained "Tekst afbreken" (per-view `wrapText`) — add `showWrapText` (table views).
+GO M2 after R1–R6.

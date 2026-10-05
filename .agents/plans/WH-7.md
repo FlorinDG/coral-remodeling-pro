@@ -388,3 +388,10 @@ corrections applied (kernel `shiftMoment`/`localDateKey`; `zonedParts` for `sign
    `format(shiftMoment(ymd,'00:00'), 'PPP')` — a Brussels-midnight moment formatted in the BROWSER's zone (a laptop
    abroad shows the day before). Label the day from the ymd itself (`zonedParts(shiftMoment(ymd, '12:00'))` or a
    kernel day formatter), never from a midnight instant.
+
+## PLANNER REVIEW — M4 · 2026-10-05 · ✅ ACCEPTED · WH-7 DONE
+Read `afe1da0d` + report `3aacb280`. ScheduleManagement on `shift-editor/` (barrel `index.ts`); legacy
+CreateShiftForm (2035) / EditShiftDialog (943) / useScheduleAttachments (142) deleted — no importer left (grep);
+SUPA-2 allowlist 5 → 2. M3 correction: `formatCalendarDay` formats NOON UTC of the ymd in Brussels — never slips.
+**Note (fold into the next item touching `model.ts`, no round trip):** the zone is written `'Europe/Brussels'` — use
+the kernel's `BUSINESS_TIME_ZONE` (one constant, one home).

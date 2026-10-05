@@ -27,3 +27,15 @@ test('already accepted is said as such (both spellings)', () => {
     assert.equal(clientAcceptRefusal('quotations', 'quotations', 'ACCEPTED'), 'already_accepted');
     assert.equal(clientAcceptRefusal('quotations', 'quotations', 'opt-accepted'), 'already_accepted');
 });
+
+import { publicViewRefusal } from '../src/lib/records/client-accept.ts';
+
+test('public VIEW: only the right kind, and never a draft (the id was parsed; drafts were public by link)', () => {
+    assert.equal(publicViewRefusal('invoices', 'invoices', 'opt-sent'), null);
+    assert.equal(publicViewRefusal('invoices', 'invoices', 'opt-paid'), null);
+    assert.equal(publicViewRefusal('quotations', 'quotations', 'opt-accepted'), null);
+    assert.equal(publicViewRefusal('invoices', 'invoices', 'opt-draft'), 'draft');
+    assert.equal(publicViewRefusal('invoices', 'invoices', undefined), 'draft');
+    assert.equal(publicViewRefusal('invoices', 'quotations', 'opt-sent'), 'wrong_kind');
+    assert.equal(publicViewRefusal('quotations', null, 'opt-sent'), 'wrong_kind');
+});

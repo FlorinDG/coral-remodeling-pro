@@ -1,58 +1,16 @@
 import React from 'react';
-import prisma from '@/lib/prisma';
+import { platformDb } from '@/lib/data/scope';
+import { publicViewRefusal } from '@/lib/records/client-accept';
 import { notFound } from 'next/navigation';
 import QuotationViewer from './QuotationViewer';
-import { Block, VariantsConfig } from '@/components/admin/database/types';
-
-async function enrichBlocks(blocks: Block[], articlesDbId: string): Promise<Block[]> {
-    // Fetch articles DB to resolve variants
-    const articlesDb = await prisma.globalDatabase.findUnique({
-        where: { id: articlesDbId },
-        include: { pages: true }
-    });
-
-    if (!articlesDb) return blocks;
-
-    const properties = (articlesDb.properties as any) || [];
-    const variantsProp = properties.find((p: any) => p.type === 'variants');
-    if (!variantsProp) return blocks;
-
-    const enrich = (nodes: Block[]): Block[] => {
-        return nodes.map(block => {
-            let enriched = { ...block };
-
-            if (block.articleId && block.selectedVariants) {
-                const articlePage = articlesDb.pages.find(p => p.id === block.articleId);
-                if (articlePage) {
-                    const props = (articlePage.properties as Record<string, any>) ?? {};
-                    const variantsConfig = props[variantsProp.id] as VariantsConfig;
-                    if (Array.isArray(variantsConfig)) {
-                        let delta = 0;
-                        Object.entries(block.selectedVariants).forEach(([axisId, optId]) => {
-                            const axis = variantsConfig.find(a => a.id === axisId);
-                            const opt = axis?.options.find(o => o.id === optId);
-                            if (opt) delta += opt.priceDelta;
-                        });
-                        (enriched as any).variantPriceDelta = delta;
-                    }
-                }
-            }
-
-            if (block.children && block.children.length > 0) {
-                enriched.children = enrich(block.children);
-            }
-
-            return enriched;
-        });
-    };
-
-    return enrich(blocks);
-}
+import { Block } from '@/components/admin/database/types';
 
 export default async function PublicQuotePage({ params }: { params: Promise<{ locale: string, id: string }> }) {
     const { locale, id: quoteId } = await params;
 
-    const quote = await prisma.globalPage.findUnique({
+    // The public link is the key (by design): read by id through the named cross-tenant door (D4), then
+    // refused unless it is a quote of the right KIND that has left draft (lib/records/client-accept).
+    const quote = await platformDb().globalPage.findUnique({
         where: { id: quoteId },
         include: {
             database: {
@@ -84,8 +42,7 @@ export default async function PublicQuotePage({ params }: { params: Promise<{ lo
         }
     });
 
-    // Ensure it's a valid quote payload
-    if (!quote || !quote.database.id.includes('db-quotations')) {
+    if (!quote || publicViewRefusal('quotations', quote.database.logicalKey, (quote.properties as Record<string, unknown> | null)?.status)) {
         return notFound();
     }
 
@@ -93,8 +50,8 @@ export default async function PublicQuotePage({ params }: { params: Promise<{ lo
     // Language priority: URL locale > tenant document language > 'nl'
     const lang = locale || tenant.documentLanguage || 'nl';
 
-    // Enrich blocks with variant pricing deltas for accurate totals
-    const enrichedBlocks = await enrichBlocks((quote.blocks as any) || [], 'db-articles');
+    // VARIANT-1: each line carries its frozen surcharge — nothing is looked up from a library at view time.
+    const enrichedBlocks = ((quote.blocks as unknown) as Block[]) || [];
 
     return (
         <QuotationViewer

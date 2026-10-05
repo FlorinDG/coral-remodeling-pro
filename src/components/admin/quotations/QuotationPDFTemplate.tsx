@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { lineVariantDelta } from '@/lib/records/variant-price';
 import React, { useMemo } from 'react';
 import { Document, Page, Text, View, Image, Svg, Polygon, Rect } from '@react-pdf/renderer';
 import { Block } from '@/components/admin/database/types';
@@ -129,24 +130,7 @@ export const QuotationPDFTemplate = ({
                     return childrenSum * (b.quantity || 1);
                 }
                 
-                let vDeltas = (b as any).variantPriceDelta || 0;
-                if (b.selectedVariants && b.articleId && databaseStoreState?.databases) {
-                    const db = databaseStoreState.databases.find((d: any) => d.id === 'db-articles');
-                    const page = db?.pages.find((p: any) => p.id === b.articleId);
-                    const vProp = db?.properties.find((p: any) => p.type === 'variants');
-                    if (page && vProp) {
-                        const vConfig = page.properties[vProp.id];
-                        if (vConfig && Array.isArray(vConfig)) {
-                            // Reset vDeltas since we are recalculating from the DB
-                            vDeltas = 0;
-                            Object.entries(b.selectedVariants).forEach(([axisId, optId]) => {
-                                const axis = vConfig.find((a: any) => a.id === axisId);
-                                const opt = axis?.options.find((o: any) => o.id === optId);
-                                if (opt) vDeltas += opt.priceDelta;
-                            });
-                        }
-                    }
-                }
+                const vDeltas = lineVariantDelta(b);   // VARIANT-1: frozen on the line
                 return ((b.verkoopPrice || 0) + vDeltas) * (b.quantity || 1);
             };
 
@@ -156,23 +140,7 @@ export const QuotationPDFTemplate = ({
                     return childrenSum * (b.quantity || 1);
                 }
                 
-                let vDeltas = (b as any).variantPriceDelta || 0;
-                if (b.selectedVariants && b.articleId && databaseStoreState?.databases) {
-                    const db = databaseStoreState.databases.find((d: any) => d.id === 'db-articles');
-                    const page = db?.pages.find((p: any) => p.id === b.articleId);
-                    const vProp = db?.properties.find((p: any) => p.type === 'variants');
-                    if (page && vProp) {
-                        const vConfig = page.properties[vProp.id];
-                        if (vConfig && Array.isArray(vConfig)) {
-                            vDeltas = 0;
-                            Object.entries(b.selectedVariants).forEach(([axisId, optId]) => {
-                                const axis = vConfig.find((a: any) => a.id === axisId);
-                                const opt = axis?.options.find((o: any) => o.id === optId);
-                                if (opt) vDeltas += opt.priceDelta;
-                            });
-                        }
-                    }
-                }
+                const vDeltas = lineVariantDelta(b);   // VARIANT-1: frozen on the line
                 return ((b.verkoopPrice || 0) + vDeltas) * (b.quantity || 1);
             };
 

@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { lineVariantDelta } from '@/lib/records/variant-price';
 import React, { useState, useRef } from 'react';
 import { Block, BlockType, VariantsConfig } from '@/components/admin/database/types';
 import { MoreVertical, Folder, FolderOpen, AlertCircle, PlaySquare, Calculator, Search, AlignLeft, Text, Box, Tag, Zap, Database, Layers, CheckSquare, ListTodo, Plus, ChevronDown, ChevronRight, FileMinus, FileText, Settings, Image as ImageIcon, Video, File, Hash, MousePointerClick, Calendar, User, ToggleLeft, ArrowRightSquare, Table, Ban, CircleDollarSign, Percent, Grid, ArrowDownToLine, ArrowUpToLine, Wand2, Copy, Link, Shield, Lock, FileBox, GripVertical, Type, Maximize2, Trash, ExternalLink, Check, Save, Minus, ChevronsUpDown, Scissors } from 'lucide-react';
@@ -169,25 +170,8 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
         } else {
             unitTotal = b.verkoopPrice || 0;
 
-            // Phase 11: Add Product Variant Deltas!
-            if (b.selectedVariants && b.articleId) {
-                const db = useDatabaseStore.getState().getDatabase('db-articles');
-                const page = db?.pages.find(p => p.id === b.articleId);
-                const variantsProp = db?.properties.find(p => p.type === 'variants');
-                if (page && variantsProp) {
-                    const variantsConfig = page.properties[variantsProp.id] as VariantsConfig;
-                    if (variantsConfig && Array.isArray(variantsConfig)) {
-                        let variantDeltas = 0;
-                        Object.entries(b.selectedVariants).forEach(([axisId, optionId]) => {
-                            const axis = variantsConfig.find(a => a.id === axisId);
-                            const opt = axis?.options.find(o => o.id === optionId);
-                            if (opt) variantDeltas += opt.priceDelta;
-                        });
-                        // Assume priceDelta directly adds to the final verkoopPrice (retail price delta)
-                        unitTotal += variantDeltas;
-                    }
-                }
-            }
+            // VARIANT-1: the surcharge frozen on the line
+            unitTotal += lineVariantDelta(b);
         }
 
         return unitTotal * (b.quantity || 1);

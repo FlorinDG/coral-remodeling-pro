@@ -102,6 +102,8 @@ export interface Block {
 
     // --- Phase 11: Product Variants ---
     selectedVariants?: Record<string, string>; // Maps axisId -> optionId
+    /** VARIANT-1: the surcharge FROZEN when the variant was picked (lib/records/variant-price) — the only value read. */
+    variantPriceDelta?: number;
 
     // --- @prop / @this_page Mention Config ---
     mentionConfig?: {

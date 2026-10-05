@@ -1,3 +1,4 @@
+import { lineVariantDelta } from '@/lib/records/variant-price';
 import type { Block } from '@/components/admin/database/types';
 
 export interface VatBreakdownItem {
@@ -31,25 +32,8 @@ export function calculateInvoiceTotals(
     let subtotal = 0;
     const vatMap = new Map<number, { base: number; isMedecontractant: boolean }>();
 
-    const getVariantDeltas = (b: Block): number => {
-        let vDeltas = 0;
-        if (b.selectedVariants && b.articleId && databaseStoreState) {
-            const db = databaseStoreState.databases?.find((d: any) => d.id === 'db-articles');
-            const page = db?.pages.find((p: any) => p.id === b.articleId);
-            const vProp = db?.properties.find((p: any) => p.type === 'variants');
-            if (page && vProp) {
-                const vConfig = page.properties[vProp.id];
-                if (vConfig && Array.isArray(vConfig)) {
-                    Object.entries(b.selectedVariants || {}).forEach(([axisId, optId]) => {
-                        const axis = vConfig.find((a: any) => a.id === axisId);
-                        const opt = axis?.options.find((o: any) => o.id === optId);
-                        if (opt) vDeltas += opt.priceDelta;
-                    });
-                }
-            }
-        }
-        return vDeltas;
-    };
+    // VARIANT-1: the surcharge frozen on the line — never looked up (lib/records/variant-price)
+    const getVariantDeltas = (b: Block): number => lineVariantDelta(b);
 
     const accumulate = (nodes: Block[], multiplier = 1) => {
         (nodes || []).forEach(b => {

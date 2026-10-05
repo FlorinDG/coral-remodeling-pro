@@ -19,3 +19,14 @@ export function clientAcceptRefusal(kind: AcceptKind, logicalKey: string | null 
     if (typeof status !== 'string' || !ACCEPTABLE_STATUSES.has(status)) return 'not_sent';
     return null;
 }
+
+/**
+ * Who may VIEW a document from its public link: a record of the right KIND (its database's logicalKey — the id
+ * used to be parsed with includes('db-invoices')) that has left draft. A draft was never sent: it is not public.
+ */
+export function publicViewRefusal(kind: AcceptKind, logicalKey: string | null | undefined, status: unknown): 'wrong_kind' | 'draft' | null {
+    if (logicalKey !== kind) return 'wrong_kind';
+    const s = typeof status === 'string' ? status.toLowerCase() : '';
+    if (!s || s === 'opt-draft' || s === 'draft') return 'draft';
+    return null;
+}

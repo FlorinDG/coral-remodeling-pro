@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { lineVariantDelta, variantDelta } from '@/lib/records/variant-price';
 import { pricingValue, type PricingRole, type PropDef } from '@/lib/article-pricing';
 import React, { useMemo, useState } from 'react';
 import { Block, BlockType, VariantsConfig } from '@/components/admin/database/types';
@@ -121,24 +122,8 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
     }, [block.verkoopPrice]);
 
     // Compute active variant pricing deltas specifically for visual UI components
-    const variantDeltas = useMemo(() => {
-        let deltas = 0;
-        if (!block.selectedVariants || !block.articleId) return 0;
-        const db = getDatabase('db-articles');
-        const page = db?.pages.find(p => p.id === block.articleId);
-        const vProp = db?.properties.find(p => p.type === 'variants');
-            if (page && vProp) {
-                const vConfig = page.properties[vProp.id] as VariantsConfig;
-                if (vConfig && Array.isArray(vConfig)) {
-                    Object.entries(block.selectedVariants).forEach(([axisId, optId]) => {
-                        const axis = vConfig.find(a => a?.id === axisId);
-                        const opt = axis?.options?.find(o => o?.id === optId);
-                        if (opt) deltas += opt.priceDelta;
-                    });
-                }
-            }
-        return deltas;
-    }, [block.selectedVariants, block.articleId, getDatabase]);
+    // VARIANT-1: the surcharge frozen on the line when the variant was picked (lib/records/variant-price)
+    const variantDeltas = lineVariantDelta(block);
 
     // Fetch and combine target database entities from BOTH databases for global search
     const combinedEntities = useMemo(() => {
@@ -528,7 +513,8 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                                         value={block.selectedVariants?.[axis.id] || ''}
                                         onChange={(e) => {
                                             const newSelected = { ...(block.selectedVariants || {}), [axis.id]: e.target.value };
-                                            onUpdate({ selectedVariants: newSelected });
+                                            // VARIANT-1: freeze the surcharge now — later library changes never rewrite this line
+                                            onUpdate({ selectedVariants: newSelected, variantPriceDelta: variantDelta(newSelected, variantsConfig) });
                                         }}
                                         className="bg-transparent text-xs font-semibold text-neutral-800 dark:text-neutral-200 outline-none cursor-pointer hover:text-orange-500 transition-colors"
                                     >

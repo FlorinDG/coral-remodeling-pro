@@ -1,6 +1,7 @@
 "use client";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+import { isHiddenInView } from '@/lib/records/view-scope';
 import { isTenantDatabase } from '@/lib/relations/resolve';
 import React, { useMemo, useEffect, useState, useRef, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
@@ -262,10 +263,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
         }
 
         return filteredProps
-            .filter(prop => {
-                const state = viewStateMap.get(prop.id);
-                return !state?.hidden;
-            })
+            .filter(prop => !isHiddenInView(viewStateMap.get(prop.id), prop))   // the view's choice, else the type default
             .sort((a, b) => {
                 const orderA = viewStateMap.get(a.id)?.order ?? 999;
                 const orderB = viewStateMap.get(b.id)?.order ?? 999;
@@ -948,7 +946,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                                         if (!oldRow) return;
 
                                         database.properties.forEach(prop => {
-                                            if (prop.type === 'rollup' || prop.type === 'formula') return;
+                                            if (prop.type === 'rollup' || prop.type === 'formula' || (prop.type as string) === 'comments') return;
                                             // Skip computed financial properties — they're set by the engine, not manual edits
                                             if (['totalExVat', 'totalVat', 'totalIncVat'].includes(prop.id)) return;
                                             // Block edits on records exported to accountant (exempt relation fields)

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Property, PropertyType } from '../types';
 import { useDatabaseStore } from '../store';
-import { Settings2, Trash2, Edit3, Type, Hash, List, CheckSquare, Calendar, Link, Euro, Percent } from 'lucide-react';
+import { Settings2, Trash2, Edit3, Type, Hash, List, CheckSquare, Calendar, Link, Euro, Percent, MessageSquare } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { BASE_TO_KEY, SYSTEM_DATABASES } from '@/lib/kernel/system-databases';
 
@@ -17,6 +17,7 @@ const typeIcons: Record<string, React.ElementType> = {
     phone: Hash,
     relation: Link,
     rollup: Link,
+    comments: MessageSquare,   // COMMENTS-1
     formula: Settings2,
     currency: Euro,
     percent: Percent,

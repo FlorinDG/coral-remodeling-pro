@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/refs */
+import { commentsColumn } from '../columns/CommentsColumn';
 import React, { useMemo } from 'react';
 import {
     textColumn,
@@ -173,6 +174,20 @@ export function useGridColumns({
                     const targetDbId = resolvedTarget.databaseId || prop.config.relationDatabaseId;
                     return {
                         ...relationColumn(prop.id, targetDbId, prop.config.relationDisplayPropertyId) as any,
+                        title: GhostHeader,
+                        basis: currentWidth,
+                        grow: 0,
+                        shrink: 0,
+                        minWidth: currentWidth,
+                        maxWidth: currentWidth,
+                        cellClassName: `dsg-col-${prop.id}`
+                    };
+                }
+
+                // COMMENTS-1: the record's latest comment — read-only; a click opens the record (the thread is there)
+                if ((prop.type as string) === 'comments') {
+                    return {
+                        ...commentsColumn(databaseIdRef, (pageId) => setActivePageId(pageId)) as any,
                         title: GhostHeader,
                         basis: currentWidth,
                         grow: 0,

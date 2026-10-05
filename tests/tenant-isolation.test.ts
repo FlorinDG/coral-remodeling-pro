@@ -73,11 +73,11 @@ function parseModelRelations(modelBody: string): string[] {
 describe('A · Schema Exhaustiveness & Census (TSC-9 §2A)', () => {
     const schemaModels = parseSchemaModels();
 
-    test('census count: exactly 56 models in schema', () => {
+    test('census count: exactly 57 models in schema (COMMENTS-1 added Comment, 2026-10-05)', () => {
         assert.equal(
             schemaModels.size,
-            56,
-            `Expected 56 models in schema.prisma, found ${schemaModels.size}`
+            57,
+            `Expected 57 models in schema.prisma, found ${schemaModels.size}`
         );
     });
 
@@ -99,13 +99,13 @@ describe('A · Schema Exhaustiveness & Census (TSC-9 §2A)', () => {
         }
     });
 
-    test('classification breakdown matches exact census: 34 direct / 20 via / 2 platform', () => {
+    test('classification breakdown matches exact census: 35 direct / 20 via / 2 platform', () => {
         const rules = Object.values(SCOPE);
         const direct = rules.filter((r): r is { kind: 'direct' } => r.kind === 'direct');
         const via = rules.filter((r): r is { kind: 'via'; through: string } => r.kind === 'via');
         const platform = rules.filter((r): r is { kind: 'platform' } => r.kind === 'platform');
 
-        assert.equal(direct.length, 34, `Expected 34 direct models, got ${direct.length}`);
+        assert.equal(direct.length, 35, `Expected 35 direct models, got ${direct.length}`);
         assert.equal(via.length, 20, `Expected 20 via models, got ${via.length}`);
         assert.equal(platform.length, 2, `Expected 2 platform models, got ${platform.length}`);
     });

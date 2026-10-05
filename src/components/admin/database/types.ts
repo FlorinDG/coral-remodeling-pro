@@ -2,6 +2,7 @@
 import type { SystemDatabaseRole } from '@/lib/kernel/system-databases';
 
 export type PropertyType =
+    | 'comments'   // COMMENTS-1: the record's thread — latest comment + count; universal, read-only
     | 'text'
     | 'number'
     | 'select'

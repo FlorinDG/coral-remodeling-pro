@@ -6,7 +6,7 @@ import { PropertyType } from '@/components/admin/database/types';
 import { 
     Calculator, Trash2, GripVertical, Settings2, Database, Lock,
     Type, Hash, Calendar, CheckSquare, Link2, List, Tag, X,
-    Plus, ChevronLeft, Save, Sparkles
+    Plus, ChevronLeft, Save, Sparkles, MessageSquare
 } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import Link from 'next/link';
@@ -37,6 +37,8 @@ const PROPERTY_TYPES: { id: PropertyType; label: string; icon: any }[] = [
     { id: 'created_by', label: 'Created By', icon: Type },
     { id: 'last_edited_time', label: 'Last Edited Time', icon: Calendar },
     { id: 'last_edited_by', label: 'Last Edited By', icon: Type },
+    // COMMENTS-1: the universal thread field — shown, never chosen for another field (one thread per record)
+    { id: 'comments', label: 'Opmerkingen (thread)', icon: MessageSquare },
 ];
 
 interface OptionColorPickerProps {
@@ -343,7 +345,7 @@ export default function DatabaseConfigurator() {
                                                             </td>
                                                             <td className="px-2 py-1.5 align-middle w-[180px]">
                                                                 <SearchableSelect
-                                                                    options={PROPERTY_TYPES.map(t => ({ value: t.id, label: t.label }))}
+                                                                    options={PROPERTY_TYPES.filter(t => t.id !== 'comments' || prop.type === 'comments').map(t => ({ value: t.id, label: t.label }))}
                                                                     value={prop.type}
                                                                     onChange={(v) => updateProperty(databaseId, prop.id, { type: v as PropertyType })}
                                                                     placeholder="Type"

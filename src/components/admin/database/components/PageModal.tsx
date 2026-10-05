@@ -2,6 +2,7 @@
 /* eslint-disable */
 
 import { isTenantDatabase } from '@/lib/relations/resolve';
+import CommentThread from '@/components/admin/comments/CommentThread';
 import { useOpenLinkedRecord } from '../hooks/useOpenLinkedRecord';
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
@@ -1101,6 +1102,12 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                                                                                 <Clock className="w-3.5 h-3.5" />
                                                                                 <span>{page.properties[prop.id] ? new Date(page.properties[prop.id] as string).toLocaleString('fr-BE') : '—'}</span>
                                                                             </div>
+                                                                        ) : (prop.type as string) === 'comments' ? (
+                                                                            // COMMENTS-1: the field points at the thread below (never edited here)
+                                                                            <button type="button" onClick={() => document.getElementById('record-comments')?.scrollIntoView({ behavior: 'smooth' })}
+                                                                                    className="text-xs text-orange-600 hover:underline px-2 py-1.5">
+                                                                                {prop.name} ↓
+                                                                            </button>
                                                                         ) : prop.type === 'rollup' ? (
                                                                             <PageRollupViewer databaseId={databaseId} pageId={pageId} property={prop} />
                                                                         ) : prop.type === 'formula' ? (
@@ -1377,6 +1384,11 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                             </div>
                         </div>
                         <LinkedRecords databaseId={databaseId} pageId={pageId} isModal />
+                    </div>
+
+                    {/* COMMENTS-1 · the record's thread (internal — never in the client portal) */}
+                    <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl p-5 shadow-sm">
+                        <CommentThread pageId={pageId} databaseId={databaseId} />
                     </div>
 
                     {/* Journal Section */}

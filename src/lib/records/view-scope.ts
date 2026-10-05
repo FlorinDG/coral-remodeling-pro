@@ -49,3 +49,11 @@ export function schemaOrderFor(view: ViewWithState, schemaIds: string[]): ViewPr
     const byId = new Map((view.propertiesState || []).map(ps => [ps.propertyId, ps]));
     return schemaIds.map((id, i) => ({ ...(byId.get(id) || {}), propertyId: id, hidden: byId.get(id)?.hidden ?? false, order: i }));
 }
+
+/** Field types that start HIDDEN in a view until the view shows them (COMMENTS-1: "usage by making it available in the view"). */
+export const HIDDEN_BY_DEFAULT_TYPES: ReadonlySet<string> = new Set(['comments']);
+
+/** Is this field hidden in this view? The view's own choice wins; without one, the type's default. */
+export function isHiddenInView(state: { hidden?: boolean } | undefined, prop: { type?: string }): boolean {
+    return state?.hidden ?? HIDDEN_BY_DEFAULT_TYPES.has(prop.type || '');
+}

@@ -12,6 +12,7 @@ export const NOTIFICATION_TOPICS = [
     'peppol.received',
     'tasks.reminder',
     'hr.shift',
+    'comments.mention',   // COMMENTS-1: someone @mentioned you on a record
 ] as const;
 
 export type NotificationTopic = (typeof NOTIFICATION_TOPICS)[number];

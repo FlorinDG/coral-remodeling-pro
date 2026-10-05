@@ -255,6 +255,7 @@
     "yourProject": "Uw Project"
   },
   "Admin": {
+    "comments": {"title": "Opmerkingen", "placeholder": "Schrijf een opmerking… (@ om iemand te noemen)", "send": "Plaatsen", "resolve": "Afhandelen", "reopen": "Heropenen", "edit": "Bewerken", "delete": "Verwijderen", "save": "Opslaan", "cancel": "Annuleren", "empty": "Nog geen opmerkingen.", "resolved": "afgehandeld", "edited": "bewerkt", "deleteConfirm": "Deze opmerking verwijderen?", "failed": "Niet gelukt"},
     "werkbon": {"title": "Werkbon — ondertekend door de klant", "signedBy": "Ondertekend door {name} op {date}", "openPdf": "Werkbon openen (PDF)", "pdfPending": "PDF wordt aangemaakt…", "notSent": "Nog niet verzonden", "sentTo": "Verzonden op {date} aan {to}", "cc": "kopie: {cc}"},
     "accountant_export_button": "Boekhouder export",
     "exportLock": {

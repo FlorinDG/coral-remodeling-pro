@@ -255,6 +255,7 @@
     "yourProject": "Proiectul tău"
   },
   "Admin": {
+    "comments": {"title": "Comentarii", "placeholder": "Scrie un comentariu… (@ pentru a menționa pe cineva)", "send": "Publică", "resolve": "Rezolvă", "reopen": "Redeschide", "edit": "Editează", "delete": "Șterge", "save": "Salvează", "cancel": "Anulează", "empty": "Încă nu sunt comentarii.", "resolved": "rezolvat", "edited": "editat", "deleteConfirm": "Ștergi acest comentariu?", "failed": "Eșuat"},
     "werkbon": {"title": "Bon de lucru — semnat de client", "signedBy": "Semnat de {name} la {date}", "openPdf": "Deschide bonul de lucru (PDF)", "pdfPending": "PDF-ul se generează…", "notSent": "Încă netrimis", "sentTo": "Trimis la {date} către {to}", "cc": "copie: {cc}"},
     "accountant_export_button": "Export contabil",
     "exportLock": {

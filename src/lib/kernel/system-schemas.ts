@@ -19,8 +19,16 @@ export interface KernelProperty {
   config?: Record<string, unknown>;
 }
 
+/**
+ * COMMENTS-1 (Florin 2026-10-05: "universally available, part of the db schema") · fields EVERY database carries —
+ * system and custom — appended by the server reconcile, never deletable. Hidden in a view until the view shows it.
+ */
+export const UNIVERSAL_FIELDS: KernelProperty[] = [
+  { id: 'comments', name: 'Opmerkingen', type: 'comments' },
+];
+
 export function canonicalSchemas(resolveDbId: (base: string) => string): Record<string, KernelProperty[]> {
-  return ({
+  const schemas: Record<string, KernelProperty[]> = ({
   'db-site-visits': [
     { id: 'title',        name: 'Titel',            type: 'text' },
     { id: 'client',       name: 'Klant',            type: 'relation', config: { relationDatabaseId: resolveDbId('db-clients'), relationDisplayPropertyId: 'title' } },
@@ -527,6 +535,10 @@ export function canonicalSchemas(resolveDbId: (base: string) => string): Record<
     { id: 'notes',       name: 'Notities',          type: 'text' },
   ],
 });
+  for (const k of Object.keys(schemas)) {
+    schemas[k] = [...schemas[k], ...UNIVERSAL_FIELDS.filter(u => !schemas[k].some(p => p.id === u.id))];
+  }
+  return schemas;
 }
 
 /**
@@ -535,6 +547,7 @@ export function canonicalSchemas(resolveDbId: (base: string) => string): Record<
  * them from the id's shape, which failed for the databases whose canonical ids are UUIDs, e.g. CRM).
  */
 export function canonicalFieldIds(legacyBase: string | null | undefined): Set<string> {
-    if (!legacyBase) return new Set();
-    return new Set((canonicalSchemas(b => b)[legacyBase] || []).map(p => p.id));
+    const universal = UNIVERSAL_FIELDS.map(p => p.id);
+    if (!legacyBase) return new Set(universal);
+    return new Set([...(canonicalSchemas(b => b)[legacyBase] || []).map(p => p.id), ...universal]);
 }

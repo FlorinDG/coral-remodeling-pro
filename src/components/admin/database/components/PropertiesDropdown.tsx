@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { isHiddenInView } from '@/lib/records/view-scope';
 import { createPortal } from 'react-dom';
 import { useDatabaseStore } from '../store';
 import { Settings2, Eye, EyeOff, GripVertical } from 'lucide-react';
@@ -69,7 +70,8 @@ export default function PropertiesDropdown({ databaseId, viewId }: PropertiesDro
 
     const togglePropertyVisibility = (propertyId: string) => {
         const currentState = propertiesStateMap.get(propertyId);
-        const isCurrentlyHidden = !!currentState?.hidden;
+        const prop = database.properties.find(p => p.id === propertyId);
+        const isCurrentlyHidden = isHiddenInView(currentState, prop || {});   // incl. the type's default (comments: hidden)
         if (propertyId === 'title') return;
         updateViewPropertyState(databaseId, viewId, propertyId, { hidden: !isCurrentlyHidden });
     };
@@ -101,7 +103,7 @@ export default function PropertiesDropdown({ databaseId, viewId }: PropertiesDro
                             >
                                 {sortedProperties.map((prop, index) => {
                                     const state = propertiesStateMap.get(prop.id);
-                                    const isHidden = !!state?.hidden;
+                                    const isHidden = isHiddenInView(state, prop);
                                     const isTitle = prop.id === 'title';
 
                                     return (

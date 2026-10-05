@@ -40,3 +40,12 @@ test('decision A: which views hide a field; a view takes the schema order and ke
     assert.deepEqual(st.map(s => `${s.propertyId}:${s.order}:${s.hidden}`), ['title:0:false', 'won:1:true', 'date:2:false']);
     assert.equal(st[2].width, 120);
 });
+
+import { isHiddenInView } from '../src/lib/records/view-scope.ts';
+
+test('the comments field starts hidden; a view that shows it shows it; other fields start visible', () => {
+    assert.equal(isHiddenInView(undefined, { type: 'comments' }), true);
+    assert.equal(isHiddenInView({ hidden: false }, { type: 'comments' }), false);
+    assert.equal(isHiddenInView(undefined, { type: 'text' }), false);
+    assert.equal(isHiddenInView({ hidden: true }, { type: 'text' }), true);
+});

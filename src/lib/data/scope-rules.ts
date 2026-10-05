@@ -61,6 +61,7 @@ export const SCOPE: Readonly<Record<string, ScopeRule>> = {
   HrDocument: { kind: 'direct' },
   RateChangeAudit: { kind: 'direct' },
   AuditLog: { kind: 'direct' },
+  Comment: { kind: 'direct' },        // COMMENTS-1: a thread on a record (tenantId FK, cascade)
 
   // Class B: Transitive models scoped via parent relation (20)
   ProjectUpdate: { kind: 'via', through: 'portal' },

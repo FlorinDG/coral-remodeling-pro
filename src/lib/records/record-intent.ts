@@ -99,3 +99,42 @@ export function applyRecordIntent(server: ServerRow, intent: RecordIntent, ctx: 
     if (blocksChanged) blocksVersion = (server.blocksVersion || 1) + 1;
     return { ok: true, properties: merged, blocks: blocksChanged ? blocks : undefined, blocksVersion, changed: propsChanged || blocksChanged, keptServer, ignored };
 }
+
+// ── The store's page → an intent (one conversion for every adapter: saveGlobalPage, saveGlobalPagesBatch) ──
+
+export interface StorePageLike {
+    id: string; databaseId: string;
+    properties?: Props; dirtyBase?: Props | null; baseUpdatedAt?: string | null;
+    blocks?: unknown[]; blocksVersion?: number | null; dirtyBaseBlocks?: boolean;
+}
+
+/**
+ * Only the fields changed against the page's dirtyBase travel (a clean page with only a blocks edit sends no
+ * field). A page without a base (never edited since load) sends its properties — the door then writes nothing
+ * unless they differ.
+ */
+export function intentFromPage(page: StorePageLike): RecordIntent {
+    const props = page.properties || {};
+    const base = page.dirtyBase || undefined;
+    const keys = base ? changedFields(props, base) : null;
+    return {
+        pageId: page.id,
+        fields: keys ? Object.fromEntries(keys.map(k => [k, props[k]])) : (page.dirtyBaseBlocks ? {} : props),
+        base: keys && base ? Object.fromEntries(keys.filter(k => k in base).map(k => [k, base[k]])) : undefined,
+        baseUpdatedAt: page.baseUpdatedAt ?? null,
+        blocks: page.dirtyBaseBlocks ? page.blocks : undefined,
+        baseBlocksVersion: page.dirtyBaseBlocks ? (page.blocksVersion ?? null) : null,
+    };
+}
+
+// ── Deleting a record (R2-1: the rule at the door — before, only the browser's preventDelete held it) ──
+
+/** An issued document is never deleted: an accountant-exported record, an invoice past draft, a sent quote. */
+export function deleteRefusal(logicalKey: string | null | undefined, properties: Props | null | undefined): 'EXPORT_LOCKED' | 'DOCUMENT_LOCKED' | null {
+    const p = properties || {};
+    if (p.accountantExportedAt === true) return 'EXPORT_LOCKED';
+    const status = String(p.status ?? '');
+    if (logicalKey === 'invoices' && status && status !== 'opt-draft' && status !== 'draft') return 'DOCUMENT_LOCKED';
+    if (logicalKey === 'quotations' && ['opt-sent', 'opt-accepted', 'opt-rejected', 'SENT', 'ACCEPTED', 'REJECTED'].includes(status)) return 'DOCUMENT_LOCKED';
+    return null;
+}

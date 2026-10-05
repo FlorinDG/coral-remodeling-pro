@@ -59,3 +59,23 @@ test('the accountant-export lock and the quote document lock hold at the one doo
     const q = applyRecordIntent(sentQuote, { pageId: 'p', fields: { title: 'Q2' } }, { ...ctx, logicalKey: 'quotations' });
     assert.equal(!q.ok && q.refusal.code, 'DOCUMENT_LOCKED');
 });
+
+import { intentFromPage, deleteRefusal } from '../src/lib/records/record-intent.ts';
+
+test('store page → intent: only fields changed against the base; a blocks-only edit sends no field', () => {
+    const i = intentFromPage({ id: 'p', databaseId: 'd', properties: { a: 1, b: 2, c: 3 }, dirtyBase: { a: 1, b: 9 }, baseUpdatedAt: 'T1' });
+    assert.deepEqual(i.fields, { b: 2, c: 3 });
+    assert.deepEqual(i.base, { b: 9 });
+    const blocksOnly = intentFromPage({ id: 'p', databaseId: 'd', properties: { a: 1 }, blocks: [{ id: 'x' }], blocksVersion: 4, dirtyBaseBlocks: true });
+    assert.deepEqual(blocksOnly.fields, {});
+    assert.equal(blocksOnly.baseBlocksVersion, 4);
+});
+
+test('an issued document is never deleted at the door (throw proof: a draft invoice is)', () => {
+    assert.equal(deleteRefusal('invoices', { status: 'opt-sent' }), 'DOCUMENT_LOCKED');
+    assert.equal(deleteRefusal('invoices', { status: 'opt-draft' }), null);
+    assert.equal(deleteRefusal('quotations', { status: 'opt-accepted' }), 'DOCUMENT_LOCKED');
+    assert.equal(deleteRefusal('quotations', { status: 'opt-draft' }), null);
+    assert.equal(deleteRefusal('expenses', { accountantExportedAt: true }), 'EXPORT_LOCKED');
+    assert.equal(deleteRefusal('tasks', { status: 'done' }), null);
+});

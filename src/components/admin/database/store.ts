@@ -94,6 +94,24 @@ const syncPage = (page: Page | undefined, parentDb?: Database) => {
 };
 
 /**
+ * R2-1 · delete a record on the server; a REFUSAL (an issued document — the door's deleteRefusal) or a failure
+ * puts the record back and says why. The rows used to vanish locally while the server kept them.
+ */
+const deleteOnServer = (databaseId: string, page: Page | undefined, pageId: string, failText: string) => {
+    deleteGlobalPage(pageId)
+        .then(r => { if (!r?.success) throw new Error(typeof r?.error === 'string' ? r.error : failText); })
+        .catch((err: unknown) => {
+            console.error('[store] delete refused / failed', pageId, err);
+            toast.error(err instanceof Error && err.message ? err.message : failText);
+            if (!page) return;
+            useDatabaseStore.setState(state => ({
+                databases: state.databases.map(d => d.id === databaseId && !d.pages.some((p: Page) => p.id === page.id) ? { ...d, pages: [...d.pages, page] } : d),
+                pageIndex: { ...state.pageIndex, [page.id]: { id: page.id, databaseId: page.databaseId, title: extractPageTitle(page.properties), updatedAt: page.updatedAt } },
+            }));
+        });
+};
+
+/**
  * Batch sync multiple pages to Postgres using the batch server action.
  * Used by addPages() during CSV import to avoid 2000+ individual server action calls.
  */
@@ -1030,10 +1048,7 @@ export const useDatabaseStore = create<DatabaseState>()(
                 });
 
                 // Propagate each deletion to Prisma
-                pageIds.forEach((pid: string) => deleteGlobalPage(pid).catch((err) => {
-                    console.error(err);
-                    toast.error('Failed to clear some pages on server');
-                }));
+                pageIds.forEach((pid: string) => deleteOnServer(databaseId, allPages.find((p: Page) => p.id === pid), pid, 'Failed to clear some pages on server'));
             },
 
             getDatabase: (id) => {
@@ -1897,28 +1912,7 @@ export const useDatabaseStore = create<DatabaseState>()(
                     };
                 });
 
-                deleteGlobalPage(pageId).catch((err) => {
-                    console.error(err);
-                    toast.error('Failed to delete row on server');
-                    if (pageToRestore) {
-                        set((state) => ({
-                            databases: state.databases.map(d =>
-                                d.id === databaseId
-                                    ? { ...d, pages: [...d.pages, pageToRestore] }
-                                    : d
-                            ),
-                            pageIndex: {
-                                ...state.pageIndex,
-                                [pageToRestore.id]: {
-                                    id: pageToRestore.id,
-                                    databaseId: pageToRestore.databaseId,
-                                    title: extractPageTitle(pageToRestore.properties),
-                                    updatedAt: pageToRestore.updatedAt,
-                                }
-                            }
-                        }));
-                    }
-                });
+                deleteOnServer(databaseId, pageToRestore, pageId, 'Failed to delete row on server');
             },
 
             deletePages: (databaseId, pageIds) => {
@@ -1945,31 +1939,7 @@ export const useDatabaseStore = create<DatabaseState>()(
                     };
                 });
                 // Propagate each deletion to Prisma
-                pageIds.forEach(pid => deleteGlobalPage(pid).catch((err) => {
-                    console.error(err);
-                    toast.error('Failed to delete some rows on server');
-                    
-                    // Attempt partial restore of the specific failed page
-                    const failedPage = deletedPages.find(p => p.id === pid);
-                    if (failedPage) {
-                        set((state) => ({
-                            databases: state.databases.map(d =>
-                                d.id === databaseId
-                                    ? { ...d, pages: [...d.pages, failedPage] }
-                                    : d
-                            ),
-                            pageIndex: {
-                                ...state.pageIndex,
-                                [failedPage.id]: {
-                                    id: failedPage.id,
-                                    databaseId: failedPage.databaseId,
-                                    title: extractPageTitle(failedPage.properties),
-                                    updatedAt: failedPage.updatedAt,
-                                }
-                            }
-                        }));
-                    }
-                }));
+                pageIds.forEach(pid => deleteOnServer(databaseId, deletedPages.find(p => p.id === pid), pid, 'Failed to delete some rows on server'));
             },
 
             updatePageOrder: (databaseId: string, sourceIndex: number, destinationIndex: number) => {

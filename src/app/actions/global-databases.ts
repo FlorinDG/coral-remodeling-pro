@@ -8,11 +8,8 @@ import { revalidatePath } from 'next/cache';
 
 import { auth } from '@/auth';
 import { scopeFromSession } from '@/lib/data/scope';
-import { saveRecord } from '@/lib/data/records';
-import { changedFields } from '@/lib/records/record-intent';
-import { mergeStaleWrite } from '@/lib/records/occ-merge';
-import { checkExportLock, isWipeHazard } from '@/lib/records/export-lock';
-import { checkDocumentLock } from '@/lib/records/document-lock';
+import { saveRecord, deleteRecord, type SaveRecordResult } from '@/lib/data/records';
+import { intentFromPage } from '@/lib/records/record-intent';
 
 /**
  * Validates and sanitizes a string ID, preventing undefined/null values from hitting Prisma
@@ -429,7 +426,59 @@ export async function saveGlobalDatabase(db: Database) {
 /**
  * Upserts a specific Row/Page within a database, including its dynamic property cell values and underlying rich-text blocks.
  */
-export async function saveGlobalPage(page: Page) {
+/**
+ * R2-1 · the store's answer for one saved page — the same shape the sync queue has always read
+ * (success + persisted updatedAt / blocksVersion / keptServer, or a refusal with the server's row to revert to).
+ */
+export interface StoreSaveAnswer {
+    success: boolean; error?: string; errorCode?: string; changed?: boolean;
+    updatedAt?: string; blocksVersion?: number; keptServer?: Record<string, unknown>;
+    lastEditedBy?: string; serverUpdatedAt?: string; serverBlocksVersion?: number;
+    serverProperties?: Record<string, unknown>; serverBlocks?: unknown;
+    blockedFields?: string[]; docTitle?: string; propertyLabels?: Record<string, string>;
+}
+
+function storeAnswer(r: SaveRecordResult, page: Page): StoreSaveAnswer {
+    if (r.ok) {
+        if (r.ignored.length) console.info(`[record] computed fields not written for ${page.id}: ${r.ignored.join(', ')}`);
+        return { success: true as const, updatedAt: r.updatedAt, blocksVersion: r.blocksVersion, keptServer: Object.keys(r.keptServer).length ? r.keptServer : undefined, changed: r.changed };
+    }
+    const code = r.refusal.code;
+    if (code === 'NOT_FOUND') return { success: false as const, error: 'Unauthorized DB access' };
+    if (code === 'EMPTY_BLOCKS_PROTECTION') {
+        return { success: false as const, error: 'EMPTY_BLOCKS_PROTECTION: Refused to overwrite existing document lines with empty array.', errorCode: 'EMPTY_BLOCKS_PROTECTION' };
+    }
+    if (code === 'STALE_WRITE') {
+        console.warn(`[record] STALE_WRITE (Conflict) for page ${page.id}`);
+        return { success: false as const, error: 'STALE_WRITE', errorCode: 'STALE_WRITE', lastEditedBy: r.server?.lastEditedBy, serverUpdatedAt: r.server?.updatedAt, serverBlocksVersion: r.server?.blocksVersion };
+    }
+    // EXPORT_LOCKED / DOCUMENT_LOCKED — the store reverts to the server version and says why.
+    const propertyLabels: Record<string, string> = {};
+    for (const prop of r.dbProperties || []) if (prop.id && prop.name) propertyLabels[prop.id] = prop.name;
+    return {
+        success: false as const,
+        error: code === 'DOCUMENT_LOCKED' ? '[DocumentLocked]' : '[ExportLocked]',
+        errorCode: code,
+        blockedFields: 'blockedFields' in r.refusal ? r.refusal.blockedFields : [],
+        docTitle: String(r.server?.properties?.title || (page.properties as Record<string, unknown>)?.title || ''),
+        propertyLabels,
+        serverProperties: r.server?.properties,
+        serverBlocks: r.server?.blocks,
+        serverUpdatedAt: r.server?.updatedAt,
+        serverBlocksVersion: r.server?.blocksVersion,
+    };
+}
+
+/** The store page's create-if-missing and meta (one place for both adapters). */
+function storePageWrite(page: Page) {
+    return {
+        by: page.lastEditedBy || 'admin',
+        meta: { coverImage: page.coverImage, icon: page.icon, order: page.order, driveFolderId: page.driveFolderId },
+        createIfMissing: { databaseId: page.databaseId, properties: (page.properties || {}) as Record<string, unknown>, blocks: (page.blocks as unknown[]) ?? [], createdBy: page.createdBy || 'admin' },
+    };
+}
+
+export async function saveGlobalPage(page: Page): Promise<StoreSaveAnswer> {
     const session = await auth();
     const tenantId = session?.user?.tenantId;
     if (!tenantId) return { success: false, error: 'Unauthorized' };
@@ -444,52 +493,10 @@ export async function saveGlobalPage(page: Page) {
         // queue is unchanged. Before: tenant check (partial — a missing database let the write through),
         // read, merge and write were separate steps, and the whole properties object was written back.
         const db = await scopeFromSession();
-        const props = (page.properties || {}) as Record<string, unknown>;
-        const base = page.dirtyBase as Record<string, unknown> | undefined;
-        const keys = base ? changedFields(props, base) : null;
-        const fields = keys ? Object.fromEntries(keys.map(k => [k, props[k]])) : (page.dirtyBaseBlocks ? {} : props);
-        const r = await saveRecord(db, {
-            pageId: page.id,
-            fields,
-            base: keys && base ? Object.fromEntries(keys.filter(k => k in base).map(k => [k, base[k]])) : undefined,
-            baseUpdatedAt: page.baseUpdatedAt ?? null,
-            blocks: page.dirtyBaseBlocks ? (page.blocks as unknown[]) : undefined,
-            baseBlocksVersion: page.dirtyBaseBlocks ? (page.blocksVersion ?? null) : null,
-        }, {
-            by: page.lastEditedBy || 'admin',
-            meta: { coverImage: page.coverImage, icon: page.icon, order: page.order, driveFolderId: page.driveFolderId },
-            createIfMissing: { databaseId: page.databaseId, properties: props, blocks: (page.blocks as unknown[]) ?? [], createdBy: page.createdBy || 'admin' },
-        });
-
-        if (r.ok) {
-            if (r.ignored.length) console.info(`[saveGlobalPage] computed fields not written for ${page.id}: ${r.ignored.join(', ')}`);
-            if (r.changed) revalidatePath('/admin', 'layout');
-            return { success: true, updatedAt: r.updatedAt, blocksVersion: r.blocksVersion, keptServer: Object.keys(r.keptServer).length ? r.keptServer : undefined };
-        }
-        const code = r.refusal.code;
-        if (code === 'NOT_FOUND') return { success: false, error: 'Unauthorized DB access' };
-        if (code === 'EMPTY_BLOCKS_PROTECTION') {
-            return { success: false, error: 'EMPTY_BLOCKS_PROTECTION: Refused to overwrite existing document lines with empty array.', errorCode: 'EMPTY_BLOCKS_PROTECTION' };
-        }
-        if (code === 'STALE_WRITE') {
-            console.warn(`[saveGlobalPage] STALE_WRITE (Conflict) for page ${page.id}`);
-            return { success: false, error: 'STALE_WRITE', errorCode: 'STALE_WRITE', lastEditedBy: r.server?.lastEditedBy, serverUpdatedAt: r.server?.updatedAt, serverBlocksVersion: r.server?.blocksVersion };
-        }
-        // EXPORT_LOCKED / DOCUMENT_LOCKED — the store reverts to the server version and says why.
-        const propertyLabels: Record<string, string> = {};
-        for (const prop of r.dbProperties || []) if (prop.id && prop.name) propertyLabels[prop.id] = prop.name;
-        return {
-            success: false,
-            error: code === 'DOCUMENT_LOCKED' ? '[DocumentLocked]' : '[ExportLocked]',
-            errorCode: code,
-            blockedFields: 'blockedFields' in r.refusal ? r.refusal.blockedFields : [],
-            docTitle: String(r.server?.properties?.title || props.title || ''),
-            propertyLabels,
-            serverProperties: r.server?.properties,
-            serverBlocks: r.server?.blocks,
-            serverUpdatedAt: r.server?.updatedAt,
-            serverBlocksVersion: r.server?.blocksVersion,
-        };
+        const r = await saveRecord(db, intentFromPage(page), storePageWrite(page));
+        const answer = storeAnswer(r, page);
+        if (answer.success && answer.changed) revalidatePath('/admin', 'layout');
+        return answer;
     } catch (e: any) {
         console.error(`[saveGlobalPage] Failed to save page ${page.id} (db: ${page.databaseId}):`, e?.message ?? e);
         return { success: false, error: e?.message ?? String(e) };
@@ -511,163 +518,21 @@ export async function saveGlobalPagesBatch(pages: Page[]) {
     if (!pages.length) return { success: true, count: 0, results: [] };
 
     try {
-        // Verify tenant ownership of the target database(s)
-        const dbIds = [...new Set(pages.map(p => p.databaseId))];
-        const dbMap = new Map<string, { tenantId: string | null; properties: any; logicalKey: string | null }>();
-        for (const dbId of dbIds) {
-            const parentDb = await prisma.globalDatabase.findUnique({
-                where: { id: dbId },
-                select: { tenantId: true, properties: true, logicalKey: true }
-            });
-            if (parentDb && parentDb.tenantId !== tenantId) {
-                return { success: false, error: `Unauthorized DB access: ${dbId}` };
-            }
-            if (parentDb) {
-                dbMap.set(dbId, parentDb);
-            }
-        }
-
-        const results = [];
-        
-        // Process sequentially to allow partial success and granular OCC
+        // R2-1 · ADAPTER: the CSV-import batch — every page through the one record door (scoped, one serializable
+        // transaction each, partial success per page), same per-page answers as before.
+        const db = await scopeFromSession();
+        const results: Array<Record<string, unknown> & { id: string; success: boolean }> = [];
         for (const page of pages) {
             try {
-                // Optimistic Concurrency Control
-                const existingPage = await prisma.globalPage.findUnique({
-                    where: { id: page.id },
-                    select: { updatedAt: true, properties: true, lastEditedBy: true, blocksVersion: true, blocks: true }
-                });
-
-                if (existingPage) {
-                    if (isWipeHazard(existingPage.blocks, page.blocks)) {
-                        results.push({
-                            id: page.id,
-                            success: false,
-                            error: 'EMPTY_BLOCKS_PROTECTION: Refused to overwrite existing document lines with empty array.',
-                            errorCode: 'EMPTY_BLOCKS_PROTECTION'
-                        });
-                        continue;
-                    }
-
-                    const parentDb = dbMap.get(page.databaseId);
-                    const dbProps = Array.isArray(parentDb?.properties) ? (parentDb.properties as Array<{ id: string; name?: string; type?: string }>) : [];
-                    const relationPropertyIds = new Set<string>(
-                        dbProps.filter(p => p.type === 'relation').map(p => p.id)
-                    );
-                    const propertyLabels: Record<string, string> = {};
-                    for (const prop of dbProps) {
-                        if (prop.id && prop.name) propertyLabels[prop.id] = prop.name;
-                    }
-
-                    const exportViolation = checkExportLock(
-                        existingPage.properties,
-                        page.properties as Record<string, unknown>,
-                        relationPropertyIds,
-                        existingPage.blocks,
-                        page.blocks
-                    );
-                    const documentViolation = exportViolation ? null : checkDocumentLock(   // DOC-LOCK-1
-                        parentDb?.logicalKey, existingPage.properties, page.properties as Record<string, unknown>, existingPage.blocks, page.blocks);
-                    const violation = exportViolation ?? documentViolation;
-                    if (violation) {
-                        const docTitle = String((existingPage.properties as any)?.title || (page.properties as any)?.title || '');
-                        results.push({
-                            id: page.id,
-                            success: false,
-                            error: documentViolation ? '[DocumentLocked]' : '[ExportLocked]',
-                            errorCode: documentViolation ? 'DOCUMENT_LOCKED' : 'EXPORT_LOCKED',
-                            blockedFields: violation.blockedFields,
-                            docTitle,
-                            propertyLabels
-                        });
-                        continue;
-                    }
-
-                }
-
-                let finalProperties = page.properties;
-                const finalBlocks = page.blocks !== undefined ? page.blocks : (existingPage?.blocks ?? []);
-
-                if (existingPage && page.baseUpdatedAt) {
-                    const serverTime = existingPage.updatedAt.getTime();
-                    const clientTime = new Date(page.baseUpdatedAt).getTime();
-                    if (serverTime !== clientTime) {
-                        let hasHardConflict = false;
-                        if (page.dirtyBaseBlocks && existingPage.blocksVersion !== page.blocksVersion) {
-                            hasHardConflict = true;
-                        }
-                        
-                        if (!hasHardConflict) {
-                            // One merge rule for every door (lib/records/occ-merge.ts): the other user's edit to a
-                            // field this client did not touch is KEPT — it was overwritten with the stale value.
-                            const merge = mergeStaleWrite(
-                                (existingPage.properties as Record<string, unknown>) || {},
-                                page.properties as Record<string, unknown>,
-                                page.dirtyBase as Record<string, unknown> | undefined,
-                            );
-                            if (merge.conflict) {
-                                hasHardConflict = true;
-                            } else {
-                                finalProperties = merge.merged as typeof finalProperties;
-                            }
-                        }
-
-                        if (hasHardConflict) {
-                            results.push({ 
-                                id: page.id, 
-                                success: false, 
-                                errorCode: 'STALE_WRITE', 
-                                lastEditedBy: existingPage.lastEditedBy,
-                                serverUpdatedAt: existingPage.updatedAt.toISOString(),
-                                serverBlocksVersion: existingPage.blocksVersion 
-                            });
-                            continue;
-                        }
-                    }
-                }
-
-                const newBlocksVersion = page.dirtyBaseBlocks 
-                    ? (existingPage?.blocksVersion || 1) + 1 
-                    : (existingPage?.blocksVersion || 1);
-
-                const saved = await prisma.globalPage.upsert({
-                    where: { id: page.id },
-                    update: {
-                        coverImage: page.coverImage,
-                        icon: page.icon,
-                        properties: finalProperties as any,
-                        order: page.order,
-                        blocks: finalBlocks as any,
-                        blocksVersion: newBlocksVersion,
-                        lastEditedBy: page.lastEditedBy || 'admin',
-                        driveFolderId: page.driveFolderId,
-                    },
-                    create: {
-                        id: page.id,
-                        databaseId: page.databaseId,
-                        coverImage: page.coverImage,
-                        icon: page.icon,
-                        properties: page.properties as any,
-                        order: page.order,
-                        blocks: page.blocks as any,
-                        blocksVersion: 1,
-                        createdBy: page.createdBy || 'admin',
-                        lastEditedBy: page.lastEditedBy || 'admin',
-                        driveFolderId: page.driveFolderId,
-                    },
-                    select: { blocksVersion: true, updatedAt: true }
-                });
-                
-                results.push({ id: page.id, success: true, updatedAt: saved.updatedAt.toISOString(), blocksVersion: saved.blocksVersion });
+                const r = await saveRecord(db, intentFromPage(page), storePageWrite(page));
+                results.push({ id: page.id, ...storeAnswer(r, page) });
             } catch (pageError: any) {
                 console.error(`[saveGlobalPagesBatch] Failed for page ${page.id}:`, pageError);
                 results.push({ id: page.id, success: false, error: pageError?.message ?? String(pageError) });
             }
         }
-
         revalidatePath('/admin', 'layout');
-        const successCount = results.filter(r => r.success).length;
-        return { success: true, count: successCount, results };
+        return { success: true, count: results.filter(r => r.success).length, results };
     } catch (e: any) {
         console.error(`[saveGlobalPagesBatch] Failed batch completely:`, e?.message ?? e);
         return { success: false, error: e?.message ?? String(e) };
@@ -683,16 +548,12 @@ export async function deleteGlobalPage(pageId: string) {
     if (isWorkforceRole((session?.user as { role?: string } | undefined)?.role)) return { success: false, error: 'Forbidden: workforce' };
 
     try {
-        const page = await prisma.globalPage.findUnique({
-            where: { id: pageId },
-            include: { database: true }
-        });
-        if (!page || page.database.tenantId !== tenantId) {
-            return { success: false, error: 'Unauthorized' };
-        }
-
-        await prisma.globalPage.delete({ where: { id: pageId } });
-        return { success: true };
+        // R2-1: through the one record door — a record of THIS tenant, never an issued document.
+        const db = await scopeFromSession();
+        const r = await deleteRecord(db, pageId);
+        if (r.ok) return { success: true };
+        if (r.refusal === 'NOT_FOUND') return { success: false, error: 'Unauthorized' };
+        return { success: false, error: r.refusal === 'DOCUMENT_LOCKED' ? 'Een verzonden document kan niet verwijderd worden' : 'Een geëxporteerd document kan niet verwijderd worden', errorCode: r.refusal };
     } catch (e) {
         console.error("Error deleting global page:", e);
         return { success: false, error: e };

@@ -11,7 +11,7 @@
  */
 import type { Prisma } from '@prisma/client';
 import type { TenantScopedClient } from '@/lib/data/scope';
-import { applyRecordIntent, type RecordIntent, type RecordRefusal } from '@/lib/records/record-intent';
+import { applyRecordIntent, deleteRefusal, type RecordIntent, type RecordRefusal } from '@/lib/records/record-intent';
 
 export interface RecordMeta { coverImage?: string | null; icon?: string | null; order?: number | null; driveFolderId?: string | null }
 
@@ -90,4 +90,14 @@ export async function saveRecord(
             throw err;
         }
     }
+}
+
+/** R2-1 · delete a record of THIS tenant — refused for an issued document (record-intent deleteRefusal). */
+export async function deleteRecord(db: TenantScopedClient, pageId: string): Promise<{ ok: true } | { ok: false; refusal: 'NOT_FOUND' | 'EXPORT_LOCKED' | 'DOCUMENT_LOCKED' }> {
+    const row = await db.globalPage.findFirst({ where: { id: pageId }, select: { properties: true, database: { select: { logicalKey: true } } } });
+    if (!row) return { ok: false, refusal: 'NOT_FOUND' };
+    const refusal = deleteRefusal(row.database?.logicalKey, row.properties as Record<string, unknown>);
+    if (refusal) return { ok: false, refusal };
+    await db.globalPage.delete({ where: { id: pageId } });
+    return { ok: true };
 }

@@ -41,9 +41,9 @@ import { isTextEditable, parseCellInput, cellText, cellChanged, parseClipboardGr
 import { resolveRelationTitle } from '@/lib/relations/resolve';
 import { useSession } from 'next-auth/react';
 import { useTenant } from '@/context/TenantContext';
-import { gridAccess, bulkApproveCheck, licensedColumns, EXPENSES_INBOX_VIEW, REVIEW_READY, REVIEW_APPROVED } from '@/lib/records/grid-access';
+import { duplicateProperties, gridAccess, bulkApproveCheck, licensedColumns, EXPENSES_INBOX_VIEW, REVIEW_READY, REVIEW_APPROVED } from '@/lib/records/grid-access';
 import { VAT_FIELD, VAT_LOOKUP_ROLES } from '@/lib/records/vat-lookup';
-import { VatLookupFlyout } from './cells';
+import { VatLookupFlyout, RowMenu } from './cells';
 
 const ROW_H = 36;
 
@@ -397,6 +397,18 @@ export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRec
                                         <span className={selected.has(row.id) ? 'hidden' : 'group-hover:hidden'}>{v.index + 1}</span>
                                         <input type="checkbox" aria-label="Selecteren" checked={selected.has(row.id)} onChange={() => toggleRow(row.id)}
                                                className={`w-3.5 h-3.5 accent-orange-500 ${selected.has(row.id) ? '' : 'hidden group-hover:block'}`} />
+                                        <span className="hidden group-hover:inline-flex">
+                                            <RowMenu
+                                                onOpen={() => openRecord(row.id)}
+                                                onDuplicate={(() => {
+                                                    const dup = access.create ? duplicateProperties(database.logicalKey, row.original.properties) : null;
+                                                    return dup ? () => { createPage(database.id, dup as never); } : undefined;
+                                                })()}
+                                                onDelete={access.delete && preventDelete !== true && !(typeof preventDelete === 'function' && preventDelete(row.original))
+                                                    ? () => { if (window.confirm('Dit record definitief verwijderen?')) deletePages(database.id, [row.id]); }
+                                                    : undefined}
+                                            />
+                                        </span>
                                     </div>
                                     {row.getVisibleCells().map(cell => (
                                         <div key={cell.id} style={{ width: widthOf(cell.column.id) }}

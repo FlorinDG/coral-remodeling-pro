@@ -6,7 +6,7 @@
  */
 import React, { useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Check, ExternalLink, Search, Calculator } from 'lucide-react';
+import { Check, ExternalLink, Search, Calculator, MoreHorizontal, Maximize2, Copy, Trash2 } from 'lucide-react';
 import { useRelationTarget, resolveRelationTitle } from '@/lib/relations/resolve';
 import type { RollupResult } from '@/lib/records/rollup';
 import { COLOR_STYLES } from '../columns/SelectColumn';
@@ -254,5 +254,31 @@ export function FormulaCell({ result }: { result: unknown }) {
             <Calculator className={`w-3 h-3 shrink-0 ${isError ? 'text-red-500' : 'text-neutral-400'}`} />
             <span className={`truncate text-sm ${isError ? 'text-red-500 font-medium' : 'text-neutral-700 dark:text-neutral-300'}`}>{text}</span>
         </div>
+    );
+}
+
+/** The row menu (⋯ on the row number): open, duplicate (only where lib/records/grid-access allows it), delete. */
+export function RowMenu({ onOpen, onDuplicate, onDelete }: { onOpen: () => void; onDuplicate?: () => void; onDelete?: () => void }) {
+    const ref = useRef<HTMLButtonElement>(null);
+    const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+    return (
+        <>
+            <button ref={ref} type="button" title="Acties" aria-label="Acties"
+                    onClick={e => { e.stopPropagation(); const r = ref.current!.getBoundingClientRect(); setPos({ top: r.bottom + 2, left: r.left }); }}
+                    className="p-0.5 rounded hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-500">
+                <MoreHorizontal className="w-3.5 h-3.5" />
+            </button>
+            {pos && typeof document !== 'undefined' && createPortal(
+                <div className="fixed inset-0 z-[99998]" onMouseDown={() => setPos(null)}>
+                    <div className="fixed w-44 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-lg shadow-xl py-1 text-sm"
+                         style={{ top: pos.top, left: pos.left }} onMouseDown={e => e.stopPropagation()}>
+                        <button type="button" onClick={() => { setPos(null); onOpen(); }} className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-neutral-100 dark:hover:bg-white/5"><Maximize2 className="w-3.5 h-3.5" /> Openen</button>
+                        {onDuplicate && <button type="button" onClick={() => { setPos(null); onDuplicate(); }} className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-neutral-100 dark:hover:bg-white/5"><Copy className="w-3.5 h-3.5" /> Dupliceren</button>}
+                        {onDelete && <button type="button" onClick={() => { setPos(null); onDelete(); }} className="w-full flex items-center gap-2 px-3 py-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"><Trash2 className="w-3.5 h-3.5" /> Verwijderen</button>}
+                    </div>
+                </div>,
+                document.body,
+            )}
+        </>
     );
 }

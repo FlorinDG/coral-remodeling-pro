@@ -31,7 +31,8 @@ Planner 2026-10-05. coral-r3-grid.md R3-B4: "The flag flips only when V2 matches
 | 23 | "Lead source" hidden on contacts without CRM | 🟨 | grid-access licensedColumns |
 | 24 | Lost edit (N1): type a name, click straight into another cell → BOTH persist after reload (10×) | 🟨 | one field per commit + the record door |
 | 25 | Row order while editing: an edit never moves the row under the cursor | 🟨 | view-sort holdOrder |
-| 26 | Group-by / row drag-reorder (the old grid's grip menu: open / duplicate / delete) | ⬜ | to port |
+| 26 | Row menu (⋯ on the row number): open / duplicate / delete | 🟨 | v2 RowMenu; grid-access duplicateProperties — never a document, never the stamps (the old grid copied an invoice's status, OGM and export stamp) |
+| 26b | Row drag-reorder | ❓ Florin | NOT ported: the old grid's drag changed the order in the browser only (never saved) and views order by their sorts — decide whether a MANUAL order is wanted (it would be a saved per-view order) |
 | 27 | Mobile / touch | ⬜ | to check |
 
 **When every line is ✅ on 2+ databases:** GRID-REPLACE-4 flips the default (V2 for everyone; the switch becomes

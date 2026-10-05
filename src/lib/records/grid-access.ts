@@ -32,3 +32,20 @@ export function licensedColumns<P extends { name?: string }>(props: P[], ctx: { 
     if (ctx.hasCRM || ctx.logicalKey !== 'clients') return props;
     return props.filter(p => (p.name || '').toLowerCase() !== 'lead source');
 }
+
+/**
+ * "Duplicate" a record from the grid — or null where a copy must not be made here. Documents (invoices, quotations,
+ * purchase invoices, payments) are never duplicated in the grid: a copy carried the status (sent), the structured
+ * payment reference and the accountant-export stamp — a second invoice with the same OGM. Their editors have their
+ * own copy flows. Other records: everything but stamps and the computed comments field; the title marked "(kopie)".
+ */
+const NO_GRID_DUPLICATE: ReadonlySet<string> = new Set(['invoices', 'quotations', 'expenses', 'payments-in', 'payments-out', 'tickets']);
+const STAMPS = /^(accountantExported|peppol|structuredComm$|sentAt$|lastSentAt$|signedAt$|clientSignature$|acceptedAt$|rejectedAt$|receiptUrl$|comments$)/;
+
+export function duplicateProperties(logicalKey: string | null | undefined, props: Record<string, unknown>): Record<string, unknown> | null {
+    if (logicalKey && NO_GRID_DUPLICATE.has(logicalKey)) return null;
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(props)) if (!STAMPS.test(k)) out[k] = v;
+    if (typeof out.title === 'string' && out.title) out.title = `${out.title} (kopie)`;
+    return out;
+}

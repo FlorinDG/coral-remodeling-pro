@@ -8,7 +8,8 @@
  *   (R2-1) as an intent for that field. There is NO whole-row diff (the N1 mechanism of the old grid is not ported);
  * - while a cell is edited the rows hold their positions (view-sort holdOrder) — no wrong-row overwrite;
  * - no document-level listeners: nothing leaks into overlays (the old grid needed useOverlayEventShield).
- * Phase 1 edits title / text / number / url / email / phone; other types are shown read-only until ported (phase 2).
+ * Edits: title / text / number / currency / percent / url / email / phone (phase 1), select / multi-select / checkbox /
+ * date (phase 2, v2/cells.tsx). Relation, rollup, formula, variants: shown read-only until ported.
  * Rules: lib/records/view-sort.ts, grid-cell.ts, view-scope.ts — shared with the old grid, never copied.
  */
 import React, { useCallback, useMemo, useRef, useState } from 'react';
@@ -21,6 +22,7 @@ import type { Page, Property } from '../types';
 import { useFilteredPages } from '../hooks/useFilteredPages';
 import { useOpenLinkedRecord } from '../hooks/useOpenLinkedRecord';
 import { LatestCommentCell } from '../columns/CommentsColumn';
+import { SelectCell, CheckboxCell, DateCell } from './cells';
 import { sortPages, holdOrder } from '@/lib/records/view-sort';
 import { visibleColumns } from '@/lib/records/view-scope';
 import { isTextEditable, parseCellInput, cellText, cellChanged } from '@/lib/records/grid-cell';
@@ -80,6 +82,14 @@ export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRec
         updatePageProperty(database.id, page.id, prop.id, parsed.value as never);
     }, [database, updatePageProperty]);
 
+    /** A control cell's value — ONE field, written only when it changed; an exported document stays as it is. */
+    const commitValue = useCallback((page: Page, prop: Property, v: unknown) => {
+        if (!database) return;
+        if (page.properties.accountantExportedAt === true) { toast.message('Dit document is geëxporteerd naar de boekhouder en kan niet meer gewijzigd worden.'); return; }
+        if (!cellChanged(page.properties[prop.id], v)) return;
+        updatePageProperty(database.id, page.id, prop.id, v as never);
+    }, [database, updatePageProperty]);
+
     const startEdit = (page: Page, prop: Property) => {
         if (page.properties.accountantExportedAt === true) { toast.message('Dit document is geëxporteerd naar de boekhouder en kan niet meer gewijzigd worden.'); return; }
         setEditing({ pageId: page.id, propId: prop.id, text: cellText(prop as never, page.properties[prop.id]) });
@@ -119,6 +129,13 @@ export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRec
                 );
             }
             if ((prop.type as string) === 'comments') return <LatestCommentCell pageId={page.id} databaseId={databaseId} onOpen={openRecord} />;
+            // GRID-REPLACE-2 · control cells — each commits ONE field through commitValue
+            const locked = page.properties.accountantExportedAt === true;
+            if (prop.type === 'select' || prop.type === 'multi_select') {
+                return <SelectCell value={value} options={prop.config?.options || []} multi={prop.type === 'multi_select'} readOnly={locked} onCommit={v => commitValue(page, prop, v)} />;
+            }
+            if (prop.type === 'checkbox') return <CheckboxCell value={value} readOnly={locked} onCommit={v => commitValue(page, prop, v)} />;
+            if (prop.type === 'date') return <DateCell value={value} readOnly={locked} onCommit={v => commitValue(page, prop, v)} />;
             const text = cellText(prop as never, value, id => resolveRelationTitle(id));
             const editable = isTextEditable(prop as never);
             return (
@@ -138,7 +155,7 @@ export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRec
             );
         },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    })), [columns, editing, widthOf, commit, openRecord, databaseId, rows]);
+    })), [columns, editing, widthOf, commit, commitValue, openRecord, databaseId, rows]);
 
     const table = useReactTable({ data: rows, columns: colDefs, getCoreRowModel: getCoreRowModel(), getRowId: r => r.id });
     const virtualizer = useVirtualizer({ count: rows.length, getScrollElement: () => scrollRef.current, estimateSize: () => ROW_H, overscan: 12 });
@@ -150,7 +167,7 @@ export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRec
     return (
         <div className="flex flex-col h-full min-h-0 border border-neutral-200 dark:border-white/10 rounded-b-xl overflow-hidden bg-white dark:bg-black">
             <div className="px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-orange-600 bg-orange-50 dark:bg-orange-950/20 border-b border-orange-100 dark:border-orange-900/30">
-                Nieuw raster (beta) · één klik om te bewerken · elke wijziging bewaart enkel dat veld
+                Nieuw raster (beta) · één klik om te bewerken · elke wijziging bewaart enkel dat veld · relaties, rollups en formules nog alleen-lezen
             </div>
             <div ref={scrollRef} className="flex-1 min-h-0 overflow-auto">
                 <div style={{ width: totalWidth, minWidth: '100%' }}>

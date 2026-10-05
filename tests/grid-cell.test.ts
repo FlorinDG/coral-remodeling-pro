@@ -28,3 +28,16 @@ test('no change = no write; phase-1 editable types', () => {
     assert.equal(isTextEditable({ id: 'title', type: 'text' }), true);
     assert.equal(isTextEditable(sel), false);
 });
+
+import { toggleOption } from '../src/lib/records/grid-cell.ts';
+
+test('multi-select toggling, and an unchanged list is no write (throw proof: reference compare would write)', () => {
+    assert.deepEqual(toggleOption(['a', 'b'], 'b'), ['a']);
+    assert.deepEqual(toggleOption('a', 'c'), ['a', 'c']);
+    assert.deepEqual(toggleOption(undefined, 'x'), ['x']);
+    assert.equal(cellChanged(['a', 'b'], ['a', 'b']), false);
+    assert.equal(cellChanged([], undefined), false);
+    assert.equal(cellChanged(['a'], ['b']), true);
+    assert.deepEqual(parseCellInput({ id: 'c', type: 'currency' }, '1 250,5'), { ok: true, value: 1250.5 });
+    assert.equal(cellText({ id: 'd', type: 'date' }, '2026-10-05'), '5 Oct 2026');
+});

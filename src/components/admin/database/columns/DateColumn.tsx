@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback, useLayoutEffect } from
 import { createPortal } from 'react-dom';
 import { CellProps, Column } from 'react-datasheet-grid';
 import { ChevronLeft, ChevronRight, Calendar, X } from 'lucide-react';
+import { normaliseDateValue, formatDisplayDate } from '@/lib/records/date-cell';
 
 const DAYS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
 const MONTHS = [
@@ -23,50 +24,7 @@ function isToday(year: number, month: number, day: number) {
     return now.getFullYear() === year && now.getMonth() === month && now.getDate() === day;
 }
 
-/** Normalise any date value stored in the DB to a plain YYYY-MM-DD string. */
-function normaliseDateValue(raw: string): string {
-    if (!raw) return '';
-    // Already a clean YYYY-MM-DD or YYYY-MM-DD 🔔? Return as-is.
-    if (/^\d{4}-\d{2}-\d{2}( 🔔)?$/.test(raw)) return raw;
-    
-    // Strip the bell for parsing if present
-    const cleanRaw = raw.replace(' 🔔', '');
-    
-    // Full ISO-8601 with 'T' (e.g. 2026-02-20T23:00:00.000Z) → strip time.
-    if (cleanRaw.includes('T')) {
-        const d = new Date(cleanRaw);
-        if (!isNaN(d.getTime())) {
-            const dateOnly = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-            return raw.includes('🔔') ? `${dateOnly} 🔔` : dateOnly;
-        }
-    }
-    
-    // European formats (DD/MM/YYYY, DD.MM.YYYY, DD-MM-YYYY)
-    const euMatch = cleanRaw.match(/^(\d{1,2})[\/\.\-](\d{1,2})[\/\.\-](\d{4})$/);
-    if (euMatch) {
-        const dateOnly = `${euMatch[3]}-${euMatch[2].padStart(2, '0')}-${euMatch[1].padStart(2, '0')}`;
-        return raw.includes('🔔') ? `${dateOnly} 🔔` : dateOnly;
-    }
-
-    // Try native Date parsing for fallback
-    const d = new Date(cleanRaw);
-    if (!isNaN(d.getTime())) {
-        const dateOnly = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-        return raw.includes('🔔') ? `${dateOnly} 🔔` : dateOnly;
-    }
-    
-    return raw;
-}
-
-function formatDisplayDate(dateStr: string): string {
-    if (!dateStr) return '';
-    const hasBell = dateStr.includes('🔔');
-    const normalised = normaliseDateValue(dateStr).replace(' 🔔', '');
-    const d = new Date(normalised + 'T00:00:00');
-    if (isNaN(d.getTime())) return dateStr;
-    const formatted = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-    return hasBell ? `${formatted} 🔔` : formatted;
-}
+// The date value rule (normalise / display) lives in lib/records/date-cell.ts — ONE rule for both grids.
 
 interface CalendarPickerProps {
     value: string;

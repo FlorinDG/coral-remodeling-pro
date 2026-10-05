@@ -1,6 +1,7 @@
 "use client";
 /* eslint-disable */
 
+import RecordPeekHost from '@/components/admin/database/components/RecordPeekHost';
 import { Toaster } from 'sonner';
 import { useTranslations } from 'next-intl';
 
@@ -571,6 +572,7 @@ export default function AdminLayout({ children, activeModules = [], planType = '
                         ) : (
                             children
                         )}
+                        <RecordPeekHost />
                     </TenantProvider>
                 </div>
             </main>

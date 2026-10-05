@@ -39,3 +39,12 @@ export function getDatabaseRoute(
             return null;
     }
 }
+
+/**
+ * CROSS-LINK-1 (Florin 2026-10-05: "the displayed record has a link to the original record that is supposed to
+ * open in the side modal to allow edits"). A linked record opens IN PLACE, in the side modal — except the
+ * documents that have their own full editor (an invoice, a quotation), which navigate to it.
+ */
+export function opensInSideModal(role: string | null | undefined): boolean {
+    return role !== 'invoices' && role !== 'quotations';
+}

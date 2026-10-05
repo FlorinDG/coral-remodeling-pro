@@ -1,10 +1,9 @@
 import React, { useMemo } from 'react';
+import { useOpenLinkedRecord } from '../hooks/useOpenLinkedRecord';
 import { CellProps, Column } from 'react-datasheet-grid';
 import { useDatabaseStore } from '../store';
 import { Search } from 'lucide-react';
 
-import { useRouter } from 'next/navigation';
-import { useLocale } from 'next-intl';
 import { ExternalLink } from 'lucide-react';
 
 export interface RollupResult {
@@ -44,8 +43,7 @@ interface RollupComponentProps extends CellProps<any, any> {
 
 const RollupComponent = ({ rowData, rollupPropertyId, rollupTargetPropertyId, rollupAggregation }: RollupComponentProps) => {
     const databases = useDatabaseStore(state => state.databases);
-    const router = useRouter();
-    const locale = useLocale();
+    const openLinked = useOpenLinkedRecord();
 
     const aggregatedValues = useMemo(() => {
         if (!rowData || !rollupPropertyId || !rollupTargetPropertyId) return [];
@@ -89,7 +87,7 @@ const RollupComponent = ({ rowData, rollupPropertyId, rollupTargetPropertyId, ro
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
-                                router.push(`/${locale}/admin/database/${item.targetDbId}/${item.targetPageId}`);
+                                openLinked(item.targetDbId, item.targetPageId!);
                             }}
                             className="p-0.5 rounded opacity-0 group-hover:opacity-100 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-all ml-0.5 text-orange-500 hover:text-orange-600"
                             title="Open related record"

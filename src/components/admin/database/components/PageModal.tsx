@@ -2,6 +2,7 @@
 /* eslint-disable */
 
 import { isTenantDatabase } from '@/lib/relations/resolve';
+import { useOpenLinkedRecord } from '../hooks/useOpenLinkedRecord';
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useDatabaseStore } from '../store';
@@ -104,6 +105,7 @@ const PageRelationEditor = ({ databaseId, pageId, property }: { databaseId: stri
         displayPropertyId,
         autoLoad: true,
     });
+    const openLinked = useOpenLinkedRecord();
     const page = useDatabaseStore(state => state.getDatabase(databaseId))?.pages.find(p => p.id === pageId);
     const updatePageProperty = useDatabaseStore(state => state.updatePageProperty);
     const pageIndex = useDatabaseStore(state => state.pageIndex);
@@ -159,9 +161,17 @@ const PageRelationEditor = ({ databaseId, pageId, property }: { databaseId: stri
                     <span className="text-neutral-400 placeholder">Empty</span>
                 ) : (
                     selectedTitles.map((t, i) => (
-                        <span key={i} className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 rounded text-xs whitespace-nowrap">
+                        <span key={i} className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 rounded text-xs whitespace-nowrap group/rel">
                             <Link className="w-3 h-3" />
                             {t}
+                            <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); openLinked(resolution.targetDatabase ?? resolution.databaseId, value[i]); }}
+                                className="p-0.5 rounded opacity-60 group-hover/rel:opacity-100 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-orange-500 hover:text-orange-600"
+                                title="Open related record"
+                            >
+                                <ExternalLink className="w-3 h-3" />
+                            </button>
                         </span>
                     ))
                 )}

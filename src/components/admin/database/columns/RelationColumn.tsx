@@ -1,10 +1,9 @@
 import React, { useMemo, useRef, useState, useLayoutEffect, useEffect } from 'react';
+import { useOpenLinkedRecord } from '../hooks/useOpenLinkedRecord';
 import { createPortal } from 'react-dom';
 import { CellProps, Column } from 'react-datasheet-grid';
 import { useDatabaseStore } from '../store';
 import { Link, Search, ExternalLink, Plus, Loader2, AlertCircle } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useLocale } from 'next-intl';
 import { useRelationTarget, resolveRelationTitle } from '@/lib/relations/resolve';
 
 interface RelationComponentProps extends CellProps<any, any> {
@@ -96,8 +95,7 @@ const RelationComponent = ({ rowData, setRowData, focus, active, stopEditing, re
         return relationOptions.filter(opt => opt.title.toLowerCase().includes(searchQuery.toLowerCase()));
     }, [relationOptions, searchQuery]);
 
-    const router = useRouter();
-    const locale = useLocale();
+    const openLinked = useOpenLinkedRecord();
 
     if (!focus && !active) {
         if (selectedItems.length === 0) {
@@ -120,7 +118,7 @@ const RelationComponent = ({ rowData, setRowData, focus, active, stopEditing, re
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
-                                router.push(`/${locale}/admin/database/${resolvedDbId}/${item.id}`);
+                                openLinked(targetDatabase ?? resolvedDbId, item.id);
                             }}
                             className="p-0.5 rounded opacity-0 group-hover:opacity-100 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-all ml-0.5 text-orange-500 hover:text-orange-600"
                             title="Open related record"

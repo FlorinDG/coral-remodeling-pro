@@ -1,8 +1,8 @@
 "use client";
 /* eslint-disable */
 
+import { useOpenLinkedRecord } from '../hooks/useOpenLinkedRecord';
 import React, { useState, useEffect, useRef } from 'react';
-import { useRouter, useParams } from 'next/navigation';
 import { useDatabaseStore } from '../store';
 import { Property, PropertyValue, SelectOption } from '../types';
 import {
@@ -69,9 +69,7 @@ function SelectBadge({ option }: { option: SelectOption }) {
 
 // ─── Relation display: resolves page IDs → titles ─────────────────────────
 function RelationValue({ ids }: { ids: string[] }) {
-    const router = useRouter();
-    const params = useParams();
-    const locale = (params.locale as string) || 'nl';
+    const openLinked = useOpenLinkedRecord();
     const databases = useDatabaseStore(state => state.databases);
 
     const resolved = ids.map(id => {
@@ -96,7 +94,7 @@ function RelationValue({ ids }: { ids: string[] }) {
                     key={i}
                     onClick={() => {
                         if (item.dbId) {
-                            router.push(`/${locale}/admin/database/${item.dbId}/${item.pageId}`);
+                            openLinked(item.dbId, item.pageId);
                         }
                     }}
                     className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-neutral-100 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded text-xs text-neutral-700 dark:text-neutral-300 hover:border-orange-500/50 hover:bg-neutral-200 dark:hover:bg-white/10 transition-all group/rel"

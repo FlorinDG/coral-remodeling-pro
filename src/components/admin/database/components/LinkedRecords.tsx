@@ -1,6 +1,6 @@
 "use client";
 
-import { getDatabaseRoute } from '@/lib/databaseRoute';
+import { useOpenLinkedRecord } from '../hooks/useOpenLinkedRecord';
 import { toast } from 'sonner';
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -8,7 +8,6 @@ import { ExternalLink, Loader2, Plus, Link2, Search, X } from 'lucide-react';
 import { useDatabaseStore } from '@/components/admin/database/store';
 import { Database, Page, Property, PropertyValue } from '@/components/admin/database/types';
 import { useTenant } from '@/context/TenantContext';
-import { useRouter, useParams } from 'next/navigation';
 import SearchableSelect from '@/components/ui/SearchableSelect';
 import { resolveRelationTarget, resolveRelationTitle } from '@/lib/relations/resolve';
 
@@ -30,9 +29,7 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
     const dropdownRef = useRef<HTMLDivElement>(null);
 
     const { resolveDbId } = useTenant();
-    const router = useRouter();
-    const params = useParams();
-    const locale = (params.locale as string) || 'nl';
+    const openLinked = useOpenLinkedRecord();
 
     const allDatabases = useDatabaseStore((state) => state.databases);
     const pageIndex = useDatabaseStore((state) => state.pageIndex);
@@ -110,15 +107,10 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
         const currentRelations = (page.properties?.[prop.id] as string[]) || [];
         updatePageProperty(databaseId, pageId, prop.id, [...currentRelations, newPage.id]);
 
-        // Navigate to the new page
-        const route = getDatabaseRoute(targetDb, newPage.id);
-        if (!route) {
-            toast.error(`Kan record niet openen: onbekende database (${targetDb?.name || resolvedTargetDbId})`);
-            return;
-        }
-        router.push(`/${locale}${route}`);
+        // Open the new record in place (side modal) to fill it in — CROSS-LINK-1
         setIsCreating(null);
         setIsOpen(false);
+        openLinked(targetDb ?? resolvedTargetDbId, newPage.id);
     };
 
     const handleLinkExisting = (prop: Property, targetPageId: string) => {
@@ -552,9 +544,7 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
                                         >
                                             <button
                                                 onClick={() => {
-                                                    const route = getDatabaseRoute(lp.db, lp.page.id);
-                                                    if (!route) { toast.error(`Kan record niet openen: onbekende database (${lp.db.name})`); return; }
-                                                    router.push(`/${locale}${route}`);
+                                                    openLinked(lp.db, lp.page.id);
                                                 }}
                                                 className="flex-1 flex items-center gap-2 min-w-0 text-left"
                                             >
@@ -569,9 +559,7 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
                                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <button
                                                     onClick={() => {
-                                                        const route = getDatabaseRoute(lp.db, lp.page.id);
-                                                        if (!route) { toast.error(`Kan record niet openen: onbekende database (${lp.db.name})`); return; }
-                                                        router.push(`/${locale}${route}`);
+                                                        openLinked(lp.db, lp.page.id);
                                                     }}
                                                     className="p-1 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-white/5 rounded-lg transition-colors"
                                                     title="View Detail"
@@ -615,9 +603,7 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
                             >
                                 <button
                                     onClick={() => {
-                                        const route = getDatabaseRoute(bl.db, bl.page.id);
-                                        if (!route) { toast.error(`Kan record niet openen: onbekende database (${bl.db.name})`); return; }
-                                        router.push(`/${locale}${route}`);
+                                        openLinked(bl.db, bl.page.id);
                                     }}
                                     className="flex-1 flex items-center gap-2 min-w-0 text-left"
                                 >
@@ -631,9 +617,7 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
                                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                     <button
                                         onClick={() => {
-                                            const route = getDatabaseRoute(bl.db, bl.page.id);
-                                            if (!route) { toast.error(`Kan record niet openen: onbekende database (${bl.db.name})`); return; }
-                                            router.push(`/${locale}${route}`);
+                                            openLinked(bl.db, bl.page.id);
                                         }}
                                         className="p-1 text-neutral-400 hover:text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950/20 rounded-lg transition-colors"
                                         title="View"

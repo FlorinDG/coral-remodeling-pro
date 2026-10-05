@@ -26,6 +26,10 @@ only, characterised against today). Report `.agents/reports/WH-7-M1.md`. Push, S
 📄 `coder-directive-r1-7-b1.md` — notifications → calendar → tenant, one commit per module; each migrated file leaves
 the R1-5 allowlist and lowers `CEILING` (113 → 97). STOP on any cross-tenant read. Report `.agents/reports/R1-7-B1.md`.
 
+## 2 · `DB-HEADER-1` — one database header across the ERP — 🟦 PLAN FIRST (after R1-7-B1)
+📄 `coder-directive-db-header-1.md` — inventory the 19 database screens' headers, propose ONE pure rule
+(`lib/records/db-header.ts`) + one component. Write `.agents/plans/DB-HEADER-1.md`, push, STOP.
+
 ## ✅ `R2-5` — DONE WITH CORRECTIONS (review 2026-10-02, `MORNING-2026-10-02.md` §2)
 Store tests accepted. 11 of 13 OCC tests tested a COPY of the merge loop (§3a) — removed on
 `pending/occ-merge`, replaced by real tests of `lib/records/occ-merge.ts`. Leftover: the backoff-formula

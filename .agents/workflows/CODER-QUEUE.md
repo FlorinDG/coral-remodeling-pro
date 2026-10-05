@@ -16,13 +16,13 @@
 **every new test needs a THROW PROOF** (break the real code, show the test fail, restore), and
 **bending a directive is not progress** — a blocked step is STOPPED, never worked around.
 
-## 0 · `WH-7` — rebuild the shift editor — ✅ M1 ACCEPTED · 🟩 GO M2 (stop after M2)
+## 0 · `WH-7` — rebuild the shift editor — ✅ M2 ACCEPTED · 🟩 GO M3 (stop after M3)
 📄 `coder-directive-wh-7.md` + **`.agents/plans/WH-7.md` § PLANNER REVIEW (C1–C6, binding)**.
-M2 = the edit dialog on the model (plan § PLANNER REVIEW — M1: derive payload types from ScheduledShift; C7 WerkbonCard).
-Report `.agents/reports/WH-7-M2.md`. Push, STOP for review. R1-7-B1 may run while M2 waits for review.
+M3 = the create form on the model + the two M2 corrections (plan § PLANNER REVIEW — M2: kernel time in the picker and
+the lock banner). Report `.agents/reports/WH-7-M3.md`. Push, STOP for review.
 *(Done 2026-10-04: WO-4a-M4 ✅ · R2-1-CENSUS ✅ — 4 holes it found were fixed the same day.)*
 
-## 1 · `R1-7-B1` — 16 call sites onto the seraph — 🟩 GO after WH-7 M1 is pushed (no plan gate)
+## ✅ `R1-7-B1` — DONE, reviewed 2026-10-05 (STOP 1 decided: lib/data/identity emailOwner; 4 files moved by the Planner)
 📄 `coder-directive-r1-7-b1.md` — notifications → calendar → tenant, one commit per module; each migrated file leaves
 the R1-5 allowlist and lowers `CEILING` by the files removed, from its current value. STOP on any cross-tenant read. Report `.agents/reports/R1-7-B1.md`.
 

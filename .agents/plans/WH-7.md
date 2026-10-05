@@ -364,3 +364,15 @@ expansion mutated to `Date` + `toISOString` → 1 red under `TZ=Europe/Brussels`
 **One correction for M2:** `CreateShiftPayload` / `UpdateShiftPayload` are hand-written interfaces — derive them
 from `ScheduledShift` (`Pick<…>` / `Partial<Pick<…>>` of `useScheduledShifts.ts`) so a field rename there fails the
 compile here instead of drifting. M2 = the edit dialog on the model (incl. C7 `WerkbonCard` + `isWerkbonArtifact`).
+
+---
+
+## PLANNER REVIEW — M2 · 2026-10-05 · ✅ ACCEPTED · GO for M3 (stop after M3)
+Read: the dialog on the model; payload types now derived from `ScheduledShift` (C2 done); lock = signature only, the
+409 `work_order_signed` fallback flips to locked; C7 WerkbonCard top of details + attachments, `isWerkbonArtifact`
+filter; `useScheduleAttachments` replaced by `uploadFileAction` + `addShiftFile`. Inert until M4 (nothing imports it).
+**Two corrections — fix them in M3 (they are the same rule: time only through the kernel):**
+1. `EditShiftDialog.tsx` `getParsedDate` / `formatDateStr` are own date parsing — use the kernel:
+   `shiftMoment(ymd, '00:00')` for the picker's Date and `localDateKey(date)` back (src/lib/kernel/shift-time.ts).
+2. `ShiftLockBanner.tsx` formats `signedAt` with `toLocaleDateString` in the BROWSER's zone — the signing moment is
+   shown on the business clock: `zonedParts(signedAt)` (date + time, Brussels).

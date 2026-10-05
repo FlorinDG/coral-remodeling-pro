@@ -25,7 +25,7 @@ export type SaveRecordResult =
 export async function saveRecord(
     db: TenantScopedClient,
     intent: RecordIntent,
-    opts: { by: string; meta?: RecordMeta; createIfMissing?: CreateIfMissing },
+    opts: { by: string; meta?: RecordMeta; createIfMissing?: CreateIfMissing; lifecycle?: { reason: string } },
 ): Promise<SaveRecordResult> {
     const run = () => db.$transaction(async tx => {
         const row = await tx.globalPage.findFirst({
@@ -59,7 +59,7 @@ export async function saveRecord(
             properties: (row.properties || {}) as Record<string, unknown>,
             blocks: row.blocks, blocksVersion: row.blocksVersion, updatedAt: row.updatedAt.toISOString(),
         };
-        const r = applyRecordIntent(server, intent, { dbProperties, logicalKey: row.database?.logicalKey });
+        const r = applyRecordIntent(server, intent, { dbProperties, logicalKey: row.database?.logicalKey, lifecycle: opts.lifecycle });
         if (!r.ok) {
             return { ok: false as const, refusal: r.refusal, server: { ...server, lastEditedBy: row.lastEditedBy }, logicalKey: row.database?.logicalKey, dbProperties };
         }

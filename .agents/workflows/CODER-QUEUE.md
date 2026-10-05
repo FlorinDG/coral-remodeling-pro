@@ -26,11 +26,11 @@ the lock banner). Report `.agents/reports/WH-7-M3.md`. Push, STOP for review.
 📄 `coder-directive-r1-7-b1.md` — notifications → calendar → tenant, one commit per module; each migrated file leaves
 the R1-5 allowlist and lowers `CEILING` by the files removed, from its current value. STOP on any cross-tenant read. Report `.agents/reports/R1-7-B1.md`.
 
-## 2 · `DB-HEADER-1` — one database header across the ERP — 🟦 PLAN FIRST (after R1-7-B1)
+## 2 · `DB-HEADER-1` — one database header across the ERP — ✅ PLAN APPROVED WITH CORRECTIONS · 🟩 GO M1 (stop after M1)
 📄 `coder-directive-db-header-1.md` — inventory the 19 database screens' headers, propose ONE pure rule
 (`lib/records/db-header.ts`) + one component. Write `.agents/plans/DB-HEADER-1.md`, push, STOP.
 
-## 3 · `R2-1-B` — the remaining direct record writes onto the one door — 🟦 PLAN FIRST (after DB-HEADER-1 plan)
+## 3 · `R2-1-B` — the remaining direct record writes onto the one door — ✅ PLAN APPROVED WITH CORRECTIONS · 🟩 GO M1 (stop after M1)
 📄 `coder-directive-r2-1-b.md` — re-measure the census, every direct GlobalPage write → `saveRecord` / `deleteRecord`
 on the caller's scoped door (session / system / portal), or justified in writing. Plan `.agents/plans/R2-1-B.md`, STOP.
 

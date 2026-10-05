@@ -221,3 +221,36 @@ When a screen does NOT have declared action items or screen tabs, the layout col
 3. **Accountant Export placement:**
    Today Accountant Export sits between Export and Import in the grid toolbar.
    **Proposal:** Keep it on the grid toolbar, visible only when `canRunAccountantExport(role, userRole)` returns true.
+
+---
+
+## PLANNER REVIEW — 2026-10-05 · ✅ APPROVED WITH CORRECTIONS · GO for M1 only (stop after M1)
+A good inventory — every screen, every inconsistency named. Corrections, binding:
+
+**C1 · Reuse the real rules, from their real homes.** `canRunAccountantExport` is in `src/lib/roles.ts`;
+`ACCOUNTANT_EXPORT_SOURCES` and `systemDatabaseEntitled` are kernel (`src/lib/kernel/system-databases.ts`,
+`system-schema-entitlement.ts`). `isTenantDatabase` is a CLIENT helper (`lib/relations/resolve.ts`) — the pure rule
+must not import it: it receives the database's ROLE (logicalKey) in its context, and decides from that.
+
+**C2 · No visible text in the rule.** The rule returns i18n KEYS (`schemaLink.labelKey`, action `labelKey`, tab keys)
+— never 'Edit Schema Fields'. The component translates (next-intl, en/nl/fr/ro).
+
+**C3 · Labels come from DATA.** CRM pipeline tabs = the databases' own names (now "CRM" / "Bobex" — renamed by SQL
+today). Project-type tabs = the options of the `prop-project-type` select in the projects schema (plus "All"),
+not a hard-coded list.
+
+**C4 · Parity first — no new behaviour slipped in.** The table proposes actions that do not exist today
+(`manual-invoice` on invoices / credit notes, `new-record` on quotations / custom). M1–M6 move what EXISTS into the
+one header; new actions go to §6 as questions for Florin.
+
+**C5 · Styling:** one primary action style on the tenant's brand colour (`var(--brand-color)`), never a hard-coded
+orange-500. Lucide icons, as proposed.
+
+**C6 · The header serves BOTH grids.** GRID-REPLACE is under way (NotionGridV2 behind "Raster V2"). The toolbar
+(Properties, Filter, Sort, Export, Import, accountant export, bulk approve) moves OUT of NotionGrid into the one
+header, and NotionGridV2 renders under the same header — the rule's `gridV2Enabled` decides nothing about which
+items show. Moving code OUT of NotionGrid is allowed (R3-C freeze = no new behaviour inside it).
+
+**Answers:** Q1 yes — CRM shows view tabs (Florin: filters per view). Q2 yes, per C5. Q3 yes.
+#19 (planning / Gantt) is not a DatabaseClone screen — out of scope, noted.
+M1 = `src/lib/records/db-header.ts` + `tests/db-header.test.ts` (node:test, throw proofs) + report. Push, STOP.

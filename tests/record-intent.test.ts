@@ -79,3 +79,13 @@ test('an issued document is never deleted at the door (throw proof: a draft invo
     assert.equal(deleteRefusal('expenses', { accountantExportedAt: true }), 'EXPORT_LOCKED');
     assert.equal(deleteRefusal('tasks', { status: 'done' }), null);
 });
+
+test('an exported invoice: a NAMED system lifecycle writer may mark it paid / overdue; a user may not; other fields stay frozen', () => {
+    const exported = row({ properties: { title: 'F-1', status: 'opt-sent', accountantExportedAt: true } });
+    const user = applyRecordIntent(exported, { pageId: 'p', fields: { status: 'opt-paid' } }, ctx);
+    assert.equal(!user.ok && user.refusal.code, 'EXPORT_LOCKED');
+    const sys = applyRecordIntent(exported, { pageId: 'p', fields: { status: 'opt-paid', paidDate: '2026-11-03' } }, { ...ctx, lifecycle: { reason: 'payment sync' } });
+    assert.ok(sys.ok && (sys.properties as Record<string, unknown>).status === 'opt-paid');
+    const sneak = applyRecordIntent(exported, { pageId: 'p', fields: { status: 'opt-paid', title: 'F-2' } }, { ...ctx, lifecycle: { reason: 'x' } });
+    assert.deepEqual(!sneak.ok && 'blockedFields' in sneak.refusal && sneak.refusal.blockedFields, ['title']);
+});

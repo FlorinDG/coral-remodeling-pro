@@ -43,7 +43,16 @@ export interface ServerRow { properties: Props; blocks: unknown; blocksVersion: 
 export interface WriteContext {
     dbProperties: Array<{ id: string; type?: string; name?: string }>;
     logicalKey?: string | null;
+    /**
+     * A SYSTEM writer moving a document through its lifecycle (payment status sync, the overdue cron) — named, never
+     * a user. It may change the LIFECYCLE fields of an accountant-exported record: an invoice exported this month
+     * is paid next month (Planner 2026-10-05, R2-1-B). Every other field stays frozen.
+     */
+    lifecycle?: { reason: string };
 }
+
+/** What a named system lifecycle writer may still change on an accountant-exported record. */
+export const EXPORT_LIFECYCLE_FIELDS: ReadonlySet<string> = new Set(['status', 'statusChangedAt', 'paidDate']);
 
 export type RecordRefusal =
     | { code: 'STALE_WRITE'; field?: string }
@@ -90,7 +99,8 @@ export function applyRecordIntent(server: ServerRow, intent: RecordIntent, ctx: 
     // Locks — on the prospective result, against the current row.
     const relationIds = new Set(ctx.dbProperties.filter(p => p.type === 'relation').map(p => p.id));
     const exportViolation = checkExportLock(serverProps as never, merged, relationIds, server.blocks as never, blocks);
-    if (exportViolation) return { ok: false, refusal: { code: 'EXPORT_LOCKED', blockedFields: exportViolation.blockedFields } };
+    const exportBlocked = (exportViolation?.blockedFields || []).filter(f => !(ctx.lifecycle && EXPORT_LIFECYCLE_FIELDS.has(f)));
+    if (exportBlocked.length) return { ok: false, refusal: { code: 'EXPORT_LOCKED', blockedFields: exportBlocked } };
     const documentViolation = checkDocumentLock(ctx.logicalKey, serverProps, merged, server.blocks, blocks);
     if (documentViolation) return { ok: false, refusal: { code: 'DOCUMENT_LOCKED', blockedFields: documentViolation.blockedFields } };
 

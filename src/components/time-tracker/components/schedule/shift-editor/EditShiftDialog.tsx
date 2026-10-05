@@ -47,7 +47,6 @@ import { WerkbonCard } from '@/components/time-tracker/components/werkbon/Werkbo
 import { ScheduledShift, Project } from '@/components/time-tracker/hooks/useScheduledShifts';
 import { WorkerOption } from '@/components/time-tracker/types/timesheet';
 import { hrList } from '@/lib/hr-api';
-import { format } from 'date-fns';
 import { shiftMoment, localDateKey } from '@/lib/kernel/shift-time';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -60,6 +59,7 @@ import {
   buildUpdateShiftPayload,
   buildRecurringExpansionFromExisting,
   evaluateShiftLockState,
+  formatCalendarDay,
   ShiftLockState,
   ShiftEditorFormInput,
   CreateShiftPayload,
@@ -379,7 +379,7 @@ export function EditShiftDialog({
                       )}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {shiftDate ? format(getParsedDate(shiftDate)!, 'PPP') : 'Selecteer datum'}
+                      {shiftDate ? formatCalendarDay(shiftDate) : 'Selecteer datum'}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">

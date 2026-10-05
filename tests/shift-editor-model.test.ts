@@ -8,6 +8,7 @@ import {
   buildUpdateShiftPayload,
   buildRecurringExpansionFromExisting,
   evaluateShiftLockState,
+  formatCalendarDay,
   type ShiftEditorFormInput,
 } from '../src/components/time-tracker/components/schedule/shift-editor/model.ts';
 import { weekdayOfYmd } from '../src/lib/kernel/shift-time.ts';
@@ -366,3 +367,24 @@ test('evaluateShiftLockState: locks ONLY when action sign row exists (C4)', () =
   assert.equal(evaluateShiftLockState(null).locked, false);
   assert.equal(evaluateShiftLockState(undefined).locked, false);
 });
+
+// ── 5. CALENDAR DAY FORMATTING (M4 correction) ────────────────────────────────
+
+test('formatCalendarDay: formats date string safely across all zones (M4 correction)', () => {
+  // Brussels long date format in Dutch: e.g. "5 oktober 2026"
+  const nl = formatCalendarDay('2026-10-05', 'nl-BE');
+  assert.ok(nl.includes('5') && nl.includes('2026'), `Expected 5 and 2026 in '${nl}'`);
+
+  // English format
+  const en = formatCalendarDay('2026-10-05', 'en-US');
+  assert.ok(en.includes('October') && en.includes('5') && en.includes('2026'), `Expected October 5, 2026 in '${en}'`);
+
+  // Spring clock-change transition date: 2026-03-29 (DST change in Brussels)
+  const springDst = formatCalendarDay('2026-03-29', 'nl-BE');
+  assert.ok(springDst.includes('29') && springDst.includes('2026'), `Expected 29 and 2026 in '${springDst}'`);
+
+  // Empty or invalid input
+  assert.equal(formatCalendarDay(''), '');
+  assert.equal(formatCalendarDay('invalid'), '');
+});
+

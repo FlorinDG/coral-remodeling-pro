@@ -416,3 +416,20 @@ export function evaluateShiftLockState(
     signedAt: signEntry.createdAt,
   };
 }
+
+/**
+ * Labels a 'YYYY-MM-DD' calendar day safely across all browser time zones.
+ * Never formats a midnight instant, which slips backward on laptops west of Brussels.
+ * Formats from the ymd calendar components in Europe/Brussels.
+ */
+export function formatCalendarDay(dateYmd: string, locale: string = 'nl-BE'): string {
+  if (!dateYmd) return '';
+  const [y, m, d] = dateYmd.split('-').map(Number);
+  if (!y || !m || !d) return '';
+  const noonUtc = new Date(Date.UTC(y, m - 1, d, 12, 0, 0));
+  return new Intl.DateTimeFormat(locale, {
+    dateStyle: 'long',
+    timeZone: 'Europe/Brussels',
+  }).format(noonUtc);
+}
+

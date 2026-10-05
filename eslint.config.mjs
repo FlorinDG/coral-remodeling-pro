@@ -230,13 +230,8 @@ const eslintConfig = defineConfig([
       "src/app/actions/timesheets.ts",
     ],
     ignores: [
-      // Grandfathered allowlist: 5 files remaining.
-      // - CreateShiftForm.tsx and EditShiftDialog.tsx are rebuilt in WH-7.
-      // - timesheets.ts, useScheduleAttachments.ts, useScheduledShifts.ts are INC-1 bridges.
+      // Grandfathered allowlist: 2 files remaining (INC-1 bridges).
       "src/app/actions/timesheets.ts",
-      "src/components/time-tracker/components/schedule/CreateShiftForm.tsx",
-      "src/components/time-tracker/components/schedule/EditShiftDialog.tsx",
-      "src/components/time-tracker/hooks/useScheduleAttachments.ts",
       "src/components/time-tracker/hooks/useScheduledShifts.ts",
     ],
     rules: {

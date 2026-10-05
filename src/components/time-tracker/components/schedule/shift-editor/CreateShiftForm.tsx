@@ -22,7 +22,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
 import {
   Dialog,
   DialogContent,
@@ -61,6 +60,7 @@ import { InlineCreateProjectModal } from './components/InlineCreateProjectModal'
 import {
   validateShiftForm,
   buildCreateShiftPayloads,
+  formatCalendarDay,
   CreateShiftPayload,
   ShiftEditorFormInput,
   ShiftScheduleType,
@@ -741,7 +741,7 @@ export function CreateShiftForm({
                       )}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {shiftDate ? format(getParsedDate(shiftDate)!, 'PPP') : 'Selecteer datum'}
+                      {shiftDate ? formatCalendarDay(shiftDate) : 'Selecteer datum'}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
@@ -769,7 +769,7 @@ export function CreateShiftForm({
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
                         {shiftEndDate
-                          ? format(getParsedDate(shiftEndDate)!, 'PPP')
+                          ? formatCalendarDay(shiftEndDate)
                           : 'Selecteer einddatum'}
                       </Button>
                     </PopoverTrigger>

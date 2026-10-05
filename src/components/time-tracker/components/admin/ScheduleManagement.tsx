@@ -3,11 +3,10 @@ import { useState, useEffect, useMemo } from 'react';
 import { Loader2, LayoutList, LayoutGrid } from 'lucide-react';
 import { ScheduleTable } from '@/components/time-tracker/components/schedule/ScheduleTable';
 import { ScheduleMatrixView } from '@/components/time-tracker/components/schedule/ScheduleMatrixView';
-import { CreateShiftForm } from '@/components/time-tracker/components/schedule/CreateShiftForm';
+import { CreateShiftForm, EditShiftDialog } from '@/components/time-tracker/components/schedule/shift-editor';
 import type { EditScope } from '@/components/ui/ScopePicker';
 import { describeError } from '@/lib/describe-error';
 import { localDateKey, shiftMoment } from '@/lib/kernel/shift-time';
-import { EditShiftDialog } from '@/components/time-tracker/components/schedule/EditShiftDialog';
 import { useScheduledShifts, ScheduledShift } from '@/components/time-tracker/hooks/useScheduledShifts';
 import { toast } from 'sonner';
 import {

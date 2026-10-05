@@ -37,6 +37,10 @@ Planner 2026-10-05. coral-r3-grid.md R3-B4: "The flag flips only when V2 matches
 | 28 | View tabs, schema link and the V2 switch in the new grid's header | 🟨 | were missing with V2 on (only Projects has its own header) — fixed 2026-10-05: `renderTabs` passed like the old grid |
 | 27 | Mobile / touch | ⬜ | to check |
 
-**When every line is ✅ on 2+ databases:** GRID-REPLACE-4 flips the default (V2 for everyone; the switch becomes
+**✅ FLIPPED 2026-10-05 (Florin: "one grid to rule them all… we only need one, and i like how it works so far").**
+The new grid is the default for everyone; "Oud raster" (any user, per database, this browser) falls back for one
+week — until **2026-10-12**. Open lines are checked as we go. Then GRID-REPLACE-5.
+
+*(Original rule:)* **When every line is ✅ on 2+ databases:** GRID-REPLACE-4 flips the default (V2 for everyone; the switch becomes
 "old grid" for a week), then GRID-REPLACE-5 deletes react-datasheet-grid, NotionGrid, the columns/* DSG cells, the
 11 useOverlayEventShield call sites and the switch.

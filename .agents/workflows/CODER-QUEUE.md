@@ -45,6 +45,7 @@ in en/nl/fr/ro; strings only; `tests/i18n.test.ts` is the guard (throw proof). R
 📄 `coder-directive-grid-replace-5.md` — inventory, importers, moves, milestones for deleting NotionGrid + DSG +
 the 11 shield sites + the switch. Plan `.agents/plans/GRID-REPLACE-5.md`. Nothing in `src/` changes. Can run any
 time (read-only) — do it while waiting for a review.
+The default flipped 2026-10-05; the old grid may be deleted from **2026-10-12** — the plan is wanted before then.
 
 ## ✅ `R2-5` — DONE WITH CORRECTIONS (review 2026-10-02, `MORNING-2026-10-02.md` §2)
 Store tests accepted. 11 of 13 OCC tests tested a COPY of the merge loop (§3a) — removed on

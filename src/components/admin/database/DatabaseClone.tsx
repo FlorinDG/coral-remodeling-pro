@@ -1,6 +1,7 @@
 "use client";
 
-import { useGridV2 } from '@/components/admin/database/v2/grid-v2-flag';
+import { useOldGrid } from '@/components/admin/database/v2/grid-v2-flag';
+import { useTranslations } from 'next-intl';
 import { surfaceKey, viewsForSurface, seedSurfaceView } from '@/lib/records/view-scope';
 import { isTenantDatabase } from '@/lib/relations/resolve';
 import React, { useEffect, useState, useMemo } from 'react';
@@ -88,9 +89,10 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
   const isStoreUngated = useDatabaseStore(state => state.isSchemaUngated(databaseId));
   const isSuperAdmin = (session?.user?.role as string) === 'SUPERADMIN' || (session?.user?.role as string) === 'PLATFORM_ADMIN';
   // GRID-REPLACE-1: the new grid, per database, switched on by the superadmin (also while impersonating) to try it.
-  const canTryGridV2 = isSuperAdmin || !!(session?.user as { isImpersonating?: boolean } | undefined)?.isImpersonating;
-  const [gridV2Flag, setGridV2] = useGridV2(resolvedId);
-  const gridV2 = canTryGridV2 && gridV2Flag;
+  // GRID-REPLACE-4: the new grid for everyone; anyone may fall back to the old one on a database for a week.
+  const [oldGrid, setOldGrid] = useOldGrid(resolvedId);
+  const gridV2 = !oldGrid;
+  const tGrid = useTranslations('Admin');
   const isUngated = isStoreUngated || isSuperAdmin;
 
     const handleOpenEditor = (pageId: string) => {
@@ -434,11 +436,11 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
         </Link>
       )}
 
-      {canTryGridV2 && (
-        <button type="button" onClick={() => setGridV2(!gridV2Flag)}
-                title="GRID-REPLACE-1 — het nieuwe raster voor deze database (enkel in deze browser)"
-                className={`flex items-center gap-1.5 px-3 py-1 mx-1 mb-[5px] rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors shrink-0 ${gridV2Flag ? 'bg-orange-500 text-white' : 'bg-neutral-100 dark:bg-white/5 text-neutral-500 hover:text-orange-600'}`}>
-          Raster V2 {gridV2Flag ? 'aan' : 'uit'}
+      {activeView?.type === 'table' && (
+        <button type="button" onClick={() => setOldGrid(!oldGrid)}
+                title={tGrid('grid.switchHint')}
+                className={`flex items-center gap-1.5 px-3 py-1 mx-1 mb-[5px] rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors shrink-0 ${oldGrid ? 'bg-orange-500 text-white' : 'bg-neutral-100 dark:bg-white/5 text-neutral-500 hover:text-orange-600'}`}>
+          {oldGrid ? tGrid('grid.backToNew') : tGrid('grid.useOld')}
         </button>
       )}
 

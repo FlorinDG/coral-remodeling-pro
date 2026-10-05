@@ -1,18 +1,20 @@
 'use client';
 /**
- * GRID-REPLACE-1 · the switch: which databases show the new grid (NotionGridV2) — per viewer, per database, in this
- * browser only (a beta convenience; the old grid stays the default everywhere until GRID-REPLACE-4 flips it).
+ * GRID-REPLACE-4 (Florin 2026-10-05: "one grid to rule them all… we only need one") · the new grid (NotionGridV2) is
+ * the DEFAULT for everyone. For one week anyone may fall back to the old grid on a database — per viewer, per
+ * database, in this browser only. GRID-REPLACE-5 deletes the old grid, this switch with it.
  */
 import { useCallback, useEffect, useState } from 'react';
 
-const KEY = 'coral.gridV2.databases';
-const EVENT = 'coral-grid-v2-changed';
+const KEY = 'coral.gridV1.databases';          // databases where this viewer chose the OLD grid
+const EVENT = 'coral-grid-v1-changed';
 
 function read(): string[] {
     try { const v = JSON.parse(window.localStorage.getItem(KEY) || '[]'); return Array.isArray(v) ? v : []; } catch { return []; }
 }
 
-export function useGridV2(databaseId: string | undefined): [boolean, (on: boolean) => void] {
+/** [old grid chosen on this database, choose it / leave it]. Default: false — the new grid. */
+export function useOldGrid(databaseId: string | undefined): [boolean, (on: boolean) => void] {
     const [on, setOn] = useState(false);
     useEffect(() => {
         const sync = () => setOn(!!databaseId && read().includes(databaseId));
@@ -26,7 +28,7 @@ export function useGridV2(databaseId: string | undefined): [boolean, (on: boolea
             const ids = new Set(read());
             if (next) ids.add(databaseId); else ids.delete(databaseId);
             window.localStorage.setItem(KEY, JSON.stringify([...ids]));
-        } catch { /* storage unavailable — the switch simply does not stick */ }
+        } catch { /* storage unavailable — the choice simply does not stick */ }
         window.dispatchEvent(new Event(EVENT));
     }, [databaseId]);
     return [on, set];

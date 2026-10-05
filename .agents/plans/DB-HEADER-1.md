@@ -267,8 +267,9 @@ is `field=value`).
 **R2 · Import / delete gates = the grid's today.** Import: `access.create && !ctx.isLockedSchema` (the screen already
 computes `lockedSchema`); delete: `access.delete` — the per-row guard (`preventDelete`) stays the screen's, the door
 refuses issued documents. Drop the own `FINANCIAL_DOCUMENT_ROLES` list for these.
-**R3 · `showGridV2Toggle`** is superadmin / impersonating only (`v2/grid-v2-flag.ts`), not `true` for everyone — and
-it is deleted at GRID-REPLACE-5.
+**R3 · `showGridV2Toggle`** — SUPERSEDED 2026-10-05 by GRID-REPLACE-4: the new grid is the default; the switch is
+now "Oud raster" for EVERY user (table views) until 2026-10-12, then deleted at GRID-REPLACE-5. Do not model it in
+the rule — leave it in DatabaseClone where it is.
 **R4 · The keys must exist.** 8 of 9 returned keys are not in `src/messages/*.json` (`draftOnlyDelete`,
 `editCustomFields`, `editSchemaFields`, `scanTicket`, `bulkUpload`, `manualEntry`, `scanInvoice`, `peppolSync`).
 Reuse the keys the screens use today where they exist; add the rest in en/nl/fr/ro. Throw proof: a test that every

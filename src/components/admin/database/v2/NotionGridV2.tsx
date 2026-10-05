@@ -274,7 +274,6 @@ export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRec
             )}
             {/* Toolbar — the same components as the old grid (no copies); DB-HEADER-1 moves them into the one header. */}
             <div className="flex items-center gap-2 px-2 py-1.5 border-b border-neutral-200 dark:border-white/10">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-orange-600">Raster V2</span>
                 {selected.size > 0 && (
                     <>
                         <span className="text-xs text-neutral-500">{selected.size} geselecteerd</span>

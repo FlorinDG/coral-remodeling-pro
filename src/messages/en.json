@@ -255,6 +255,7 @@
     "yourProject": "Your Project"
   },
   "Admin": {
+    "grid": {"useOld": "Old grid", "backToNew": "Back to the new grid", "switchHint": "Only for you, on this database, in this browser — the old grid is removed after a week"},
     "comments": {"title": "Comments", "placeholder": "Write a comment… (@ to mention someone)", "send": "Post", "resolve": "Resolve", "reopen": "Reopen", "edit": "Edit", "delete": "Delete", "save": "Save", "cancel": "Cancel", "empty": "No comments yet.", "resolved": "resolved", "edited": "edited", "deleteConfirm": "Delete this comment?", "failed": "Failed", "summary": "{count, plural, one {# comment} other {# comments}}{open, plural, =0 {} other {, # open}}", "newPlaceholder": "New comment…"},
     "werkbon": {"title": "Work order — signed by the client", "signedBy": "Signed by {name} on {date}", "openPdf": "Open work order (PDF)", "pdfPending": "PDF is being created…", "notSent": "Not sent yet", "sentTo": "Sent on {date} to {to}", "cc": "copy: {cc}"},
     "accountant_export_button": "Accountant export",

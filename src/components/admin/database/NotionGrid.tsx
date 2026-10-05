@@ -30,6 +30,7 @@ import { useGridColumns } from './hooks/useGridColumns';
 import { useVatLookup } from './hooks/useVatLookup';
 import { useExportCSV } from './hooks/useExportCSV';
 import { canRunAccountantExport } from '@/lib/roles';
+import { ACCOUNTANT_EXPORT_SOURCES, type SystemDatabaseRole } from '@/lib/kernel/system-databases';
 
 // ── Add Column Button (rendered at the end of the header row) ───────────────
 function AddColumnButton({ databaseId }: { databaseId: string }) {
@@ -82,7 +83,6 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
     const role = session?.user?.role;
     const isImpersonating = !!(session?.user as any)?.isImpersonating;
     const isAccountant = role === 'ACCOUNTANT';
-    const showAccountantExport = canRunAccountantExport(role, isImpersonating);
     const updatePageProperty = useDatabaseStore(state => state.updatePageProperty);
     const createPage = useDatabaseStore(state => state.createPage);
     const deletePage = useDatabaseStore(state => state.deletePage);
@@ -128,6 +128,9 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
     const hasCRM = activeModules.includes('CRM');
     const isFree = planType === 'FREE';
     const isBestek = database?.logicalKey === 'bestek';
+    // The accountant export ZIPs invoices + expenses: its button shows on those databases only, for those who may run it.
+    const showAccountantExport = canRunAccountantExport(role, isImpersonating)
+        && ACCOUNTANT_EXPORT_SOURCES.includes(database?.logicalKey as SystemDatabaseRole);
     const isBestekReadOnly = isBestek && !isEnterprise;
 
     const [isReady, setIsReady] = useState(false);
@@ -608,7 +611,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                             onClick={() => setIsAccountantExportDialogOpen(true)}
                             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition"
                         >
-                            📦 Boekhouder export
+                            📦 {t('accountant_export_button')}
                         </button>
                     )}
 

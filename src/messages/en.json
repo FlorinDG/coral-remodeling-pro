@@ -255,6 +255,7 @@
     "yourProject": "Your Project"
   },
   "Admin": {
+    "accountant_export_button": "Accountant export",
     "exportLock": {
       "blocks_only": "{document} has already been sent to the accountant. The line items can no longer be changed.",
       "properties_only": "{document} has already been sent to the accountant. The following fields can no longer be changed: {fields}.",

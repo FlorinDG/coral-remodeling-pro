@@ -180,6 +180,9 @@ export const DB_ID_MODULE_MAP: Array<[string, string | null]> = SYSTEM_DATABASE_
  * (getLockedDbId) invented `${base}-${suffix}` from a sibling's id, or returned the bare base id —
  * which is Florin's own tenant's database for a tenant whose map was empty.
  */
+/** The databases the accountant export reads (api/financials/export) — its button belongs on these only. */
+export const ACCOUNTANT_EXPORT_SOURCES: readonly SystemDatabaseRole[] = ['invoices', 'expenses'];
+
 export class UnboundSystemDatabaseError extends Error {
     readonly base: string;
     readonly role: SystemDatabaseRole;

@@ -220,3 +220,29 @@ test('resolveRelationTitle — priority order', async (t) => {
         assert.equal(title, null);
     });
 });
+
+test('the tenant binding registered by TenantProvider is the default for EVERY caller (Florin 2026-10-05: "Target DB error" on db-1)', async (t) => {
+    const { bindTenantDatabases } = await import('../src/lib/relations/resolve.ts');
+    const databases = [{ id: 'db-1-t9', name: 'Projects', properties: [], pages: [], views: [], createdAt: '', updatedAt: '', createdBy: '', lastEditedBy: '' }] as Database[];
+
+    await t.test('a caller passing nothing resolves a system base through the registered binding', () => {
+        bindTenantDatabases({ projects: 'db-1-t9' });
+        const res = resolveRelationTarget('db-1', { databases, loadedDatabaseIds: ['db-1-t9'] });
+        assert.equal(res.databaseId, 'db-1-t9');
+        assert.equal(res.status, 'ready');
+    });
+
+    await t.test('throw proof: without a binding the same call is unknown-database (never guessed from db-1-t9)', () => {
+        bindTenantDatabases(null);
+        const res = resolveRelationTarget('db-1', { databases, loadedDatabaseIds: ['db-1-t9'] });
+        assert.equal(res.status, 'unknown-database');
+        assert.notEqual(res.databaseId, 'db-1-t9');
+    });
+
+    await t.test('an explicit lockedDbIds still wins over the registered binding', () => {
+        bindTenantDatabases({ projects: 'db-1-OTHER' });
+        const res = resolveRelationTarget('db-1', { databases, lockedDbIds: { projects: 'db-1-t9' } });
+        assert.equal(res.databaseId, 'db-1-t9');
+        bindTenantDatabases(null);
+    });
+});

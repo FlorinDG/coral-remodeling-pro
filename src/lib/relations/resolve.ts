@@ -33,6 +33,17 @@ export function bindDatabaseStore(store: any) {
     _boundStore = store;
 }
 
+// The tenant's forward binding (lockedDbIds), registered by TenantProvider — the ONE default every caller reads.
+// R1-2 deleted the prefix guess but no caller passed the binding, so every system base ('db-1') came out
+// 'unknown-database' ("Target DB error", Florin 2026-10-05). The binding is read here, never guessed.
+let _tenantBinding: Record<string, string> | null = null;
+export function bindTenantDatabases(lockedDbIds: Record<string, string> | null | undefined) {
+    _tenantBinding = lockedDbIds && Object.keys(lockedDbIds).length ? lockedDbIds : null;
+}
+export function tenantBinding(): Record<string, string> {
+    return _tenantBinding ?? {};
+}
+
 function getStoreState(): any {
     if (_boundStore?.getState) {
         return _boundStore.getState();
@@ -86,7 +97,7 @@ export function resolveRelationTarget(
     const loadedDatabaseIds: string[] = options?.loadedDatabaseIds ?? storeState?.loadedDatabaseIds ?? [];
     const loadingDatabaseIds: string[] = options?.loadingDatabaseIds ?? storeState?.loadingDatabaseIds ?? [];
 
-    const lockedDbIds = options?.lockedDbIds ?? {};
+    const lockedDbIds = options?.lockedDbIds ?? tenantBinding();
     const resolveDbId = options?.resolveDbId ?? ((base: string) => resolveDatabaseId(base, lockedDbIds));
     const displayPropertyId = options?.displayPropertyId || 'title';
 
@@ -246,13 +257,14 @@ export function useRelationTarget(
     const loadingDatabaseIds = storeHook ? storeHook((s: any) => s.loadingDatabaseIds) : [];
     const loadDatabasePages = storeHook ? storeHook((s: any) => s.loadDatabasePages) : null;
 
+    const binding = tenantBinding();
     const resolution = useMemo(() => {
         return resolveRelationTarget(relationDatabaseId, {
             databases,
             pageIndex,
             loadedDatabaseIds,
             loadingDatabaseIds,
-            lockedDbIds: options?.lockedDbIds,
+            lockedDbIds: options?.lockedDbIds ?? binding,
             resolveDbId: options?.resolveDbId,
             displayPropertyId: options?.displayPropertyId,
         });
@@ -263,6 +275,7 @@ export function useRelationTarget(
         loadedDatabaseIds,
         loadingDatabaseIds,
         options?.lockedDbIds,
+        binding,
         options?.resolveDbId,
         options?.displayPropertyId,
     ]);

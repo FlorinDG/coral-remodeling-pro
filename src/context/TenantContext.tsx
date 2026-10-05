@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, ReactNode, useMemo, useState, useCallback, useEffect } from "react";
 import { resolveDatabaseId } from "@/lib/kernel/system-databases";
+import { bindTenantDatabases } from "@/lib/relations/resolve";
 
 interface TenantContextProps {
     activeModules: string[];
@@ -77,6 +78,9 @@ export const TenantProvider = ({
             .catch(() => {}); // Non-critical — layout still works without logo
     }, []);
 
+    // Register the binding for the relation resolver BEFORE the children render (they resolve relations on
+    // their first render). Idempotent; a tenant switch re-renders the provider with the new map.
+    bindTenantDatabases(lockedDbIds);
     const resolveDbId = (base: string) => resolveDatabaseId(base, lockedDbIds);
     const isPro = useMemo(() => ['PRO', 'ENTERPRISE', 'FOUNDER', 'CUSTOM'].includes(planType), [planType]);
     const isEnterprise = useMemo(() => ['ENTERPRISE', 'FOUNDER', 'CUSTOM'].includes(planType), [planType]);

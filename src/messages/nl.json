@@ -255,6 +255,7 @@
     "yourProject": "Uw Project"
   },
   "Admin": {
+    "accountant_export_button": "Boekhouder export",
     "exportLock": {
       "blocks_only": "{document} is al naar de boekhouder verzonden. De regels kunnen niet meer gewijzigd worden.",
       "properties_only": "{document} is al naar de boekhouder verzonden. De volgende velden kunnen niet meer gewijzigd worden: {fields}.",

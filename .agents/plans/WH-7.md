@@ -302,3 +302,49 @@ Every single feature measured in `CreateShiftForm.tsx` (2,035 lines), `EditShift
 3. **Locked shift PDF preview:**  
    Should the locked state banner include a direct "Werkbon bekijken" (View Work Order) button if a signed PDF or signature attachment exists on the shift?  
    *Proposal:* Yes, if a work order attachment exists, render a clean link button in the banner to view it directly.
+
+---
+
+## PLANNER REVIEW — 2026-10-05 · ✅ APPROVED WITH CORRECTIONS · GO for M1 only (stop after M1 for review)
+
+Good plan: the inventory is thorough (file:line), the model is the right cut, the lock is read-only, the old
+files die at M4. These corrections are binding; where the plan says otherwise, this section wins.
+
+**C1 · Test runner.** This repo runs `node --import ./tests/register.mjs --test 'tests/*.test.ts'` with
+`node:test` + `node:assert/strict`. No vitest, no `expect`. (See `tests/shift-time.test.ts` for the style.)
+
+**C2 · Payloads are camelCase `Partial<ScheduledShift>` — never snake_case.** The hook
+(`useScheduledShifts.createShift/updateShift`) takes `Partial<ScheduledShift>`; its snake_case normalising is the
+DECLARED BRIDGE (TD-5) that dies when the last legacy writer dies — which is this rebuild. Your `CreateShiftPayload`
+/ `UpdateShiftPayload` (user_id, shift_date, …) would be a NEW writer of the bridge. Derive the payload types from
+`ScheduledShift` (`Pick<…>` / `Partial<…>`): `userId, shiftDate, shiftStart, shiftEnd, shiftName, projectId,
+contactPageId, role, notes, siteAddress, materialsEnabled, status, seriesId`. A test asserts no payload key
+contains `_` (throw proof: emit `user_id`).
+
+**C3 · Calendar days through the kernel — no Date at all.** The Planner added (kernel, tested, throw proof under
+`TZ=Europe/Brussels`): `addDaysYmd(ymd, n)`, `weekdayOfYmd(ymd)` (0 = Sunday), `daysBetweenYmd(a, b)` in
+`src/lib/kernel/shift-time.ts`. `expandRecurringShiftDates` / `expandRangeShiftDates` use ONLY these — not
+`shiftMoment` at noon, not `new Date`. Your throw proof #5 as written cannot fail (`new Date('YYYY-MM-DD')` +
+`toISOString` round-trips in UTC): run the DST test with `TZ=Europe/Brussels` and mutate to local-Date `+ n days`
+→ show it fail. State the exact command.
+
+**C4 · The lock is the SIGNATURE, nothing else.** `evaluateShiftLockState(auditLogs)` — `locked` only when a row
+with `action === 'sign'` exists for THIS shift (signing writes one per member shift — `lib/data/work-order.ts`).
+Drop "completed/submitted shifts": that is a rule the server does not have; the editor never invents one. Read path
+as proposed (`hrList('audit-logs', { entityType: 'shift', entityId })`), plus the 409 `work_order_signed` fallback.
+The lock also covers the Tasks and Attachments tabs (the server refuses shift-tasks / shift-attachments writes on a
+signed shift).
+
+**C5 · Keep today's behaviour exactly — characterise before you replace.** For `expandRecurringShiftDates`,
+`expandRangeShiftDates`, `buildCreateShiftPayloads` (incl. when a solo shift gets a `seriesId`, the leave hours
+08:00–17:00, the leave `shiftName`): add fixtures whose expected output is what TODAY's `CreateShiftForm` produces
+(cite the lines), apart from the DST slip, which is the bug being fixed. Anything you change on purpose: list it in
+the report as a behaviour change — no silent ones.
+
+**C6 · Answers.** Q1: `crypto.randomUUID()`. Q2: yes — one new `seriesId` on the existing shift (via
+`onUpdateShift`) and on every new occurrence. Q3: yes — the banner links the PDF when this shift's attachments hold
+one; recognise it with `isWerkbonFile(name)` (`src/lib/records/werkbon-number.ts`, added by the Planner) — never by
+guessing from the name yourself.
+
+**Fence unchanged** (directive §FENCE). M1 = `shift-editor/model.ts` + `tests/shift-editor-model.test.ts` + the
+report `.agents/reports/WH-7-M1.md`. Push, STOP.

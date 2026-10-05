@@ -20,3 +20,8 @@ export function werkbonFileName(number: string, dateYmd: string, language: 'nl' 
     const word = language === 'fr' ? 'Bon de travail' : language === 'en' ? 'Work order' : 'Werkbon';
     return `${word} ${number} ${dateYmd}.pdf`;
 }
+
+/** Is this attachment the signed work order PDF? (Its name as werkbonFileName makes it, in any language.) */
+export function isWerkbonFile(name: string | null | undefined): boolean {
+    return typeof name === 'string' && /^(Werkbon|Bon de travail|Work order) WB-\d{4}-\d{4,} \d{4}-\d{2}-\d{2}\.pdf$/.test(name);
+}

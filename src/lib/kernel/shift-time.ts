@@ -38,6 +38,39 @@ export function localDateKey(d: Date): string {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+// ── Calendar days as STRINGS (WH-7) ─────────────────────────────────────────────────────────────
+// A calendar day is not a moment: adding days through a Date (local midnight ± 24h, or UTC via
+// toISOString) slips a day across the clock change. These work on 'YYYY-MM-DD' alone — no Date, no zone.
+
+const DAYS_IN_MONTH = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+const isLeap = (y: number) => (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
+const dim = (y: number, m: number) => (m === 2 && isLeap(y) ? 29 : DAYS_IN_MONTH[m - 1]);
+const ymd = (y: number, m: number, d: number) => `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+
+/** 'YYYY-MM-DD' + n days (n may be negative) → 'YYYY-MM-DD'. Pure calendar arithmetic. */
+export function addDaysYmd(dateYmd: string, n: number): string {
+    let [y, m, d] = dateYmd.split('-').map(Number);
+    let left = Math.trunc(n);
+    while (left > 0) { const room = dim(y, m) - d; if (left <= room) { d += left; left = 0; } else { left -= room + 1; d = 1; if (++m > 12) { m = 1; y++; } } }
+    while (left < 0) { if (-left < d) { d += left; left = 0; } else { left += d; if (--m < 1) { m = 12; y--; } d = dim(y, m); } }
+    return ymd(y, m, d);
+}
+
+/** Day of the week of 'YYYY-MM-DD': 0 = Sunday … 6 = Saturday (Sakamoto — no Date, no zone). */
+export function weekdayOfYmd(dateYmd: string): number {
+    const [y0, m, d] = dateYmd.split('-').map(Number);
+    const t = [0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4];
+    const y = m < 3 ? y0 - 1 : y0;
+    return (y + Math.floor(y / 4) - Math.floor(y / 100) + Math.floor(y / 400) + t[m - 1] + d) % 7;
+}
+
+/** Whole days from `a` to `b` (both 'YYYY-MM-DD'); negative when b is before a. */
+export function daysBetweenYmd(a: string, b: string): number {
+    const serial = (s: string) => { const [y, m, d] = s.split('-').map(Number); const yy = m < 3 ? y - 1 : y; const mm = m < 3 ? m + 12 : m;
+        return 365 * yy + Math.floor(yy / 4) - Math.floor(yy / 100) + Math.floor(yy / 400) + Math.floor((153 * (mm - 3) + 2) / 5) + d; };
+    return serial(b) - serial(a);
+}
+
 /** Chronological: date, then start time. */
 export function compareShifts(a: ShiftTimes, b: ShiftTimes): number {
     return shiftMoment(a.shiftDate, a.shiftStart).getTime() - shiftMoment(b.shiftDate, b.shiftStart).getTime();

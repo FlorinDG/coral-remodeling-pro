@@ -70,3 +70,34 @@ test('SHIFT-LINK-1 — Florin\'s morning + afternoon shifts: map when unambiguou
     // UTC instants of a CEST day → Brussels wall clock
     assert.deepEqual(entrySpan('2026-09-30T06:05:00Z', '2026-09-30T09:50:00Z'), { date: '2026-09-30', start: '08:05', end: '11:50' });
 });
+
+import { addDaysYmd, weekdayOfYmd, daysBetweenYmd } from '../src/lib/kernel/shift-time.ts';
+
+test('calendar days are strings: adding days never slips across the clock change, month or leap year', () => {
+    assert.equal(addDaysYmd('2026-03-28', 1), '2026-03-29');   // the night of the spring change
+    assert.equal(addDaysYmd('2026-03-28', 2), '2026-03-30');
+    assert.equal(addDaysYmd('2026-10-24', 7), '2026-10-31');   // across the autumn change
+    assert.equal(addDaysYmd('2026-12-30', 3), '2027-01-02');
+    assert.equal(addDaysYmd('2028-02-28', 1), '2028-02-29');
+    assert.equal(addDaysYmd('2027-02-28', 1), '2027-03-01');
+    assert.equal(addDaysYmd('2026-03-01', -1), '2026-02-28');
+    assert.equal(addDaysYmd('2026-01-01', -1), '2025-12-31');
+    assert.equal(addDaysYmd('2026-05-10', 0), '2026-05-10');
+    assert.equal(addDaysYmd('2026-01-01', 365), '2027-01-01');
+});
+
+test('weekday and day distance without a Date', () => {
+    assert.equal(weekdayOfYmd('2026-10-05'), 1);   // Monday
+    assert.equal(weekdayOfYmd('2026-03-29'), 0);   // Sunday
+    assert.equal(weekdayOfYmd('2000-02-29'), 2);
+    assert.equal(daysBetweenYmd('2026-03-28', '2026-03-30'), 2);
+    assert.equal(daysBetweenYmd('2026-12-31', '2026-01-01'), -364);
+    // cross-check against every day of a span: addDays and daysBetween agree, weekday advances by one
+    let d = '2025-12-25';
+    for (let i = 0; i < 800; i++) {
+        const next = addDaysYmd(d, 1);
+        assert.equal(daysBetweenYmd(d, next), 1, d);
+        assert.equal(weekdayOfYmd(next), (weekdayOfYmd(d) + 1) % 7, d);
+        d = next;
+    }
+});

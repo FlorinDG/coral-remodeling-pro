@@ -21,3 +21,14 @@ test('file name: the localised word + number + date', () => {
     assert.equal(werkbonFileName('WB-2026-0003', '2026-10-04', 'fr'), 'Bon de travail WB-2026-0003 2026-10-04.pdf');
     assert.equal(werkbonFileName('WB-2026-0003', '2026-10-04', 'en'), 'Work order WB-2026-0003 2026-10-04.pdf');
 });
+
+import { isWerkbonFile } from '../src/lib/records/werkbon-number.ts';
+
+test('the signed work order PDF is recognised by its name, in every language — nothing else is', () => {
+    assert.equal(isWerkbonFile(werkbonFileName('WB-2026-0001', '2026-10-04', 'nl')), true);
+    assert.equal(isWerkbonFile(werkbonFileName('WB-2026-0012', '2026-10-04', 'fr')), true);
+    assert.equal(isWerkbonFile(werkbonFileName('WB-2026-0012', '2026-10-04', 'en')), true);
+    assert.equal(isWerkbonFile('Handtekening — Jan.png'), false);
+    assert.equal(isWerkbonFile('Werkbon notes.pdf'), false);
+    assert.equal(isWerkbonFile(null), false);
+});

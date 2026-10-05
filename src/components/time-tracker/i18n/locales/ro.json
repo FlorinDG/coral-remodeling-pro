@@ -177,7 +177,7 @@
     "toSubmit": "De trimis",
     "submittedLong": "Tură trimisă",
     "submitShift": "Trimite tura",
-    "submitConfirm": "Trimiți această tură? După trimitere nu mai poți ponta pe ea și nici s-o modifici.",
+    "submitConfirm": "Trimiți această tură? După trimitere nu mai poți ponta pe ea și nici s-o modifici.\n\nTrimiterea are valoare de semnătură: confirmi că aceste ore și date sunt corecte.",
     "submittedToast": "Tură trimisă",
     "submitError": {
       "unauthorized": "Nu ești autentificat",

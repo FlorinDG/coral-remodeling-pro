@@ -176,7 +176,7 @@
     "toSubmit": "To submit",
     "submittedLong": "Shift submitted",
     "submitShift": "Submit shift",
-    "submitConfirm": "Submit this shift? After submitting you can no longer clock into it or change it.",
+    "submitConfirm": "Submit this shift? After submitting you can no longer clock into it or change it.\n\nSubmitting is your signature: you confirm these hours and details are correct.",
     "submittedToast": "Shift submitted",
     "submitError": {
       "unauthorized": "You are not signed in",

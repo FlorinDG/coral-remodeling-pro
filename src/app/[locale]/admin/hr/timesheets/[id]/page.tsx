@@ -10,6 +10,11 @@ import { useLocale } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Link } from '@/i18n/routing';
 import { resolveFileUrl } from '@/lib/files';
+import { computeWorkedDuration } from '@/lib/computeWorkedDuration';
+import { zonedParts, isShiftSubmitted } from '@/lib/kernel/shift-time';
+
+/** The client's signature, from the work order's FROZEN signing evidence (AuditLog 'sign' on the shift). */
+interface SignEvidence { signerName: string; signedAt: string; signatureKey: string; number?: string }
 
 interface Employee {
     id: string;
@@ -48,6 +53,8 @@ export default function WerkbonDetailPage() {
     
     const [entry, setEntry] = useState<ClockEntry | null>(null);
     const [shiftAttachments, setShiftAttachments] = useState<any[]>([]);
+    const [signature, setSignature] = useState<SignEvidence | null>(null);
+    const [submitted, setSubmitted] = useState(false);
     const [loading, setLoading] = useState(true);
 
     const locale = useLocale();
@@ -74,15 +81,21 @@ export default function WerkbonDetailPage() {
                     const project = effectiveProjectId ? projectsData.find(p => p.id === effectiveProjectId) : null;
 
                     let attachmentsList: any[] = [];
+                    let ev: SignEvidence | null = null;
                     if ((rawEntry as any).shiftId) {
-                        try {
-                            const atts = await hrList<any>('shift-attachments', { shiftId: (rawEntry as any).shiftId });
-                            attachmentsList = Array.isArray(atts) ? atts : [];
-                        } catch {
-                            attachmentsList = [];
-                        }
+                        const sid = (rawEntry as any).shiftId as string;
+                        const [atts, logs] = await Promise.all([
+                            hrList<any>('shift-attachments', { shiftId: sid }).catch(() => []),
+                            hrList<any>('audit-logs', { entityType: 'shift', entityId: sid }).catch(() => []),
+                        ]);
+                        attachmentsList = Array.isArray(atts) ? atts : [];
+                        const sign = (Array.isArray(logs) ? logs : []).find((l: any) => l.action === 'sign');
+                        ev = sign?.after ? (sign.after as SignEvidence) : null;
                     }
-                    setShiftAttachments(attachmentsList);
+                    // The signature belongs in the client's signature slot — not among the attachments.
+                    setShiftAttachments(ev ? attachmentsList.filter(a => a.url !== ev!.signatureKey) : attachmentsList);
+                    setSignature(ev);
+                    setSubmitted(isShiftSubmitted(shift?.status));
 
                     setEntry({
                         ...rawEntry,
@@ -121,11 +134,15 @@ export default function WerkbonDetailPage() {
         );
     }
 
-    const start = new Date(entry.clockInTime);
-    const end = entry.clockOutTime ? new Date(entry.clockOutTime) : null;
-    const durationMs = end ? end.getTime() - start.getTime() : 0;
-    const durationHrs = Math.floor(durationMs / (1000 * 60 * 60));
-    const durationMins = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
+    // Times on the business clock (Brussels, kernel); the duration by the break rule — as on every other screen.
+    const startP = zonedParts(entry.clockInTime);
+    const endP = entry.clockOutTime ? zonedParts(entry.clockOutTime) : null;
+    const [sy, sm, sd] = startP.date.split('-').map(Number);
+    const dayLabel = format(new Date(sy, sm - 1, sd), 'eeee dd MMMM yyyy', { locale: dateFnsLocale });
+    const worked = entry.clockOutTime ? computeWorkedDuration(entry.clockInTime, entry.clockOutTime, entry.noBreak).totalMinutes : 0;
+    const durationHrs = Math.floor(worked / 60);
+    const durationMins = worked % 60;
+    const signedDate = signature ? (() => { const p = zonedParts(signature.signedAt); const [y, m, d] = p.date.split('-').map(Number); return `${format(new Date(y, m - 1, d), 'dd MMMM yyyy', { locale: dateFnsLocale })} ${p.time}`; })() : '';
 
     return (
         <div className="min-h-screen bg-neutral-100 dark:bg-neutral-950 p-4 md:p-8 flex flex-col items-center">
@@ -155,7 +172,7 @@ export default function WerkbonDetailPage() {
                         <p className="text-sm font-bold text-orange-500 tracking-widest mt-1">TIMESHEET REPORT</p>
                     </div>
                     <div className="text-right">
-                        <p className="text-sm font-bold text-neutral-900 dark:text-white">ID: {entry.id.slice(-8).toUpperCase()}</p>
+                        <p className="text-sm font-bold text-neutral-900 dark:text-white">{signature?.number ? signature.number : `ID: ${entry.id.slice(-8).toUpperCase()}`}</p>
                         <p className="text-xs text-neutral-500">Afgedrukt op: {format(new Date(), 'dd MMMM yyyy HH:mm', { locale: dateFnsLocale })}</p>
                     </div>
                 </header>
@@ -179,11 +196,11 @@ export default function WerkbonDetailPage() {
                         <div className="space-y-2">
                             <div className="flex items-center gap-2 text-sm">
                                 <Calendar className="w-3.5 h-3.5 text-neutral-400" />
-                                <span className="font-bold">{format(start, 'eeee dd MMMM yyyy', { locale: dateFnsLocale })}</span>
+                                <span className="font-bold">{dayLabel}</span>
                             </div>
                             <div className="flex items-center gap-2 text-xs text-neutral-600 dark:text-neutral-400">
                                 <Clock className="w-3.5 h-3.5 text-neutral-400" />
-                                <span>{format(start, 'HH:mm')} - {end ? format(end, 'HH:mm') : 'Ongoing'}</span>
+                                <span>{startP.time} - {endP ? endP.time : 'Ongoing'}</span>
                                 <span className="ml-auto font-black text-neutral-900 dark:text-white">{durationHrs}u {durationMins}m</span>
                             </div>
                         </div>
@@ -258,27 +275,38 @@ export default function WerkbonDetailPage() {
                     </div>
                 )}
 
-                {/* Footer Signature Area */}
-                <div className="mt-auto pt-12 border-t border-neutral-100 grid grid-cols-2 gap-20">
-                    <div className="space-y-8">
-                        <p className="text-[10px] font-bold text-neutral-400 uppercase">Handtekening Medewerker</p>
-                        <div className="h-16 border-b border-neutral-300"></div>
-                        <div className="flex justify-between text-[10px] text-neutral-400">
-                            <span>{entry.user ? `${entry.user.firstName} ${entry.user.lastName}` : ''}</span>
-                            <span>Datum: ____________________</span>
-                        </div>
+                {/* Footer — ONE signature: the client's (the order giver signs the work order on the crew phone).
+                    The worker does not sign here: submitting the shift in the app IS the worker's signature
+                    (Florin 2026-10-05). Kept together on one printed page. */}
+                <div className="mt-auto pt-10 border-t border-neutral-100 grid grid-cols-2 gap-16 break-inside-avoid" style={{ breakInside: 'avoid' }}>
+                    <div className="space-y-2 text-[10px] text-neutral-500">
+                        <p className="font-bold text-neutral-400 uppercase">Medewerker</p>
+                        <p className="text-xs font-semibold text-neutral-800 dark:text-neutral-200">{entry.user ? `${entry.user.firstName} ${entry.user.lastName}` : 'N/A'}</p>
+                        <p>{submitted ? 'Ingediend in CoralOS — indienen geldt als handtekening.' : 'Nog niet ingediend.'}</p>
                     </div>
-                    <div className="space-y-8 text-right">
+                    <div className="space-y-2 text-right">
                         <p className="text-[10px] font-bold text-neutral-400 uppercase">Handtekening Opdrachtgever</p>
-                        <div className="h-16 border-b border-neutral-300"></div>
-                        <p className="text-[10px] text-neutral-400">Datum: ____________________</p>
+                        {signature ? (
+                            <>
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src={resolveFileUrl(signature.signatureKey)} alt={`Handtekening — ${signature.signerName}`} className="ml-auto h-20 object-contain" />
+                                <p className="text-[10px] text-neutral-600 dark:text-neutral-300">{signature.signerName} · {signedDate}</p>
+                            </>
+                        ) : (
+                            <>
+                                <div className="h-16 border-b border-neutral-300"></div>
+                                <p className="text-[10px] text-neutral-400">Datum: ____________________</p>
+                            </>
+                        )}
                     </div>
                 </div>
             </div>
 
             <style jsx global>{`
                 @media print {
+                    @page { size: A4; margin: 12mm; }
                     .no-print { display: none !important; }
+                    .min-h-\[297mm\] { min-height: 0 !important; padding: 0 !important; }
                     body { background: white !important; margin: 0; padding: 0; }
                     .min-h-screen { background: white !important; }
                 }

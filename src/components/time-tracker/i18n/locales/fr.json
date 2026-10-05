@@ -176,7 +176,7 @@
     "toSubmit": "À envoyer",
     "submittedLong": "Service envoyé",
     "submitShift": "Envoyer le service",
-    "submitConfirm": "Envoyer ce service ? Ensuite vous ne pourrez plus pointer dessus ni le modifier.",
+    "submitConfirm": "Envoyer ce service ? Ensuite vous ne pourrez plus pointer dessus ni le modifier.\n\nL'envoi vaut signature : vous confirmez que ces heures et ces données sont exactes.",
     "submittedToast": "Service envoyé",
     "submitError": {
       "unauthorized": "Vous n’êtes pas connecté",

@@ -176,7 +176,7 @@
     "toSubmit": "In te dienen",
     "submittedLong": "Dienst ingediend",
     "submitShift": "Dienst indienen",
-    "submitConfirm": "Deze dienst indienen? Daarna kun je er niet meer op inklokken of iets aan wijzigen.",
+    "submitConfirm": "Deze dienst indienen? Daarna kun je er niet meer op inklokken of iets aan wijzigen.\n\nIndienen geldt als je handtekening: je bevestigt dat deze uren en gegevens juist zijn.",
     "submittedToast": "Dienst ingediend",
     "submitError": {
       "unauthorized": "Je bent niet aangemeld",

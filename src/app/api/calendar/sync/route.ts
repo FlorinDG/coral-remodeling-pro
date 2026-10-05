@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import prisma from "@/lib/prisma";
+import { scopeFromSession } from "@/lib/data/scope";
 import { getValidAccessToken } from "@/lib/googleToken";
 
 export const POST = auth(async function POST(req: any) {
@@ -14,12 +14,14 @@ export const POST = auth(async function POST(req: any) {
         if (!tenantId) return new NextResponse("Unauthorized", { status: 401 });
         const body = await req.json().catch(() => ({}));
 
+        const db = await scopeFromSession();
+
         // Optional parameters to limit sync window
         const timeMin = body.start ? new Date(body.start).toISOString() : new Date(new Date().setMonth(new Date().getMonth() - 2)).toISOString();
         const timeMax = body.end ? new Date(body.end).toISOString() : new Date(new Date().setMonth(new Date().getMonth() + 12)).toISOString();
 
         // 1. Fetch all connected Google Accounts for this user
-        const accounts = await prisma.account.findMany({
+        const accounts = await db.account.findMany({
             where: { userId, provider: 'google' }
         });
 
@@ -63,7 +65,7 @@ export const POST = auth(async function POST(req: any) {
                         if (gEvent.status === 'cancelled') {
                             // Delete local if exists
                             const deleteWhere: any = { googleEventId: gEvent.id, userId };
-                            await prisma.event.deleteMany({
+                            await db.event.deleteMany({
                                 where: deleteWhere
                             });
                             continue;
@@ -105,7 +107,7 @@ export const POST = auth(async function POST(req: any) {
                             location: gEvent.location || null,
                         };
 
-                        await prisma.event.upsert({
+                        await db.event.upsert({
                             where: upsertWhere,
                             update: upsertUpdate,
                             create: upsertCreate

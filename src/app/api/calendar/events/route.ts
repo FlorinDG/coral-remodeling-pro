@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import prisma from "@/lib/prisma";
+import { scopeFromSession } from "@/lib/data/scope";
 import { getValidAccessToken } from "@/lib/googleToken";
 
 export const GET = auth(async function GET(req: any) {
@@ -9,7 +9,9 @@ export const GET = auth(async function GET(req: any) {
             return new NextResponse("Unauthorized", { status: 401 });
         }
 
-        const events: any = await prisma.event.findMany({
+        const db = await scopeFromSession();
+
+        const events: any = await db.event.findMany({
             where: {
                 userId: req.auth.user.id
             },
@@ -109,14 +111,16 @@ export const POST = auth(async function POST(req: any) {
             googleCalendarId: calendarId && calendarId !== 'local' ? calendarId : null
         };
 
-        const event: any = await prisma.event.create({
+        const db = await scopeFromSession();
+
+        const event: any = await db.event.create({
             data: eventData
         });
 
         // If they checked the box AND selected a portal, link a portal-specific task
         // (Note: standalone generic tasks are handled client-side via useDatabaseStore)
         if (createTask && body.portalId) {
-            const task = await prisma.task.create({
+            const task = await db.task.create({
                 data: {
                     portalId: body.portalId,
                     eventId: event.id,
@@ -125,7 +129,7 @@ export const POST = auth(async function POST(req: any) {
                     status: "TODO"
                 }
             });
-            await prisma.event.update({
+            await db.event.update({
                 where: { id: event.id },
                 data: { taskId: task.id }
             });
@@ -151,8 +155,10 @@ export const PATCH = auth(async function PATCH(req: any) {
             return new NextResponse("Event ID is required", { status: 400 });
         }
 
+        const db = await scopeFromSession();
+
         // Verify ownership
-        const existingEvent: any = await prisma.event.findUnique({
+        const existingEvent: any = await db.event.findUnique({
             where: { id }
         });
 
@@ -287,7 +293,7 @@ export const PATCH = auth(async function PATCH(req: any) {
             data.googleCalendarId = finalGoogleCalendarId;
         }
 
-        const updatedEvent = await prisma.event.update({
+        const updatedEvent = await db.event.update({
             where: { id },
             data
         });
@@ -313,8 +319,10 @@ export const DELETE = auth(async function DELETE(req: any) {
             return new NextResponse("Event ID is required", { status: 400 });
         }
 
+        const db = await scopeFromSession();
+
         // Verify ownership
-        const existingEvent: any = await prisma.event.findUnique({
+        const existingEvent: any = await db.event.findUnique({
             where: { id: eventId }
         });
 
@@ -335,7 +343,7 @@ export const DELETE = auth(async function DELETE(req: any) {
             }
         }
 
-        await prisma.event.delete({
+        await db.event.delete({
             where: { id: eventId }
         });
 

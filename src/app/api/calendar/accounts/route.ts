@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import prisma from "@/lib/prisma";
+import { scopeFromSession } from "@/lib/data/scope";
 import { getValidAccessToken } from "@/lib/googleToken";
 
 export const GET = auth(async function GET(req: any) {
@@ -9,8 +9,10 @@ export const GET = auth(async function GET(req: any) {
             return new NextResponse("Unauthorized", { status: 401 });
         }
 
+        const db = await scopeFromSession();
+
         // Get Google connected accounts for the user
-        const accounts = await prisma.account.findMany({
+        const accounts = await db.account.findMany({
             where: {
                 userId: req.auth.user.id,
                 provider: "google",
@@ -76,7 +78,9 @@ export const DELETE = auth(async function DELETE(req: any) {
             return new NextResponse("Missing accountId", { status: 400 });
         }
 
-        const account = await prisma.account.findUnique({
+        const db = await scopeFromSession();
+
+        const account = await db.account.findUnique({
             where: { id: accountId }
         });
 
@@ -84,7 +88,7 @@ export const DELETE = auth(async function DELETE(req: any) {
             return new NextResponse("Unauthorized", { status: 401 });
         }
 
-        await prisma.account.delete({
+        await db.account.delete({
             where: { id: accountId }
         });
 

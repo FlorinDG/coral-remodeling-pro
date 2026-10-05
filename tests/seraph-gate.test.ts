@@ -12,7 +12,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 
-const CEILING = 110;
+const CEILING = 106;
 const ROOT = process.cwd();
 const RAW = /from ['"]@\/lib\/prisma['"]|from ['"](\.\.\/)+lib\/prisma['"]/;
 

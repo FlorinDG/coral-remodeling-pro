@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import prisma from "@/lib/prisma";
+import { scopeFromSession } from "@/lib/data/scope";
 
 export const GET = auth(async function GET(req: any) {
     try {
@@ -8,7 +8,9 @@ export const GET = auth(async function GET(req: any) {
             return new NextResponse("Unauthorized", { status: 401 });
         }
 
-        const portals = await prisma.clientPortal.findMany({
+        const db = await scopeFromSession();
+
+        const portals = await db.clientPortal.findMany({
             select: {
                 id: true,
                 clientName: true,

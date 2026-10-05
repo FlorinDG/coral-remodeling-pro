@@ -22,6 +22,10 @@ M1 = the pure model + its tests (node:test, throw proofs, camelCase payloads, ke
 only, characterised against today). Report `.agents/reports/WH-7-M1.md`. Push, STOP for review.
 *(Done 2026-10-04: WO-4a-M4 ✅ · R2-1-CENSUS ✅ — 4 holes it found were fixed the same day.)*
 
+## 1 · `R1-7-B1` — 16 call sites onto the seraph — 🟩 GO after WH-7 M1 is pushed (no plan gate)
+📄 `coder-directive-r1-7-b1.md` — notifications → calendar → tenant, one commit per module; each migrated file leaves
+the R1-5 allowlist and lowers `CEILING` (113 → 97). STOP on any cross-tenant read. Report `.agents/reports/R1-7-B1.md`.
+
 ## ✅ `R2-5` — DONE WITH CORRECTIONS (review 2026-10-02, `MORNING-2026-10-02.md` §2)
 Store tests accepted. 11 of 13 OCC tests tested a COPY of the merge loop (§3a) — removed on
 `pending/occ-merge`, replaced by real tests of `lib/records/occ-merge.ts`. Leftover: the backoff-formula

@@ -7,7 +7,9 @@
  *
  * Returns a Blob ready for download, email, or upload.
  */
+import { cloneElement, isValidElement } from 'react';
 import { pdf } from '@react-pdf/renderer';
+import { measureStationery } from '@/lib/documents/measure-stationery';
 
 export async function generatePdfBlob(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -15,6 +17,11 @@ export async function generatePdfBlob(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     tenantProfile?: any,
 ): Promise<Blob> {
+    // PDF-FIT-1: an image letterhead is measured — the content uses the page between its header and footer
+    const area = await measureStationery(tenantProfile);
+    if (area && isValidElement(doc) && (doc.props as { contentArea?: unknown }).contentArea === undefined) {
+        doc = cloneElement(doc as React.ReactElement<{ contentArea?: unknown }>, { contentArea: area });
+    }
     const renderer = pdf(doc);
     const blob = await renderer.toBlob();
 

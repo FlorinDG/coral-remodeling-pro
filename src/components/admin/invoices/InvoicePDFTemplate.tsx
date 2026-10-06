@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { DEFAULT_AREA } from '@/lib/documents/stationery-area';
 import { lineVariantDelta } from '@/lib/records/variant-price';
 import React, { useMemo } from 'react';
 import { Document, Page, Text, View, Image, Svg, Polygon, Rect } from '@react-pdf/renderer';
@@ -70,6 +71,8 @@ interface ClientInfo {
 }
 
 interface InvoicePDFProps {
+    /** PDF-FIT-1: the writing area on the letterhead (lib/documents/stationery-area) — measured by generatePdfBlob. */
+    contentArea?: { top: number; bottom: number };
     blocks: Block[];
     invoiceTitle: string;
     betreft: string;
@@ -119,6 +122,7 @@ export const InvoicePDFTemplate = ({
     structuredComm,
     showSubcomponents = false,
     hidePrices = false,
+    contentArea,
 }: InvoicePDFProps) => {
 
     const { companyName: rawCompanyName, commercialName, vatNumber, iban, logoUrl, brandColor, planType, street, postalCode, city, email, bic, stationeryUrl, documentMode, documentFont, documentFontSize } = tenantProfile || {};
@@ -293,11 +297,18 @@ export const InvoicePDFTemplate = ({
     if (isStationery) {
         return (
             <Document>
-                <Page size="A4" style={{ paddingTop: 180, paddingBottom: 150, paddingHorizontal: 40, fontFamily: docFont, fontSize: docFontSize, color: '#111' }}>
+                <Page size="A4" style={{ paddingTop: contentArea?.top ?? DEFAULT_AREA.top, paddingBottom: contentArea?.bottom ?? DEFAULT_AREA.bottom, paddingHorizontal: 40, fontFamily: docFont, fontSize: docFontSize, color: '#111' }}>
                     {/* Background stationery image — only for image stationery; PDF stationery is merged by pdf-lib */}
                     {!isPdfStationery && <Image src={stationeryUrl} style={{ position: 'absolute', top: 0, left: 0, width: 595, height: 842 }} fixed />}
 
                     <View style={{ flex: 1 }}>
+                        {/* PDF-FIT-1 (Florin 2026-10-06): the proforma notice sits at the top, in the letterhead's white
+                            space — not in the totals block, where it pushed the totals to a second page */}
+                        {legalText && (
+                            <Text style={{ fontSize: 7.5, color: '#999', textAlign: 'center', marginBottom: 10, lineHeight: 1.4 }}>
+                                {legalText}
+                            </Text>
+                        )}
                         {/* Inspired Header for Stationery (Company Details hidden) */}
                         <View style={{ marginBottom: 15 }}>
                             {/* Top Section */}
@@ -407,11 +418,6 @@ export const InvoicePDFTemplate = ({
                                     </Text>
                                 )}
 
-                                {legalText && (
-                                    <Text style={{ fontSize: 7.5, color: '#999', textAlign: 'center', marginTop: 6, lineHeight: 1.4 }}>
-                                        {legalText}
-                                    </Text>
-                                )}
                             </View>
 
                             {/* Summary and Stripe Payment Section */}

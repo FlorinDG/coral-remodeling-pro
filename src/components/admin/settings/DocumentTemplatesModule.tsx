@@ -1,7 +1,7 @@
 "use client";
 
+import { generatePdfBlob } from '@/lib/generate-pdf';
 import React, { useState, useEffect } from 'react';
-import { pdf } from '@react-pdf/renderer';
 import { FileImage, Palette, LayoutTemplate, UploadCloud, CheckCircle2, Circle, Loader2, Eye, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
@@ -279,7 +279,7 @@ export default function DocumentTemplatesModule() {
                 />
             );
 
-            const blob = await pdf(doc).toBlob();
+            const blob = await generatePdfBlob(doc, profile);   // the same path as real documents (letterhead measured / merged)
             const url = URL.createObjectURL(blob);
             window.open(url, '_blank');
         } catch (e) {

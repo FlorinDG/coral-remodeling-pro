@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { DEFAULT_AREA } from '@/lib/documents/stationery-area';
 import { lineVariantDelta } from '@/lib/records/variant-price';
 import React, { useMemo } from 'react';
 import { Document, Page, Text, View, Image, Svg, Polygon, Rect } from '@react-pdf/renderer';
@@ -37,6 +38,8 @@ interface ClientInfo {
 }
 
 interface QuotationPDFProps {
+    /** PDF-FIT-1: the writing area on the letterhead (lib/documents/stationery-area) — measured by generatePdfBlob. */
+    contentArea?: { top: number; bottom: number };
     blocks: Block[];
     vatCalcMode?: 'lines' | 'total';
     quotationTitle?: string;
@@ -65,6 +68,7 @@ export const QuotationPDFTemplate = ({
     vatRegime = '21',
     billingRule,
     paymentTerms,
+    contentArea,
 }: QuotationPDFProps) => {
 
     const { companyName: rawCompanyName, commercialName, vatNumber, iban, logoUrl, brandColor, planType, street, postalCode, city, email, bic, stationeryUrl, documentMode, documentFont, documentFontSize } = tenantProfile || {};
@@ -271,7 +275,7 @@ export const QuotationPDFTemplate = ({
     if (isStationery) {
         return (
             <Document>
-                <Page size="A4" style={{ paddingTop: 180, paddingBottom: 150, paddingHorizontal: 40, fontFamily: docFont, fontSize: docFontSize, color: '#111' }}>
+                <Page size="A4" style={{ paddingTop: contentArea?.top ?? DEFAULT_AREA.top, paddingBottom: contentArea?.bottom ?? DEFAULT_AREA.bottom, paddingHorizontal: 40, fontFamily: docFont, fontSize: docFontSize, color: '#111' }}>
                     {/* Background stationery image — only for image stationery; PDF stationery is merged by pdf-lib */}
                     {!isPdfStationery && <Image src={stationeryUrl} style={{ position: 'absolute', top: 0, left: 0, width: 595, height: 842 }} fixed />}
 

@@ -1,6 +1,9 @@
+import { addDaysYmd, zonedParts } from '@/lib/kernel/shift-time';
+
 /**
  * Calculates due date (YYYY-MM-DD) from an invoice date string and payment method (e.g. 'pay-30', 'pay-14').
  * Fallback defaults to 30 days if no method is supplied or method is unrecognized.
+ * Calendar-day arithmetic through the kernel (PROFORMA-1 review): the day is never a Date in some machine's zone.
  */
 export function calculateDueDate(
     invoiceDateStr: string,
@@ -13,10 +16,8 @@ export function calculateDueDate(
         const parsed = parseInt(paymentMethod.split('-')[1], 10);
         if (!isNaN(parsed)) days = parsed;
     }
-    const base = new Date(invoiceDateStr);
-    if (isNaN(base.getTime())) return '';
-    base.setDate(base.getDate() + days);
-    return base.toISOString().split('T')[0];
+    const ymd = /^\d{4}-\d{2}-\d{2}/.exec(String(invoiceDateStr).trim())?.[0];
+    return ymd ? addDaysYmd(ymd, days) : '';
 }
 
 /**
@@ -32,7 +33,7 @@ export function resolveInvoiceDatesOnSend(
     dueDate?: string;
     updates: Record<string, any>;
 } {
-    const today = new Date().toISOString().split('T')[0];
+    const today = zonedParts(new Date()).date;   // the BUSINESS day (Brussels) — UTC stamped yesterday before 02:00
     const existingInvoiceDate = currentProps.invoiceDate || currentProps.date;
     const finalInvoiceDate = existingInvoiceDate ? String(existingInvoiceDate).split('T')[0] : today;
 

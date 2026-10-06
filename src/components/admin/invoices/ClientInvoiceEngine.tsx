@@ -33,6 +33,8 @@ import ErrorBoundary from '@/components/common/ErrorBoundary';
 import { performLocalPreflight } from '@/lib/peppol-payload';
 import { toast } from 'sonner';
 import { createPageServerFirst } from '@/app/actions/pages';
+import { createInvoiceFromProforma } from '@/app/actions/proforma-invoice';
+import { invoiceOfProforma, PROFORMA_FIELD } from '@/lib/records/proforma-invoice';
 import { t as ti18n } from '@/lib/document-i18n';
 import CreateClientModal from './CreateClientModal';
 import CreateProjectModal from './CreateProjectModal';
@@ -293,6 +295,13 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
         });
     }, [invoice, id, invoicesDbId]);
 
+    // PROFORMA-1: the invoice made from this proforma / the proforma this invoice was made from
+    const allInvoicePages = useDatabaseStore(s => s.databases.find(d => d.id === invoicesDbId)?.pages);
+    const invoiceOfThisProforma = useMemo(() => (invoice && allInvoicePages ? invoiceOfProforma(allInvoicePages, id) : null), [invoice, allInvoicePages, id]);
+    const sourceProformaId = (() => { const v = invoice?.properties?.[PROFORMA_FIELD]; return Array.isArray(v) ? String(v[0] ?? '') : (v ? String(v) : ''); })();
+    const sourceProforma = sourceProformaId ? allInvoicePages?.find(p => p.id === sourceProformaId) ?? null : null;
+    const [invoicing, setInvoicing] = useState(false);
+
     const creditedTotal = creditNotes.reduce((sum, cn) => sum + Math.abs(Number(cn.properties['totalIncVat']) || 0), 0);
     const creditNoteInfos = creditNotes.map(cn => ({
         id: cn.id,
@@ -447,6 +456,22 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
         }));
     };
 
+
+    // PROFORMA-1 · "Factureren": a NEW draft invoice from this proforma (server door); the proforma stays as sent.
+    const handleInvoiceProforma = async () => {
+        if (invoicing) return;
+        setInvoicing(true);
+        try {
+            const r = await createInvoiceFromProforma(id);
+            if (!r.ok) {
+                toast.error(r.error === 'no_number' ? 'Geen factuurnummer — controleer de nummeringsinstellingen.' : r.error === 'forbidden' ? 'Je mag hier geen facturen maken.' : 'Factuur kon niet gemaakt worden.');
+                return;
+            }
+            if (r.page) useDatabaseStore.getState().addConfirmedPage({ ...r.page, order: 0, createdAt: r.page.updatedAt, createdBy: 'user', lastEditedBy: 'user' } as unknown as Page);
+            if (r.existed) toast.message('Deze proforma is al gefactureerd — de factuur wordt geopend.');
+            router.push(isMobileRoute ? `/m/invoices/${r.invoiceId}` : `/admin/financials/income/invoices/${r.invoiceId}`);
+        } finally { setInvoicing(false); }
+    };
 
     // Create Credit Nota from this invoice
     const handleCreateCreditNote = async () => {
@@ -650,22 +675,8 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                 toast.error('Failed to update invoice contact on server');
             });
         }
-        if (key === 'docType') {
-            if (value === 'opt-proforma') {
-                updatePageProperty(invoicesDbId, invoice.id, 'title', 'Proforma');
-            } else if (value === 'opt-invoice' && String(invoice.properties['title']) === 'Proforma') {
-                getNextDocumentNumber('invoice').then(result => {
-                    if (result.success && result.number) {
-                        updatePageProperty(invoicesDbId, invoice.id, 'title', result.number);
-                    }
-                }).catch(err => {
-                    console.error(err);
-                    toast.error('Failed to fetch next document number');
-                });
-            } else if (value === 'opt-credit-note' && String(invoice.properties['title']) === 'Proforma') {
-                updatePageProperty(invoicesDbId, invoice.id, 'title', `CN-${invoice.id.substring(0, 8).toUpperCase()}`);
-            }
-        }
+        // PROFORMA-1: the document type is fixed at creation — a proforma becomes an invoice by "Factureren"
+        // (a second document), never by changing this one (the record door refuses it too).
     };
 
     // Deep-clone blocks with fresh IDs for import, mapping quotation verkoopPrice → invoice unitPrice
@@ -1281,35 +1292,11 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                                     };
                                     const current = DOCTYPE_MAP[currentDocType] || DOCTYPE_MAP['opt-invoice'];
                                     
-                                    if (!isDraft || isLocked) {
+                                    // the type is fixed at creation (PROFORMA-1) — a badge, never a switch
                                         return (
-                                            <div className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md ${current.bg} ${current.text}`}>
-                                                <span className={`w-1.5 h-1.5 rounded-full ${current.dot}`} />
-                                                {current.label}
-                                            </div>
-                                        );
-                                    }
-
-                                    return (
-                                        <div className="relative group/doctype">
-                                            <button
-                                                className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md ${current.bg} ${current.text} transition-all hover:ring-2 hover:ring-neutral-300 dark:hover:ring-white/20`}
-                                            >
-                                                <span className={`w-1.5 h-1.5 rounded-full ${current.dot}`} />
-                                                {current.label}
-                                            </button>
-                                            <div className="absolute top-full left-0 mt-1 w-40 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl shadow-xl p-1 z-50 opacity-0 pointer-events-none group-hover/doctype:opacity-100 group-hover/doctype:pointer-events-auto transition-all duration-150">
-                                                {Object.entries(DOCTYPE_MAP).map(([typeId, d]) => (
-                                                    <button
-                                                        key={typeId}
-                                                        onClick={() => handleUpdateProperty('docType', typeId)}
-                                                        className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${typeId === currentDocType ? 'bg-neutral-100 dark:bg-white/10' : 'hover:bg-neutral-50 dark:hover:bg-white/5'} ${d.text}`}
-                                                    >
-                                                        <span className={`w-2 h-2 rounded-full ${d.dot}`} />
-                                                        {d.label}
-                                                    </button>
-                                                ))}
-                                            </div>
+                                        <div className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md ${current.bg} ${current.text}`}>
+                                            <span className={`w-1.5 h-1.5 rounded-full ${current.dot}`} />
+                                            {current.label}
                                         </div>
                                     );
                                 })()}
@@ -1645,8 +1632,40 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                 )}
             </div>
 
-            {/* Relational tracing banners (Invoices <-> Credit Notes) */}
+            {/* Relational tracing banners (Invoices <-> Credit Notes · Proforma -> Invoice) */}
             {isHydrated && (() => {
+                if (isProforma) {
+                    return (
+                        <div className="bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-700/50 px-3 md:px-6 py-2.5 flex items-center justify-between gap-3 shrink-0 text-xs text-amber-800 dark:text-amber-300">
+                            {invoiceOfThisProforma ? (
+                                <>
+                                    <span>Deze proforma is gefactureerd als <strong>{String(invoiceOfThisProforma.properties['title'] || 'Factuur')}</strong>.</span>
+                                    <Link href={isMobileRoute ? `/m/invoices/${invoiceOfThisProforma.id}` : `/admin/financials/income/invoices/${invoiceOfThisProforma.id}`} className="font-bold underline hover:opacity-85">
+                                        Factuur openen →
+                                    </Link>
+                                </>
+                            ) : (
+                                <>
+                                    <span>Akkoord van de klant? Maak de factuur van deze proforma — de proforma blijft zoals verzonden.</span>
+                                    <button type="button" onClick={handleInvoiceProforma} disabled={invoicing}
+                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-[var(--brand-color,#d35400)] disabled:opacity-50 shrink-0">
+                                        <ReceiptText className="w-3.5 h-3.5" /> {invoicing ? 'Bezig…' : 'Factureren'}
+                                    </button>
+                                </>
+                            )}
+                        </div>
+                    );
+                }
+                if (sourceProformaId) {
+                    return (
+                        <div className="bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-700/50 px-3 md:px-6 py-2.5 flex items-center justify-between shrink-0 text-xs text-amber-800 dark:text-amber-300">
+                            <span>Gemaakt van proforma <strong>{String(sourceProforma?.properties['title'] || 'Proforma')}</strong>.</span>
+                            <Link href={isMobileRoute ? `/m/invoices/${sourceProformaId}` : `/admin/financials/income/invoices/${sourceProformaId}`} className="font-bold underline hover:opacity-85">
+                                Proforma openen →
+                            </Link>
+                        </div>
+                    );
+                }
                 if (isCreditNote && parentInvoiceId) {
                     return (
                         <div className="bg-blue-50 dark:bg-blue-950/20 border-b border-blue-200 dark:border-blue-700/50 px-3 md:px-6 py-2.5 flex items-center justify-between shrink-0 text-xs text-blue-700 dark:text-blue-300">

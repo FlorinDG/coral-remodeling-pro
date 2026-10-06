@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { calculateDueDate, resolveInvoiceDatesOnSend } from '../src/lib/invoices/due-date.ts';
+import { zonedParts } from '../src/lib/kernel/shift-time.ts';
 
 test('SP-2: calculateDueDate with pay-* method', () => {
     assert.equal(calculateDueDate('2026-09-01', 'pay-30'), '2026-10-01');
@@ -17,7 +18,7 @@ test('SP-2: calculateDueDate fallback without method', () => {
 });
 
 test('SP-2: resolveInvoiceDatesOnSend stamps today when invoiceDate is missing', () => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = zonedParts(new Date()).date;
     const props = { title: 'Factuur 2026-100', 'prop-payment-method': 'pay-14' };
     const res = resolveInvoiceDatesOnSend(props);
 
@@ -53,4 +54,11 @@ test('SP-2: resolveInvoiceDatesOnSend preserves existing user-chosen dueDate', (
     assert.equal(res.updates.dueDate, undefined, 'Existing dueDate must not be in updates');
     assert.equal(res.invoiceDate, '2026-08-15');
     assert.equal(res.dueDate, '2026-09-30');
+});
+
+test('PROFORMA-1 review: due dates are calendar days — across the DST change and from a timestamp', () => {
+    assert.equal(calculateDueDate('2026-03-20', 'pay-14'), '2026-04-03');   // across the spring clock change
+    assert.equal(calculateDueDate('2026-10-20', 'pay-8'), '2026-10-28');    // across the autumn clock change
+    assert.equal(calculateDueDate('2026-09-01T00:00:00.000Z', 'pay-30'), '2026-10-01');
+    assert.equal(calculateDueDate('geen datum', 'pay-30'), '');
 });

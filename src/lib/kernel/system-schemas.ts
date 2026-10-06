@@ -141,6 +141,8 @@ export function canonicalSchemas(resolveDbId: (base: string) => string): Record<
       { id: 'opt-proforma', name: 'Proforma', color: 'orange' },
     ]}},
     { id: 'parentInvoiceId', name: 'Oorspronkelijke Factuur', type: 'relation', config: { relationDatabaseId: resolveDbId('db-invoices'), relationDisplayPropertyId: 'title' } },
+    // PROFORMA-1: the proforma this invoice was made from (two documents; the proforma stays as the client received it)
+    { id: 'proforma',    name: 'Proforma',          type: 'relation', config: { relationDatabaseId: resolveDbId('db-invoices'), relationDisplayPropertyId: 'title' } },
     { id: 'structuredComm', name: 'Gestructureerde Mededeling', type: 'text' },
     { id: 'project',     name: 'Project',           type: 'relation', config: { relationDatabaseId: resolveDbId('db-1'), relationDisplayPropertyId: 'title' } },
     { id: 'quote',       name: 'Offerte',           type: 'relation', config: { relationDatabaseId: resolveDbId('db-quotations'), relationDisplayPropertyId: 'title' } },

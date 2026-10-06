@@ -42,10 +42,15 @@ export function licensedColumns<P extends { name?: string }>(props: P[], ctx: { 
 const NO_GRID_DUPLICATE: ReadonlySet<string> = new Set(['invoices', 'quotations', 'expenses', 'payments-in', 'payments-out', 'tickets']);
 const STAMPS = /^(accountantExported|peppol|structuredComm$|sentAt$|lastSentAt$|signedAt$|clientSignature$|acceptedAt$|rejectedAt$|receiptUrl$|comments$)/;
 
+/** A field that records what HAPPENED to one document (sent, signed, exported, its OGM…) — never copied to another. */
+export function isStampField(fieldId: string): boolean {
+    return STAMPS.test(fieldId);
+}
+
 export function duplicateProperties(logicalKey: string | null | undefined, props: Record<string, unknown>): Record<string, unknown> | null {
     if (logicalKey && NO_GRID_DUPLICATE.has(logicalKey)) return null;
     const out: Record<string, unknown> = {};
-    for (const [k, v] of Object.entries(props)) if (!STAMPS.test(k)) out[k] = v;
+    for (const [k, v] of Object.entries(props)) if (!isStampField(k)) out[k] = v;
     if (typeof out.title === 'string' && out.title) out.title = `${out.title} (kopie)`;
     return out;
 }

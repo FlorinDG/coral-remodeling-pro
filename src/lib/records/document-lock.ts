@@ -30,7 +30,7 @@ export function isQuoteLocked(properties: Record<string, unknown> | null | undef
 
 export interface DocumentLockViolation { blockedFields: string[] }
 
-/** null = the write is allowed. Only quotations are document-locked (invoices have their own export lock). */
+/** null = the write is allowed. Quotations are document-locked; on invoices only the document TYPE is (their content has the export lock). */
 export function checkDocumentLock(
     role: string | null | undefined,
     existingProperties: unknown,
@@ -38,6 +38,12 @@ export function checkDocumentLock(
     existingBlocks?: unknown,
     incomingBlocks?: unknown[],
 ): DocumentLockViolation | null {
+    // PROFORMA-1 (Florin 2026-10-06: "the proforma and the invoice are two distinct docs"): an invoice / credit note /
+    // proforma keeps the type it was created with — a proforma becomes an invoice by "Factureren", a new document.
+    if (role === 'invoices') {
+        const before = (existingProperties as Record<string, unknown> | null | undefined)?.docType;
+        return 'docType' in incomingProperties && before && incomingProperties.docType !== before ? { blockedFields: ['docType'] } : null;
+    }
     if (role !== 'quotations') return null;
     const existing = (existingProperties ?? {}) as Record<string, unknown>;
     if (!isQuoteLocked(existing)) return null;

@@ -33,3 +33,10 @@ test('drafts and other databases are never document-locked', () => {
     assert.equal(checkDocumentLock('quotations', { ...sent, status: 'opt-draft' }, { betreft: 'Keuken' }), null);
     assert.equal(checkDocumentLock('invoices', sent, { ...sent, betreft: 'Keuken' }), null);
 });
+
+test('PROFORMA-1: an invoice keeps its document type — a proforma is never turned into an invoice in place (throw proof)', () => {
+    assert.deepEqual(checkDocumentLock('invoices', { docType: 'opt-proforma', title: 'Proforma' }, { docType: 'opt-invoice', title: 'Proforma' }), { blockedFields: ['docType'] });
+    assert.deepEqual(checkDocumentLock('invoices', { docType: 'opt-invoice' }, { docType: 'opt-credit-note' }), { blockedFields: ['docType'] });
+    assert.equal(checkDocumentLock('invoices', { docType: 'opt-proforma', betreft: 'a' }, { docType: 'opt-proforma', betreft: 'b' }), null);
+    assert.equal(checkDocumentLock('invoices', {}, { docType: 'opt-invoice' }), null);   // a record without a type yet
+});

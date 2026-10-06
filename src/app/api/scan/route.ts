@@ -2,8 +2,9 @@
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { auth } from '@/auth';
-import { scopeFromSession } from '@/lib/data/scope';
-import prisma from '@/lib/prisma';
+import { platformDb, scopeFromSession } from '@/lib/data/scope';
+import { saveRecord } from '@/lib/data/records';
+import { buildScanUpdateIntent, buildScanCreateData } from '@/lib/records/peppol-scan-intents';
 import { v4 as uuidv4 } from 'uuid';
 import { type SystemDatabaseRole, SYSTEM_DATABASES, BASE_TO_KEY } from '@/lib/kernel/system-databases';
 import { checkDuplicateExpense } from '@/lib/expense-dedup';
@@ -238,7 +239,7 @@ async function extractViaVeryfi(buffer: Buffer, isInvoice: boolean, apiKey?: str
 // ─── Quota Helpers ────────────────────────────────────────────────────────────
 
 async function checkAndIncrementQuota(tenantId: string, increment: boolean = true): Promise<{ allowed: boolean; remaining: number }> {
-    const tenant = await prisma.tenant.findUnique({
+    const tenant = await platformDb().tenant.findUnique({
         where: { id: tenantId },
         select: { scanCount: true, scanQuota: true, scanCountResetAt: true }
     });
@@ -259,7 +260,7 @@ async function checkAndIncrementQuota(tenantId: string, increment: boolean = tru
 
     if (increment) {
         // Increment atomically
-        await prisma.tenant.update({
+        await platformDb().tenant.update({
             where: { id: tenantId },
             data: {
                 scanCount: currentCount + 1,
@@ -282,8 +283,10 @@ export async function POST(req: Request) {
     }
 
     try {
+        const db = await scopeFromSession();
+
         // ── Load tenant config (engine + quota) ───────────────────────────────
-        const tenant = await prisma.tenant.findUnique({
+        const tenant = await platformDb().tenant.findUnique({
             where: { id: tenantId },
             select: { planType: true, ocrEngine: true, scanCount: true, scanQuota: true, scanCountResetAt: true, mindeeApiKey: true, veryfiApiKey: true }
         });
@@ -307,12 +310,12 @@ export async function POST(req: Request) {
             : (targetDb in BASE_TO_KEY ? BASE_TO_KEY[targetDb] : null);
 
         if (!role) {
-            const db = await prisma.globalDatabase.findFirst({
-                where: { id: targetDb, tenantId },
+            const dbRec = await db.globalDatabase.findFirst({
+                where: { id: targetDb },
                 select: { logicalKey: true },
             });
-            if (db?.logicalKey) {
-                role = db.logicalKey as SystemDatabaseRole;
+            if (dbRec?.logicalKey) {
+                role = dbRec.logicalKey as SystemDatabaseRole;
             }
         }
 
@@ -320,7 +323,7 @@ export async function POST(req: Request) {
 
         // SCHEMA-1a: Resolve system DB to the tenant's canonical scoped ID
         if (role) {
-            const tenantData = await prisma.tenant.findUnique({
+            const tenantData = await platformDb().tenant.findUnique({
                 where: { id: tenantId },
                 select: { lockedDbIds: true },
             });
@@ -456,7 +459,7 @@ export async function POST(req: Request) {
             amount: isInvoice ? extracted.totalIncVat : extracted.totalAmount,
         };
 
-        const dedupResult = await checkDuplicateExpense(prisma, tenantId, targetDb, extractedForDedup);
+        const dedupResult = await checkDuplicateExpense(platformDb() as never, tenantId, targetDb, extractedForDedup);
 
         if (dedupResult.status === 'duplicate' && !overrideDuplicate) {
             // It's a strict duplicate. We must block saving and return early.
@@ -473,13 +476,13 @@ export async function POST(req: Request) {
         }
 
         // ── Ensure parent DB exists ───────────────────────────────────────────
-        const existingDb = await prisma.globalDatabase.findUnique({
+        const existingDb = await db.globalDatabase.findFirst({
             where: { id: targetDb },
             select: { id: true, tenantId: true }
         });
 
         if (!existingDb) {
-            await prisma.globalDatabase.create({
+            await db.globalDatabase.create({
                 data: {
                     id: targetDb,
                     tenantId,
@@ -553,35 +556,29 @@ export async function POST(req: Request) {
             };
         }
 
-        // ── Save or Update Postgres ───────────────────────────────────────────
-        let savedPage;
+        // ── Save or Update via saveRecord ─────────────────────────────────────
+        let savedPageId = existingPageId;
+        let savedProperties: Record<string, unknown>;
+        let savedUpdatedAt: string;
+
         if (existingPageId) {
-            // R2-1-CENSUS #21: through the seraph's session scope — a re-scan overwrites only a page of THIS
-            // tenant (the id comes from the form). Read and write on the same scoped client.
-            const db = await scopeFromSession();
-            const own = await db.globalPage.findFirst({ where: { id: existingPageId }, select: { id: true, properties: true } });
-            if (!own) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-            // MERGE: the reading fills fields; what the record already carries and the reading does not set
-            // (the linked file — receiptUrl — set by the bulk import) stays. It used to be replaced wholesale.
-            savedPage = await db.globalPage.update({
-                where: { id: existingPageId },
-                data: {
-                    properties: { ...((own.properties as Record<string, unknown>) || {}), ...properties },
-                    lastEditedBy: 'system:scan',
-                }
-            });
+            const { intent, opts } = buildScanUpdateIntent(existingPageId, properties);
+            const res = await saveRecord(db, intent, opts);
+            if (!res.ok) {
+                if (res.refusal.code === 'NOT_FOUND') return NextResponse.json({ error: 'Not found' }, { status: 404 });
+                return NextResponse.json({ error: `Record save refused: ${res.refusal.code}` }, { status: 422 });
+            }
+            savedProperties = res.properties;
+            savedUpdatedAt = res.updatedAt;
         } else {
-            savedPage = await prisma.globalPage.create({
-                data: {
-                    id: uuidv4(),
-                    databaseId: targetDb,
-                    properties,
-                    order: 0,
-                    blocks: [],
-                    createdBy: 'system:scan',
-                    lastEditedBy: 'system:scan',
-                }
-            });
+            savedPageId = uuidv4();
+            const { intent, opts } = buildScanCreateData(savedPageId, targetDb, properties, 0);
+            const res = await saveRecord(db, intent, opts);
+            if (!res.ok) {
+                return NextResponse.json({ error: `Record save refused: ${res.refusal.code}` }, { status: 422 });
+            }
+            savedProperties = res.properties;
+            savedUpdatedAt = res.updatedAt;
         }
 
         // ── Consume Quota ─────────────────────────────────────────────────────
@@ -593,15 +590,15 @@ export async function POST(req: Request) {
             engine: ocrEngine,
             remaining,
             page: {
-                id: savedPage.id,
-                databaseId: savedPage.databaseId,
-                properties: savedPage.properties,
-                order: savedPage.order,
+                id: savedPageId,
+                databaseId: targetDb,
+                properties: savedProperties,
+                order: 0,
                 blocks: [],
-                createdAt: savedPage.createdAt.toISOString(),
-                updatedAt: savedPage.updatedAt.toISOString(),
-                createdBy: savedPage.createdBy,
-                lastEditedBy: savedPage.lastEditedBy,
+                createdAt: savedUpdatedAt,
+                updatedAt: savedUpdatedAt,
+                createdBy: 'system:scan',
+                lastEditedBy: 'system:scan',
             },
             extracted,
             dedupResult,

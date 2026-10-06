@@ -12,7 +12,7 @@
 import type { RecordIntent } from '@/lib/records/record-intent';
 import type { RecordMeta, CreateIfMissing } from '@/lib/data/records';
 
-export function buildOverdueInvoiceIntent(
+export function buildOverdueDocumentIntent(
     pageId: string,
     baseUpdatedAt?: string | null
 ): {
@@ -32,25 +32,8 @@ export function buildOverdueInvoiceIntent(
     };
 }
 
-export function buildOverdueExpenseIntent(
-    pageId: string,
-    baseUpdatedAt?: string | null
-): {
-    intent: RecordIntent;
-    opts: { by: string; lifecycle: { reason: string } };
-} {
-    return {
-        intent: {
-            pageId,
-            fields: { status: 'opt-overdue' },
-            baseUpdatedAt: baseUpdatedAt ?? null,
-        },
-        opts: {
-            by: 'system:cron-overdue',
-            lifecycle: { reason: 'cron-overdue' },
-        },
-    };
-}
+export const buildOverdueInvoiceIntent = buildOverdueDocumentIntent;
+export const buildOverdueExpenseIntent = buildOverdueDocumentIntent;
 
 export interface BackfillSupplierInput {
     name?: string | null;
@@ -73,7 +56,7 @@ export function buildBackfillSupplierCreateData(
 } {
     const properties: Record<string, unknown> = {
         title: vendor.name || 'Unknown Supplier',
-        vatNumber: vendor.vat || null,
+        vat: vendor.vat || null,
         address: vendor.address || '',
     };
     return {

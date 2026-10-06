@@ -2,7 +2,13 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { storage } from '@/lib/storage';
-import prisma from '@/lib/prisma';
+import { platformDb, scopeFromSession } from '@/lib/data/scope';
+import { saveRecord } from '@/lib/data/records';
+import {
+    buildPeppolSupplierCreateData,
+    buildPeppolExpenseCreateData,
+} from '@/lib/records/peppol-scan-intents';
+import { v4 as uuidv4 } from 'uuid';
 import { describeError } from '@/lib/describe-error';
 import {
     listInboxDocuments,
@@ -35,8 +41,9 @@ export async function GET(req: Request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
         const tenantId = (session!.user as any).tenantId;
+        const db = await scopeFromSession();
 
-        const tenant = await prisma.tenant.findUnique({
+        const tenant = await platformDb().tenant.findUnique({
             where: { id: tenantId },
             select: { eInvoiceApiKey: true, lockedDbIds: true, driveFolderId: true },
         });
@@ -132,7 +139,7 @@ export async function GET(req: Request) {
         const suppliersDbId = bound('db-suppliers');
 
         // Pre-load supplier contacts for auto-matching by VAT
-        const suppliers = suppliersDbId ? await prisma.globalPage.findMany({
+        const suppliers = suppliersDbId ? await db.globalPage.findMany({
             where: { databaseId: suppliersDbId },
             select: { id: true, properties: true },
         }) : [];
@@ -227,12 +234,12 @@ export async function GET(req: Request) {
 
         if (expensesDbId) {
         // Ensure database exists
-        const existingDb = await prisma.globalDatabase.findUnique({
+        const existingDb = await db.globalDatabase.findFirst({
             where: { id: expensesDbId },
             select: { id: true }
         });
         if (!existingDb) {
-            await prisma.globalDatabase.create({
+            await db.globalDatabase.create({
                 data: {
                     id: expensesDbId,
                     tenantId,
@@ -248,7 +255,7 @@ export async function GET(req: Request) {
         }
 
         // Get existing Peppol document IDs to deduplicate
-        const existingPages = await prisma.globalPage.findMany({
+        const existingPages = await db.globalPage.findMany({
             where: { databaseId: expensesDbId },
             select: { properties: true }
         });
@@ -276,41 +283,37 @@ export async function GET(req: Request) {
                     if (safeVat && vatToSupplier.has(safeVat)) {
                         matchedSupplierId = vatToSupplier.get(safeVat) ?? null;
                     } else if (suppliersDbId) {
-                        // Create db-suppliers GlobalPage
-                        const { v4: uuidv4 } = await import('uuid');
                         const newSupplierId = uuidv4();
                         
                         // Get max order
-                        const maxOrderRow = await prisma.globalPage.findFirst({
+                        const maxOrderRow = await db.globalPage.findFirst({
                             where: { databaseId: suppliersDbId },
                             orderBy: { order: 'desc' },
                             select: { order: true }
                         });
                         const order = (maxOrderRow?.order ?? -1) + 1;
                         
-                        const supplier = await prisma.globalPage.create({
-                            data: {
-                                id: newSupplierId,
-                                databaseId: suppliersDbId,
-                                order,
-                                properties: {
-                                    title: parsed.supplierName || 'Unknown Supplier',
-                                    vatNumber: safeVat || null,
-                                    vat: safeVat || null,
-                                    address: parsed.supplierAddress || '',
-                                    email: parsed.supplierContact?.email || '',
-                                    phone: parsed.supplierContact?.phone || '',
-                                    contact_person: parsed.supplierContact?.name || '',
-                                    city: parsed.supplierCity || '',
-                                    postal: parsed.supplierPostal || '',
-                                    country: parsed.supplierCountry || '',
-                                },
-                                createdBy: 'system:peppol',
-                                lastEditedBy: 'system:peppol',
+                        const { intent: supIntent, opts: supOpts } = buildPeppolSupplierCreateData(
+                            newSupplierId,
+                            suppliersDbId,
+                            order,
+                            {
+                                name: parsed.supplierName,
+                                vat: safeVat,
+                                address: parsed.supplierAddress,
+                                email: parsed.supplierContact?.email,
+                                phone: parsed.supplierContact?.phone,
+                                contact: parsed.supplierContact?.name,
+                                city: parsed.supplierCity,
+                                postal: parsed.supplierPostal,
+                                country: parsed.supplierCountry,
                             }
-                        });
-                        if (safeVat) vatToSupplier.set(safeVat, supplier.id);
-                        matchedSupplierId = supplier.id;
+                        );
+                        const supRes = await saveRecord(db, supIntent, supOpts);
+                        if (supRes.ok) {
+                            if (safeVat) vatToSupplier.set(safeVat, newSupplierId);
+                            matchedSupplierId = newSupplierId;
+                        }
                     }
                 } catch(e) {
                     console.error('[Peppol AutoCreateSupplier]', e);
@@ -350,45 +353,46 @@ export async function GET(req: Request) {
             }));
 
             // Get max order
-            const maxOrderRow = await prisma.globalPage.findFirst({
+            const maxOrderRow = await db.globalPage.findFirst({
                 where: { databaseId: expensesDbId },
                 orderBy: { order: 'desc' },
                 select: { order: true }
             });
             const order = (maxOrderRow?.order ?? -1) + 1;
 
-            const saved = await prisma.globalPage.create({
-                data: {
-                    id: pageId,
-                    databaseId: expensesDbId,
-                    properties: {
-                        title: parsed.invoiceNumber || doc.id,
-                        betreft: parsed.betreft || '',
-                        ogm: parsed.ogm || '',
-                        contact: parsed.supplierContact 
-                            ? [parsed.supplierContact.name, parsed.supplierContact.phone, parsed.supplierContact.email].filter(Boolean).join(' / ') 
-                            : '',
-                        source: 'src-peppol',
-                        docType: doc.type === 'credit_note' ? 'opt-credit-note' : 'opt-invoice',
-                        status: 'opt-unpaid',
-                        invoiceDate: parsed.issueDate || '',
-                        dueDate: parsed.dueDate || '',
-                        totalExVat: doc.type === 'credit_note' ? -Math.abs(parsed.totalExVat || 0) : (parsed.totalExVat || 0),
-                        totalVat: doc.type === 'credit_note' ? -Math.abs(parsed.totalVat || 0) : (parsed.totalVat || 0),
-                        totalIncVat: doc.type === 'credit_note' ? -Math.abs(parsed.totalIncVat || 0) : (parsed.totalIncVat || 0),
-                        peppolDocId: doc.id,
-                        invoiceLines: JSON.stringify(parsed.lines || []),
-                        supplierName: parsed.supplierName || '',
-                        supplierVat: parsed.supplierVat || '',
-                        supplier: matchedSupplierId ? [matchedSupplierId] : [],
-                        receiptUrl,
-                    },
-                    order,
-                    blocks,
-                    createdBy: 'system:peppol',
-                    lastEditedBy: 'system:peppol',
-                }
-            });
+            const { intent: expIntent, opts: expOpts } = buildPeppolExpenseCreateData(
+                pageId,
+                expensesDbId,
+                order,
+                {
+                    title: parsed.invoiceNumber || doc.id,
+                    betreft: parsed.betreft || '',
+                    ogm: parsed.ogm || '',
+                    contact: parsed.supplierContact 
+                        ? [parsed.supplierContact.name, parsed.supplierContact.phone, parsed.supplierContact.email].filter(Boolean).join(' / ') 
+                        : '',
+                    docType: doc.type === 'credit_note' ? 'opt-credit-note' : 'opt-invoice',
+                    status: 'opt-unpaid',
+                    invoiceDate: parsed.issueDate || '',
+                    dueDate: parsed.dueDate || '',
+                    totalExVat: doc.type === 'credit_note' ? -Math.abs(parsed.totalExVat || 0) : (parsed.totalExVat || 0),
+                    totalVat: doc.type === 'credit_note' ? -Math.abs(parsed.totalVat || 0) : (parsed.totalVat || 0),
+                    totalIncVat: doc.type === 'credit_note' ? -Math.abs(parsed.totalIncVat || 0) : (parsed.totalIncVat || 0),
+                    peppolDocId: doc.id,
+                    invoiceLines: JSON.stringify(parsed.lines || []),
+                    supplierName: parsed.supplierName || '',
+                    supplierVat: parsed.supplierVat || '',
+                    supplier: matchedSupplierId ? [matchedSupplierId] : [],
+                    receiptUrl,
+                },
+                blocks
+            );
+
+            const savedRes = await saveRecord(db, expIntent, expOpts);
+            if (!savedRes.ok) {
+                console.error(`[Peppol Inbox] Failed to save expense for doc ${doc.id}:`, savedRes.refusal);
+                continue;
+            }
 
             // Increment the Peppol received quota counter
             await incrementPeppolReceived(tenantId);
@@ -406,22 +410,19 @@ export async function GET(req: Request) {
                         entity: { type: 'invoice', id: pageId },
                         href: `/nl/admin/database/db-expenses/${pageId}`
                     },
-                    { tenantId, db: prisma }
+                    { tenantId, db: platformDb() }
                 );
             } catch (e) {
                 console.error('[Peppol Inbox] Failed to emit notification', e);
             }
 
             newlyImportedPages.push({
-                id: saved.id,
-                databaseId: saved.databaseId,
-                properties: saved.properties as any,
-                order: saved.order ?? 0,
-                blocks: [],
-                createdAt: saved.createdAt.toISOString(),
-                updatedAt: saved.updatedAt.toISOString(),
-                createdBy: saved.createdBy,
-                lastEditedBy: saved.lastEditedBy,
+                id: pageId,
+                databaseId: expensesDbId,
+                properties: savedRes.properties,
+                blocks,
+                createdAt: savedRes.updatedAt,
+                updatedAt: savedRes.updatedAt,
             });
         }
 
@@ -468,7 +469,7 @@ export async function POST(req: Request) {
         }
         const tenantId = (session!.user as any).tenantId;
 
-        const tenant = await prisma.tenant.findUnique({
+        const tenant = await platformDb().tenant.findUnique({
             where: { id: tenantId },
             select: { eInvoiceApiKey: true },
         });

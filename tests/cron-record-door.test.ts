@@ -30,7 +30,7 @@ function fakeDb() {
     const dbs = new Map<string, { id: string; logicalKey: string | null; properties: unknown[] }>([
         ['db-invoices', { id: 'db-invoices', logicalKey: 'invoices', properties: [{ id: 'title', type: 'text' }, { id: 'status', type: 'select' }, { id: 'totalIncVat', type: 'number' }, { id: 'dueDate', type: 'date' }] }],
         ['db-expenses', { id: 'db-expenses', logicalKey: 'expenses', properties: [{ id: 'title', type: 'text' }, { id: 'status', type: 'select' }, { id: 'supplier', type: 'relation' }, { id: 'receiptUrl', type: 'text' }] }],
-        ['db-suppliers', { id: 'db-suppliers', logicalKey: 'suppliers', properties: [{ id: 'title', type: 'title' }, { id: 'vatNumber', type: 'text' }, { id: 'address', type: 'text' }] }],
+        ['db-suppliers', { id: 'db-suppliers', logicalKey: 'suppliers', properties: [{ id: 'title', type: 'title' }, { id: 'vat', type: 'text' }, { id: 'address', type: 'text' }] }],
     ]);
     const pages = new Map<string, Record<string, any>>();
     const writes: string[] = [];
@@ -139,7 +139,7 @@ test('R2-1-B M2: buildBackfillSupplierCreateData sets meta.order, createIfMissin
     assert.equal(intent.pageId, 'sup-new-1');
     assert.deepEqual(intent.fields, {
         title: 'Acme Materials BV',
-        vatNumber: 'BE0123456789',
+        vat: 'BE0123456789',
         address: 'Havenlaan 10, Brussel',
     });
     assert.equal(opts.by, 'system:backfill-peppol');
@@ -149,7 +149,7 @@ test('R2-1-B M2: buildBackfillSupplierCreateData sets meta.order, createIfMissin
         databaseId: 'db-suppliers',
         properties: {
             title: 'Acme Materials BV',
-            vatNumber: 'BE0123456789',
+            vat: 'BE0123456789',
             address: 'Havenlaan 10, Brussel',
         },
         blocks: [],
@@ -176,7 +176,7 @@ test('R2-1-B M2: backfill supplier creation preserves row column order via meta.
     assert.equal(row.createdBy, 'system:backfill-peppol');
     assert.equal(row.lastEditedBy, 'system:backfill-peppol');
     assert.equal(row.properties.title, 'Bouw Expert');
-    assert.equal(row.properties.vatNumber, 'BE0987654321');
+    assert.equal(row.properties.vat, 'BE0987654321');
 });
 
 test('R2-1-B M2: buildBackfillExpenseUpdateIntent constructs delta with only changed fields and NO lifecycle', () => {

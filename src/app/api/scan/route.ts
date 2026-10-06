@@ -4,6 +4,7 @@ import OpenAI from 'openai';
 import { auth } from '@/auth';
 import { platformDb, scopeFromSession } from '@/lib/data/scope';
 import { saveRecord } from '@/lib/data/records';
+import { isEmptyReading, ticketFields } from '@/lib/records/scan-reading';
 import { buildScanUpdateIntent, buildScanCreateData } from '@/lib/records/peppol-scan-intents';
 import { v4 as uuidv4 } from 'uuid';
 import { type SystemDatabaseRole, SYSTEM_DATABASES, BASE_TO_KEY } from '@/lib/kernel/system-databases';
@@ -449,6 +450,16 @@ export async function POST(req: Request) {
             }
         }
 
+        // SCAN-1: nothing read = the reading FAILED — never a record claiming "Expense", €0 and today's date.
+        // The caller keeps the record (its file name) for a person; the bulk import marks it "Na te kijken".
+        if (isEmptyReading(extracted, isInvoice)) {
+            return NextResponse.json({
+                success: false,
+                code: 'EMPTY_READING',
+                error: 'Niets gelezen uit dit document (een foto in HEIC-formaat of een onleesbare scan?) — vul het handmatig in.',
+            }, { status: 422 });
+        }
+
         // ── Deduplication Check ───────────────────────────────────────────────
         const extractedForDedup = {
             isInvoice,
@@ -523,7 +534,8 @@ export async function POST(req: Request) {
             }
 
             properties = {
-                title: extracted.invoiceNumber || `INV-${new Date().toISOString().slice(0, 10)}`,
+                // SCAN-1: no invented title — the invoice number read, else the record keeps its own (file name)
+                ...(extracted.invoiceNumber ? { title: extracted.invoiceNumber } : existingPageId ? {} : { title: file.name || 'Aankoopfactuur' }),
                 supplierName: extracted.supplierName || '',
                 supplierVat: extracted.supplierVat || '',
                 source: 'src-scan',
@@ -542,17 +554,18 @@ export async function POST(req: Request) {
                 supplier: [],
             };
         } else {
+            // SCAN-1: only what was read (lib/records/scan-reading); the defaults only on a NEW record — a re-scan
+            // never resets what a person set (payment method, notes)
             properties = {
-                title: extracted.merchant || 'Expense',
-                date: extracted.date || new Date().toISOString().split('T')[0],
-                amount: extracted.totalAmount ?? 0,
-                category: extracted.category || '',
-                currency: 'cur-eur',
-                paymentMethod: 'pm-card',
-                notes: '',
+                ...(existingPageId ? {} : {
+                    title: file.name || 'Ticket',
+                    currency: 'cur-eur',
+                    paymentMethod: 'pm-card',
+                    notes: '',
+                    vatDeductiblePct: 0, // RECEIPTS ARE NOT VAT DEDUCTIBLE
+                }),
                 source: 'src-scan',
-                reviewStatus: 'Na te kijken',
-                vatDeductiblePct: 0, // RECEIPTS ARE NOT VAT DEDUCTIBLE
+                ...ticketFields(extracted),
             };
         }
 

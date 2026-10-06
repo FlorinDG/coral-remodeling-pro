@@ -98,7 +98,7 @@ test('R2-1-B M1: buildAcceptInvoiceIntent constructs delta intent and by: client
     assert.equal((opts as any).lifecycle, undefined);
 });
 
-test('R2-1-B M1: accept-invoice updates record through door and handles document lock refusal', async () => {
+test('R2-1-B M1: accept-invoice updates draft invoice record through door', async () => {
     const { client, pages } = fakeDb();
     pages.set('inv-1', {
         id: 'inv-1',
@@ -124,6 +124,37 @@ test('R2-1-B M1: accept-invoice updates record through door and handles document
     assert.equal(pages.get('inv-1')!.properties.clientSignature, 'sig-data');
     assert.equal(pages.get('inv-1')!.properties.amount, 500); // untouched existing field preserved
     assert.equal(pages.get('inv-1')!.lastEditedBy, 'client:link');
+});
+
+test('R2-1-B M1: accept-invoice is refused EXPORT_LOCKED when invoice has accountantExportedAt', async () => {
+    const { client, pages, dbs } = fakeDb();
+    dbs.set('db-invoices', { logicalKey: 'invoices', properties: [] });
+    pages.set('inv-1', {
+        id: 'inv-1',
+        databaseId: 'db-invoices',
+        properties: {
+            title: 'Invoice #101',
+            status: 'SENT',
+            accountantExportedAt: true,
+        },
+        blocks: [],
+        blocksVersion: 1,
+        updatedAt: new Date(1000 * 1000),
+        lastEditedBy: 'user-1',
+    });
+
+    const v1 = new Date(1000 * 1000).toISOString();
+    const { intent, opts } = buildAcceptInvoiceIntent('inv-1', {
+        signatureBase64: 'sig-data',
+        signatureMethod: 'typed',
+        consentName: 'Client A',
+    }, v1);
+
+    const saved = await saveRecord(client, intent, opts);
+    assert.equal(saved.ok, false);
+    if (!saved.ok) {
+        assert.equal(saved.refusal.code, 'EXPORT_LOCKED');
+    }
 });
 
 test('R2-1-B M1: buildAcceptQuoteIntent constructs delta intent and by: client:link with no lifecycle', () => {

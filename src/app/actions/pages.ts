@@ -12,6 +12,7 @@ import { saveRecord } from '@/lib/data/records';
 import { syncInvoicePaymentStatus } from '@/lib/data/invoice-payments';
 import { systemDatabaseId } from '@/lib/data/system-databases';
 import { describeError } from '@/lib/describe-error';
+import { buildPaymentMatchIntent, buildPaymentSuggestedMatchIntent } from '@/lib/records/actions-record-intents';
 
 /**
  * Server-first page creation.
@@ -234,7 +235,6 @@ async function handlePaymentMatching(tenantId: string, paymentPage: Page) {
 
             if (matchedInvoice) {
                 // Link payment to invoice
-                const { buildPaymentMatchIntent } = await import('@/lib/records/actions-record-intents');
                 const { intent, opts } = buildPaymentMatchIntent(paymentPage.id, matchedInvoice.id, paymentPage.updatedAt);
                 const saved = await saveRecord(db, intent, opts);
                 if (!saved.ok) {
@@ -262,7 +262,6 @@ async function handlePaymentMatching(tenantId: string, paymentPage: Page) {
 
             if (suggestedInvoice) {
                 // Set suggestedInvoice field
-                const { buildPaymentSuggestedMatchIntent } = await import('@/lib/records/actions-record-intents');
                 const { intent, opts } = buildPaymentSuggestedMatchIntent(paymentPage.id, suggestedInvoice.id, paymentPage.updatedAt);
                 const saved = await saveRecord(db, intent, opts);
                 if (!saved.ok) {

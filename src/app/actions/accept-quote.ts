@@ -1,6 +1,8 @@
 "use server";
 import { clientAcceptRefusal } from '@/lib/records/client-accept';
 import { platformDb, systemScope } from '@/lib/data/scope';
+import { saveRecord } from '@/lib/data/records';
+import { buildAcceptQuoteIntent } from '@/lib/records/actions-record-intents';
 
 interface AcceptQuotationPayload {
     quoteId: string;
@@ -31,8 +33,6 @@ export async function acceptQuotation({ quoteId, signatureBase64, signatureMetho
         if (refusal) return { success: false, error: 'This quotation cannot be accepted.' };
 
         const db = systemScope(quote.database.tenantId, `client accepted quotation ${quoteId} via its link`);
-        const { saveRecord } = await import('@/lib/data/records');
-        const { buildAcceptQuoteIntent } = await import('@/lib/records/actions-record-intents');
         const { intent, opts } = buildAcceptQuoteIntent(
             quoteId,
             { signatureBase64, signatureMethod, consentName },

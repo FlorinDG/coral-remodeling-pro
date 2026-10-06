@@ -1,11 +1,13 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import prisma from '@/lib/prisma';
-import { getInboxDocument, getDocumentUbl, parseUBLToInvoice, getDocumentSupplierPdf } from '@/lib/e-invoice-inbox';
+import { platformDb, systemScope } from '@/lib/data/scope';
+import { saveRecord } from '@/lib/data/records';
+import { getInboxDocument, getDocumentSupplierPdf } from '@/lib/e-invoice-inbox';
 import { storage } from '@/lib/storage';
 import { resolveDatabaseId } from '@/lib/kernel/system-databases';
 import { v4 as uuidv4 } from 'uuid';
 import { describeError } from '@/lib/describe-error';
+import { buildBackfillSupplierCreateData, buildBackfillExpenseUpdateIntent } from '@/lib/records/cron-record-intents';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300; // Allow 5 minutes for backfill script
@@ -34,7 +36,7 @@ export async function GET(req: Request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const tenant = await prisma.tenant.findUnique({
+        const tenant = await platformDb().tenant.findUnique({
             where: { id: tenantId },
             select: { eInvoiceApiKey: true, lockedDbIds: true, driveFolderId: true },
         });
@@ -45,11 +47,14 @@ export async function GET(req: Request) {
 
         const lockedDbIds = (tenant.lockedDbIds as Record<string, string>) || {};
         const expensesDbId = resolveDatabaseId('db-expenses', lockedDbIds);
+        const suppliersDbId = resolveDatabaseId('db-suppliers', lockedDbIds);
+
+        const db = systemScope(tenantId, 'admin: backfill-peppol');
 
         // Fetch all peppol expense pages
-        const pages = await prisma.globalPage.findMany({
+        const pages = await db.globalPage.findMany({
             where: { databaseId: expensesDbId },
-            select: { id: true, properties: true, blocks: true },
+            select: { id: true, properties: true, blocks: true, updatedAt: true },
         });
 
         const pagesToUpdate = pages.filter(page => {
@@ -85,8 +90,7 @@ export async function GET(req: Request) {
         const errors: any[] = [];
 
         // Pre-load suppliers for matching from db-suppliers
-        const suppliersDbId = resolveDatabaseId('db-suppliers', lockedDbIds);
-        const suppliers = await prisma.globalPage.findMany({
+        const suppliers = await db.globalPage.findMany({
             where: { databaseId: suppliersDbId },
             select: { id: true, properties: true },
         });
@@ -112,18 +116,18 @@ export async function GET(req: Request) {
                     continue;
                 }
 
-                let isDirty = false;
-                const updateData: any = { properties: { ...props } };
-
                 // Parse document fields
                 const vendorName = rawDoc.vendor_name || '';
                 const vendorVat = rawDoc.vendor_tax_id || '';
                 const vendorAddr = rawDoc.vendor_address || '';
 
+                let matchedSupplierId: string | null = null;
+                let matchedSupplierName: string | null = null;
+                let matchedSupplierVat: string | null = null;
+
                 // A) Auto-create + link supplier (GlobalPage in db-suppliers)
                 const hasSupplier = Array.isArray(props.supplier) && props.supplier.length > 0;
                 if (!hasSupplier && (vendorName || vendorVat)) {
-                    let matchedSupplierId = null;
                     const safeVat = vendorVat.replace(/\s/g, '').toUpperCase();
                     if (safeVat && vatToSupplier.has(safeVat)) {
                         matchedSupplierId = vatToSupplier.get(safeVat) ?? null;
@@ -132,40 +136,37 @@ export async function GET(req: Request) {
                         const newSupplierId = uuidv4();
                         
                         // Get max order
-                        const maxOrderRow = await prisma.globalPage.findFirst({
+                        const maxOrderRow = await db.globalPage.findFirst({
                             where: { databaseId: suppliersDbId },
                             orderBy: { order: 'desc' },
                             select: { order: true }
                         });
                         const order = (maxOrderRow?.order ?? -1) + 1;
                         
-                        const newSupplier = await prisma.globalPage.create({
-                            data: {
-                                id: newSupplierId,
-                                databaseId: suppliersDbId,
-                                order,
-                                properties: {
-                                    title: vendorName || 'Unknown Supplier',
-                                    vatNumber: safeVat || null,
-                                    address: vendorAddr || '',
-                                },
-                                createdBy: 'system',
-                                lastEditedBy: 'system',
-                            }
-                        });
-                        matchedSupplierId = newSupplier.id;
-                        if (safeVat) vatToSupplier.set(safeVat, newSupplier.id);
+                        const supplierCreate = buildBackfillSupplierCreateData(
+                            newSupplierId,
+                            suppliersDbId,
+                            order,
+                            { name: vendorName, vat: safeVat || null, address: vendorAddr || '' }
+                        );
+                        const saveSupplierRes = await saveRecord(db, supplierCreate.intent, supplierCreate.opts);
+                        if (!saveSupplierRes.ok) {
+                            console.error(`[Backfill] Failed to create supplier for ${vendorName}:`, saveSupplierRes.refusal);
+                            errors.push({ id: page.id, error: `Failed to create supplier: ${saveSupplierRes.refusal.code}` });
+                            continue;
+                        }
+                        matchedSupplierId = newSupplierId;
+                        if (safeVat) vatToSupplier.set(safeVat, newSupplierId);
                     }
 
                     if (matchedSupplierId) {
-                        updateData.properties.supplier = [matchedSupplierId];
-                        updateData.properties.supplierName = vendorName;
-                        updateData.properties.supplierVat = vendorVat;
-                        isDirty = true;
+                        matchedSupplierName = vendorName;
+                        matchedSupplierVat = vendorVat;
                     }
                 }
 
                 // B) Fetch original PDF -> store -> set receiptUrl
+                let newReceiptUrl: string | null = null;
                 if (!props.receiptUrl) {
                     try {
                         const pdfResult = await getDocumentSupplierPdf(tenant.eInvoiceApiKey, docId);
@@ -173,8 +174,7 @@ export async function GET(req: Request) {
                             const safeName = pdfResult.fileName.replace(/[^a-zA-Z0-9.\-_]/g, '_');
                             const key = `t_${tenantId}/purchase-invoice/${page.id}/${safeName}`;
                             const result = await storage.put(key, pdfResult.buffer, { contentType: 'application/pdf', overwrite: false });
-                            updateData.properties.receiptUrl = result.key;
-                            isDirty = true;
+                            newReceiptUrl = result.key;
                         }
                     } catch (pdfErr) {
                         console.error(`[Backfill] Failed to fetch or upload PDF for ${docId}`, pdfErr);
@@ -183,9 +183,10 @@ export async function GET(req: Request) {
                 }
 
                 // C) Rebuild structured blocks
+                let newBlocks: unknown[] | undefined;
                 const hasBlocks = Array.isArray(page.blocks) && page.blocks.length > 0;
                 if (!hasBlocks && Array.isArray(rawDoc.items) && rawDoc.items.length > 0) {
-                    const blocks = rawDoc.items.map((line: any, idx: number) => ({
+                    newBlocks = rawDoc.items.map((line: any, idx: number) => ({
                         id: uuidv4(),
                         type: 'financial-row',
                         content: line.description || '',
@@ -199,18 +200,27 @@ export async function GET(req: Request) {
                             margePercent: 0,
                         }
                     }));
-                    updateData.blocks = blocks;
-                    isDirty = true;
                 }
 
-                if (isDirty) {
-                    await prisma.globalPage.update({
-                        where: { id: page.id },
-                        data: {
-                            ...updateData,
-                            lastEditedBy: 'system:peppol'
-                        },
-                    });
+                const updatePayload = buildBackfillExpenseUpdateIntent(
+                    page.id,
+                    page.updatedAt ? new Date(page.updatedAt).toISOString() : null,
+                    {
+                        supplierId: matchedSupplierId,
+                        vendorName: matchedSupplierName,
+                        vendorVat: matchedSupplierVat,
+                        receiptUrl: newReceiptUrl,
+                        blocks: newBlocks,
+                    }
+                );
+
+                if (updatePayload) {
+                    const savePageRes = await saveRecord(db, updatePayload.intent, updatePayload.opts);
+                    if (!savePageRes.ok) {
+                        console.error(`[Backfill] Refusal updating page ${page.id}:`, savePageRes.refusal);
+                        errors.push({ id: page.id, error: `Refusal: ${savePageRes.refusal.code}` });
+                        continue;
+                    }
                     updatedCount++;
                 }
 

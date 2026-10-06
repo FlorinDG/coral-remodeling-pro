@@ -10,11 +10,13 @@
  */
 
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
 import { isCronRequest } from '@/lib/cron-auth';
 import { platformDb, systemScope } from '@/lib/data/scope';
 import { businessToday } from '@/lib/data/invoice-payments';
 import { nextInvoiceStatus, nextExpenseStatus } from '@/lib/records/invoice-payment-status';
+import { saveRecord } from '@/lib/data/records';
+import { buildOverdueInvoiceIntent, buildOverdueExpenseIntent } from '@/lib/records/cron-record-intents';
+import { notify } from '@/lib/notifications';
 
 type Props = Record<string, unknown>;
 
@@ -39,13 +41,15 @@ export async function GET(req: Request) {
                 // paid: null — the cron does not count payments; it only moves sent → overdue.
                 const next = nextInvoiceStatus({ status: props.status, totalIncVat: props.totalIncVat, paid: null, dueDate: props.dueDate, today });
                 if (next !== 'opt-overdue' || props.status === 'opt-overdue') continue;
-                await db.globalPage.update({
-                    where: { id: page.id },
-                    data: { properties: { ...props, status: 'opt-overdue' }, lastEditedBy: 'system:cron-overdue' },
-                });
+
+                const { intent, opts } = buildOverdueInvoiceIntent(page.id, page.updatedAt?.toISOString ? page.updatedAt.toISOString() : (page.updatedAt as unknown as string));
+                const res = await saveRecord(db, intent, opts);
+                if (!res.ok) {
+                    console.warn(`[Cron] invoice-overdue update refused for invoice ${page.id}: ${res.refusal.code}`);
+                    continue;
+                }
                 invoicesUpdated++;
                 try {
-                    const { notify } = await import('@/lib/notifications');
                     const assigneeId = page.assignedTo?.length ? page.assignedTo[0] : (page.createdBy || null);
                     await notify({
                         userId: assigneeId,
@@ -54,7 +58,7 @@ export async function GET(req: Request) {
                         body: `Invoice ${(props.title as string) || 'Factuur'} is overdue.`,
                         entity: { type: 'invoice', id: page.id },
                         href: `/nl/admin/database/db-invoices/${page.id}`,
-                    }, { tenantId, db: prisma });
+                    }, { tenantId, db: platformDb() });
                 } catch (e) {
                     console.error('[Cron] Failed to emit INVOICE_OVERDUE', e);
                 }
@@ -64,10 +68,13 @@ export async function GET(req: Request) {
             for (const page of expenses) {
                 const props = (page.properties || {}) as Props;
                 if (nextExpenseStatus(props.status, props.dueDate, today) !== 'opt-overdue' || props.status === 'opt-overdue') continue;
-                await db.globalPage.update({
-                    where: { id: page.id },
-                    data: { properties: { ...props, status: 'opt-overdue' }, lastEditedBy: 'system:cron-overdue' },
-                });
+
+                const { intent, opts } = buildOverdueExpenseIntent(page.id, page.updatedAt?.toISOString ? page.updatedAt.toISOString() : (page.updatedAt as unknown as string));
+                const res = await saveRecord(db, intent, opts);
+                if (!res.ok) {
+                    console.warn(`[Cron] invoice-overdue update refused for expense ${page.id}: ${res.refusal.code}`);
+                    continue;
+                }
                 expensesUpdated++;
             }
         } catch (err) {

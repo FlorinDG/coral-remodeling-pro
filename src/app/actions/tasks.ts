@@ -4,6 +4,7 @@ import { auth } from '@/auth';
 import { v4 as uuidv4 } from 'uuid';
 import { scopeFromSession, platformDb } from '@/lib/data/scope';
 import { saveRecord } from '@/lib/data/records';
+import { buildTaskCreateData, buildTaskStatusIntent } from '@/lib/records/actions-record-intents';
 
 /**
  * Creates a new task page in the tenant's db-tasks GlobalDatabase.
@@ -82,7 +83,6 @@ export async function createTaskPage(input: {
     });
 
     const pageId = uuidv4();
-    const { buildTaskCreateData } = await import('@/lib/records/actions-record-intents');
     const { intent, opts } = buildTaskCreateData(pageId, targetDb.id, userId, pageCount, input);
 
     const saved = await saveRecord(db, intent, opts);
@@ -122,7 +122,6 @@ export async function updateTaskStatus(pageId: string, status: string) {
         throw new Error('Task not found or unauthorized');
     }
 
-    const { buildTaskStatusIntent } = await import('@/lib/records/actions-record-intents');
     const { intent, opts } = buildTaskStatusIntent(pageId, status, userId, page.updatedAt.toISOString());
     const saved = await saveRecord(db, intent, opts);
 

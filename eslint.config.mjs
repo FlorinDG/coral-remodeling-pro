@@ -81,7 +81,6 @@ const eslintConfig = defineConfig([
     ignores: [
       // GRANDFATHERED — these cron routes predate R5 tenant-scoped scheduling.
       // R5 removes direct prisma access from cron routes. Do not add to this list.
-      "src/app/api/cron/invoice-overdue/route.ts",
       "src/app/api/cron/reminders/route.ts",
     ],
     rules: {
@@ -152,7 +151,6 @@ const eslintConfig = defineConfig([
       "src/app/actions/superadmin.ts",
       "src/app/actions/timesheets.ts",
       "src/app/actions/update-invoice.ts",
-      "src/app/api/admin/backfill-peppol/route.ts",
       "src/app/api/admin/backfill-worker-ids/route.ts",
       "src/app/api/admin/schema-cleanup/route.ts",
       "src/app/api/auth/accept-invite/route.ts",
@@ -163,7 +161,6 @@ const eslintConfig = defineConfig([
       "src/app/api/auth/signup/route.ts",
       "src/app/api/auth/verify/route.ts",
       "src/app/api/bookings/route.ts",
-      "src/app/api/cron/invoice-overdue/route.ts",
       "src/app/api/cron/reminders/route.ts",
       "src/app/api/debug/layout/route.ts",
       "src/app/api/email/accounts/route.ts",

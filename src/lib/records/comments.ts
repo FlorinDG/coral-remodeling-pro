@@ -42,7 +42,7 @@ export function commentRefusal(action: CommentAction, c: CommentLike | null, act
     return null;
 }
 
-export interface LatestComment { id: string; body: string; authorId: string; createdAt: string; count: number; open: number; mentions: boolean }
+export interface LatestComment { id: string; body: string; authorId: string; createdAt: string; count: number; open: number }
 
 /** What the "Opmerkingen" field shows for a record: the most recent live comment, the count, the unresolved count. */
 export function latestComment(comments: CommentLike[]): LatestComment | null {
@@ -52,19 +52,6 @@ export function latestComment(comments: CommentLike[]): LatestComment | null {
     const last = live.reduce((a, b) => (iso(b.createdAt) > iso(a.createdAt) ? b : a));
     return {
         id: last.id, body: plainText(last.body), authorId: last.authorId, createdAt: iso(last.createdAt),
-        count: live.length, open: live.filter(c => !c.resolvedAt).length, mentions: new RegExp(MENTION.source).test(last.body),
+        count: live.length, open: live.filter(c => !c.resolvedAt).length,
     };
-}
-
-/**
- * The grid's in-place edit of the "Opmerkingen" cell (Florin 2026-10-05: "text only. should be able to edit in place").
- * Your OWN latest comment is edited; anything else — someone else's comment, a comment with @mentions (the cell holds
- * plain text, an edit would strip them), no comment yet — makes the typed text a NEW comment. Someone else's words are
- * never overwritten from a cell.
- */
-export type InPlaceEdit = { kind: 'edit'; id: string; text: string } | { kind: 'add'; text: '' };
-
-export function inPlaceEdit(latest: Pick<LatestComment, 'id' | 'authorId' | 'body' | 'mentions'> | null | undefined, userId: string | null | undefined): InPlaceEdit {
-    if (latest && userId && latest.authorId === userId && !latest.mentions) return { kind: 'edit', id: latest.id, text: latest.body };
-    return { kind: 'add', text: '' };
 }

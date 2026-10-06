@@ -2,7 +2,8 @@
 /**
  * COMMENTS-1 · the thread on a record (side panel). Post, @mention (notifies), resolve / reopen, edit or delete your
  * own. Rules on the server (lib/records/comments.ts); this renders and asks. Mentions are stored as
- * `@[Name](userId)` and shown as **@Name**.
+ * `@[Name](userId)` and shown as **@Name**. `compact`: the same thread in the grid cell's flyout (Florin 2026-10-06:
+ * "on click open a flyout with the comments thread. not a big window") — the list scrolls, the composer has focus.
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
@@ -33,9 +34,9 @@ function when(iso: string): string {
 }
 
 /** A textarea with an @-picker: typing "@" + letters offers the office's people; picking inserts @[Name](id). */
-function Composer({ value, onChange, onSubmit, busy, placeholder, submitLabel, users }: {
+function Composer({ value, onChange, onSubmit, busy, placeholder, submitLabel, users, autoFocus }: {
     value: string; onChange: (v: string) => void; onSubmit: () => void; busy: boolean; placeholder: string; submitLabel: string;
-    users: Array<{ id: string; name: string }>;
+    users: Array<{ id: string; name: string }>; autoFocus?: boolean;
 }) {
     const ref = useRef<HTMLTextAreaElement>(null);
     const [query, setQuery] = useState<string | null>(null);
@@ -60,11 +61,12 @@ function Composer({ value, onChange, onSubmit, busy, placeholder, submitLabel, u
         <div className="relative">
             <textarea
                 ref={ref}
+                autoFocus={autoFocus}
                 value={value}
                 onChange={e => onInput(e.target.value)}
                 onKeyDown={e => {
                     if (matches.length && (e.key === 'Enter' || e.key === 'Tab')) { e.preventDefault(); pick(matches[0]); return; }
-                    if (e.key === 'Escape') setQuery(null);
+                    if (e.key === 'Escape' && query !== null) { setQuery(null); e.stopPropagation(); }   // closes the picker, not the flyout
                     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); onSubmit(); }
                 }}
                 rows={3}
@@ -88,7 +90,7 @@ function Composer({ value, onChange, onSubmit, busy, placeholder, submitLabel, u
     );
 }
 
-export default function CommentThread({ pageId, databaseId }: { pageId: string; databaseId: string }) {
+export default function CommentThread({ pageId, databaseId, compact = false }: { pageId: string; databaseId: string; compact?: boolean }) {
     const t = useTranslations('Admin.comments');
     const [comments, setComments] = useState<CommentView[] | null>(null);
     const [users, setUsers] = useState<Array<{ id: string; name: string }>>([]);
@@ -121,7 +123,7 @@ export default function CommentThread({ pageId, databaseId }: { pageId: string; 
     };
 
     return (
-        <section className="mt-6 pt-4 border-t border-neutral-200 dark:border-white/10" id="record-comments">
+        <section className={compact ? '' : 'mt-6 pt-4 border-t border-neutral-200 dark:border-white/10'} id={compact ? undefined : 'record-comments'}>
             <h3 className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-neutral-500 mb-3">
                 <MessageSquare className="w-3.5 h-3.5" /> {t('title')}{comments?.length ? ` · ${comments.length}` : ''}
             </h3>
@@ -130,7 +132,7 @@ export default function CommentThread({ pageId, databaseId }: { pageId: string; 
             ) : comments.length === 0 ? (
                 <p className="text-xs text-neutral-400 mb-3">{t('empty')}</p>
             ) : (
-                <ul className="space-y-3 mb-4">
+                <ul className={`space-y-3 mb-4 ${compact ? 'max-h-72 overflow-y-auto pr-1' : ''}`}>
                     {comments.map(c => (
                         <li key={c.id} className={`rounded-lg p-3 border ${c.resolvedAt ? 'border-neutral-100 dark:border-white/5 opacity-60' : 'border-neutral-200 dark:border-white/10'}`}>
                             <div className="flex items-center justify-between gap-2 mb-1">
@@ -164,7 +166,7 @@ export default function CommentThread({ pageId, databaseId }: { pageId: string; 
                     ))}
                 </ul>
             )}
-            <Composer value={draft} onChange={setDraft} busy={busy} users={users} placeholder={t('placeholder')} submitLabel={t('send')}
+            <Composer value={draft} onChange={setDraft} busy={busy} users={users} placeholder={t('placeholder')} submitLabel={t('send')} autoFocus={compact}
                       onSubmit={async () => { if (await run(() => postComment(pageId, draft))) setDraft(''); }} />
         </section>
     );

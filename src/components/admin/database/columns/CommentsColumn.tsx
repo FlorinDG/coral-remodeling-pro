@@ -1,89 +1,70 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { CellProps, Column } from 'react-datasheet-grid';
-import { useSession } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
-import { toast } from 'sonner';
 import { useLatestComments } from '@/components/admin/comments/latest-comments-store';
-import { postComment, editComment } from '@/app/actions/comments';
-import { inPlaceEdit, type InPlaceEdit } from '@/lib/records/comments';
+import CommentThread from '@/components/admin/comments/CommentThread';
 import { zonedParts } from '@/lib/kernel/shift-time';
 
 /**
  * COMMENTS-1 · the "Opmerkingen" cell: the record's latest comment, TEXT ONLY (Florin 2026-10-05: "keep the column
- * clean") — who, when and how many are in the tooltip. `editable` (the new grid): a click edits in place by the ONE
- * rule (lib/records/comments inPlaceEdit) — your own latest comment is edited, anything else becomes a new comment.
- * The old grid (frozen, R3-C) keeps click-to-open.
+ * clean") — who, when and how many are in the tooltip. `flyout` (the new grid): a click opens the record's thread in a
+ * small flyout at the cell — the SAME thread as in the record (CommentThread compact): read, post, @mention, resolve.
+ * The old grid (frozen, R3-C) keeps click-to-open the record.
  */
 function when(iso: string): string {
     const p = zonedParts(iso);
     return `${p.date.slice(8, 10)}/${p.date.slice(5, 7)}/${p.date.slice(0, 4)} ${p.time}`;
 }
 
+const FLYOUT_W = 380, FLYOUT_H = 460;
+
 /** The cell's content, independent of the grid component (used by the old grid and NotionGridV2). */
-export function LatestCommentCell({ pageId, databaseId, onOpen, editable = false, wrap = false }: {
-    pageId: string; databaseId: string; onOpen: (pageId: string) => void; editable?: boolean; wrap?: boolean;
+export function LatestCommentCell({ pageId, databaseId, onOpen, flyout = false, wrap = false }: {
+    pageId: string; databaseId: string; onOpen: (pageId: string) => void; flyout?: boolean; wrap?: boolean;
 }) {
     const t = useTranslations('Admin');
-    const { data: session } = useSession();
     const load = useLatestComments(s => s.load);
     const latest = useLatestComments(s => s.byDb[databaseId]?.[pageId]);
     useEffect(() => { load(databaseId); }, [databaseId, load]);
-    const [edit, setEdit] = useState<InPlaceEdit | null>(null);
-    const [text, setText] = useState('');
-    const [pending, setPending] = useState<string | null>(null);   // shown until the reload lands
-    const done = useRef(false);
+    const ref = useRef<HTMLDivElement>(null);
+    const [open, setOpen] = useState(false);
+    const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+
+    useLayoutEffect(() => {
+        if (!open || !ref.current) return;
+        const r = ref.current.getBoundingClientRect();
+        const top = window.innerHeight - r.bottom < FLYOUT_H && r.top > FLYOUT_H ? r.top - FLYOUT_H - 4 : r.bottom + 4;
+        const left = Math.max(8, Math.min(r.left, window.innerWidth - FLYOUT_W - 8));
+        setPos({ top: Math.max(8, top), left });
+    }, [open]);
 
     const tooltip = latest ? `${latest.authorName} · ${when(latest.createdAt)} · ${t('comments.summary', { count: latest.count, open: latest.open })}` : undefined;
-
-    const start = () => {
-        const e = inPlaceEdit(latest, session?.user?.id);
-        done.current = false; setEdit(e); setText(e.text);
-    };
-    const save = async () => {
-        if (!edit || done.current) return;
-        done.current = true;
-        const body = text.trim(), e = edit;
-        setEdit(null);
-        if (!body || (e.kind === 'edit' && body === e.text)) return;   // nothing typed — never a delete from a cell
-        setPending(body);
-        const res = e.kind === 'edit' ? await editComment(e.id, body) : await postComment(pageId, body);
-        if (!res?.ok) toast.error(t('comments.failed'));
-        await load(databaseId, true);
-        setPending(null);
-    };
-
-    if (edit) {
-        return (
-            <input
-                autoFocus
-                value={text}
-                placeholder={edit.kind === 'add' ? t('comments.newPlaceholder') : undefined}
-                onChange={ev => setText(ev.target.value)}
-                onBlur={save}
-                onKeyDown={ev => {
-                    ev.stopPropagation();   // the grid's keys (arrows, type-to-replace) stay out of the comment
-                    if (ev.key === 'Enter') { ev.preventDefault(); void save(); }
-                    else if (ev.key === 'Escape') { ev.preventDefault(); done.current = true; setEdit(null); }
-                }}
-                onMouseDown={ev => ev.stopPropagation()}
-                className="w-full h-full px-2 text-sm bg-white dark:bg-neutral-900 outline-none ring-2 ring-inset ring-orange-400"
-            />
-        );
-    }
-
-    const shown = pending ?? latest?.body ?? '';
     return (
         <div
-            className={`w-full h-full px-2 flex text-sm ${editable ? 'cursor-text' : 'cursor-pointer'} overflow-hidden ${wrap ? 'items-start py-2' : 'items-center'}`}
-            title={tooltip}
+            ref={ref}
+            className={`w-full h-full px-2 flex text-sm cursor-pointer overflow-hidden ${wrap ? 'items-start py-2' : 'items-center'}`}
+            title={open ? undefined : tooltip}
             // the old grid claims a DOCUMENT mousedown and swaps the cell — act on mousedown and keep it from the grid
             onMouseDown={(e) => {
-                if (editable || e.button !== 0) return;
+                if (flyout || e.button !== 0) return;
                 e.preventDefault(); e.stopPropagation(); onOpen(pageId);
             }}
-            onClick={() => { if (editable) start(); }}
+            onClick={() => { if (flyout) setOpen(true); }}
         >
-            <span className={`${wrap ? 'whitespace-pre-wrap break-words min-w-0' : 'truncate'} text-neutral-700 dark:text-neutral-300 ${pending ? 'opacity-60' : ''}`}>{shown}</span>
+            <span className={`${wrap ? 'whitespace-pre-wrap break-words min-w-0' : 'truncate'} text-neutral-700 dark:text-neutral-300`}>{latest?.body ?? ''}</span>
+            {open && pos && typeof document !== 'undefined' && createPortal(
+                // a portal's events still bubble to the cell in React — stopped here (clicks, the grid's keys)
+                <div className="fixed inset-0 z-[99998]" onMouseDown={() => setOpen(false)} onClick={e => e.stopPropagation()}
+                     onKeyDown={e => { e.stopPropagation(); if (e.key === 'Escape') setOpen(false); }}>
+                    <div className="fixed flex flex-col rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-neutral-900 shadow-2xl p-3 overflow-y-auto"
+                         style={{ top: pos.top, left: pos.left, width: FLYOUT_W, maxHeight: FLYOUT_H }}
+                         onMouseDown={e => e.stopPropagation()}>
+                        <CommentThread pageId={pageId} databaseId={databaseId} compact />
+                    </div>
+                </div>,
+                document.body,
+            )}
         </div>
     );
 }

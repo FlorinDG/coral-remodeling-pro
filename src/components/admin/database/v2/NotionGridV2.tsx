@@ -198,7 +198,7 @@ export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRec
                     </>
                 );
             }
-            if ((prop.type as string) === 'comments') return <LatestCommentCell pageId={page.id} databaseId={databaseId} onOpen={openRecord} editable wrap={wrap} />;
+            if ((prop.type as string) === 'comments') return <LatestCommentCell pageId={page.id} databaseId={databaseId} onOpen={openRecord} flyout wrap={wrap} />;
             // GRID-REPLACE-2 · control cells — each commits ONE field through commitValue
             const locked = page.properties.accountantExportedAt === true || !access.edit;
             if (prop.type === 'select' || prop.type === 'multi_select') {

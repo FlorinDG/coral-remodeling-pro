@@ -38,16 +38,4 @@ test('the field shows the most recent LIVE comment, the count and the unresolved
     assert.equal(l.count, 2);
     assert.equal(l.open, 1);
     assert.equal(l.id, 'b');
-    assert.equal(l.mentions, true);
-});
-
-import { inPlaceEdit } from '../src/lib/records/comments.ts';
-
-test('in place: my own latest comment is edited; anyone else\'s becomes a NEW comment (throw proof: overwrite of u2\'s words by u1)', () => {
-    const mine = { id: 'c1', authorId: 'u1', body: 'bel klant', mentions: false };
-    assert.deepEqual(inPlaceEdit(mine, 'u1'), { kind: 'edit', id: 'c1', text: 'bel klant' });
-    assert.deepEqual(inPlaceEdit(mine, 'u2'), { kind: 'add', text: '' });
-    assert.deepEqual(inPlaceEdit({ ...mine, mentions: true }, 'u1'), { kind: 'add', text: '' });   // an edit would strip the @mention
-    assert.deepEqual(inPlaceEdit(null, 'u1'), { kind: 'add', text: '' });
-    assert.deepEqual(inPlaceEdit(mine, null), { kind: 'add', text: '' });
 });

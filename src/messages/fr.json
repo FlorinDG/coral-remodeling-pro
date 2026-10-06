@@ -255,6 +255,7 @@
   },
   "Admin": {
     "dbHeader": {
+      "newProforma": "Nouvelle proforma",
       "editCustomFields": "Modifier les champs personnalisés",
       "editSchemaFields": "Modifier les champs du schéma",
       "draftOnlyDelete": "Seuls les brouillons peuvent être supprimés",

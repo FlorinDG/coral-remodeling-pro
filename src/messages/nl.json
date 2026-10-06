@@ -256,6 +256,7 @@
   },
   "Admin": {
     "dbHeader": {
+      "newProforma": "Nieuwe proforma",
       "editCustomFields": "Aangepaste velden bewerken",
       "editSchemaFields": "Schemavelden bewerken",
       "draftOnlyDelete": "Enkel concepten kunnen worden verwijderd",

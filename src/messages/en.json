@@ -256,6 +256,7 @@
   },
   "Admin": {
     "dbHeader": {
+      "newProforma": "New proforma",
       "editCustomFields": "Edit Custom Fields",
       "editSchemaFields": "Edit Schema Fields",
       "draftOnlyDelete": "Only drafts can be deleted",

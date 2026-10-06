@@ -14,6 +14,9 @@ import { gridAccess } from '@/lib/records/grid-access';
 import { invoiceFromProforma, PROFORMA_FIELD } from '@/lib/records/proforma-invoice';
 import { getNextDocumentNumber } from '@/app/actions/next-document-number';
 import { createPrismaInvoice } from '@/app/actions/create-invoice';
+import { systemDatabaseId } from '@/lib/data/system-databases';
+import { proformaSeries } from '@/lib/records/series';
+import { zonedParts } from '@/lib/kernel/shift-time';
 
 export type ProformaInvoiceAnswer =
     | { ok: true; invoiceId: string; existed: boolean; page?: { id: string; databaseId: string; properties: Record<string, unknown>; blocks: unknown[]; blocksVersion: number; updatedAt: string } }
@@ -66,4 +69,32 @@ export async function createInvoiceFromProforma(proformaId: string): Promise<Pro
         ok: true, invoiceId, existed: false,
         page: { id: invoiceId, databaseId: proforma.databaseId, properties: saved.properties, blocks: built.blocks, blocksVersion: saved.blocksVersion, updatedAt: saved.updatedAt },
     };
+}
+
+/**
+ * PROFORMA-2 · "Nieuwe proforma": a draft proforma numbered in its OWN series (PF-2026-001 — Florin 2026-10-06), by the
+ * record door inside its transaction. Since PROFORMA-1 the type is fixed at creation: this is the one way a proforma
+ * is made (before, an invoice was switched to "Proforma" — titled "Proforma", no number).
+ */
+export async function createProforma(): Promise<{ ok: true; id: string; number: string; page: { id: string; databaseId: string; properties: Record<string, unknown>; blocks: unknown[]; blocksVersion: number; updatedAt: string } } | { ok: false; error: 'forbidden' | 'failed' }> {
+    const session = await auth();
+    const tenantId = session?.user?.tenantId;
+    const userId = session?.user?.id;
+    const role = (session?.user as { role?: string } | undefined)?.role;
+    if (!tenantId || !userId || isWorkforceRole(role)) return { ok: false, error: 'forbidden' };
+    if (!gridAccess({ userRole: role, logicalKey: 'invoices', isEnterprise: true }).create) return { ok: false, error: 'forbidden' };
+
+    const db = await scopeFromSession();
+    const invoicesDbId = await systemDatabaseId(tenantId, 'invoices');
+    const id = uuidv4();
+    const year = zonedParts(new Date()).date.slice(0, 4);   // the business year (Brussels)
+    const saved = await saveRecord(db, { pageId: id, fields: {} }, {
+        by: userId,
+        createIfMissing: { databaseId: invoicesDbId, properties: { docType: 'opt-proforma', status: 'opt-draft' }, createdBy: userId, series: proformaSeries(year) },
+    });
+    if (!saved.ok) return { ok: false, error: 'failed' };
+    const number = String(saved.properties.title ?? '');
+    const ledger = await createPrismaInvoice(id, number, 'PROFORMA');
+    if (!ledger.success) console.error('[createProforma] invoice ledger row not created:', ledger.error);
+    return { ok: true, id, number, page: { id, databaseId: invoicesDbId, properties: saved.properties, blocks: [], blocksVersion: saved.blocksVersion, updatedAt: saved.updatedAt } };
 }

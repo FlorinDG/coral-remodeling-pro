@@ -12,12 +12,17 @@
 import type { Prisma } from '@prisma/client';
 import type { TenantScopedClient } from '@/lib/data/scope';
 import { applyRecordIntent, deleteRefusal, type RecordIntent, type RecordRefusal } from '@/lib/records/record-intent';
+import { nextInSeries, type Series } from '@/lib/records/series';
 
 export interface RecordMeta { coverImage?: string | null; icon?: string | null; order?: number | null; driveFolderId?: string | null }
 
 /** When the record does not exist yet (a page minted by the browser), it is created in this database. */
 /** `assignedTo` is the ROW's column (access-control and the WorkHub "My tasks" read it), not a property. */
-export interface CreateIfMissing { databaseId: string; properties: Record<string, unknown>; blocks?: unknown[]; createdBy: string; assignedTo?: string[] }
+export interface CreateIfMissing {
+    databaseId: string; properties: Record<string, unknown>; blocks?: unknown[]; createdBy: string; assignedTo?: string[];
+    /** PROFORMA-2: number the new record's title in this series — read and assigned INSIDE this transaction (lib/records/series). */
+    series?: Series;
+}
 
 export type SaveRecordResult =
     | { ok: true; created: boolean; changed: boolean; updatedAt: string; blocksVersion: number; properties: Record<string, unknown>; keptServer: Record<string, unknown>; ignored: string[] }
@@ -40,10 +45,20 @@ export async function saveRecord(
             // The database must be this tenant's (the scoped client finds only the tenant's databases).
             const parent = await tx.globalDatabase.findFirst({ where: { id: c.databaseId }, select: { id: true } });
             if (!parent) return { ok: false as const, refusal: { code: 'NOT_FOUND' as const } };
+            // A series number is read and assigned in THIS serializable transaction: a concurrent creation in the same
+            // series conflicts, is retried (P2034 below) and reads the number this one took.
+            let properties = c.properties;
+            if (c.series) {
+                const taken = await tx.globalPage.findMany({
+                    where: { databaseId: c.databaseId, properties: { path: ['title'], string_starts_with: c.series.prefix } },
+                    select: { properties: true },
+                });
+                properties = { ...properties, title: nextInSeries(taken.map(p => String(((p.properties || {}) as Record<string, unknown>).title ?? '')), c.series) };
+            }
             const saved = await tx.globalPage.create({
                 data: {
                     id: intent.pageId, databaseId: c.databaseId,
-                    properties: c.properties as Prisma.InputJsonValue,
+                    properties: properties as Prisma.InputJsonValue,
                     blocks: (c.blocks ?? []) as Prisma.InputJsonValue,
                     blocksVersion: 1,
                     createdBy: c.createdBy, lastEditedBy: opts.by, assignedTo: c.assignedTo ?? [],

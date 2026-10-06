@@ -465,3 +465,11 @@ test('THROW PROOF: every returned i18n key resolves to a valid string across all
         }
     }
 });
+
+test('PROFORMA-2: the proformas screen declares "Nieuwe proforma" — the one way a proforma is made; other invoice screens do not', () => {
+    const pf = computeDatabaseHeader({ role: 'invoices', surfaceKey: 'docType=opt-proforma', databaseName: 'Facturen', access: FULL_ACCESS } as DatabaseHeaderContext);
+    assert.deepEqual(pf.actions.map(a => a.id), ['new-proforma']);
+    for (const l of LOCALES) assert.ok(getTranslation(pf.actions[0].labelKey.replace(/^Admin\./, 'Admin.'), l), `missing ${l}`);
+    const inv = computeDatabaseHeader({ role: 'invoices', surfaceKey: 'docType=opt-invoice', databaseName: 'Facturen', access: FULL_ACCESS } as DatabaseHeaderContext);
+    assert.deepEqual(inv.actions, []);
+});

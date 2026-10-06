@@ -36,7 +36,8 @@ export type ActionId =
     | 'manual-ticket'
     | 'scan-invoice'
     | 'manual-invoice'
-    | 'peppol-sync';
+    | 'peppol-sync'
+    | 'new-proforma';
 
 export interface ActionItem {
     id: ActionId;
@@ -132,6 +133,9 @@ export function computeDatabaseHeader(ctx: DatabaseHeaderContext): DatabaseHeade
             { id: 'bulk-upload-tickets', labelKey: 'Admin.nav.pages.bulkUploadTickets', icon: 'files', variant: 'secondary' },
             { id: 'manual-ticket', labelKey: 'Admin.nav.pages.manualTicket', icon: 'plus', variant: 'outline' }
         );
+    } else if (ctx.role === 'invoices' && ctx.surfaceKey === 'docType=opt-proforma') {
+        // PROFORMA-2: the one way a proforma is made (numbered PF-YYYY-NNN by the record door)
+        actions.push({ id: 'new-proforma', labelKey: 'Admin.dbHeader.newProforma', icon: 'plus', variant: 'primary' });
     } else if (ctx.role === 'expenses' && (!ctx.surfaceKey || ctx.surfaceKey === 'docType=opt-invoice')) {
         actions.push(
             { id: 'scan-invoice', labelKey: 'Admin.nav.pages.scanUpload', icon: 'camera', variant: 'primary' },

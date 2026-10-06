@@ -279,3 +279,23 @@ key the rule can return resolves in `nl.json`.
 remove what the rule does not decide from (C6: `gridV2Enabled` decides nothing).
 **New since M1:** the V2 toolbar gained "Tekst afbreken" (per-view `wrapText`) — add `showWrapText` (table views).
 GO M2 after R1–R6.
+
+## PLANNER REVIEW — M2 · 2026-10-06 · ✅ ACCEPTED after one fix by the planner · GO M3 with C7–C10 first
+Read `48e664e0` + report `7022027e`. R1–R6 applied in the rule (gridAccess, the grid's gates, no own financial list,
+keys that exist, no link without an id, `showWrapText`). `DatabaseHeader.tsx` now renders view tabs, the schema link,
+"Oud raster", properties / filter / sort / export / import / accountant export / wrap for every view; grids and
+views mount with `hideHeader` / `hideToolbar`.
+**Fixed by the planner:** `DatabaseClone` fed `gridAccess` with `activeModules.includes('ENTERPRISE')` — ENTERPRISE
+is a PLAN, not a module (`TenantContext.isEnterprise`); an Enterprise tenant's bestek header would have lost import,
+delete and the schema link. Now `isEnterprise` from the tenant.
+**Corrections — first in M3:**
+- **C7 · Export follows the selection again.** The header passes `selectedRowIds: new Set()` — with rows selected it
+  exports everything filtered. The selection lives in the grid; lift it (DatabaseClone state, or a small store) so
+  the header and the grid share ONE selection, and export the grid's SORTED rows.
+- **C8 · Filtered rows computed once.** The header runs `useFilteredPages` a second time next to the grid's — on a
+  large database that is double work per keystroke. One computation, shared.
+- **C9 · No dead toolbar.** `NotionGridV2` keeps its own toolbar behind `!hideToolbar` (incl. a second wrap toggle):
+  every mount now hides it — delete that branch (keep the selection bar).
+- **C10 · The header's two `document.addEventListener('mousedown')`** (view menu, add-view selector) — moved code,
+  accepted for now; M3 replaces them with the backdrop pattern (`v2/cells.tsx` SelectCell: a fixed backdrop that
+  closes on mousedown and stops click propagation) — no document listeners in the database screens.

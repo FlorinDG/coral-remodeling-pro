@@ -54,7 +54,7 @@ interface DatabaseCloneProps {
 
 export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, hideFooterNew, defaultFilter, onOpenRecord }: DatabaseCloneProps) {
   // Resolve the base locked DB name to the tenant-scoped actual ID
-  const { activeModules, resolveDbId } = useTenant();
+  const { activeModules, resolveDbId, isEnterprise } = useTenant();
   const { data: session } = useSession();
   const resolvedId = resolveDbId(databaseId);
   const database = useDatabaseStore(state => state.getDatabase(resolvedId));
@@ -93,8 +93,8 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
   const access = useMemo(() => gridAccess({
     userRole: session?.user?.role as string | undefined,
     logicalKey: role,
-    isEnterprise: activeModules.includes('ENTERPRISE'),
-  }), [session?.user?.role, role, activeModules]);
+    isEnterprise,   // the PLAN (TenantContext: ENTERPRISE / FOUNDER / CUSTOM) — ENTERPRISE is not a module
+  }), [session?.user?.role, role, isEnterprise]);
 
     const handleOpenEditor = (pageId: string) => {
     if (role === 'quotations') {

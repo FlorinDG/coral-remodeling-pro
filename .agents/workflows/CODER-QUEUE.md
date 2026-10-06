@@ -22,10 +22,10 @@
 📄 `coder-directive-r1-7-b1.md` — notifications → calendar → tenant, one commit per module; each migrated file leaves
 the R1-5 allowlist and lowers `CEILING` by the files removed, from its current value. STOP on any cross-tenant read. Report `.agents/reports/R1-7-B1.md`.
 
-## 2 · `DB-HEADER-1` — one database header across the ERP — ✅ M1 ACCEPTED · 🟩 GO M2 (stop after M2)
-📄 `coder-directive-db-header-1.md` + **`.agents/plans/DB-HEADER-1.md` § PLANNER REVIEW — M1 (R1–R6, binding, FIRST
-in M2)**: reuse `gridAccess`, the grid's import/delete gates, the V2 switch gate, keys that exist (throw proof),
-no link without a database id, no unused context; add `showWrapText`. Report `.agents/reports/DB-HEADER-1-M2.md`. Push, STOP.
+## 2 · `DB-HEADER-1` — one database header across the ERP — ✅ M2 ACCEPTED (planner fixed `isEnterprise`) · 🟩 GO M3 (stop after M3)
+📄 `coder-directive-db-header-1.md` + **`.agents/plans/DB-HEADER-1.md` § PLANNER REVIEW — M2 (C7–C10, binding, FIRST
+in M3)**: one shared selection (export follows it, sorted rows), filtered rows computed once, the grid's dead toolbar
+branch deleted, no document listeners in the header. Report `.agents/reports/DB-HEADER-1-M3.md`. Push, STOP.
 
 ## 3 · `R2-1-B` — the remaining direct record writes onto the one door — ✅ M1 ACCEPTED (planner fixed `assignedTo`) · 🟩 GO M2 (stop after M2)
 **Binding for M2: `.agents/plans/R2-1-B.md` § PLANNER REVIEW — M1 (1–3): row columns in the census, top-level imports, honest test names.**

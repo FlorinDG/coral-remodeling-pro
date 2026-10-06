@@ -209,7 +209,7 @@ export const InvoicePDFTemplate = ({
                     ? { fontWeight: 'bold' as const, color: accent, fontSize: 10, textTransform: 'uppercase' as const }
                     : s.sectionText;
                 rows.push(
-                    <View key={block.id} style={sectionStyle}>
+                    <View key={block.id} style={sectionStyle} minPresenceAhead={30}>
                         <Text style={{ ...colDesc, ...textStyle }}>{cleanContent.toUpperCase()}</Text>
                         <Text style={colQty} /><Text style={colUnit} /><Text style={colPrice} />
                         {!hidePrices && <Text style={{ ...colTotal, ...textStyle, textAlign: 'right' }}>€ {blockTotal.toFixed(2)}</Text>}
@@ -217,7 +217,7 @@ export const InvoicePDFTemplate = ({
                 );
             } else if (block.type === 'subsection' || block.type === 'post') {
                 rows.push(
-                    <View key={block.id} style={isStationery ? { ...baseRowStyle, backgroundColor: '#fafafa' } : s.subsectionRow}>
+                    <View key={block.id} style={isStationery ? { ...baseRowStyle, backgroundColor: '#fafafa' } : s.subsectionRow} minPresenceAhead={30}>
                         <Text style={{ ...colDesc, fontWeight: 'bold' }}>{cleanContent}</Text>
                         <Text style={colQty} /><Text style={colUnit} /><Text style={colPrice} />
                         {!hidePrices && <Text style={{ ...colTotal, fontWeight: 'bold', textAlign: 'right' }}>€ {blockTotal.toFixed(2)}</Text>}
@@ -226,7 +226,7 @@ export const InvoicePDFTemplate = ({
             } else if (block.type === 'image') {
                 if (block.content && (block.content.startsWith('http') || block.content.startsWith('data:'))) {
                     rows.push(
-                        <View key={block.id} style={{ ...baseRowStyle, borderBottom: undefined, paddingLeft: depth * 10 + (isStationery ? 40 : 6), paddingVertical: 8, flexDirection: 'column' as const, gap: 4 }}>
+                        <View key={block.id} wrap={false} style={{ ...baseRowStyle, borderBottom: undefined, paddingLeft: depth * 10 + (isStationery ? 40 : 6), paddingVertical: 8, flexDirection: 'column' as const, gap: 4 }}>
                             <Image src={block.content} style={{ width: 180, height: 120, borderRadius: 4, marginTop: 4, marginBottom: 4 }} />
                         </View>
                     );
@@ -258,7 +258,8 @@ export const InvoicePDFTemplate = ({
                 const pad = isStationery ? 40 : (isT1 || isT4 ? 28 : 6);
                 const unitPrice = blockTotal / (block.quantity || 1);
                 rows.push(
-                    <View key={block.id} style={{ ...baseRowStyle, paddingLeft: depth > 0 ? depth * 10 + pad : pad }}>
+                    // PDF-FIT-2: a row never splits across pages (wrap={false})
+                    <View key={block.id} wrap={false} style={{ ...baseRowStyle, paddingLeft: depth > 0 ? depth * 10 + pad : pad }}>
                         <Text style={colDesc}>
                             {renderRichText(block.content, colDesc)}
                         </Text>
@@ -392,7 +393,10 @@ export const InvoicePDFTemplate = ({
                             </View>
                         </View>
 
-                        <View style={{ flexDirection: 'row', backgroundColor: accent, paddingVertical: 7, paddingHorizontal: 40, fontWeight: 'bold', fontSize: 8.5, textTransform: 'uppercase', color: '#ffffff', letterSpacing: 0.3 }}>
+                        {/* PDF-FIT-2: the table is ONE view whose header is `fixed` — repeated at the top of every page the
+                            table continues on */}
+                        <View>
+                        <View fixed style={{ flexDirection: 'row', backgroundColor: accent, paddingVertical: 7, paddingHorizontal: 40, fontWeight: 'bold', fontSize: 8.5, textTransform: 'uppercase', color: '#ffffff', letterSpacing: 0.3 }}>
                             <Text style={colDesc}>{t('description', lang)}</Text>
                             <Text style={colQty}>{t('qty', lang)}</Text>
                             <Text style={colUnit}>{t('unit', lang)}</Text>
@@ -401,6 +405,7 @@ export const InvoicePDFTemplate = ({
                         </View>
 
                         {renderBlocks(blocks)}
+                        </View>
 
                         {/* Legal + Totals + Payment Block bottom-aligned */}
                         <View style={{ marginTop: 'auto', paddingTop: 16 }} wrap={false}>
@@ -658,8 +663,9 @@ export const InvoicePDFTemplate = ({
                 {/* Header & Client & Metadata Section */}
                 {renderInspiredHeader()}
 
-                {/* Table Header */}
-                <View style={s.tableHeaderRow}>
+                {/* Table Header + Content — PDF-FIT-2: one view, the header `fixed` (repeated on every page it continues on) */}
+                <View>
+                <View fixed style={s.tableHeaderRow}>
                     <Text style={colDesc}>{t('description', lang)}</Text>
                     <Text style={colQty}>{t('qty', lang)}</Text>
                     <Text style={colUnit}>{t('unit', lang)}</Text>
@@ -667,8 +673,8 @@ export const InvoicePDFTemplate = ({
                     {!hidePrices && <Text style={colTotal}>{t('total_excl', lang)}</Text>}
                 </View>
 
-                {/* Content */}
                 {renderBlocks(blocks)}
+                </View>
 
                 {/* Legal + Totals + Payment Block bottom-aligned */}
                 <View style={{ marginTop: 'auto', paddingTop: 16 }} wrap={false}>

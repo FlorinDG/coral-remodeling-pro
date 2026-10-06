@@ -168,7 +168,7 @@ export const QuotationPDFTemplate = ({
                     ? { fontWeight: 'bold' as const, color: accent, fontSize: 10, textTransform: 'uppercase' as const }
                     : s.sectionText;
                 rows.push(
-                    <View key={block.id} style={{ ...sectionStyle, ...inactiveStyle }}>
+                    <View key={block.id} style={{ ...sectionStyle, ...inactiveStyle }} minPresenceAhead={30}>
                         <Text style={{ ...colDesc, ...textStyle, ...inactiveStyle }}>{cleanContent.toUpperCase()}{block.isOptional ? ' [OPTIONAL]' : ''}</Text>
                         <Text style={colQty} /><Text style={colUnit} /><Text style={colPrice} />
                         <Text style={{ ...colTotal, ...textStyle, ...inactiveStyle, textAlign: 'right' }}>€  {blockTotal.toFixed(2)}</Text>
@@ -176,7 +176,7 @@ export const QuotationPDFTemplate = ({
                 );
             } else if (block.type === 'subsection' || block.type === 'post') {
                 rows.push(
-                    <View key={block.id} style={{ ...(isStationery ? { ...baseRowStyle, backgroundColor: '#fafafa' } : s.subsectionRow), ...inactiveStyle }}>
+                    <View key={block.id} style={{ ...(isStationery ? { ...baseRowStyle, backgroundColor: '#fafafa' } : s.subsectionRow), ...inactiveStyle }} minPresenceAhead={30}>
                         <Text style={{ ...colDesc, fontWeight: 'bold', ...inactiveStyle }}>{cleanContent}{block.isOptional ? ' [OPTIONAL]' : ''}</Text>
                         <Text style={colQty} /><Text style={colUnit} /><Text style={colPrice} />
                         <Text style={{ ...colTotal, fontWeight: 'bold', ...inactiveStyle, textAlign: 'right' }}>€  {blockTotal.toFixed(2)}</Text>
@@ -349,8 +349,9 @@ export const QuotationPDFTemplate = ({
                             </View>
                         </View>
 
-                        {/* Table header */}
-                        <View style={{ flexDirection: 'row', backgroundColor: accent, paddingVertical: 7, paddingHorizontal: 40, fontWeight: 'bold', fontSize: 8.5, textTransform: 'uppercase', color: '#ffffff', letterSpacing: 0.3 }}>
+                        {/* Table header + rows — PDF-FIT-2: one view, the header `fixed` (repeated on every page it continues on) */}
+                        <View>
+                        <View fixed style={{ flexDirection: 'row', backgroundColor: accent, paddingVertical: 7, paddingHorizontal: 40, fontWeight: 'bold', fontSize: 8.5, textTransform: 'uppercase', color: '#ffffff', letterSpacing: 0.3 }}>
                             <Text style={colDesc}>{t('description', lang)}</Text>
                             <Text style={colQty}>{t('qty', lang)}</Text>
                             <Text style={colUnit}>{t('unit', lang)}</Text>
@@ -358,8 +359,8 @@ export const QuotationPDFTemplate = ({
                             <Text style={colTotal}>{t('total_excl', lang)}</Text>
                         </View>
 
-                        {/* Rows */}
                         {renderBlocks(blocks)}
+                        </View>
 
                         {/* Legal texts — above totals */}
                         <View wrap={false}>
@@ -546,7 +547,9 @@ export const QuotationPDFTemplate = ({
                 {/* Header & Client & Metadata Section */}
                 {renderInspiredHeader()}
 
-                <View style={s.tableHeaderRow}>
+                {/* PDF-FIT-2: one view, the header `fixed` (repeated on every page the table continues on) */}
+                <View>
+                <View fixed style={s.tableHeaderRow}>
                     <Text style={colDesc}>{t('description', lang)}</Text>
                     <Text style={colQty}>{t('qty', lang)}</Text>
                     <Text style={colUnit}>{t('unit', lang)}</Text>
@@ -555,6 +558,7 @@ export const QuotationPDFTemplate = ({
                 </View>
 
                 {renderBlocks(blocks)}
+                </View>
 
                 <View wrap={false}>
                     {/* Medecontractant Legal Notice */}

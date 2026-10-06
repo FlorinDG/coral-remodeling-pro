@@ -27,8 +27,8 @@ the R1-5 allowlist and lowers `CEILING` by the files removed, from its current v
 in M3)**: one shared selection (export follows it, sorted rows), filtered rows computed once, the grid's dead toolbar
 branch deleted, no document listeners in the header. Report `.agents/reports/DB-HEADER-1-M3.md`. Push, STOP.
 
-## 3 · `R2-1-B` — the remaining direct record writes onto the one door — ✅ M1 ACCEPTED (planner fixed `assignedTo`) · 🟩 GO M2 (stop after M2)
-**Binding for M2: `.agents/plans/R2-1-B.md` § PLANNER REVIEW — M1 (1–3): row columns in the census, top-level imports, honest test names.**
+## 3 · `R2-1-B` — the remaining direct record writes onto the one door — ✅ M2 ACCEPTED · 🟩 GO M3 (stop after M3)
+**Binding for M3: `.agents/plans/R2-1-B.md` § PLANNER REVIEW — M2 (notes 1–2) + M1 (1–3).**
 📄 `coder-directive-r2-1-b.md` — re-measure the census, every direct GlobalPage write → `saveRecord` / `deleteRecord`
 on the caller's scoped door (session / system / portal), or justified in writing. Plan `.agents/plans/R2-1-B.md`, STOP.
 

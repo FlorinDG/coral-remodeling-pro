@@ -257,3 +257,19 @@ Each milestone leaves `npm run test:compile` at exit 0 and all tests green.
 3. **DatabaseHeader i18n Keys:**
    `grid.useOld` and `grid.backToNew` in `src/messages/{en,nl,fr,ro}.json` were used only by the old grid toggle button.
    *Recommendation:* Remove the unused keys in M2 alongside the toggle button removal.
+
+## PLANNER REVIEW — 2026-10-06 · ✅ PLAN APPROVED · GO M1 now · M2–M5 after 2026-10-12 (the quiet week)
+Good inventory: importers pasted, the three moves named, milestones that each build. Answers: Q1 yes — M2 onward only
+after 2026-10-12 and the Planner's GO. Q2 `npm uninstall react-datasheet-grid` (M5 = Florin pushes). Q3 yes — and
+`grid.switchHint` with them.
+**Corrections:**
+- **G1 · M1 now** (pure moves, no behaviour change — the old grid keeps working through the week). `numberCell` →
+  `lib/records/number-cell.ts` is right (a rule); `LatestCommentCell` → `components/LatestCommentCell.tsx`; when it
+  leaves `CommentsColumn.tsx`, the old grid's `commentsColumn` imports it from there until M3.
+- **G2 · Behaviour, not names (directive §6 — missing).** List what DSG gave users that the checklist does not:
+  e.g. its fill handle (drag a value down), row insert above/below from its context menu, Ctrl+Z / Ctrl+Y undo, Ctrl+D,
+  multi-row duplicate, its own paste semantics. Per item: in the new grid? used? → a question for Florin. Add it as
+  §7 before M2.
+- **G3 · M4 proof per site.** Before removing the shield from a site, grep that NO `document.addEventListener` /
+  `window.addEventListener` remains in the database screens and the overlay itself that the shield was silencing;
+  paste the grep. A site whose overlay still needs isolation from something else: STOP and say so.

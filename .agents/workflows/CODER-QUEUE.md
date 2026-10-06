@@ -1,5 +1,5 @@
 # CORAL — CODER QUEUE
-**Current as of 2026-10-05.** This file is always the live queue — superseded items are removed, not renamed.
+**Current as of 2026-10-06.** Suggested order: GRID-REPLACE-5 M1 → LOC-GRID-1 → DB-HEADER-1 M4 → R2-1-B M4. This file is always the live queue — superseded items are removed, not renamed.
 🛑 **The filename never carries a date.** `PLANNER-HANDOVER.md` §7 points here permanently.
 
 **Work top to bottom. Each item is a separate commit set. Report after each.**
@@ -22,25 +22,22 @@
 📄 `coder-directive-r1-7-b1.md` — notifications → calendar → tenant, one commit per module; each migrated file leaves
 the R1-5 allowlist and lowers `CEILING` by the files removed, from its current value. STOP on any cross-tenant read. Report `.agents/reports/R1-7-B1.md`.
 
-## 2 · `DB-HEADER-1` — one database header across the ERP — ✅ M2 ACCEPTED (planner fixed `isEnterprise`) · 🟩 GO M3 (stop after M3)
-📄 `coder-directive-db-header-1.md` + **`.agents/plans/DB-HEADER-1.md` § PLANNER REVIEW — M2 (C7–C10, binding, FIRST
-in M3)**: one shared selection (export follows it, sorted rows), filtered rows computed once, the grid's dead toolbar
-branch deleted, no document listeners in the header. Report `.agents/reports/DB-HEADER-1-M3.md`. Push, STOP.
+## 2 · `DB-HEADER-1` — one database header across the ERP — ✅ M3 ACCEPTED · 🟩 GO M4 (stop after M4)
+📄 `coder-directive-db-header-1.md` + **`.agents/plans/DB-HEADER-1.md` § PLANNER REVIEW — M3 (C11 first: actions carry
+busy / disabled + reason)**, then M4 = CRM & Projects. Report `.agents/reports/DB-HEADER-1-M4.md`. Push, STOP.
 
-## 3 · `R2-1-B` — the remaining direct record writes onto the one door — ✅ M2 ACCEPTED · 🟩 GO M3 (stop after M3)
-**Binding for M3: `.agents/plans/R2-1-B.md` § PLANNER REVIEW — M2 (notes 1–2) + M1 (1–3).**
+## 3 · `R2-1-B` — the remaining direct record writes onto the one door — ✅ M3 ACCEPTED · 🟩 GO M4 (stop after M4)
+**Binding for M4: `.agents/plans/R2-1-B.md` § PLANNER REVIEW — M3 note (scoped client to the dedupe, no `as never`).** M4 = portal routes & export route.
 📄 `coder-directive-r2-1-b.md` — re-measure the census, every direct GlobalPage write → `saveRecord` / `deleteRecord`
 on the caller's scoped door (session / system / portal), or justified in writing. Plan `.agents/plans/R2-1-B.md`, STOP.
 
-## 4 · `LOC-GRID-1` — the new grid speaks the user's language — 🟩 GO after DB-HEADER-1 M2 is reviewed (one milestone, stop)
+## 4 · `LOC-GRID-1` — the new grid speaks the user's language — 🟩 GO (DB-HEADER-1 M3 reviewed; one milestone, stop)
 📄 `coder-directive-loc-grid-1.md` — every visible string in `v2/NotionGridV2.tsx` + `v2/cells.tsx` → `Admin.grid.*`
 in en/nl/fr/ro; strings only; `tests/i18n.test.ts` is the guard (throw proof). Report `.agents/reports/LOC-GRID-1.md`.
 
-## 5 · `GRID-REPLACE-5` — removing the old grid — 🟩 GO for the PLAN only (stop after the plan)
-📄 `coder-directive-grid-replace-5.md` — inventory, importers, moves, milestones for deleting NotionGrid + DSG +
-the 11 shield sites + the switch. Plan `.agents/plans/GRID-REPLACE-5.md`. Nothing in `src/` changes. Can run any
-time (read-only) — do it while waiting for a review.
-The default flipped 2026-10-05; the old grid may be deleted from **2026-10-12** — the plan is wanted before then.
+## 5 · `GRID-REPLACE-5` — removing the old grid — ✅ PLAN APPROVED · 🟩 GO M1 now (stop after M1) · M2–M5 after 2026-10-12
+📄 `.agents/plans/GRID-REPLACE-5.md` § PLANNER REVIEW (G1–G3): M1 = the three moves only; add §7 (DSG behaviours users may
+rely on — fill handle, row insert, undo…) for Florin before M2. Report `.agents/reports/GRID-REPLACE-5-M1.md`.
 
 ## ✅ `R2-5` — DONE WITH CORRECTIONS (review 2026-10-02, `MORNING-2026-10-02.md` §2)
 Store tests accepted. 11 of 13 OCC tests tested a COPY of the merge loop (§3a) — removed on

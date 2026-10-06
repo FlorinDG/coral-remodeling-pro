@@ -299,3 +299,14 @@ delete and the schema link. Now `isEnterprise` from the tenant.
 - **C10 · The header's two `document.addEventListener('mousedown')`** (view menu, add-view selector) — moved code,
   accepted for now; M3 replaces them with the backdrop pattern (`v2/cells.tsx` SelectCell: a fixed backdrop that
   closes on mousedown and stops click propagation) — no document listeners in the database screens.
+
+## PLANNER REVIEW — M3 · 2026-10-06 · ✅ ACCEPTED · GO M4
+Read `d76ec6a8` + `6e6e9000` + report. C7 one selection (lifted to DatabaseClone, reset on view change; export takes
+the selection in view order) ✅ · C8 filtered + sorted once (the grid still holds rows while editing — holdOrder on
+the passed rows) ✅ · C9 the grid's dead toolbar gone ✅ · C10 backdrops, no document listeners in the header ✅ ·
+tickets and purchase invoices: their action bars now declared in the rule, rendered by the header; Peppol status /
+sync result in `headerExtra` ✅ · the i18n key test now resolves keys in all four locales ✅.
+**C11 (first in M4) · actions need a state.** The old Peppol button was DISABLED and SPUN while syncing and when Peppol
+is not connected; the declared action has neither (a second click is ignored, but nothing shows it). `ActionItem`
+gains `busy?` / `disabled?` (+ a reason key for the tooltip) — the page passes them, the header renders them; the
+rule stays pure (it declares the action, the page owns the state).

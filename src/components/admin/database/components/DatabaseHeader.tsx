@@ -40,7 +40,7 @@ import { AccountantExportDialog } from './AccountantExportDialog';
 import { SpreadsheetImportModal } from './SpreadsheetImportModal';
 import { useDatabaseStore } from '../store';
 import { useExportCSV } from '../hooks/useExportCSV';
-import { useFilteredPages } from '../hooks/useFilteredPages';
+import type { Page } from '../types';
 
 export interface DatabaseHeaderProps {
     database: Database;
@@ -69,6 +69,8 @@ export interface DatabaseHeaderProps {
     onAction?: (actionId: ActionId) => void;
     hardFilter?: { propertyId: string; value: string };
     selectedRowCount?: number;
+    sortedPages?: Page[];
+    selectedRowIds?: Set<string>;
 }
 
 export default function DatabaseHeader({
@@ -98,10 +100,11 @@ export default function DatabaseHeader({
     onAction,
     hardFilter,
     selectedRowCount = 0,
+    sortedPages,
+    selectedRowIds,
 }: DatabaseHeaderProps) {
     const tAdmin = useTranslations('Admin');
     const updateView = useDatabaseStore(state => state.updateView);
-    const allDatabases = useDatabaseStore(state => state.databases);
 
     // Compute canonical header rules
     const role: SystemDatabaseRole | 'custom' =
@@ -135,16 +138,10 @@ export default function DatabaseHeader({
     };
 
     // Export CSV
-    const filteredPages = useFilteredPages({
-        database,
-        activeView: activeView ?? undefined,
-        hardFilter,
-        allDatabases,
-    });
     const exportCsv = useExportCSV({
         database,
-        filteredPages,
-        selectedRowIds: new Set(),
+        filteredPages: sortedPages || [],
+        selectedRowIds,
     });
 
     // Modals
@@ -170,34 +167,11 @@ export default function DatabaseHeader({
     // View Type Selector Dropdown Portal
     const [showViewTypeSelector, setShowViewTypeSelector] = useState(false);
     const [selectorPosition, setSelectorPosition] = useState({ top: 0, left: 0 });
-    const viewSelectorRef = useRef<HTMLDivElement>(null);
     const addViewButtonRef = useRef<HTMLButtonElement>(null);
-
-    useEffect(() => {
-        if (!showViewTypeSelector) return;
-        const handleClick = (e: MouseEvent) => {
-            if (viewSelectorRef.current?.contains(e.target as Node)) return;
-            if (addViewButtonRef.current?.contains(e.target as Node)) return;
-            setShowViewTypeSelector(false);
-        };
-        document.addEventListener('mousedown', handleClick);
-        return () => document.removeEventListener('mousedown', handleClick);
-    }, [showViewTypeSelector]);
 
     // View Context Menu Portal
     const [viewMenuOpenId, setViewMenuOpenId] = useState<string | null>(null);
     const [viewMenuPosition, setViewMenuPosition] = useState({ top: 0, left: 0 });
-    const viewMenuRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        if (!viewMenuOpenId) return;
-        const handleClick = (e: MouseEvent) => {
-            if (viewMenuRef.current?.contains(e.target as Node)) return;
-            setViewMenuOpenId(null);
-        };
-        document.addEventListener('mousedown', handleClick);
-        return () => document.removeEventListener('mousedown', handleClick);
-    }, [viewMenuOpenId]);
 
     const handleOpenViewMenu = (e: React.MouseEvent, viewId: string) => {
         e.preventDefault();
@@ -502,141 +476,153 @@ export default function DatabaseHeader({
                 </div>
             )}
 
-            {/* View Type Selector Portal */}
+            {/* View Type Selector Portal (C10: fixed backdrop pattern) */}
             {showViewTypeSelector && typeof document !== 'undefined' && createPortal(
-                <div
-                    ref={viewSelectorRef}
-                    style={{
-                        position: 'fixed',
-                        top: selectorPosition.top,
-                        left: selectorPosition.left,
-                        zIndex: 9999,
-                    }}
-                    className="w-44 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl shadow-2xl p-1.5 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-100 ring-4 ring-black/5"
-                >
-                    <div className="px-3 py-1.5 text-[10px] font-bold text-neutral-400 uppercase tracking-wider border-b border-neutral-100 dark:border-white/5 mb-1">
-                        Add View Type
+                <>
+                    <div
+                        className="fixed inset-0 z-[99998]"
+                        onMouseDown={() => setShowViewTypeSelector(false)}
+                        onClick={(e) => e.stopPropagation()}
+                    />
+                    <div
+                        style={{
+                            position: 'fixed',
+                            top: selectorPosition.top,
+                            left: selectorPosition.left,
+                            zIndex: 99999,
+                        }}
+                        className="w-44 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl shadow-2xl p-1.5 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-100 ring-4 ring-black/5"
+                    >
+                        <div className="px-3 py-1.5 text-[10px] font-bold text-neutral-400 uppercase tracking-wider border-b border-neutral-100 dark:border-white/5 mb-1">
+                            Add View Type
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => { onAddView?.('table'); setShowViewTypeSelector(false); }}
+                            className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5 rounded-lg transition-colors text-left"
+                        >
+                            <Table2 className="w-4 h-4" /> Table
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => { onAddView?.('board'); setShowViewTypeSelector(false); }}
+                            className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5 rounded-lg transition-colors text-left"
+                        >
+                            <LayoutGrid className="w-4 h-4" /> Board
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => { onAddView?.('calendar'); setShowViewTypeSelector(false); }}
+                            className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5 rounded-lg transition-colors text-left"
+                        >
+                            <CalendarIcon className="w-4 h-4" /> Calendar
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => { onAddView?.('timeline'); setShowViewTypeSelector(false); }}
+                            className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5 rounded-lg transition-colors text-left"
+                        >
+                            <GanttChartSquare className="w-4 h-4" /> Timeline
+                        </button>
                     </div>
-                    <button
-                        type="button"
-                        onClick={() => { onAddView?.('table'); setShowViewTypeSelector(false); }}
-                        className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5 rounded-lg transition-colors text-left"
-                    >
-                        <Table2 className="w-4 h-4" /> Table
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => { onAddView?.('board'); setShowViewTypeSelector(false); }}
-                        className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5 rounded-lg transition-colors text-left"
-                    >
-                        <LayoutGrid className="w-4 h-4" /> Board
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => { onAddView?.('calendar'); setShowViewTypeSelector(false); }}
-                        className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5 rounded-lg transition-colors text-left"
-                    >
-                        <CalendarIcon className="w-4 h-4" /> Calendar
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => { onAddView?.('timeline'); setShowViewTypeSelector(false); }}
-                        className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5 rounded-lg transition-colors text-left"
-                    >
-                        <GanttChartSquare className="w-4 h-4" /> Timeline
-                    </button>
-                </div>,
+                </>,
                 document.body
             )}
 
-            {/* View Context Menu Portal */}
+            {/* View Context Menu Portal (C10: fixed backdrop pattern) */}
             {viewMenuOpenId && typeof document !== 'undefined' && (() => {
                 const targetView = supportedViews.find((v) => v.id === viewMenuOpenId);
                 if (!targetView) return null;
                 return createPortal(
-                    <div
-                        ref={viewMenuRef}
-                        style={{
-                            position: 'fixed',
-                            top: viewMenuPosition.top,
-                            left: viewMenuPosition.left,
-                            zIndex: 9999,
-                        }}
-                        className="w-48 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl shadow-2xl p-1.5 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-100 ring-4 ring-black/5"
-                    >
-                        <div className="px-3 py-1.5 text-[10px] font-bold text-neutral-400 uppercase tracking-wider border-b border-neutral-100 dark:border-white/5 mb-1">
-                            View Options
-                        </div>
-
-                        <button
-                            type="button"
-                            onClick={() => {
-                                handleRenameStart(targetView.id, targetView.name);
-                                setViewMenuOpenId(null);
+                    <>
+                        <div
+                            className="fixed inset-0 z-[99998]"
+                            onMouseDown={() => setViewMenuOpenId(null)}
+                            onClick={(e) => e.stopPropagation()}
+                        />
+                        <div
+                            style={{
+                                position: 'fixed',
+                                top: viewMenuPosition.top,
+                                left: viewMenuPosition.left,
+                                zIndex: 99999,
                             }}
-                            className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5 rounded-lg transition-colors text-left"
+                            className="w-48 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl shadow-2xl p-1.5 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-100 ring-4 ring-black/5"
                         >
-                            <Edit className="w-4 h-4 text-neutral-400" /> Rename View
-                        </button>
-
-                        <div className="mt-1.5 border-t border-neutral-100 dark:border-white/5 pt-1.5">
-                            <div className="px-3 py-1 text-[9px] font-bold text-neutral-400 uppercase tracking-wider mb-1">
-                                Change Type To
+                            <div className="px-3 py-1.5 text-[10px] font-bold text-neutral-400 uppercase tracking-wider border-b border-neutral-100 dark:border-white/5 mb-1">
+                                View Options
                             </div>
-                            <button
-                                type="button"
-                                onClick={() => { onSetViewType?.(targetView.id, 'table'); setViewMenuOpenId(null); }}
-                                className={`flex items-center gap-2 w-full px-3 py-1.5 text-sm rounded-lg transition-colors text-left ${targetView.type === 'table'
-                                    ? 'bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 font-medium'
-                                    : 'text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5'
-                                    }`}
-                            >
-                                <Table2 className="w-4 h-4" /> Table
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => { onSetViewType?.(targetView.id, 'board'); setViewMenuOpenId(null); }}
-                                className={`flex items-center gap-2 w-full px-3 py-1.5 text-sm rounded-lg transition-colors text-left ${targetView.type === 'board'
-                                    ? 'bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 font-medium'
-                                    : 'text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5'
-                                    }`}
-                            >
-                                <LayoutGrid className="w-4 h-4" /> Board
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => { onSetViewType?.(targetView.id, 'calendar'); setViewMenuOpenId(null); }}
-                                className={`flex items-center gap-2 w-full px-3 py-1.5 text-sm rounded-lg transition-colors text-left ${targetView.type === 'calendar'
-                                    ? 'bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 font-medium'
-                                    : 'text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5'
-                                    }`}
-                            >
-                                <CalendarIcon className="w-4 h-4" /> Calendar
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => { onSetViewType?.(targetView.id, 'timeline'); setViewMenuOpenId(null); }}
-                                className={`flex items-center gap-2 w-full px-3 py-1.5 text-sm rounded-lg transition-colors text-left ${targetView.type === 'timeline'
-                                    ? 'bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 font-medium'
-                                    : 'text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5'
-                                    }`}
-                            >
-                                <Clock className="w-4 h-4" /> Timeline
-                            </button>
-                        </div>
 
-                        {supportedViews.length > 1 && (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    handleRenameStart(targetView.id, targetView.name);
+                                    setViewMenuOpenId(null);
+                                }}
+                                className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5 rounded-lg transition-colors text-left"
+                            >
+                                <Edit className="w-4 h-4 text-neutral-400" /> Rename View
+                            </button>
+
                             <div className="mt-1.5 border-t border-neutral-100 dark:border-white/5 pt-1.5">
+                                <div className="px-3 py-1 text-[9px] font-bold text-neutral-400 uppercase tracking-wider mb-1">
+                                    Change Type To
+                                </div>
                                 <button
                                     type="button"
-                                    onClick={() => { onDeleteView?.(targetView.id); setViewMenuOpenId(null); }}
-                                    className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg transition-colors text-left"
+                                    onClick={() => { onSetViewType?.(targetView.id, 'table'); setViewMenuOpenId(null); }}
+                                    className={`flex items-center gap-2 w-full px-3 py-1.5 text-sm rounded-lg transition-colors text-left ${targetView.type === 'table'
+                                        ? 'bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 font-medium'
+                                        : 'text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5'
+                                        }`}
                                 >
-                                    <Trash2 className="w-4 h-4 text-red-500" /> Delete View
+                                    <Table2 className="w-4 h-4" /> Table
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => { onSetViewType?.(targetView.id, 'board'); setViewMenuOpenId(null); }}
+                                    className={`flex items-center gap-2 w-full px-3 py-1.5 text-sm rounded-lg transition-colors text-left ${targetView.type === 'board'
+                                        ? 'bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 font-medium'
+                                        : 'text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5'
+                                        }`}
+                                >
+                                    <LayoutGrid className="w-4 h-4" /> Board
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => { onSetViewType?.(targetView.id, 'calendar'); setViewMenuOpenId(null); }}
+                                    className={`flex items-center gap-2 w-full px-3 py-1.5 text-sm rounded-lg transition-colors text-left ${targetView.type === 'calendar'
+                                        ? 'bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 font-medium'
+                                        : 'text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5'
+                                        }`}
+                                >
+                                    <CalendarIcon className="w-4 h-4" /> Calendar
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => { onSetViewType?.(targetView.id, 'timeline'); setViewMenuOpenId(null); }}
+                                    className={`flex items-center gap-2 w-full px-3 py-1.5 text-sm rounded-lg transition-colors text-left ${targetView.type === 'timeline'
+                                        ? 'bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 font-medium'
+                                        : 'text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5'
+                                        }`}
+                                >
+                                    <Clock className="w-4 h-4" /> Timeline
                                 </button>
                             </div>
-                        )}
-                    </div>,
+
+                            {supportedViews.length > 1 && (
+                                <div className="mt-1.5 border-t border-neutral-100 dark:border-white/5 pt-1.5">
+                                    <button
+                                        type="button"
+                                        onClick={() => { onDeleteView?.(targetView.id); setViewMenuOpenId(null); }}
+                                        className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg transition-colors text-left"
+                                    >
+                                        <Trash2 className="w-4 h-4 text-red-500" /> Delete View
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </>,
                     document.body
                 );
             })()}

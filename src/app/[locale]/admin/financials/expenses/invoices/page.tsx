@@ -6,7 +6,7 @@ import dynamic from 'next/dynamic';
 import ModuleTabs from "@/components/admin/ModuleTabs";
 import { getFilteredFinancialTabs } from "@/config/tabs";
 import { usePageTitle } from '@/hooks/usePageTitle';
-import { RefreshCw, Plus, Loader2, Camera, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { CheckCircle2, AlertTriangle } from 'lucide-react';
 import { useDatabaseStore } from '@/components/admin/database/store';
 import PeppolQuotaBanner from '@/components/admin/PeppolQuotaBanner';
 import { createPageServerFirst } from '@/app/actions/pages';
@@ -80,6 +80,7 @@ export default function ExpensesInvoicesPage() {
     }, []);
 
     const handleSyncPeppol = useCallback(async () => {
+        if (syncing) return;
         setSyncing(true);
         setSyncResult(null);
         try {
@@ -108,7 +109,7 @@ export default function ExpensesInvoicesPage() {
         } finally {
             setSyncing(false);
         }
-    }, [addConfirmedPage, t]);
+    }, [syncing, addConfirmedPage, t]);
 
     // Automatically sync Peppol inbox in the background on mount / when Peppol is ready
     const isPeppolReady = peppolStatus.connected && peppolStatus.peppolRegistered;
@@ -140,11 +141,64 @@ export default function ExpensesInvoicesPage() {
         }
     }, [isCreatingNew, addConfirmedPage, expensesDbId]);
 
+    const handleAction = useCallback((actionId: string) => {
+        if (actionId === 'scan-invoice') {
+            setShowScanUpload(true);
+        } else if (actionId === 'manual-invoice') {
+            handleNewManual();
+        } else if (actionId === 'peppol-sync') {
+            handleSyncPeppol();
+        }
+    }, [handleNewManual, handleSyncPeppol]);
+
+    const peppolHeaderExtra = (
+        <div className="flex items-center gap-2">
+            {/* Sync result badge */}
+            {syncResult && (
+                <div className={`text-xs font-semibold px-2.5 py-1 rounded-lg ${
+                    syncResult.error
+                        ? 'bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400'
+                        : 'bg-green-50 dark:bg-green-950/20 text-green-600 dark:text-green-400'
+                }`}>
+                    {syncResult.error
+                        ? `⚠️ ${syncResult.error}`
+                        : syncResult.count > 0
+                            ? `✓ ${t('nav.pages.peppolSyncSuccess', { count: syncResult.count })}`
+                            : `✓ ${t('nav.pages.peppolInboxUpToDate')}`
+                    }
+                </div>
+            )}
+
+            {/* Peppol connection status badge */}
+            {!peppolStatus.loading && (
+                isPeppolReady ? (
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/30 text-emerald-700 dark:text-emerald-400 text-xs font-bold rounded-lg">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span>{t('nav.pages.peppolConnectedBadge')}</span>
+                        {peppolStatus.peppolId && (
+                            <code className="ml-1 px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-500/20 font-mono text-[10px]">
+                                {peppolStatus.peppolId}
+                            </code>
+                        )}
+                    </div>
+                ) : (
+                    <Link
+                        href="/admin/settings/company-info"
+                        className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/30 text-amber-700 dark:text-amber-400 text-xs font-bold rounded-lg hover:bg-amber-100 dark:hover:bg-amber-950/40 transition-colors"
+                    >
+                        <AlertTriangle className="w-3.5 h-3.5" />
+                        {t('nav.pages.peppolNotConfigured')}
+                    </Link>
+                )
+            )}
+        </div>
+    );
+
     return (
         <div className="flex flex-col w-full h-full">
             <ModuleTabs tabs={getFilteredFinancialTabs(planType)} groupId="financials" />
 
-            {/* Peppol received quota banner — shown between tabs and action bar */}
+            {/* Peppol received quota banner — shown between tabs and header */}
             {quotaWarning?.overQuota && (
                 <PeppolQuotaBanner
                     type="received"
@@ -153,86 +207,14 @@ export default function ExpensesInvoicesPage() {
                     plan={quotaWarning.plan}
                 />
             )}
-            <div className="w-full flex-1 flex flex-col min-h-0">
-                {/* Action bar */}
-                <div className="flex items-center justify-between px-6 pt-4 pb-2 shrink-0">
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={handleSyncPeppol}
-                            disabled={syncing || !isPeppolReady}
-                            className="flex items-center gap-2 px-3 py-2 bg-blue-50 dark:bg-blue-950/20 hover:bg-blue-100 dark:hover:bg-blue-950/40 border border-blue-200 dark:border-blue-800/30 text-blue-700 dark:text-blue-300 text-xs font-bold rounded-lg transition-colors disabled:opacity-50"
-                        >
-                            {syncing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
-                            {t('nav.pages.syncPeppolInbox')}
-                        </button>
-                        <button
-                            onClick={() => setShowScanUpload(true)}
-                            className="flex items-center gap-2 px-3 py-2 bg-orange-50 dark:bg-orange-950/20 hover:bg-orange-100 dark:hover:bg-orange-950/40 border border-orange-200 dark:border-orange-800/30 text-orange-700 dark:text-orange-300 text-xs font-bold rounded-lg transition-colors"
-                        >
-                            <Camera className="w-3.5 h-3.5" />
-                            {t('nav.pages.scanUpload')}
-                        </button>
-                        <button
-                            onClick={handleNewManual}
-                            disabled={isCreatingNew}
-                            className="flex items-center gap-2 px-3 py-2 bg-neutral-100 dark:bg-white/5 hover:bg-neutral-200 dark:hover:bg-white/10 border border-neutral-200 dark:border-white/10 text-neutral-700 dark:text-neutral-300 text-xs font-bold rounded-lg transition-colors disabled:opacity-60"
-                        >
-                            {isCreatingNew ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
-                            {isCreatingNew ? t('nav.pages.creating') : t('nav.pages.manualInvoice')}
-                        </button>
-                    </div>
-
-                    {/* Peppol status + Sync result */}
-                    <div className="flex items-center gap-3">
-                        {/* Sync result badge */}
-                        {syncResult && (
-                            <div className={`text-xs font-semibold px-3 py-1.5 rounded-lg ${
-                                syncResult.error
-                                    ? 'bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400'
-                                    : 'bg-green-50 dark:bg-green-950/20 text-green-600 dark:text-green-400'
-                            }`}>
-                                {syncResult.error
-                                    ? `⚠️ ${syncResult.error}`
-                                    : syncResult.count > 0
-                                        ? `✓ ${t('nav.pages.peppolSyncSuccess', { count: syncResult.count })}`
-                                        : `✓ ${t('nav.pages.peppolInboxUpToDate')}`
-                                }
-                            </div>
-                        )}
-
-                        {/* Peppol connection status badge */}
-                        {!peppolStatus.loading && (
-                            isPeppolReady ? (
-                                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/30 text-emerald-700 dark:text-emerald-400 text-xs font-bold rounded-lg">
-                                    <CheckCircle2 className="w-3.5 h-3.5" />
-                                    <span>{t('nav.pages.peppolConnectedBadge')}</span>
-                                    {peppolStatus.peppolId && (
-                                        <code className="ml-1 px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-500/20 font-mono text-[10px]">
-                                            {peppolStatus.peppolId}
-                                        </code>
-                                    )}
-                                </div>
-                            ) : (
-                                <Link
-                                    href="/admin/settings/company-info"
-                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/30 text-amber-700 dark:text-amber-400 text-xs font-bold rounded-lg hover:bg-amber-100 dark:hover:bg-amber-950/40 transition-colors"
-                                >
-                                    <AlertTriangle className="w-3.5 h-3.5" />
-                                    {t('nav.pages.peppolNotConfigured')}
-                                </Link>
-                            )
-                        )}
-                    </div>
-                </div>
-
-                {/* Database grid */}
-                <div className="flex-1 min-h-0">
-                    <DatabaseCloneDynamic
-                        databaseId="db-expenses"
-                        defaultFilter={{ propertyId: 'docType', value: 'opt-invoice' }}
-                        onOpenRecord={(id) => setSelectedInvoiceId(id)}
-                    />
-                </div>
+            <div className="w-full flex-1 flex flex-col pt-6 min-h-0">
+                <DatabaseCloneDynamic
+                    databaseId="db-expenses"
+                    defaultFilter={{ propertyId: 'docType', value: 'opt-invoice' }}
+                    onOpenRecord={(id) => setSelectedInvoiceId(id)}
+                    headerExtra={peppolHeaderExtra}
+                    onAction={handleAction}
+                />
             </div>
 
             {/* Purchase Invoice Engine modal */}

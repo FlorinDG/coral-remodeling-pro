@@ -5,8 +5,6 @@ import dynamic from 'next/dynamic';
 import ModuleTabs from "@/components/admin/ModuleTabs";
 import { getFilteredFinancialTabs } from "@/config/tabs";
 import { usePageTitle } from '@/hooks/usePageTitle';
-import { Plus, Camera, Loader2, Files } from 'lucide-react';
-import { useTranslations } from 'next-intl';
 import { useTenant } from '@/context/TenantContext';
 import { useDatabaseStore } from '@/components/admin/database/store';
 import { createPageServerFirst } from '@/app/actions/pages';
@@ -31,7 +29,6 @@ export default function ExpenseTicketsPage() {
     const [showCapture, setShowCapture] = useState(false);
     const [showBulk, setShowBulk] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
-    const t = useTranslations('Admin');
     const { planType, resolveDbId } = useTenant();
     const ticketsDbId = resolveDbId('db-tickets');
     const addConfirmedPage = useDatabaseStore(s => s.addConfirmedPage);
@@ -55,40 +52,21 @@ export default function ExpenseTicketsPage() {
         }
     }, [isCreating, addConfirmedPage, ticketsDbId]);
 
+    const handleAction = useCallback((actionId: string) => {
+        if (actionId === 'scan-ticket') {
+            setShowCapture(true);
+        } else if (actionId === 'bulk-upload-tickets') {
+            setShowBulk(true);
+        } else if (actionId === 'manual-ticket') {
+            handleNewManual();
+        }
+    }, [handleNewManual]);
+
     return (
         <div className="flex flex-col w-full h-full">
             <ModuleTabs tabs={getFilteredFinancialTabs(planType)} groupId="financials" />
-            <div className="w-full flex-1 flex flex-col min-h-0">
-                {/* Action bar */}
-                <div className="flex items-center gap-2 px-6 pt-4 pb-2 shrink-0">
-                    <button
-                        onClick={() => setShowCapture(true)}
-                        className="flex items-center gap-2 px-3 py-2 bg-orange-50 dark:bg-orange-950/20 hover:bg-orange-100 dark:hover:bg-orange-950/40 border border-orange-200 dark:border-orange-800/30 text-orange-700 dark:text-orange-300 text-xs font-bold rounded-lg transition-colors"
-                    >
-                        <Camera className="w-3.5 h-3.5" />
-                        {t('nav.pages.scanUploadTicket') || 'Scan / Upload Ticket'}
-                    </button>
-                    <button
-                        onClick={() => setShowBulk(true)}
-                        className="flex items-center gap-2 px-3 py-2 bg-indigo-50 dark:bg-indigo-950/20 hover:bg-indigo-100 dark:hover:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/30 text-indigo-700 dark:text-indigo-300 text-xs font-bold rounded-lg transition-colors"
-                    >
-                        <Files className="w-3.5 h-3.5" />
-                        {t('nav.pages.bulkUploadTickets')}
-                    </button>
-                    <button
-                        onClick={handleNewManual}
-                        disabled={isCreating}
-                        className="flex items-center gap-2 px-3 py-2 bg-neutral-100 dark:bg-white/5 hover:bg-neutral-200 dark:hover:bg-white/10 border border-neutral-200 dark:border-white/10 text-neutral-700 dark:text-neutral-300 text-xs font-bold rounded-lg transition-colors disabled:opacity-60"
-                    >
-                        {isCreating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
-                        {t('nav.pages.manualTicket') || 'Manual Entry'}
-                    </button>
-                </div>
-
-                {/* Database grid */}
-                <div className="flex-1 min-h-0">
-                    <DatabaseCloneDynamic databaseId="db-tickets" />
-                </div>
+            <div className="w-full flex-1 flex flex-col pt-6 min-h-0">
+                <DatabaseCloneDynamic databaseId="db-tickets" onAction={handleAction} />
             </div>
 
             {/* Ticket capture modal */}

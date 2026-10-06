@@ -17,6 +17,9 @@ import { useLocale } from 'next-intl';
 import { getGlobalDatabases } from '@/app/actions/global-databases';
 import DatabaseHeader from '@/components/admin/database/components/DatabaseHeader';
 import { gridAccess } from '@/lib/records/grid-access';
+import { useFilteredPages } from './hooks/useFilteredPages';
+import { sortPages } from '@/lib/records/view-sort';
+import type { ActionId } from '@/lib/records/db-header';
 
 const NotionGridDynamic = dynamic(
   () => import('@/components/admin/database/NotionGrid'),
@@ -50,9 +53,10 @@ interface DatabaseCloneProps {
   hideFooterNew?: boolean;
   defaultFilter?: { propertyId: string; value: string };
   onOpenRecord?: (pageId: string) => void;
+  onAction?: (actionId: ActionId) => void;
 }
 
-export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, hideFooterNew, defaultFilter, onOpenRecord }: DatabaseCloneProps) {
+export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, hideFooterNew, defaultFilter, onOpenRecord, onAction }: DatabaseCloneProps) {
   // Resolve the base locked DB name to the tenant-scoped actual ID
   const { activeModules, resolveDbId, isEnterprise } = useTenant();
   const { data: session } = useSession();
@@ -174,6 +178,24 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
     const own = viewsForSurface(database?.views, surface);
     return own.length > 0 ? own[0].id : null;
   });
+
+  const activeView = supportedViews.find(v => v.id === activeViewId) || supportedViews[0];
+
+  // C8: Precompute filtered and sorted pages once, shared by DatabaseHeader and grids
+  const allDatabases = useDatabaseStore(state => state.databases);
+  const filteredPages = useFilteredPages({
+    database,
+    activeView: activeView ?? undefined,
+    hardFilter: defaultFilter,
+    allDatabases,
+  });
+  const sortedPages = useMemo(() => sortPages(filteredPages, activeView?.sorts ?? [], Date.now()), [filteredPages, activeView?.sorts]);
+
+  // C7: Shared row selection across DatabaseHeader and grids
+  const [selectedRowIds, setSelectedRowIds] = useState<Set<string>>(() => new Set());
+  useEffect(() => {
+    setSelectedRowIds(new Set());
+  }, [activeViewId, resolvedId]);
 
   // A screen without views of its own gets one, once: the base layout without the base view's filters/sorts.
   useEffect(() => {
@@ -324,8 +346,6 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
     );
   }
 
-  const activeView = supportedViews.find(v => v.id === activeViewId) || supportedViews[0];
-
   // Guard: database exists but has no views yet (newly provisioned stub with views: []).
   // Create a default table view and wait for it to be stored before rendering.
   if (!activeView) {
@@ -368,7 +388,10 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
         hasDatabases={hasDatabases}
         oldGrid={oldGrid}
         onToggleOldGrid={() => setOldGrid(!oldGrid)}
+        onAction={onAction}
         hardFilter={defaultFilter}
+        sortedPages={sortedPages}
+        selectedRowIds={selectedRowIds}
       />
       <div 
         className={`flex-1 min-w-0 min-h-0 w-full h-full relative ${projectIdParam || openParam ? 'pointer-events-none' : ''}`}
@@ -377,7 +400,11 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
         {activeView.type === 'table' && gridV2 && (
           <NotionGridV2Dynamic databaseId={database.id} viewId={activeView.id} hideToolbar hardFilter={defaultFilter} onOpenRecord={onOpenRecord} hideFooterNew={!!hideFooterNew}
             lockedSchema={isLockedSchemaDB && !isUngated && !hasDatabases}
-            preventDelete={role === 'invoices' ? (row) => { const s = String((row?.properties as Record<string, unknown>)?.status || 'opt-draft'); return s !== 'opt-draft'; } : undefined} />
+            preventDelete={role === 'invoices' ? (row) => { const s = String((row?.properties as Record<string, unknown>)?.status || 'opt-draft'); return s !== 'opt-draft'; } : undefined}
+            selected={selectedRowIds}
+            onSelectedChange={setSelectedRowIds}
+            sortedPages={sortedPages}
+          />
         )}
         {activeView.type === 'table' && !gridV2 && <NotionGridDynamic databaseId={database.id} viewId={activeView.id} hideHeader lockedSchema={isLockedSchemaDB && !isUngated && !hasDatabases} preventDelete={role === 'invoices' ? (row: Record<string, unknown>) => { const s = String((row?.properties as Record<string, unknown>)?.status || row?.status || 'opt-draft'); return s !== 'opt-draft'; } : undefined} hideFooterNew={!!hideFooterNew} hardFilter={defaultFilter} onOpenRecord={onOpenRecord} />}
         {activeView.type === 'board' && <KanbanViewDynamic databaseId={database.id} viewId={activeView.id} hideHeader hardFilter={defaultFilter} onOpenRecord={onOpenRecord} onOpenEditor={handleOpenEditor} />}

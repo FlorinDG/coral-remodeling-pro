@@ -16,16 +16,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useReactTable, getCoreRowModel, type ColumnDef, type CellContext, type HeaderContext } from '@tanstack/react-table';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { Lock, Maximize2, Plus, Trash2, Download, Upload, CheckCircle2, WrapText } from 'lucide-react';
+import { Lock, Maximize2, Plus, Trash2, CheckCircle2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { SpreadsheetImportModal } from '../components/SpreadsheetImportModal';
-import { AccountantExportDialog } from '../components/AccountantExportDialog';
-import { canRunAccountantExport } from '@/lib/roles';
-import { ACCOUNTANT_EXPORT_SOURCES } from '@/lib/kernel/system-databases';
-import PropertiesDropdown from '../components/PropertiesDropdown';
-import FilterToolbar from '../components/FilterToolbar';
-import SortToolbar from '../components/SortToolbar';
-import { useExportCSV } from '../hooks/useExportCSV';
 import { toast } from 'sonner';
 import { useDatabaseStore } from '../store';
 import type { Page, Property } from '../types';
@@ -61,11 +53,16 @@ interface Props {
     renderTabs?: React.ReactNode;
     /** Hide toolbar when managed externally by DatabaseHeader */
     hideToolbar?: boolean;
+    /** Shared selection lifted to DatabaseClone (C7) */
+    selected?: Set<string>;
+    onSelectedChange?: (selected: Set<string>) => void;
+    /** Precomputed sorted pages from DatabaseClone (C8) */
+    sortedPages?: Page[];
 }
 
 type Editing = { pageId: string; propId: string; text: string } | null;
 
-export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRecord, hideFooterNew, preventDelete, lockedSchema, renderTabs, hideToolbar }: Props) {
+export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRecord, hideFooterNew, preventDelete, lockedSchema, renderTabs, hideToolbar, selected: propSelected, onSelectedChange, sortedPages: propSortedPages }: Props) {
     const database = useDatabaseStore(s => s.databases.find(d => d.id === databaseId));
     const allDatabases = useDatabaseStore(s => s.databases);
     const updatePageProperty = useDatabaseStore(s => s.updatePageProperty);
@@ -75,7 +72,19 @@ export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRec
     const locate = useMemo(() => locatorOf(allDatabases), [allDatabases]);   // for rollups (lib/records/rollup)
 
     const [editing, setEditing] = useState<Editing>(null);
-    const [selected, setSelected] = useState<Set<string>>(new Set());
+    const [localSelected, setLocalSelected] = useState<Set<string>>(new Set());
+    const selected = propSelected ?? localSelected;
+    const setSelected = useCallback((next: Set<string> | ((prev: Set<string>) => Set<string>)) => {
+        if (typeof next === 'function') {
+            const updated = next(selected);
+            if (onSelectedChange) onSelectedChange(updated);
+            else setLocalSelected(updated);
+        } else {
+            if (onSelectedChange) onSelectedChange(next);
+            else setLocalSelected(next);
+        }
+    }, [selected, onSelectedChange]);
+
     const deletePages = useDatabaseStore(s => s.deletePages);
     const frozenIds = useRef<string[] | null>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
@@ -83,8 +92,9 @@ export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRec
     // (and Escape must not commit at all).
     const leaving = useRef(false);
 
-    const filtered = useFilteredPages({ database, activeView, hardFilter, allDatabases });
-    const sorted = useMemo(() => sortPages(filtered, activeView?.sorts ?? [], Date.now()), [filtered, activeView?.sorts]);
+    const filtered = useFilteredPages({ database: propSortedPages ? undefined : database, activeView, hardFilter, allDatabases });
+    const localSorted = useMemo(() => sortPages(filtered, activeView?.sorts ?? [], Date.now()), [filtered, activeView?.sorts]);
+    const sorted = propSortedPages ?? localSorted;
     // While a cell is edited, the rows keep their places (an edit never moves the row under the cursor).
     if (editing && !frozenIds.current) frozenIds.current = sorted.map(p => p.id);
     if (!editing) frozenIds.current = null;
@@ -93,8 +103,6 @@ export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRec
     const { activeModules } = useTenant();
     const hasCRM = (activeModules || []).includes('CRM');
     const columns = useMemo(() => licensedColumns(visibleColumns(database?.properties || [], activeView?.propertiesState), { logicalKey: database?.logicalKey, hasCRM }), [database?.properties, database?.logicalKey, activeView?.propertiesState, hasCRM]);
-    const [importOpen, setImportOpen] = useState(false);
-    const [exportOpen, setExportOpen] = useState(false);
     // Column width: the view's, or the live one while the handle is dragged (pointer capture — no document listeners).
     const [liveWidth, setLiveWidth] = useState<{ id: string; w: number } | null>(null);
     const widthOf = useCallback((propId: string) => (liveWidth?.id === propId ? liveWidth.w : undefined)
@@ -251,7 +259,6 @@ export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRec
     useEffect(() => { virtualizer.measure(); }, [wrap, virtualizer]);   // wrap off: drop the measured heights
     const totalWidth = columns.reduce((w, p) => w + widthOf(p.id), 48);
 
-    const exportCsv = useExportCSV({ database, filteredPages: rows, selectedRowIds: selected });
     if (!database) return null;
     const tableRows = table.getRowModel().rows;
     const allSelected = rows.length > 0 && rows.every(r => selected.has(r.id));
@@ -274,20 +281,16 @@ export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRec
                     <div className="flex items-end pr-2 min-w-0 overflow-x-auto no-scrollbar">{renderTabs}</div>
                 </div>
             )}
-            {/* Toolbar — the same components as the old grid (no copies); DB-HEADER-1 moves them into the one header. */}
-            {(!hideToolbar || selected.size > 0) && (
+            {/* Selection bar — toolbar items are managed by DatabaseHeader (C9) */}
+            {selected.size > 0 && (
                 <div className="flex items-center gap-2 px-2 py-1.5 border-b border-neutral-200 dark:border-white/10">
-                    {selected.size > 0 && (
-                        <>
-                            <span className="text-xs text-neutral-500">{selected.size} geselecteerd</span>
-                            {access.delete && preventDelete !== true && (
-                                <button type="button" onClick={deleteSelected} className="inline-flex items-center gap-1 text-xs text-red-600 hover:underline"><Trash2 className="w-3.5 h-3.5" /> Verwijderen</button>
-                            )}
-                            <button type="button" onClick={() => setSelected(new Set())} className="text-xs text-neutral-500 hover:underline">Wissen</button>
-                        </>
+                    <span className="text-xs text-neutral-500">{selected.size} geselecteerd</span>
+                    {access.delete && preventDelete !== true && (
+                        <button type="button" onClick={deleteSelected} className="inline-flex items-center gap-1 text-xs text-red-600 hover:underline"><Trash2 className="w-3.5 h-3.5" /> Verwijderen</button>
                     )}
+                    <button type="button" onClick={() => setSelected(new Set())} className="text-xs text-neutral-500 hover:underline">Wissen</button>
                     {/* the purchase-invoice inbox: approve the selected records the reading marked "Klaar" — one field each */}
-                    {selected.size > 0 && access.edit && database.logicalKey === 'expenses' && activeView?.id === EXPENSES_INBOX_VIEW && (
+                    {access.edit && database.logicalKey === 'expenses' && activeView?.id === EXPENSES_INBOX_VIEW && (
                         <button type="button" className="inline-flex items-center gap-1 text-xs text-emerald-600 hover:underline"
                                 onClick={() => {
                                     const chk = bulkApproveCheck(rows.filter(r => selected.has(r.id)));
@@ -298,34 +301,6 @@ export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRec
                                 }}>
                             <CheckCircle2 className="w-3.5 h-3.5" /> Goedkeuren
                         </button>
-                    )}
-                    {!hideToolbar && (
-                        <div className="ml-auto flex items-center gap-1">
-                            {canRunAccountantExport((session?.user as { role?: string } | undefined)?.role, !!(session?.user as { isImpersonating?: boolean } | undefined)?.isImpersonating)
-                                && ACCOUNTANT_EXPORT_SOURCES.includes(database.logicalKey as never) && (
-                                <button type="button" onClick={() => setExportOpen(true)} className="flex items-center gap-1.5 px-2 py-1 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded">
-                                    📦 {tAdmin('accountant_export_button')}
-                                </button>
-                            )}
-                            {access.create && !lockedSchema && (
-                                <button type="button" onClick={() => setImportOpen(true)} className="flex items-center gap-1.5 px-2 py-1 text-xs text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-white/5 rounded">
-                                    <Upload className="w-3.5 h-3.5" /> Import
-                                </button>
-                            )}
-                            {activeView && <PropertiesDropdown databaseId={database.id} viewId={activeView.id} />}
-                            {activeView && <FilterToolbar databaseId={database.id} viewId={activeView.id} />}
-                            {activeView && <SortToolbar databaseId={database.id} viewId={activeView.id} />}
-                            {activeView && (
-                                <button type="button" aria-pressed={wrap} title="Lange tekst over meerdere regels tonen (per weergave)"
-                                        onClick={() => updateView(database.id, activeView.id, { wrapText: !wrap })}
-                                        className={`flex items-center gap-1.5 px-2 py-1 text-xs rounded ${wrap ? 'bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300' : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-white/5'}`}>
-                                    <WrapText className="w-3.5 h-3.5" /> Tekst afbreken
-                                </button>
-                            )}
-                            <button type="button" onClick={exportCsv} className="flex items-center gap-1.5 px-2 py-1 text-xs text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-white/5 rounded">
-                                <Download className="w-3.5 h-3.5" /> Export
-                            </button>
-                        </div>
                     )}
                 </div>
             )}
@@ -459,8 +434,6 @@ export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRec
                     </div>
                 </div>
             </div>
-            <SpreadsheetImportModal isOpen={importOpen} onClose={() => setImportOpen(false)} databaseId={database.id} />
-            <AccountantExportDialog isOpen={exportOpen} onClose={() => setExportOpen(false)} />
             {!hideFooterNew && access.create && (
                 <button type="button"
                         onClick={() => {

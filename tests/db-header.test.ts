@@ -10,14 +10,19 @@ import { gridAccess, EXPENSES_INBOX_VIEW } from '../src/lib/records/grid-access.
 
 const FULL_ACCESS = { edit: true, create: true, delete: true };
 
-// Helper to resolve dot-notated translation keys against nl.json
-const nlMessages = JSON.parse(
-    readFileSync(join(process.cwd(), 'src/messages/nl.json'), 'utf8')
-);
+const LOCALES = ['nl', 'en', 'fr', 'ro'] as const;
+type Locale = typeof LOCALES[number];
 
-function getTranslation(path: string): string | undefined {
+const allMessages: Record<Locale, Record<string, unknown>> = {
+    nl: JSON.parse(readFileSync(join(process.cwd(), 'src/messages/nl.json'), 'utf8')),
+    en: JSON.parse(readFileSync(join(process.cwd(), 'src/messages/en.json'), 'utf8')),
+    fr: JSON.parse(readFileSync(join(process.cwd(), 'src/messages/fr.json'), 'utf8')),
+    ro: JSON.parse(readFileSync(join(process.cwd(), 'src/messages/ro.json'), 'utf8')),
+};
+
+function getTranslation(path: string, locale: Locale = 'nl'): string | undefined {
     const parts = path.split('.');
-    let curr: unknown = nlMessages;
+    let curr: unknown = allMessages[locale];
     for (const part of parts) {
         if (!curr || typeof curr !== 'object') return undefined;
         curr = (curr as Record<string, unknown>)[part];
@@ -429,7 +434,7 @@ test('THROW PROOF: accountant export cannot leak to unauthorized roles or source
     });
 });
 
-test('THROW PROOF: every returned i18n key resolves to a valid string in nl.json (R4)', () => {
+test('THROW PROOF: every returned i18n key resolves to a valid string across all locales (nl, en, fr, ro) (R4)', () => {
     // Generate results for multiple combinations
     const testCases: DatabaseHeaderContext[] = [
         { role: 'tickets', databaseName: 'Tickets', databaseId: 'db-tickets', access: FULL_ACCESS },
@@ -439,22 +444,24 @@ test('THROW PROOF: every returned i18n key resolves to a valid string in nl.json
         { role: 'custom', databaseName: 'Custom', databaseId: 'db-custom', access: FULL_ACCESS },
     ];
 
-    for (const ctx of testCases) {
-        const res = computeDatabaseHeader(ctx);
+    for (const locale of LOCALES) {
+        for (const ctx of testCases) {
+            const res = computeDatabaseHeader(ctx);
 
-        for (const act of res.actions) {
-            const tr = getTranslation(act.labelKey);
-            if (!tr) throw new Error(`Missing translation for action key: ${act.labelKey}`);
-        }
+            for (const act of res.actions) {
+                const tr = getTranslation(act.labelKey, locale);
+                if (!tr) throw new Error(`[${locale}] Missing translation for action key: ${act.labelKey}`);
+            }
 
-        if (res.toolbar.preventDeleteMessageKey) {
-            const tr = getTranslation(res.toolbar.preventDeleteMessageKey);
-            if (!tr) throw new Error(`Missing translation for preventDeleteMessageKey: ${res.toolbar.preventDeleteMessageKey}`);
-        }
+            if (res.toolbar.preventDeleteMessageKey) {
+                const tr = getTranslation(res.toolbar.preventDeleteMessageKey, locale);
+                if (!tr) throw new Error(`[${locale}] Missing translation for preventDeleteMessageKey: ${res.toolbar.preventDeleteMessageKey}`);
+            }
 
-        if (res.schemaLink) {
-            const tr = getTranslation(res.schemaLink.labelKey);
-            if (!tr) throw new Error(`Missing translation for schemaLink.labelKey: ${res.schemaLink.labelKey}`);
+            if (res.schemaLink) {
+                const tr = getTranslation(res.schemaLink.labelKey, locale);
+                if (!tr) throw new Error(`[${locale}] Missing translation for schemaLink.labelKey: ${res.schemaLink.labelKey}`);
+            }
         }
     }
 });

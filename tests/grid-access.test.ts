@@ -9,12 +9,7 @@ test('the accountant reads; the bestek is read-only below ENTERPRISE; everyone e
     assert.deepEqual(gridAccess({ userRole: 'TENANT_ADMIN', logicalKey: 'clients', isEnterprise: false }), { edit: true, create: true, delete: true });
 });
 
-import { bulkApproveCheck, licensedColumns } from '../src/lib/records/grid-access.ts';
-
-test('bulk approve only "Klaar" records; the rest are named (throw proof: a "Na te kijken" record approved)', () => {
-    assert.deepEqual(bulkApproveCheck([{ id: 'a', properties: { reviewStatus: 'Klaar' } }]), { ok: true, ids: ['a'] });
-    assert.deepEqual(bulkApproveCheck([{ id: 'a', properties: { reviewStatus: 'Klaar' } }, { id: 'b', properties: { reviewStatus: 'Na te kijken' } }]), { ok: false, notReady: ['b'] });
-});
+import { licensedColumns } from '../src/lib/records/grid-access.ts';
 
 test('"Lead source" hidden on contacts without CRM only', () => {
     const props = [{ name: 'Naam' }, { name: 'Lead Source' }];

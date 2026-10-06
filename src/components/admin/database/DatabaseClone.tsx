@@ -17,6 +17,7 @@ import { useLocale } from 'next-intl';
 import { getGlobalDatabases } from '@/app/actions/global-databases';
 import DatabaseHeader from '@/components/admin/database/components/DatabaseHeader';
 import { gridAccess } from '@/lib/records/grid-access';
+import { isValidated } from '@/lib/records/validation';
 import { useFilteredPages } from './hooks/useFilteredPages';
 import { sortPages } from '@/lib/records/view-sort';
 import type { ActionId } from '@/lib/records/db-header';
@@ -54,9 +55,14 @@ interface DatabaseCloneProps {
   defaultFilter?: { propertyId: string; value: string };
   onOpenRecord?: (pageId: string) => void;
   onAction?: (actionId: ActionId) => void;
+  /**
+   * VALIDATE-1: a purchase screen shows only what COUNTS ('validated') or only what waits for a person
+   * ('to-validate', the "Te valideren" screen, with its own views) — lib/records/validation isValidated.
+   */
+  validation?: 'validated' | 'to-validate';
 }
 
-export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, hideFooterNew, defaultFilter, onOpenRecord, onAction }: DatabaseCloneProps) {
+export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, hideFooterNew, defaultFilter, onOpenRecord, onAction, validation }: DatabaseCloneProps) {
   // Resolve the base locked DB name to the tenant-scoped actual ID
   const { activeModules, resolveDbId, isEnterprise } = useTenant();
   const { data: session } = useSession();
@@ -123,7 +129,7 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
   // Restrict to Single View "All Contacts" for Free Tier on Contact Databases
   // VIEW-SCOPE-1: this screen's own views (a screen with a fixed filter — credit notes, proformas, a project type —
   // never shares views, and so never filters or sorts, with another screen of the same database).
-  const surface = surfaceKey(defaultFilter);
+  const surface = validation === 'to-validate' ? [surfaceKey(defaultFilter), 'to-validate'].filter(Boolean).join('|') : surfaceKey(defaultFilter);
   const supportedViews = useMemo(() => {
     if (!database) return [];
     let views = viewsForSurface(database.views, surface);
@@ -189,7 +195,8 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
     hardFilter: defaultFilter,
     allDatabases,
   });
-  const sortedPages = useMemo(() => sortPages(filteredPages, activeView?.sorts ?? [], Date.now()), [filteredPages, activeView?.sorts]);
+  const screenPages = useMemo(() => (validation ? filteredPages.filter(p => isValidated(p.properties) === (validation === 'validated')) : filteredPages), [filteredPages, validation]);
+  const sortedPages = useMemo(() => sortPages(screenPages, activeView?.sorts ?? [], Date.now()), [screenPages, activeView?.sorts]);
 
   // C7: Shared row selection across DatabaseHeader and grids
   const [selectedRowIds, setSelectedRowIds] = useState<Set<string>>(() => new Set());
@@ -285,28 +292,8 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
     // re-asserted schema options the kernel schema already carries (system-schemas.ts). Data repairs go through
     // the SQL procedure (.agents/workflows/sql), schema through the kernel — never a browser on page load.
 
-    if (isTenantDatabase(resolvedId, 'db-expenses')) {
-      const store = useDatabaseStore.getState();
-      // Migrate: add Inbox view if missing
-      const hasInbox = database.views.some(v => v.id === 'vw-expenses-inbox');
-      if (!hasInbox) {
-        store.addView(resolvedId, {
-          id: 'vw-expenses-inbox',
-          name: 'Inbox / Te verwerken',
-          type: 'table',
-          filterGroups: [{
-            id: 'fg-inbox',
-            operator: 'and',
-            filters: [{
-              id: 'flt-not-approved',
-              propertyId: 'reviewStatus',
-              operator: 'does_not_equal',
-              value: 'Goedgekeurd'
-            }]
-          }]
-        });
-      }
-    }
+    // VALIDATE-1: the purchase-invoice "Inbox" VIEW is no longer seeded here — the "Te valideren" SCREEN replaced it
+    // (.agents/workflows/sql/expenses-inbox-view-remove.sql removes the old view from the database definitions).
   }, [hydrated, database, resolvedId]);
 
 
@@ -398,7 +385,7 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
         inert={projectIdParam || openParam ? true : undefined}
       >
         {activeView.type === 'table' && gridV2 && (
-          <NotionGridV2Dynamic databaseId={database.id} viewId={activeView.id} hideToolbar hardFilter={defaultFilter} onOpenRecord={onOpenRecord} hideFooterNew={!!hideFooterNew}
+          <NotionGridV2Dynamic databaseId={database.id} viewId={activeView.id} validationScreen={validation} hideToolbar hardFilter={defaultFilter} onOpenRecord={onOpenRecord} hideFooterNew={!!hideFooterNew}
             lockedSchema={isLockedSchemaDB && !isUngated && !hasDatabases}
             preventDelete={role === 'invoices' ? (row) => { const s = String((row?.properties as Record<string, unknown>)?.status || 'opt-draft'); return s !== 'opt-draft'; } : undefined}
             selected={selectedRowIds}

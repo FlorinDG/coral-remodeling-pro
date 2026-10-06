@@ -54,3 +54,11 @@ test('a quote sent before the stamp leaves the sent statuses only with the stamp
     assert.deepEqual(checkDocumentLock('quotations', sent, { ...sent, status: 'opt-on-hold' })?.blockedFields, ['status']);
     assert.equal(checkDocumentLock('quotations', sent, { ...sent, status: 'opt-on-hold', sentAt: '2026-10-01T08:00:00.000Z' }), null);
 });
+
+test('VALIDATE-1: the door refuses an incomplete approval (throw proof: an unread scan approved)', () => {
+    const scan = { title: 'Expense', amount: 0, source: 'src-scan', reviewStatus: 'Na te kijken' };
+    assert.deepEqual(checkDocumentLock('tickets', scan, { ...scan, reviewStatus: 'Goedgekeurd' }), { blockedFields: ['reviewStatus'] });
+    const read = { ...scan, title: 'Brico', date: '2026-10-02', amount: 12 };
+    assert.equal(checkDocumentLock('tickets', scan, { ...read, reviewStatus: 'Goedgekeurd' }), null);
+    assert.equal(checkDocumentLock('tickets', scan, { ...scan, notes: 'x' }), null);   // other edits are free
+});

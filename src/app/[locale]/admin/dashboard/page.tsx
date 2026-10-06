@@ -19,6 +19,7 @@ import { OverviewAreaChart, StatusBarChart, CashFlowChart } from "@/components/a
 import { auth } from "@/auth";
 import { getTranslations } from 'next-intl/server';
 import { resolveDatabaseId } from '@/lib/kernel/system-databases';
+import { isValidated } from '@/lib/records/validation';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -257,8 +258,7 @@ export default async function AdminDashboard({ params }: { params: Promise<{ loc
 
         for (const page of purchasePages) {
             const props = page.properties as Record<string, any>;
-            const reviewStatus = props['reviewStatus'];
-            if (reviewStatus && reviewStatus !== 'Goedgekeurd') continue;
+            if (!isValidated(props)) continue;   // VALIDATE-1: a scan counts once validated (Peppol always)
 
             const amount = Number(props['totalIncVat'] ?? props['total'] ?? props['amount'] ?? 0);
             if (!amount) continue;

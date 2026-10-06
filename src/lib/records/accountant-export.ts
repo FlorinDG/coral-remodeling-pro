@@ -10,6 +10,7 @@
 
 type Props = Record<string, unknown>;
 
+import { isValidated } from './validation';
 export type ExportKind = 'invoice' | 'credit-note' | 'ticket';
 export type ExportSource = 'invoices' | 'expenses' | 'tickets';
 
@@ -44,6 +45,8 @@ export function isDraft(props: Props | null | undefined): boolean {
 export interface ExportDoc { id: string; source: ExportSource; properties: Props }
 
 export interface ExportSelection<T extends ExportDoc> {
+    /** VALIDATE-1: a scan nobody validated yet — reported, never exported */
+    unvalidated: T[];
     undated: T[];
     drafts: T[];
     alreadyExported: T[];
@@ -56,10 +59,11 @@ export interface ExportSelection<T extends ExportDoc> {
  * only when asked. Undated documents are reported, never exported.
  */
 export function selectForExport<T extends ExportDoc>(docs: T[], opts: { startDate: string; endDate: string; includeAlreadyExported: boolean }): ExportSelection<T> {
-    const out: ExportSelection<T> = { undated: [], drafts: [], alreadyExported: [], toExport: [] };
+    const out: ExportSelection<T> = { unvalidated: [], undated: [], drafts: [], alreadyExported: [], toExport: [] };
     for (const d of docs) {
         const kind = exportKind(d.source, d.properties);
         if (!kind) continue;
+        if (!isValidated(d.properties)) { out.unvalidated.push(d); continue; }   // its date / amount may be unread
         const date = docDate(d.properties);
         if (!date) { out.undated.push(d); continue; }
         if (date < opts.startDate || date > opts.endDate) continue;

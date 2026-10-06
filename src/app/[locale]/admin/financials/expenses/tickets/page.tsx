@@ -66,7 +66,7 @@ export default function ExpenseTicketsPage() {
         <div className="flex flex-col w-full h-full">
             <ModuleTabs tabs={getFilteredFinancialTabs(planType)} groupId="financials" />
             <div className="w-full flex-1 flex flex-col pt-6 min-h-0">
-                <DatabaseCloneDynamic databaseId="db-tickets" onAction={handleAction} />
+                <DatabaseCloneDynamic databaseId="db-tickets" onAction={handleAction} validation="validated" />
             </div>
 
             {/* Ticket capture modal */}

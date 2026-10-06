@@ -15,17 +15,10 @@ export function gridAccess(ctx: { userRole?: string | null; logicalKey?: string 
 }
 
 /**
- * The purchase-invoice inbox: bulk approval takes only records the reading marked "Klaar" (the others need a person
- * first). Approving writes ONE field per record (reviewStatus → 'Goedgekeurd').
+ * The old purchase-invoice inbox VIEW. VALIDATE-1 replaced it by the "Te valideren" SCREEN (lib/records/validation:
+ * isValidated / approvalPlan); the id stays known so the header rule and old views keep resolving.
  */
-export const REVIEW_READY = 'Klaar';
-export const REVIEW_APPROVED = 'Goedgekeurd';
 export const EXPENSES_INBOX_VIEW = 'vw-expenses-inbox';
-
-export function bulkApproveCheck(rows: Array<{ id: string; properties: Record<string, unknown> }>): { ok: true; ids: string[] } | { ok: false; notReady: string[] } {
-    const notReady = rows.filter(r => r.properties.reviewStatus !== REVIEW_READY).map(r => r.id);
-    return notReady.length ? { ok: false, notReady } : { ok: true, ids: rows.map(r => r.id) };
-}
 
 /** Columns a plan does not show: "Lead source" on contacts without the CRM module (the old grid's licensing rule). */
 export function licensedColumns<P extends { name?: string }>(props: P[], ctx: { logicalKey?: string | null; hasCRM: boolean }): P[] {

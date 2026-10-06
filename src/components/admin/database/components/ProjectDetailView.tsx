@@ -23,6 +23,7 @@ import { subtasksOf, subtaskProgress, topLevel, isTaskCompleted, PROP_TASK_PAREN
 
 const JournalCard = dynamic(() => import('./JournalCard'), { ssr: false });
 import { RecordAttachments } from '@/components/shared/RecordAttachments';
+import { isValidated } from '@/lib/records/validation';
 const LinkedRecords = dynamic(() => import('./LinkedRecords'), { ssr: false });
 const PageFinancialAnalysis = dynamic(() => import('./PageFinancialAnalysis'), { ssr: false });
 const SupplierQuotationsCard = dynamic(() => import('./SupplierQuotationsCard'), { ssr: false });
@@ -286,8 +287,8 @@ export default function ProjectDetailView({ databaseId, pageId, locale, onClose 
         if (!expensesDb) return [];
         return expensesDb.pages.filter(p => {
             const projRel = p.properties['project'];
-            const isApproved = p.properties['reviewStatus'] === 'Goedgekeurd';
-            return isApproved && (Array.isArray(projRel) ? projRel.includes(pageId) : projRel === pageId);
+            // VALIDATE-1: the ONE rule — before, only explicitly approved ones counted (Peppol invoices never did)
+            return isValidated(p.properties) && (Array.isArray(projRel) ? projRel.includes(pageId) : projRel === pageId);
         });
     }, [expensesDb, pageId]);
 

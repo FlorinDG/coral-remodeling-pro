@@ -23,6 +23,29 @@ export interface KernelProperty {
  * COMMENTS-1 (Florin 2026-10-05: "universally available, part of the db schema") · fields EVERY database carries —
  * system and custom — appended by the server reconcile, never deletable. Hidden in a view until the view shows it.
  */
+/**
+ * VALIDATE-1 · where a purchase document came from and how far its validation is (lib/records/validation) — ONE
+ * definition for purchase invoices AND tickets (a scan of either waits in "Te valideren" until approved).
+ */
+export const SCAN_REVIEW_FIELDS: KernelProperty[] = [
+  { id: 'source',      name: 'Bron', type: 'select', config: { options: [
+    { id: 'src-peppol', name: 'Peppol',       color: 'blue'   },
+    { id: 'src-manual', name: 'Manueel',      color: 'gray'   },
+    { id: 'src-pdf',    name: 'PDF Import',   color: 'purple' },
+    { id: 'src-scan',   name: 'Scan / OCR',   color: 'pink'   },
+    { id: 'src-email',  name: 'Email',        color: 'orange' },
+  ]}},
+  { id: 'reviewStatus', name: 'Review Status', type: 'select', config: { options: [
+    { id: 'In verwerking', name: 'In verwerking', color: 'blue'   },
+    { id: 'In wachtrij',   name: 'In wachtrij',   color: 'gray'   },
+    { id: 'Na te kijken',  name: 'Na te kijken',  color: 'orange' },
+    { id: 'Klaar',         name: 'Klaar',         color: 'green'  },
+    { id: 'Goedgekeurd',   name: 'Goedgekeurd',   color: 'purple' },
+    { id: 'Mislukt',       name: 'Mislukt',       color: 'red'    },
+  ]}},
+  { id: 'reviewReason', name: 'Review Reden', type: 'text' },
+];
+
 export const UNIVERSAL_FIELDS: KernelProperty[] = [
   { id: 'comments', name: 'Opmerkingen', type: 'comments' },
 ];
@@ -170,22 +193,7 @@ export function canonicalSchemas(resolveDbId: (base: string) => string): Record<
       { id: 'opt-credit-note', name: 'Creditnota', color: 'purple' },
     ]}},
     { id: 'betreft',     name: 'Omschrijving',      type: 'text' },
-    { id: 'source',      name: 'Bron', type: 'select', config: { options: [
-      { id: 'src-peppol', name: 'Peppol',       color: 'blue'   },
-      { id: 'src-manual', name: 'Manueel',      color: 'gray'   },
-      { id: 'src-pdf',    name: 'PDF Import',   color: 'purple' },
-      { id: 'src-scan',   name: 'Scan / OCR',   color: 'pink'   },
-      { id: 'src-email',  name: 'Email',        color: 'orange' },
-    ]}},
-    { id: 'reviewStatus', name: 'Review Status', type: 'select', config: { options: [
-      { id: 'In verwerking', name: 'In verwerking', color: 'blue'   },
-      { id: 'In wachtrij',   name: 'In wachtrij',   color: 'gray'   },
-      { id: 'Na te kijken',  name: 'Na te kijken',  color: 'orange' },
-      { id: 'Klaar',         name: 'Klaar',         color: 'green'  },
-      { id: 'Goedgekeurd',   name: 'Goedgekeurd',   color: 'purple' },
-      { id: 'Mislukt',       name: 'Mislukt',       color: 'red'    },
-    ]}},
-    { id: 'reviewReason', name: 'Review Reden', type: 'text' },
+    ...SCAN_REVIEW_FIELDS,
     { id: 'ocrConfidence', name: 'OCR Betrouwbaarheid', type: 'percent' },
     { id: 'status',      name: 'Status', type: 'select', config: { options: [
       { id: 'opt-draft',    name: 'Concept',    color: 'gray'   },
@@ -268,6 +276,7 @@ export function canonicalSchemas(resolveDbId: (base: string) => string): Record<
     { id: 'peppolDocId', name: 'Peppol Doc ID',     type: 'text'     },
     { id: 'vatDeductiblePct', name: 'BTW Aftrekbaarheid (%)', type: 'number' },
     { id: 'accountantExportedAt', name: 'Verzonden naar boekhouder', type: 'checkbox' },
+    ...SCAN_REVIEW_FIELDS,
   ],
   'db-crm': [
     { id: 'title',                                     name: 'Name',              type: 'text' },

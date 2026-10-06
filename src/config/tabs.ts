@@ -53,6 +53,7 @@ export const portalsTabs = [
 // Financial tab i18n key map (fallback to hardcoded if no translator provided)
 const FINANCIAL_TAB_KEYS: Record<string, string> = {
     'fin-aankoop': 'purchaseInvoices',
+    'fin-to-validate': 'toValidate',
     'fin-tickets': 'expenseTickets',
     'fin-cred-aankoop': 'purchaseCreditNotes',
     'fin-cred-verkoop': 'salesCreditNotes',
@@ -65,6 +66,7 @@ const FINANCIAL_TAB_KEYS: Record<string, string> = {
 const financialTabsBase = [
     { label: 'FACTUREN', href: '/admin/financials/income/invoices', id: 'fin-facturen' },
     { label: 'PROFORMA', href: '/admin/financials/income/proformas', id: 'fin-proforma' },
+    { label: 'TE VALIDEREN', href: '/admin/financials/expenses/to-validate', id: 'fin-to-validate' },
     { label: 'AANKOOPFACTUREN', href: '/admin/financials/expenses/invoices', id: 'fin-aankoop' },
     { label: 'ONKOSTENFICHES', href: '/admin/financials/expenses/tickets', id: 'fin-tickets' },
     { label: 'ONTVANGEN BETALINGEN', href: '/admin/financials/income/payments', id: 'fin-payments-in' },

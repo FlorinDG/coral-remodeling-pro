@@ -15,6 +15,7 @@
  * Changing a locked quote = "Revise": a new version (OFF-…-v2), the original stays as sent.
  */
 import { ARCHIVE_FIELDS, areBlocksSemanticallyEqual } from './export-lock';
+import { approveRefusal, REVIEW_APPROVED } from './validation';
 
 export const LOCKED_QUOTE_STATUSES: ReadonlySet<string> = new Set([
     'opt-sent', 'opt-accepted', 'opt-rejected', 'SENT', 'ACCEPTED', 'REJECTED', 'DECLINED',
@@ -49,6 +50,13 @@ export function checkDocumentLock(
     if (role === 'invoices') {
         const before = (existingProperties as Record<string, unknown> | null | undefined)?.docType;
         return 'docType' in incomingProperties && before && incomingProperties.docType !== before ? { blockedFields: ['docType'] } : null;
+    }
+    // VALIDATE-1: a scanned purchase document is approved only when its essentials are there (the door, whatever
+    // screen asked) — an unread "Expense / €0" can never be approved into the books.
+    if (role === 'tickets' || role === 'expenses') {
+        const before = (existingProperties as Record<string, unknown> | null | undefined)?.reviewStatus;
+        const approving = incomingProperties.reviewStatus === REVIEW_APPROVED && before !== REVIEW_APPROVED;
+        return approving && approveRefusal(role, incomingProperties) ? { blockedFields: ['reviewStatus'] } : null;
     }
     if (role !== 'quotations') return null;
     const existing = (existingProperties ?? {}) as Record<string, unknown>;

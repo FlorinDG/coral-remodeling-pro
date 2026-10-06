@@ -422,7 +422,8 @@ export default function DatabaseHeader({
 
                         {/* Declared Actions & Schema Pill */}
                         <div className="flex items-center gap-2 ml-auto">
-                            {headerResult.actions.map((act) => {
+                            {/* a page action shows only where the page handles it (VALIDATE-1: "Te valideren" validates, it does not scan) */}
+                            {onAction && headerResult.actions.map((act) => {
                                 const variantClasses =
                                     act.variant === 'primary'
                                         ? 'bg-[var(--brand-color,#d35400)] text-white hover:opacity-90 shadow-sm'

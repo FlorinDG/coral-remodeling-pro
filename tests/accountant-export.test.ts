@@ -59,3 +59,15 @@ test('periods are calendar dates — the last day of the month is IN (toISOStrin
     assert.deepEqual(exportPeriod('this-year', '2026-10-05'), { from: '2026-01-01', to: '2026-10-05' });
     assert.deepEqual(exportPeriod('last-year', '2026-10-05'), { from: '2025-01-01', to: '2025-12-31' });
 });
+
+test('VALIDATE-1: a scan nobody validated is never exported — Peppol and approved ones are (throw proof: the unread "Expense / €0")', () => {
+    const docs = [
+        doc('scan', 'tickets', { title: 'Expense', date: '2026-09-20', amount: 0, source: 'src-scan', reviewStatus: 'Na te kijken' }),
+        doc('ok', 'tickets', { title: 'Brico', date: '2026-09-20', amount: 12, source: 'src-scan', reviewStatus: 'Goedgekeurd' }),
+        doc('pep', 'expenses', { invoiceDate: '2026-09-21', source: 'src-peppol', status: 'opt-unpaid' }),
+        doc('ready', 'expenses', { invoiceDate: '2026-09-22', source: 'src-scan', reviewStatus: 'Klaar' }),
+    ];
+    const sel = selectForExport(docs, { startDate: '2026-09-01', endDate: '2026-09-30', includeAlreadyExported: false });
+    assert.deepEqual(sel.toExport.map(d => d.id), ['ok', 'pep']);
+    assert.deepEqual(sel.unvalidated.map(d => d.id), ['scan', 'ready']);
+});

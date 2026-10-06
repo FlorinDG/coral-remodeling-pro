@@ -33,7 +33,8 @@ import { isTextEditable, parseCellInput, cellText, cellDisplay, NUMERIC_TYPES, c
 import { resolveRelationTitle } from '@/lib/relations/resolve';
 import { useSession } from 'next-auth/react';
 import { useTenant } from '@/context/TenantContext';
-import { duplicateProperties, gridAccess, bulkApproveCheck, licensedColumns, EXPENSES_INBOX_VIEW, REVIEW_READY, REVIEW_APPROVED } from '@/lib/records/grid-access';
+import { duplicateProperties, gridAccess, licensedColumns } from '@/lib/records/grid-access';
+import { approvalPlan, REVIEW_APPROVED } from '@/lib/records/validation';
 import { VAT_FIELD, VAT_LOOKUP_ROLES } from '@/lib/records/vat-lookup';
 import { VatLookupFlyout, RowMenu } from './cells';
 
@@ -58,11 +59,13 @@ interface Props {
     onSelectedChange?: (selected: Set<string>) => void;
     /** Precomputed sorted pages from DatabaseClone (C8) */
     sortedPages?: Page[];
+    /** VALIDATE-1: on the "Te valideren" screen the selection can be approved (lib/records/validation approvalPlan). */
+    validationScreen?: 'validated' | 'to-validate';
 }
 
 type Editing = { pageId: string; propId: string; text: string } | null;
 
-export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRecord, hideFooterNew, preventDelete, lockedSchema, renderTabs, hideToolbar, selected: propSelected, onSelectedChange, sortedPages: propSortedPages }: Props) {
+export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRecord, hideFooterNew, preventDelete, lockedSchema, renderTabs, hideToolbar, selected: propSelected, onSelectedChange, sortedPages: propSortedPages, validationScreen }: Props) {
     const database = useDatabaseStore(s => s.databases.find(d => d.id === databaseId));
     const allDatabases = useDatabaseStore(s => s.databases);
     const updatePageProperty = useDatabaseStore(s => s.updatePageProperty);
@@ -289,15 +292,21 @@ export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRec
                         <button type="button" onClick={deleteSelected} className="inline-flex items-center gap-1 text-xs text-red-600 hover:underline"><Trash2 className="w-3.5 h-3.5" /> Verwijderen</button>
                     )}
                     <button type="button" onClick={() => setSelected(new Set())} className="text-xs text-neutral-500 hover:underline">Wissen</button>
-                    {/* the purchase-invoice inbox: approve the selected records the reading marked "Klaar" — one field each */}
-                    {access.edit && database.logicalKey === 'expenses' && activeView?.id === EXPENSES_INBOX_VIEW && (
+                    {/* VALIDATE-1 · "Te valideren": approve the selected records whose essentials are there — one field each;
+                        the others stay, named with what they lack (the door refuses an incomplete approval anyway) */}
+                    {access.edit && validationScreen === 'to-validate' && (
                         <button type="button" className="inline-flex items-center gap-1 text-xs text-emerald-600 hover:underline"
                                 onClick={() => {
-                                    const chk = bulkApproveCheck(rows.filter(r => selected.has(r.id)));
-                                    if (!chk.ok) { toast.message(`Alleen records die "${REVIEW_READY}" zijn kunnen samen goedgekeurd worden (${chk.notReady.length} nog niet).`); return; }
-                                    if (!window.confirm(`${chk.ids.length} record(s) goedkeuren?`)) return;
-                                    for (const id of chk.ids) updatePageProperty(database.id, id, 'reviewStatus', REVIEW_APPROVED);
-                                    setSelected(new Set());
+                                    const plan = approvalPlan(database.logicalKey, rows.filter(r => selected.has(r.id)));
+                                    const names = (ids: string[]) => ids.map(f => database.properties.find(p => p.id === f)?.name || f).join(', ');
+                                    if (!plan.approve.length) {
+                                        toast.message(`Niets goed te keuren — ${plan.refused.length} record(s) missen nog: ${names([...new Set(plan.refused.flatMap(r => r.missing))])}`);
+                                        return;
+                                    }
+                                    const rest = plan.refused.length ? `\n${plan.refused.length} blijven staan (onvolledig).` : '';
+                                    if (!window.confirm(`${plan.approve.length} record(s) goedkeuren?${rest}`)) return;
+                                    for (const id of plan.approve) updatePageProperty(database.id, id, 'reviewStatus', REVIEW_APPROVED);
+                                    setSelected(new Set(plan.refused.map(r => r.id)));
                                 }}>
                             <CheckCircle2 className="w-3.5 h-3.5" /> Goedkeuren
                         </button>

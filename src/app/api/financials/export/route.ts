@@ -89,6 +89,7 @@ export async function GET(req: Request) {
         const filteredExpenses = purchases.toExport;
         const undatedDocs = [...sales.undated, ...purchases.undated];
         const totalExcludedDrafts = sales.drafts.length + purchases.drafts.length;
+        const unvalidatedCount = sales.unvalidated.length + purchases.unvalidated.length;
         const alreadyExportedCount = sales.alreadyExported.length + purchases.alreadyExported.length;
         const toExportCount = filteredInvoices.length + filteredExpenses.length;
 
@@ -107,6 +108,7 @@ export async function GET(req: Request) {
                 toExportCount,
                 alreadyExportedCount,
                 draftCount: totalExcludedDrafts,
+                unvalidatedCount,
                 undatedCount: undatedDocs.length,
                 undatedDocuments: undatedSamples,
             });

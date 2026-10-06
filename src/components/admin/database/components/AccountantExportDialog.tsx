@@ -22,6 +22,7 @@ interface PreviewCounts {
     toExportCount: number;
     alreadyExportedCount: number;
     draftCount: number;
+    unvalidatedCount: number;
     undatedCount: number;
     undatedDocuments?: Array<{ id: string; title: string; type: string }>;
 }
@@ -93,6 +94,7 @@ export function AccountantExportDialog({
                 toExportCount: data.toExportCount ?? 0,
                 alreadyExportedCount: data.alreadyExportedCount ?? 0,
                 draftCount: data.draftCount ?? 0,
+                unvalidatedCount: data.unvalidatedCount ?? 0,
                 undatedCount: data.undatedCount ?? 0,
                 undatedDocuments: data.undatedDocuments || [],
             });
@@ -303,6 +305,12 @@ export function AccountantExportDialog({
                                         {includeAlreadyExported ? 'opgenomen' : 'uitgesloten'}
                                     </span>
                                 </div>
+                                {counts.unvalidatedCount > 0 && (
+                                    <div className="flex items-center justify-between text-neutral-500 dark:text-neutral-400 text-[11px] pt-0.5 border-t border-neutral-200/50 dark:border-white/5">
+                                        <span>{counts.unvalidatedCount} nog te valideren (scans)</span>
+                                        <span className="font-semibold text-amber-600 dark:text-amber-400">niet opgenomen</span>
+                                    </div>
+                                )}
                                 {counts.undatedCount > 0 && (
                                     <div className="space-y-1 pt-0.5 border-t border-neutral-200/50 dark:border-white/5">
                                         <div className="flex items-center justify-between text-neutral-500 dark:text-neutral-400 text-[11px]">

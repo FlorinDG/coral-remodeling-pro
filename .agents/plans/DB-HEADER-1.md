@@ -310,3 +310,10 @@ sync result in `headerExtra` ✅ · the i18n key test now resolves keys in all f
 is not connected; the declared action has neither (a second click is ignored, but nothing shows it). `ActionItem`
 gains `busy?` / `disabled?` (+ a reason key for the tooltip) — the page passes them, the header renders them; the
 rule stays pure (it declares the action, the page owns the state).
+
+## PLANNER NOTE — 2026-10-06 · VALIDATE-1 touched the header (fold into M4, no round trip)
+- `DatabaseHeader.tsx`: a page action renders only when the page passes `onAction` (the "Te valideren" screen
+  validates, it does not scan) — keep it.
+- `db-header.ts` `showBulkApprove` still keys on `EXPENSES_INBOX_VIEW` — the old VIEW is gone; bulk approve now lives
+  on the "Te valideren" SCREEN (`DatabaseClone validation="to-validate"` → the grid's selection bar,
+  `lib/records/validation approvalPlan`). Take `validationScreen` into the context instead, drop the view id.

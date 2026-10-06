@@ -211,6 +211,7 @@ export default function ExpensesInvoicesPage() {
                 <DatabaseCloneDynamic
                     databaseId="db-expenses"
                     defaultFilter={{ propertyId: 'docType', value: 'opt-invoice' }}
+                    validation="validated"
                     onOpenRecord={(id) => setSelectedInvoiceId(id)}
                     headerExtra={peppolHeaderExtra}
                     onAction={handleAction}

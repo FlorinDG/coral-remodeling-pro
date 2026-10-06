@@ -22,6 +22,7 @@ export default function ExpensesCreditNotesPage() {
                 <DatabaseCloneDynamic
                     databaseId="db-expenses"
                     defaultFilter={{ propertyId: 'docType', value: 'opt-credit-note' }}
+                    validation="validated"
                 />
             </div>
         </div>

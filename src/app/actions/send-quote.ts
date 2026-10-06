@@ -122,6 +122,8 @@ export async function sendQuotationToClient(
             ...currentProps,
             receiptUrl: archiveResult.key,
             status: 'opt-sent',
+            // the FACT that it was sent (document-lock): the quote stays locked whatever status the office files it under
+            sentAt: currentProps.sentAt || new Date().toISOString(),
         });
         if (!updateRes.success) {
             throw new Error(`[sendQuotationToClient] Opslaan van status en receiptUrl mislukt: ${updateRes.error}`);

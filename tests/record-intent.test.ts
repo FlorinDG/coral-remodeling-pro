@@ -76,6 +76,7 @@ test('an issued document is never deleted at the door (throw proof: a draft invo
     assert.equal(deleteRefusal('invoices', { status: 'opt-draft' }), null);
     assert.equal(deleteRefusal('quotations', { status: 'opt-accepted' }), 'DOCUMENT_LOCKED');
     assert.equal(deleteRefusal('quotations', { status: 'opt-draft' }), null);
+    assert.equal(deleteRefusal('quotations', { status: 'opt-on-hold', sentAt: '2026-10-01T08:00:00.000Z' }), 'DOCUMENT_LOCKED');   // filed, still issued
     assert.equal(deleteRefusal('expenses', { accountantExportedAt: true }), 'EXPORT_LOCKED');
     assert.equal(deleteRefusal('tasks', { status: 'done' }), null);
 });

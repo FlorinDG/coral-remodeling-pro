@@ -13,7 +13,7 @@
  */
 import { deepEqual, mergeStaleWrite } from './occ-merge';
 import { checkExportLock, isWipeHazard } from './export-lock';
-import { checkDocumentLock } from './document-lock';
+import { checkDocumentLock, isQuoteLocked } from './document-lock';
 
 type Props = Record<string, unknown>;
 
@@ -139,12 +139,12 @@ export function intentFromPage(page: StorePageLike): RecordIntent {
 
 // ── Deleting a record (R2-1: the rule at the door — before, only the browser's preventDelete held it) ──
 
-/** An issued document is never deleted: an accountant-exported record, an invoice past draft, a sent quote. */
+/** An issued document is never deleted: an accountant-exported record, an invoice past draft, a sent quote (whatever its status now). */
 export function deleteRefusal(logicalKey: string | null | undefined, properties: Props | null | undefined): 'EXPORT_LOCKED' | 'DOCUMENT_LOCKED' | null {
     const p = properties || {};
     if (p.accountantExportedAt === true) return 'EXPORT_LOCKED';
     const status = String(p.status ?? '');
     if (logicalKey === 'invoices' && status && status !== 'opt-draft' && status !== 'draft') return 'DOCUMENT_LOCKED';
-    if (logicalKey === 'quotations' && ['opt-sent', 'opt-accepted', 'opt-rejected', 'SENT', 'ACCEPTED', 'REJECTED'].includes(status)) return 'DOCUMENT_LOCKED';
+    if (logicalKey === 'quotations' && isQuoteLocked(p)) return 'DOCUMENT_LOCKED';
     return null;
 }

@@ -40,3 +40,17 @@ test('PROFORMA-1: an invoice keeps its document type — a proforma is never tur
     assert.equal(checkDocumentLock('invoices', { docType: 'opt-proforma', betreft: 'a' }, { docType: 'opt-proforma', betreft: 'b' }), null);
     assert.equal(checkDocumentLock('invoices', {}, { docType: 'opt-invoice' }), null);   // a record without a type yet
 });
+
+test('a sent quote may be FILED under any status but draft — and stays locked (throw proof: shelving unlocked it)', () => {
+    const stamped = { ...sent, sentAt: '2026-10-01T08:00:00.000Z' };
+    assert.equal(checkDocumentLock('quotations', stamped, { ...stamped, status: 'opt-on-hold' }), null);          // a tenant's own status
+    assert.deepEqual(checkDocumentLock('quotations', stamped, { ...stamped, status: 'opt-draft' })?.blockedFields, ['status']);
+    assert.equal(isQuoteLocked({ ...stamped, status: 'opt-on-hold' }), true);                                      // still locked
+    assert.deepEqual(checkDocumentLock('quotations', { ...stamped, status: 'opt-on-hold' }, { ...stamped, status: 'opt-on-hold', betreft: 'Keuken' })?.blockedFields, ['betreft']);
+    assert.deepEqual(checkDocumentLock('quotations', stamped, { ...stamped, sentAt: null })?.blockedFields, ['sentAt']);
+});
+
+test('a quote sent before the stamp leaves the sent statuses only with the stamp', () => {
+    assert.deepEqual(checkDocumentLock('quotations', sent, { ...sent, status: 'opt-on-hold' })?.blockedFields, ['status']);
+    assert.equal(checkDocumentLock('quotations', sent, { ...sent, status: 'opt-on-hold', sentAt: '2026-10-01T08:00:00.000Z' }), null);
+});

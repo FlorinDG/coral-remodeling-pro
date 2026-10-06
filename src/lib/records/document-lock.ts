@@ -5,9 +5,12 @@
  *
  * CORE rule, pure, tested (tests/document-lock.test.ts); enforced by EVERY server write door (saveGlobalPage,
  * saveGlobalPagesBatch, updatePageServerFirst) next to export-lock.
- *   locked statuses: sent · accepted · rejected (Florin: sent, accepted, declined)
- *   still writable:  the status — only to another locked status (never back to draft), the acceptance record the
+ *   locked:          a quote that was SENT — its `sentAt` stamp (written by sending), or a sent / accepted /
+ *                    rejected status (quotes sent before the stamp existed)
+ *   still writable:  the STATUS — any status but draft (Florin 2026-10-06: "should be able to edit status on sent
+ *                    quotes. does not affect the document just my shelving strategy"); the acceptance record the
  *                    client's signature writes, the archive fields, the link to a revision (revisedTo)
+ *   never:           back to draft (that would reopen the document); `sentAt` removed once set
  *   frozen:          everything else — lines (blocks), prices, client, dates, texts
  * Changing a locked quote = "Revise": a new version (OFF-…-v2), the original stays as sent.
  */
@@ -24,9 +27,12 @@ const WRITABLE_WHEN_LOCKED: ReadonlySet<string> = new Set([
     ...ARCHIVE_FIELDS,
 ]);
 
+/** A sent quote stays locked whatever its status says — the status is filing, the stamp is the fact. */
 export function isQuoteLocked(properties: Record<string, unknown> | null | undefined): boolean {
-    return LOCKED_QUOTE_STATUSES.has(String(properties?.status ?? ''));
+    return !!properties?.sentAt || LOCKED_QUOTE_STATUSES.has(String(properties?.status ?? ''));
 }
+
+const DRAFT_STATUSES: ReadonlySet<string> = new Set(['opt-draft', 'draft', 'DRAFT', '']);
 
 export interface DocumentLockViolation { blockedFields: string[] }
 
@@ -49,10 +55,15 @@ export function checkDocumentLock(
     if (!isQuoteLocked(existing)) return null;
     const blocked = Object.keys(incomingProperties).filter(k =>
         !WRITABLE_WHEN_LOCKED.has(k) && JSON.stringify(incomingProperties[k]) !== JSON.stringify(existing[k]));
-    // The status may move only to ANOTHER locked status (sent → accepted / rejected) — back to draft would
-    // unlock the document; a change needs "Revise" (a new version).
-    if ('status' in incomingProperties && incomingProperties.status !== existing.status
-        && !LOCKED_QUOTE_STATUSES.has(String(incomingProperties.status ?? ''))) blocked.push('status');
+    // The status is free (the office files its quotes) — but never back to draft (a change needs "Revise", a new
+    // version), and a quote sent before the stamp existed may leave the sent statuses only once it carries `sentAt`
+    // (otherwise the new status would unlock it).
+    if ('status' in incomingProperties && incomingProperties.status !== existing.status) {
+        const next = String(incomingProperties.status ?? '');
+        const stamped = !!existing.sentAt || !!incomingProperties.sentAt;
+        if (DRAFT_STATUSES.has(next) || (!stamped && !LOCKED_QUOTE_STATUSES.has(next))) blocked.push('status');
+    }
+    if (existing.sentAt && 'sentAt' in incomingProperties && !incomingProperties.sentAt) blocked.push('sentAt');
     if (incomingBlocks !== undefined && !areBlocksSemanticallyEqual(existingBlocks, incomingBlocks)) blocked.push('blocks');
     return blocked.length ? { blockedFields: blocked } : null;
 }

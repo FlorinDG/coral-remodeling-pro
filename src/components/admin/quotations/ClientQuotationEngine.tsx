@@ -1051,12 +1051,12 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                     {(() => {
                         const db = getDatabase(quotationsDbId);
                         const statusProp = db?.properties.find(p => p.id === 'status');
-                        const statusOptions = statusProp?.config?.options || [
+                        const statusOptions = (statusProp?.config?.options || [
                             { id: 'opt-draft', name: ti18n('engine_status_draft', locale), color: 'gray' },
                             { id: 'opt-sent', name: ti18n('engine_status_sent', locale), color: 'blue' },
                             { id: 'opt-accepted', name: ti18n('engine_status_accepted', locale), color: 'green' },
                             { id: 'opt-rejected', name: ti18n('engine_status_rejected', locale), color: 'red' },
-                        ];
+                        ]).filter(o => !(isLocked && o.id === 'opt-draft'));   // a sent quote never goes back to draft (document-lock)
                         return (
                             <div className="flex items-center bg-white dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 relative px-2.5 py-1.5 w-full sm:w-auto">
                                 <FileText className="w-3.5 h-3.5 text-neutral-400 mr-1.5 flex-shrink-0" />

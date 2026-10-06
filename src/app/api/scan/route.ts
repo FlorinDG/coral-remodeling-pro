@@ -4,6 +4,7 @@ import OpenAI from 'openai';
 import { auth } from '@/auth';
 import { platformDb, scopeFromSession } from '@/lib/data/scope';
 import { saveRecord } from '@/lib/data/records';
+import { readableDocument, unreadableMessage } from '@/lib/records/readable-document';
 import { isEmptyReading, ticketFields } from '@/lib/records/scan-reading';
 import { buildScanUpdateIntent, buildScanCreateData } from '@/lib/records/peppol-scan-intents';
 import { v4 as uuidv4 } from 'uuid';
@@ -110,33 +111,11 @@ async function extractPdfText(buffer: Buffer): Promise<{ text: string; pageCount
     }
 }
 
-/**
- * Render first page of a PDF to a JPEG Buffer using pdfjs-dist canvas.
- * Used as fallback when the PDF has no text layer (scanned invoice image).
- */
-async function renderPdfPageToImage(buffer: Buffer): Promise<Buffer | null> {
-    try {
-        const { renderPageAsImage } = await import('unpdf');
-        // unpdf canvas rendering requires the 'canvas' npm package on Node
-        // Use webpackIgnore to prevent Vercel build errors since we handle it gracefully if missing
-        // renderPageAsImage returns an ArrayBuffer by default
-        const imageArrayBuffer = await renderPageAsImage(new Uint8Array(buffer), 1, { 
-            scale: 2,
-            canvasImport: () => import(/* webpackIgnore: true */ 'canvas' as any)
-        });
-        
-        return Buffer.from(imageArrayBuffer as ArrayBuffer);
-    } catch (e) {
-        // canvas package not installed or rendering failed — can't render. Return null, caller handles gracefully.
-        return null;
-    }
-}
-
 // ─── GPT-4o Extraction ────────────────────────────────────────────────────────
 
 async function extractViaGpt4o(
     openai: OpenAI,
-    input: { type: 'image'; buffer: Buffer; mimeType: string } | { type: 'text'; text: string },
+    input: { type: 'image'; buffer: Buffer; mimeType: string } | { type: 'text'; text: string } | { type: 'pdf'; buffer: Buffer; fileName: string },
     isInvoice: boolean
 ): Promise<string> {
     const systemPrompt = isInvoice ? INVOICE_SYSTEM_PROMPT : TICKET_SYSTEM_PROMPT;
@@ -153,20 +132,38 @@ async function extractViaGpt4o(
             ]
         });
         return response.choices[0].message.content ?? '{}';
+    } else if (input.type === 'pdf') {
+        // SCAN-2: a scanned PDF goes to the reader as a PDF
+        const response = await openai.chat.completions.create({
+            model: 'gpt-4o',
+            max_tokens: 2000,
+            response_format: { type: 'json_object' },
+            messages: [
+                { role: 'system', content: systemPrompt },
+                {
+                    role: 'user',
+                    content: [
+                        { type: 'text', text: 'Extract all structured data from this document.' },
+                        { type: 'file', file: { filename: input.fileName, file_data: `data:application/pdf;base64,${input.buffer.toString('base64')}` } },
+                    ]
+                }
+            ]
+        });
+        return response.choices[0].message.content ?? '{}';
     } else {
-        const safeMime = (['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(input.mimeType))
-            ? input.mimeType : 'image/jpeg';
+        // SCAN-2: the mime is the DETECTED one (lib/records/readable-document) — never a guess; JSON mode, like text
         const base64 = input.buffer.toString('base64');
         const response = await openai.chat.completions.create({
             model: 'gpt-4o',
             max_tokens: 2000,
+            response_format: { type: 'json_object' },
             messages: [
                 { role: 'system', content: systemPrompt },
                 {
                     role: 'user',
                     content: [
                         { type: 'text', text: 'Extract all structured data from this document image.' },
-                        { type: 'image_url', image_url: { url: `data:${safeMime};base64,${base64}`, detail: 'high' } }
+                        { type: 'image_url', image_url: { url: `data:${input.mimeType};base64,${base64}`, detail: 'high' } }
                     ]
                 }
             ]
@@ -336,6 +333,14 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'No file provided' }, { status: 400 });
         }
 
+        // SCAN-2: the REAL format, from the first bytes — HEIC / unknown formats are refused with their reason before
+        // any reading or quota is spent (they used to reach the reader labelled "image/jpeg" and come back empty)
+        const fileBytes = new Uint8Array(await file.arrayBuffer());
+        const readable = readableDocument(fileBytes);
+        if (!readable.ok) {
+            return NextResponse.json({ success: false, code: 'UNREADABLE_FORMAT', reason: readable.reason, error: unreadableMessage(readable.reason) }, { status: 422 });
+        }
+
         const clientExtractedStr = formData.get('clientExtracted') as string | null;
 
         if (isFree && !clientExtractedStr) {
@@ -363,15 +368,8 @@ export async function POST(req: Request) {
                 return NextResponse.json({ error: 'Invalid client-side OCR payload.' }, { status: 400 });
             }
         } else {
-            const buffer = Buffer.from(await file.arrayBuffer());
-            const isPdfExt = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
-            const isPdfMagic = buffer.length > 4 && buffer.subarray(0, 5).toString('utf-8') === '%PDF-';
-
-            if (isPdfExt && !isPdfMagic) {
-                return NextResponse.json({ error: 'File has a .pdf extension but is not a valid PDF document.' }, { status: 422 });
-            }
-
-            const isPdf = isPdfExt || isPdfMagic;
+            const buffer = Buffer.from(fileBytes);
+            const isPdf = readable.kind === 'pdf';   // SCAN-2: from the bytes, not the name or the label
 
             // ── Validate engine-specific API key ──────────────────────────────────
             if (ocrEngine === 'GPT4O' && !process.env.OPENAI_API_KEY) {
@@ -411,28 +409,20 @@ export async function POST(req: Request) {
                         rawJson = await extractViaVeryfi(buffer, isInvoice, tenant?.veryfiApiKey || undefined);
                     }
                 } else {
-                    // Scanned PDF — no text layer. Try rendering page 1 to image.
-                    const pageImage = await renderPdfPageToImage(buffer);
-                    if (pageImage) {
-                        if (ocrEngine === 'GPT4O') {
-                            rawJson = await extractViaGpt4o(openai!, { type: 'image', buffer: pageImage, mimeType: 'image/jpeg' }, isInvoice);
-                        } else if (ocrEngine === 'MINDEE') {
-                            rawJson = await extractViaMindee(pageImage, isInvoice, tenant?.mindeeApiKey || undefined);
-                        } else {
-                            rawJson = await extractViaVeryfi(pageImage, isInvoice, tenant?.veryfiApiKey || undefined);
-                        }
+                    // Scanned PDF — no text layer. SCAN-2: the reader takes the PDF itself (it used to be rendered to an
+                    // image with the `canvas` package, which is not installed — every scanned PDF failed "no text layer").
+                    if (ocrEngine === 'GPT4O') {
+                        rawJson = await extractViaGpt4o(openai!, { type: 'pdf', buffer, fileName: file.name || 'document.pdf' }, isInvoice);
+                    } else if (ocrEngine === 'MINDEE') {
+                        rawJson = await extractViaMindee(buffer, isInvoice, tenant?.mindeeApiKey || undefined);
                     } else {
-                        return NextResponse.json({
-                            error: 'This PDF is a scanned image with no text layer and could not be rendered. Please upload a photo of the document instead.',
-                            code: 'NO_TEXT_LAYER',
-                            remaining,
-                        }, { status: 422 });
+                        rawJson = await extractViaVeryfi(buffer, isInvoice, tenant?.veryfiApiKey || undefined);
                     }
                 }
             } else {
                 // Image file (JPEG, PNG, WEBP, etc.)
                 if (ocrEngine === 'GPT4O') {
-                    rawJson = await extractViaGpt4o(openai!, { type: 'image', buffer, mimeType: file.type || 'image/jpeg' }, isInvoice);
+                    rawJson = await extractViaGpt4o(openai!, { type: 'image', buffer, mimeType: readable.kind === 'image' ? readable.mime : 'image/jpeg' }, isInvoice);
                 } else if (ocrEngine === 'MINDEE') {
                     rawJson = await extractViaMindee(buffer, isInvoice, tenant?.mindeeApiKey || undefined);
                 } else {
@@ -446,7 +436,9 @@ export async function POST(req: Request) {
                 const clean = rawJson.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
                 extracted = JSON.parse(clean);
             } catch {
+                // SCAN-2: an unusable answer is a FAILED reading, named as such (it used to continue as an empty one)
                 console.warn('[/api/scan] OCR returned non-JSON:', rawJson.slice(0, 200));
+                return NextResponse.json({ success: false, code: 'READ_FAILED', error: 'Het lezen gaf geen bruikbaar resultaat — probeer opnieuw of vul het handmatig in.' }, { status: 502 });
             }
         }
 

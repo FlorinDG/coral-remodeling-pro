@@ -12,6 +12,7 @@ import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import SelectDropdown from '@/components/admin/database/components/SelectDropdown';
 import { EXPENSE_CATEGORIES, COST_TYPES } from '@/lib/expense-taxonomy';
+import { READABLE_ACCEPT } from '@/lib/records/readable-document';   // SCAN-2: iOS converts HEIC to JPEG itself
 
 interface PurchaseInvoiceEngineProps {
     pageId: string;
@@ -1129,7 +1130,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                                     <input
                                         ref={fileInputRef}
                                         type="file"
-                                        accept="application/pdf,image/*"
+                                        accept={READABLE_ACCEPT}
                                         className="hidden"
                                         onChange={handleFileChange}
                                     />
@@ -1217,7 +1218,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                                         <input
                                             ref={fileInputRef}
                                             type="file"
-                                            accept="application/pdf,image/*"
+                                            accept={READABLE_ACCEPT}
                                             className="hidden"
                                             onChange={handleFileChange}
                                         />

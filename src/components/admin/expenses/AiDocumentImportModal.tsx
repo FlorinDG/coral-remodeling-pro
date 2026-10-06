@@ -10,6 +10,7 @@ import { useDatabaseStore } from '../database/store';
 import { useRouter } from 'next/navigation';
 import { useLocale } from 'next-intl';
 import { useOverlayEventShield } from '@/hooks/useOverlayEventShield';
+import { READABLE_ACCEPT } from '@/lib/records/readable-document';   // SCAN-2: iOS converts HEIC to JPEG itself
 
 interface AiDocumentImportModalProps {
     onClose: () => void;
@@ -199,7 +200,7 @@ export default function AiDocumentImportModal({ onClose, targetDatabaseId = 'db-
                             ref={fileInputRef}
                             type="file"
                             multiple
-                            accept="image/*,application/pdf"
+                            accept={READABLE_ACCEPT}
                             className="hidden"
                             onChange={handleInputChange}
                         />

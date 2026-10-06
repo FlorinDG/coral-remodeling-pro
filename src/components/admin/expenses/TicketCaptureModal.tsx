@@ -57,6 +57,7 @@ interface ScanResult {
 }
 
 import { EXPENSE_CATEGORIES, COST_TYPES } from '@/lib/expense-taxonomy';
+import { READABLE_ACCEPT } from '@/lib/records/readable-document';   // SCAN-2: iOS converts HEIC to JPEG itself
 const PAYMENT_METHODS = [
     { id: 'pm-cash', label: 'Cash' },
     { id: 'pm-card', label: 'Card' },
@@ -645,8 +646,8 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                                 )}
 
                                 {/* Hidden inputs */}
-                                <input ref={fileInputRef} type="file" accept="image/*,application/pdf" className="hidden" onChange={handleInputChange} />
-                                <input ref={cameraInputRef} type="file" accept="image/*,application/pdf" capture="environment" className="hidden" onChange={handleInputChange} />
+                                <input ref={fileInputRef} type="file" accept={READABLE_ACCEPT} className="hidden" onChange={handleInputChange} />
+                                <input ref={cameraInputRef} type="file" accept={READABLE_ACCEPT} capture="environment" className="hidden" onChange={handleInputChange} />
                             </div>
                         )}
 

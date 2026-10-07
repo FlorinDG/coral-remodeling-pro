@@ -712,16 +712,36 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                                 <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-1.5">Gekoppeld Project</label>
                                 {/* EDIT-1 (Florin 2026-10-07: "the project select - not the same select and search does not work"): the
                                     grid's own relation picker — its search, the records' titles, open in place */}
-                                <div className="min-h-[34px] rounded-lg border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5">
-                                    <RelationCell
-                                        value={isEditing ? editData.project : (page.properties.project ?? [])}
-                                        relationDatabaseId={projectRelation?.relationDatabaseId || projectsDbId}
-                                        displayPropertyId={projectRelation?.relationDisplayPropertyId || 'title'}
-                                        readOnly={!isEditing}
-                                        onCommit={v => setEditData(p => ({ ...p, project: Array.isArray(v) ? v.map(String) : [] }))}
-                                        onOpen={(dbId, id) => openLinked(dbId, id)}
-                                    />
-                                </div>
+                                {/* LIVE, like the grid (Florin 2026-10-07: "the project select is now gone completely, there is a div
+                                    that looks like an input"): one click opens the search, a choice is saved at once — no "Edit" first.
+                                    The edit form's copy follows, so a later "Save Changes" never writes an old project back. */}
+                                {(() => {
+                                    const projectIds = Array.isArray(page.properties.project) ? (page.properties.project as unknown[]).map(String) : [];
+                                    const locked = page.properties.accountantExportedAt === true;
+                                    return (
+                                        <div className={`relative min-h-[40px] rounded-lg border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 ${locked ? '' : 'hover:border-orange-300'}`}>
+                                            {projectIds.length === 0 && (
+                                                <span className="pointer-events-none absolute inset-0 flex items-center px-3 text-sm text-neutral-400">
+                                                    {locked ? '—' : 'Kies een project…'}
+                                                </span>
+                                            )}
+                                            <div className="relative h-[40px]">
+                                                <RelationCell
+                                                    value={projectIds}
+                                                    relationDatabaseId={projectRelation?.relationDatabaseId || projectsDbId}
+                                                    displayPropertyId={projectRelation?.relationDisplayPropertyId || 'title'}
+                                                    readOnly={locked}
+                                                    onCommit={v => {
+                                                        const next = Array.isArray(v) ? v.map(String) : [];
+                                                        writeField('project', next);
+                                                        setEditData(p => ({ ...p, project: next }));
+                                                    }}
+                                                    onOpen={(dbId, id) => openLinked(dbId, id)}
+                                                />
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
                             </div>
                         </div>
 

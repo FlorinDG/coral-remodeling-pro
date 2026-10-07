@@ -366,7 +366,7 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                         supplierName: form.merchant,
                         invoiceNumber: form.invoiceNumber,
                         object: form.object,
-                        ogm: form.ogm,
+                        structuredCommunication: form.ogm,   // OGM-1: the schema's field id
                         vatRegime: form.vatRegime,
                         supplierVat: form.supplierVat,
                         supplier: [],
@@ -425,7 +425,7 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                     invoiceDate: form.date,
                     invoiceNumber: form.invoiceNumber || currentProps.invoiceNumber,
                     object: form.object || currentProps.object,
-                    ogm: form.ogm || currentProps.ogm,
+                    structuredCommunication: form.ogm || currentProps.structuredCommunication || currentProps.ogm,
                     vatRegime: form.vatRegime || currentProps.vatRegime,
                     supplierVat: form.supplierVat || currentProps.supplierVat,
                     supplierIban: scanResult?.extracted?.supplierIban || currentProps.supplierIban,

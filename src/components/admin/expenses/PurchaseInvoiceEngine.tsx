@@ -16,6 +16,7 @@ import { READABLE_ACCEPT } from '@/lib/records/readable-document';   // SCAN-2: 
 import { purchaseView, purchaseWrite, editorShows, editorLabel } from '@/lib/records/purchase-document';
 import { prepareUpload } from '@/lib/files/prepare-upload';
 import { formatEuro } from '@/lib/records/grid-cell';
+import { lineNet } from '@/lib/records/purchase-lines';
 import { urlFieldHref } from '@/lib/files';
 import { ledgerAccountOf } from '@/lib/records/accountant-export';
 import { RelationCell } from '@/components/admin/database/v2/cells';
@@ -41,8 +42,10 @@ interface InvoiceLine {
     quantity: number;
     unitCode: string;
     unitPrice: number;
-    vatRate: number;
+    vatRate: number;          // kept (the export's VAT split per rate) — not shown on the line (LINES-1)
     lineTotal: number;
+    discountPct?: number;     // LINES-1: the line discount %, unitPrice is the GROSS price
+    articleCode?: string;
     category?: string;
     costType?: string;
     ledgerAccount?: string;
@@ -196,7 +199,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
         supplierName: '',
         supplierVat: '',
         betreft: '',
-        ogm: '',
+        structuredCommunication: '',
         contact: '',
         invoiceDate: '',
         dueDate: '',
@@ -232,6 +235,8 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                 unitPrice: Number(b.properties?.unitPrice || 0),
                 vatRate: Number(b.properties?.vatRate || 0),
                 lineTotal: Number(b.properties?.lineTotal || 0),
+                discountPct: Number(b.properties?.discountPct ?? b.properties?.discountPercent ?? 0),
+                articleCode: String(b.properties?.articleCode || ''),
                 category: String(b.properties?.category || ''),
                 costType: String(b.properties?.costType || ''),
                 ledgerAccount: String(b.properties?.ledgerAccount || ''),
@@ -243,9 +248,11 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                     description: l.description || l.name || '',
                     quantity: l.quantity || 0,
                     unitCode: l.unitCode || 'C62',
-                    unitPrice: l.unitPrice || l.price || 0,
+                    unitPrice: l.grossUnitPrice || l.unitPrice || l.price || 0,
                     vatRate: l.vatRate || 0,
                     lineTotal: l.lineTotal || l.totalExVat || 0,
+                    discountPct: l.discountPercent || 0,
+                    articleCode: l.articleCode || '',
                     category: '',
                     costType: '',
                     ledgerAccount: '',
@@ -277,7 +284,8 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                 supplierName: initialSupplierName,
                 supplierVat: initialSupplierVat,
                 betreft: String(page.properties.betreft || ''),
-                ogm: String(page.properties.ogm || ''),
+                // OGM-1: the schema's field id; `ogm` = older records (moved by sql/ogm-to-structured-communication.sql)
+                structuredCommunication: String(page.properties.structuredCommunication || page.properties.ogm || ''),
                 contact: String(page.properties.contact || ''),
                 invoiceDate: String(page.properties.invoiceDate || ''),
                 dueDate: String(page.properties.dueDate || ''),
@@ -363,6 +371,8 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                 unitPrice: parseFloat(String(line.unitPrice)) || 0,
                 vatRate: parseFloat(String(line.vatRate)) || 0,
                 lineTotal: parseFloat(String(line.lineTotal)) || 0,
+                discountPct: parseFloat(String(line.discountPct)) || 0,
+                ...(line.articleCode ? { articleCode: line.articleCode } : {}),
                 category: line.category || '',
                 costType: line.costType || '',
                 ledgerAccount: line.ledgerAccount || '',
@@ -628,12 +638,12 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                                     onChange={v => setEditData(p => ({ ...p, contact: v }))}
                                 />
                                 )}
-                                {editorShows(role, 'ogm') && (
+                                {editorShows(role, 'structuredCommunication') && (
                                 <InfoField
-                                    label={editorLabel(role, 'ogm', 'OGM / Gestructureerde mededeling')}
-                                    value={isEditing ? String(editData.ogm || '') : String(page.properties.ogm || '') || '—'}
+                                    label={editorLabel(role, 'structuredCommunication', 'OGM / Gestructureerde mededeling')}
+                                    value={isEditing ? String(editData.structuredCommunication || '') : String(page.properties.structuredCommunication || page.properties.ogm || '') || '—'}
                                     editable={isEditing}
-                                    onChange={v => setEditData(p => ({ ...p, ogm: v }))}
+                                    onChange={v => setEditData(p => ({ ...p, structuredCommunication: v }))}
                                 />
                                 )}
                                 {editorShows(role, 'betreft') && (
@@ -915,7 +925,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                                     <h3 className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Factuurlijnen</h3>
                                     {isEditing && (
                                         <button onClick={() => setEditData(p => {
-                                            const newLines = [...p.lines, { id: `temp-${Date.now()}`, description: '', quantity: 1, unitCode: 'C62', unitPrice: 0, vatRate: 21, lineTotal: 0, category: '', costType: '', ledgerAccount: '' }];
+                                            const newLines = [...p.lines, { id: `temp-${Date.now()}`, description: '', quantity: 1, unitCode: 'C62', unitPrice: 0, discountPct: 0, vatRate: 21, lineTotal: 0, category: '', costType: '', ledgerAccount: '' }];
                                             const computed = calculateHeaderTotalsFromLines(newLines);
                                             return { ...p, lines: newLines, ...computed };
                                         })} className="text-xs text-blue-500 hover:text-blue-600 font-medium">
@@ -930,8 +940,8 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                                                 <th className="px-3 py-2 font-semibold text-neutral-600 dark:text-neutral-400">Omschrijving</th>
                                                 <th className="px-3 py-2 font-semibold text-neutral-600 dark:text-neutral-400">Boekhouding</th>
                                                 <th className="px-3 py-2 font-semibold text-neutral-600 dark:text-neutral-400 text-right w-16">Aantal</th>
-                                                <th className="px-3 py-2 font-semibold text-neutral-600 dark:text-neutral-400 text-right w-24">Prijs</th>
-                                                <th className="px-3 py-2 font-semibold text-neutral-600 dark:text-neutral-400 text-right w-20">Btw %</th>
+                                                <th className="px-3 py-2 font-semibold text-neutral-600 dark:text-neutral-400 text-right w-24">Bruto prijs</th>
+                                                <th className="px-3 py-2 font-semibold text-neutral-600 dark:text-neutral-400 text-right w-20">Korting %</th>
                                                 <th className="px-3 py-2 font-semibold text-neutral-600 dark:text-neutral-400 text-right w-24">Totaal</th>
                                                 {isEditing && <th className="px-3 py-2 w-8"></th>}
                                             </tr>
@@ -1010,23 +1020,23 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                                                     </td>
                                                     <td className="px-3 py-2 text-right">
                                                         {isEditing ? (
-                                                            <input type="number" step="1" value={line.quantity} onChange={e => { const l = [...editData.lines]; l[i].quantity = parseFloat(e.target.value) || 0; l[i].lineTotal = l[i].quantity * l[i].unitPrice; const computed = calculateHeaderTotalsFromLines(l); setEditData({ ...editData, lines: l, ...computed }); }} className="w-full px-2 py-1 bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-right" />
+                                                            <input type="number" step="1" value={line.quantity} onChange={e => { const l = [...editData.lines]; l[i].quantity = parseFloat(e.target.value) || 0; l[i].lineTotal = lineNet(l[i].quantity, l[i].unitPrice, l[i].discountPct || 0); const computed = calculateHeaderTotalsFromLines(l); setEditData({ ...editData, lines: l, ...computed }); }} className="w-full px-2 py-1 bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-right" />
                                                         ) : (
                                                             <span className="text-neutral-500">{line.quantity || 0}</span>
                                                         )}
                                                     </td>
                                                     <td className="px-3 py-2 text-right">
                                                         {isEditing ? (
-                                                            <input type="number" step="0.01" value={line.unitPrice} onChange={e => { const l = [...editData.lines]; l[i].unitPrice = parseFloat(e.target.value) || 0; l[i].lineTotal = l[i].quantity * l[i].unitPrice; const computed = calculateHeaderTotalsFromLines(l); setEditData({ ...editData, lines: l, ...computed }); }} className="w-full px-2 py-1 bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-right" />
+                                                            <input type="number" step="0.01" value={line.unitPrice} onChange={e => { const l = [...editData.lines]; l[i].unitPrice = parseFloat(e.target.value) || 0; l[i].lineTotal = lineNet(l[i].quantity, l[i].unitPrice, l[i].discountPct || 0); const computed = calculateHeaderTotalsFromLines(l); setEditData({ ...editData, lines: l, ...computed }); }} className="w-full px-2 py-1 bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-right" />
                                                         ) : (
                                                             <span className="text-neutral-500">{formatEuro(Number(line.unitPrice || 0))}</span>
                                                         )}
                                                     </td>
                                                     <td className="px-3 py-2 text-right">
                                                         {isEditing ? (
-                                                            <input type="number" step="0.01" value={line.vatRate} onChange={e => { const l = [...editData.lines]; l[i].vatRate = parseFloat(e.target.value) || 0; const computed = calculateHeaderTotalsFromLines(l); setEditData({ ...editData, lines: l, ...computed }); }} className="w-full px-2 py-1 bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-right" />
+                                                            <input type="number" step="0.01" value={line.discountPct ?? 0} onChange={e => { const l = [...editData.lines]; l[i].discountPct = parseFloat(e.target.value) || 0; l[i].lineTotal = lineNet(l[i].quantity, l[i].unitPrice, l[i].discountPct); const computed = calculateHeaderTotalsFromLines(l); setEditData({ ...editData, lines: l, ...computed }); }} className="w-full px-2 py-1 bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-right" />
                                                         ) : (
-                                                            <span className="text-neutral-500">{line.vatRate || 0}%</span>
+                                                            <span className="text-neutral-500">{line.discountPct ? `${String(line.discountPct).replace('.', ',')}%` : '—'}</span>
                                                         )}
                                                     </td>
                                                     <td className="px-3 py-2 text-right">

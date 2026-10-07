@@ -106,7 +106,7 @@ export function buildPeppolExpenseCreateData(
     const properties: Record<string, unknown> = {
         title: data.title,
         betreft: data.betreft || '',
-        ogm: data.ogm || '',
+        structuredCommunication: data.ogm || '',   // OGM-1: the schema's field id (was written as `ogm`)
         contact: data.contact || '',
         source: 'src-peppol',
         docType: data.docType,
@@ -146,7 +146,8 @@ export function buildPeppolExpenseCreateData(
 export function buildScanUpdateIntent(
     pageId: string,
     properties: Record<string, unknown>,
-    baseUpdatedAt?: string | null
+    baseUpdatedAt?: string | null,
+    blocks?: unknown[]
 ): {
     intent: RecordIntent;
     opts: { by: string };
@@ -156,6 +157,7 @@ export function buildScanUpdateIntent(
             pageId,
             fields: properties,
             baseUpdatedAt: baseUpdatedAt ?? null,
+            ...(blocks ? { blocks: blocks as never } : {}),
         },
         opts: {
             by: 'system:scan',
@@ -167,7 +169,8 @@ export function buildScanCreateData(
     pageId: string,
     databaseId: string,
     properties: Record<string, unknown>,
-    order = 0
+    order = 0,
+    blocks: unknown[] = []
 ): {
     intent: RecordIntent;
     opts: {
@@ -187,7 +190,7 @@ export function buildScanCreateData(
             createIfMissing: {
                 databaseId,
                 properties,
-                blocks: [],
+                blocks,
                 createdBy: 'system:scan',
                 assignedTo: [],
             },

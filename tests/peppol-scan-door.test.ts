@@ -296,3 +296,11 @@ test('R2-1-B M3 Throw Proof: scan update on accountant-exported expense is refus
     assert.equal(res.ok, false);
     assert.equal((res as any).refusal.code, 'EXPORT_LOCKED');
 });
+
+import { buildPeppolExpenseCreateData as buildPeppol } from '../src/lib/records/peppol-scan-intents.ts';
+
+test('OGM-1: a Peppol arrival stores the structured communication in the schema\'s field (throw proof: `ogm`, a field the schema does not have)', () => {
+    const { intent } = buildPeppol('p1', 'db-exp', 0, { title: 'F-1', ogm: '+++123/4567/89012+++', docType: 'opt-invoice', totalExVat: 100, totalVat: 21, totalIncVat: 121, peppolDocId: 'd1' });
+    assert.equal(intent.fields?.structuredCommunication, '+++123/4567/89012+++');
+    assert.equal('ogm' in (intent.fields || {}), false);
+});

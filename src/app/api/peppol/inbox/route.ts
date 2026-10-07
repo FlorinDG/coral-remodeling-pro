@@ -9,6 +9,7 @@ import {
     buildPeppolExpenseCreateData,
 } from '@/lib/records/peppol-scan-intents';
 import { v4 as uuidv4 } from 'uuid';
+import { purchaseLineBlocks } from '@/lib/records/purchase-lines';
 import { describeError } from '@/lib/describe-error';
 import {
     listInboxDocuments,
@@ -337,20 +338,8 @@ export async function GET(req: Request) {
             }
 
             // 3. Structured Line Items
-            const blocks = (parsed.lines || []).map((line: any, idx: number) => ({
-                id: uuidv4(),
-                type: 'financial-row',
-                content: line.description || '',
-                order: idx,
-                properties: {
-                    quantity: line.quantity ?? 1,
-                    unitCode: line.unitCode ?? 'C62',
-                    unitPrice: line.unitPrice ?? 0,
-                    vatRate: line.vatRate ?? 0,
-                    lineTotal: line.lineTotal ?? 0,
-                    margePercent: 0,
-                }
-            }));
+            // LINES-1: the ONE line builder (gross price, discount, article code, hidden VAT rate, net total)
+            const blocks = purchaseLineBlocks(parsed.lines, uuidv4);
 
             // Get max order
             const maxOrderRow = await db.globalPage.findFirst({

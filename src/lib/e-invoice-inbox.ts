@@ -89,6 +89,11 @@ export interface ParsedInvoiceLine {
     unitPrice: number;
     vatRate: number;
     lineTotal: number;
+    /** LINES-1 (optional — an e-invoice may not carry them): the gross price before discount, the line discount %, the
+     *  supplier's article code (UBL Price/AllowanceCharge/BaseAmount, line AllowanceCharge, Item/SellersItemIdentification) */
+    grossUnitPrice?: number | null;
+    discountPercent?: number | null;
+    articleCode?: string | null;
 }
 
 export interface DocumentAttachment {
@@ -355,6 +360,19 @@ export function parseUBLToInvoice(ublXml: string, peppolDocId: string): ParsedPu
         const taxPercent = line.Item?.ClassifiedTaxCategory?.Percent
             || line.TaxTotal?.TaxSubtotal?.[0]?.TaxCategory?.Percent;
 
+        // LINES-1 — read defensively: a missing or odd element never stops the line (the inbox must always receive)
+        let grossUnitPrice: number | null = null, discountPercent: number | null = null, articleCode: string | null = null;
+        try {
+            const priceAc = Array.isArray(line.Price?.AllowanceCharge) ? line.Price.AllowanceCharge[0] : line.Price?.AllowanceCharge;
+            const base = num(priceAc?.BaseAmount);
+            if (base > 0) grossUnitPrice = base;
+            const lineAcs = Array.isArray(line.AllowanceCharge) ? line.AllowanceCharge : (line.AllowanceCharge ? [line.AllowanceCharge] : []);
+            const discountAc = lineAcs.find((a: any) => String(txt(a?.ChargeIndicator) ?? a?.ChargeIndicator).toLowerCase() === 'false');
+            const factor = num(discountAc?.MultiplierFactorNumeric);
+            if (factor > 0) discountPercent = factor <= 1 ? factor * 100 : factor;
+            articleCode = txt(line.Item?.SellersItemIdentification?.ID) || null;
+        } catch { /* optional data only */ }
+
         return {
             description: txt(line.Item?.Name || line.Item?.Description) || '',
             quantity,
@@ -362,6 +380,9 @@ export function parseUBLToInvoice(ublXml: string, peppolDocId: string): ParsedPu
             unitPrice,
             vatRate: num(taxPercent),
             lineTotal,
+            grossUnitPrice,
+            discountPercent,
+            articleCode,
         };
     });
 

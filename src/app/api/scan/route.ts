@@ -5,6 +5,7 @@ import { auth } from '@/auth';
 import { platformDb, scopeFromSession } from '@/lib/data/scope';
 import { saveRecord } from '@/lib/data/records';
 import { readableDocument, unreadableMessage } from '@/lib/records/readable-document';
+import { purchaseLineBlocks } from '@/lib/records/purchase-lines';
 import { isEmptyReading, ticketFields } from '@/lib/records/scan-reading';
 import { buildScanUpdateIntent, buildScanCreateData } from '@/lib/records/peppol-scan-intents';
 import { v4 as uuidv4 } from 'uuid';
@@ -59,11 +60,11 @@ Return ONLY a valid JSON object matching this exact schema (no markdown, no expl
       "description": "string",
       "quantity": number,
       "unitCode": "string (e.g. stk, m, m2, uur)",
-      "unitPrice": number,
+      "unitPrice": number (the GROSS price per unit, BEFORE any line discount),
       "vatRate": number (e.g. 21, 6, 0),
-      "lineTotal": number,
-      "articleCode": "string or null",
-      "discountPercent": number or null
+      "lineTotal": number (the line total AFTER discount, excl. VAT),
+      "articleCode": "string or null (the supplier's article / product code)",
+      "discountPercent": number or null (the line discount in %, e.g. 25 for 25%)
     }
   ]
 }
@@ -542,6 +543,9 @@ export async function POST(req: Request) {
                 totalIncVat: extracted.totalIncVat ?? 0,
                 invoiceLines: JSON.stringify(extracted.lines ?? []),
                 betreft: extracted.lines?.[0]?.description || '',
+                // OGM-1: the structured communication the reading found (it was asked for and never written);
+                // the schema's own field id — kernel db-expenses `structuredCommunication`
+                ...(extracted.structuredCommunication ? { structuredCommunication: String(extracted.structuredCommunication).trim() } : {}),
                 peppolDocId: '',
                 supplier: [],
             };
@@ -567,7 +571,12 @@ export async function POST(req: Request) {
         let savedUpdatedAt: string;
 
         if (existingPageId) {
-            const { intent, opts } = buildScanUpdateIntent(existingPageId, properties);
+            // LINES-1: the read lines become ROWS — only when the record has none yet (a re-scan never duplicates or
+            // overwrites lines a person corrected)
+            const current = await db.globalPage.findFirst({ where: { id: existingPageId }, select: { blocks: true } });
+            const currentBlocks = Array.isArray(current?.blocks) ? (current!.blocks as Array<{ type?: string }>) : [];
+            const readRows = isInvoice && !currentBlocks.some(b => b?.type === 'financial-row') ? purchaseLineBlocks(extracted.lines, uuidv4) : [];
+            const { intent, opts } = buildScanUpdateIntent(existingPageId, properties, null, readRows.length ? [...currentBlocks, ...readRows] : undefined);
             const res = await saveRecord(db, intent, opts);
             if (!res.ok) {
                 if (res.refusal.code === 'NOT_FOUND') return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -577,7 +586,7 @@ export async function POST(req: Request) {
             savedUpdatedAt = res.updatedAt;
         } else {
             savedPageId = uuidv4();
-            const { intent, opts } = buildScanCreateData(savedPageId, targetDb, properties, 0);
+            const { intent, opts } = buildScanCreateData(savedPageId, targetDb, properties, 0, isInvoice ? purchaseLineBlocks(extracted.lines, uuidv4) : []);   // LINES-1
             const res = await saveRecord(db, intent, opts);
             if (!res.ok) {
                 return NextResponse.json({ error: `Record save refused: ${res.refusal.code}` }, { status: 422 });

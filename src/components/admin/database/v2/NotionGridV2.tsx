@@ -23,7 +23,7 @@ import { useDatabaseStore } from '../store';
 import type { Page, Property } from '../types';
 import { useFilteredPages } from '../hooks/useFilteredPages';
 import { useOpenLinkedRecord } from '../hooks/useOpenLinkedRecord';
-import { LatestCommentCell } from '../columns/CommentsColumn';
+import { LatestCommentCell } from '../components/LatestCommentCell';
 import { SelectCell, CheckboxCell, DateCell, RelationCell, RollupCell, FormulaCell } from './cells';
 import { collectRollup, applyRollupAggregation, locatorOf } from '@/lib/records/rollup';
 import { evaluateFormula } from '../formulaEngine';

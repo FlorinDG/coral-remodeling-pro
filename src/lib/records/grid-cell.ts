@@ -2,7 +2,7 @@
  * GRID-REPLACE · what a grid cell SHOWS and what typing in it WRITES — pure, tested (tests/grid-cell.test.ts).
  * The new grid edits one field at a time: a cell commits { pageId, field, value } (R2-2) — never a row.
  */
-import { parseCellInput as parseNumberText, cellValue as numberValue } from '@/components/admin/database/columns/numberCell';
+import { parseCellInput as parseNumberText, cellValue as numberValue } from './number-cell';
 import { formatDisplayDate, normaliseDateValue } from './date-cell';
 import { formatPhone, isEmailAddress } from './phone';
 import { zonedParts } from '@/lib/kernel/shift-time';

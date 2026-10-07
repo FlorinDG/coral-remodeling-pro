@@ -12,7 +12,7 @@ import {
     Mail, Phone, MapPin, ExternalLink, Loader2, AlertCircle
 } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
-import { COLOR_STYLES } from '../columns/SelectColumn';
+import { COLOR_STYLES } from '../select-colors';
 import SelectDropdown from './SelectDropdown';
 import { RecurrenceSelector } from '../../tasks/RecurrenceSelector';
 import postcodesData from '@/lib/belgian-postcodes.json';

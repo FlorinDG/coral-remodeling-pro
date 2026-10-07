@@ -4,7 +4,7 @@
  * the related records' target field, empties skipped, then the aggregation — except sum / average, which now read
  * Belgian decimals (see amountOf).
  */
-import { parseCellInput as parseNumberText } from '@/components/admin/database/columns/numberCell';
+import { parseCellInput as parseNumberText } from './number-cell';
 export interface RollupResult { value: string; targetDbId?: string; targetPageId?: string }
 
 /** Where a related record lives and what it holds (the caller's index of loaded records). */

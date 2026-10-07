@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Check, ChevronDown, Search } from 'lucide-react';
-import { COLOR_STYLES } from '../columns/SelectColumn';
+import { COLOR_STYLES } from '../select-colors';
 import { SelectOption } from '../types';
 
 interface SelectDropdownProps {

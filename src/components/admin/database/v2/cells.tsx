@@ -9,7 +9,7 @@ import { createPortal } from 'react-dom';
 import { Check, ExternalLink, Search, Calculator, MoreHorizontal, Maximize2, Copy, Trash2 } from 'lucide-react';
 import { useRelationTarget, resolveRelationTitle } from '@/lib/relations/resolve';
 import type { RollupResult } from '@/lib/records/rollup';
-import { COLOR_STYLES } from '../columns/SelectColumn';
+import { COLOR_STYLES } from '../select-colors';
 import { toggleOption } from '@/lib/records/grid-cell';
 import { normaliseDateValue, formatDisplayDate } from '@/lib/records/date-cell';
 import { normaliseVat, parseCompanyLookup, vatLookupPatch, type CompanyFound } from '@/lib/records/vat-lookup';

@@ -30,7 +30,7 @@ import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea
 import { toast } from 'sonner';
 import { useOverlayEventShield } from '@/hooks/useOverlayEventShield';
 import SmartVATLookup from './SmartVATLookup';
-import { COLOR_STYLES } from '../columns/SelectColumn';
+import { COLOR_STYLES } from '../select-colors';
 import LinkedRecords from './LinkedRecords';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
 import { useTenant } from '@/context/TenantContext';

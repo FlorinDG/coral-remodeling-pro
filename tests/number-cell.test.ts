@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { cellValue, parseCellInput } from '../src/components/admin/database/columns/numberCell.ts';
+import { cellValue, parseCellInput } from '../src/lib/records/number-cell.ts';
 
 test('typed text is stored as a NUMBER — Belgian comma, spaces, empty, garbage', () => {
     assert.equal(parseCellInput('20'), 20);

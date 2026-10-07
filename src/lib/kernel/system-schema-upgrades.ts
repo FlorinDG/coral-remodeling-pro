@@ -14,6 +14,7 @@
  * Custom (tenant) fields are never in this list: they are the tenant's data.
  */
 import type { KernelProperty } from './system-schemas';
+import { EXPENSE_CATEGORIES } from './expense-taxonomy';
 
 export interface SchemaUpgrade {
     /** Stable, numbered: 'U1-…', 'U2-…' — the order is the number. */
@@ -28,6 +29,16 @@ export interface SchemaUpgrade {
     before: KernelProperty;
 }
 
+const OLD_EXPENSE_CATEGORY_IDS = ['cat-materials', 'cat-services', 'cat-subcontractor', 'cat-equipment', 'cat-goods'];
+
+/** Does this select field carry exactly these option ids (in any order)? */
+function sameIds(p: KernelProperty, ids: string[]): boolean {
+    const opts = (p.config as { options?: Array<{ id?: string }> } | undefined)?.options;
+    if (!Array.isArray(opts) || opts.length !== ids.length) return false;
+    const have = new Set(opts.map(o => o?.id));
+    return ids.every(id => have.has(id));
+}
+
 export const SCHEMA_UPGRADES: SchemaUpgrade[] = [
     {
         // The screen's legacy fix, moved here: the accountant-export marker was once created as a date.
@@ -37,6 +48,17 @@ export const SCHEMA_UPGRADES: SchemaUpgrade[] = [
         appliesTo: p => p.type !== 'checkbox',
         apply: p => ({ ...p, type: 'checkbox' }),
         before: { id: 'accountantExportedAt', name: 'Verzonden naar boekhouder', type: 'date' },
+    },
+    {
+        // EDIT-1 (Florin 2026-10-07: "conciliate between the db properties and the modal options"): the purchase-invoice
+        // category was a 5-option list the editor never offered (it offered the 12-category taxonomy) — the schema now
+        // carries the taxonomy (kernel/expense-taxonomy). Applies only to the exact OLD list: a tenant's own list stays.
+        id: 'U2-expense-category-taxonomy',
+        bases: ['db-expenses'],
+        propertyId: 'category',
+        appliesTo: p => sameIds(p, OLD_EXPENSE_CATEGORY_IDS),
+        apply: p => ({ ...p, config: { ...(p.config || {}), options: EXPENSE_CATEGORIES.map(c => ({ id: c.id, name: c.name, color: c.color })) } }),
+        before: { id: 'category', name: 'Categorie', type: 'select', config: { options: OLD_EXPENSE_CATEGORY_IDS.map(id => ({ id, name: id, color: 'gray' })) } },
     },
 ];
 

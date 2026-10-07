@@ -55,21 +55,21 @@ interface ScanResult {
     dedupResult?: any;
 }
 
-import { EXPENSE_CATEGORIES, COST_TYPES } from '@/lib/expense-taxonomy';
+import { COST_TYPES } from '@/lib/kernel/expense-taxonomy';
+import { editorShows } from '@/lib/records/purchase-document';
 import { READABLE_ACCEPT } from '@/lib/records/readable-document';   // SCAN-2: iOS converts HEIC to JPEG itself
-const PAYMENT_METHODS = [
-    { id: 'pm-cash', label: 'Cash' },
-    { id: 'pm-card', label: 'Card' },
-    { id: 'pm-transfer', label: 'Bank Transfer' },
-];
-
 export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tickets' }: TicketCaptureModalProps) {
     const tPlaceholders = useTranslations('Admin.placeholders');
     const { data: session } = useSession();
     const planType = (session?.user as any)?.planType ?? 'FREE';
     const isFree = planType === 'FREE';
     
-    const { tenant } = useTenant();
+    const { tenant, resolveDbId } = useTenant();
+    // EDIT-1: the option lists are the TARGET database's own (schema) — a ticket gets the ticket categories / payment
+    // methods, a purchase invoice the purchase taxonomy; never one database's list written into the other.
+    const targetDb = useDatabaseStore(s => s.getDatabase(resolveDbId(targetDatabaseId)));
+    const schemaOptions = (propId: string) => ((targetDb?.properties.find(p => p.id === propId)?.config?.options) || []).map(o => ({ value: o.id, label: o.name }));
+    const targetRole = targetDb?.logicalKey ?? (isTenantDatabase(targetDatabaseId, 'db-expenses') ? 'expenses' : 'tickets');
     const scanCount = tenant?.scanCount || 0;
     const scanQuota = tenant?.scanQuota || 30;
     const scansLeft = Math.max(0, scanQuota - scanCount);
@@ -967,7 +967,7 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                                     <div>
                                         <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400 mb-1.5 uppercase tracking-wider">Payment Method</label>
                                         <SearchableSelect
-                                            options={PAYMENT_METHODS.map(pm => ({ value: pm.id, label: pm.label }))}
+                                            options={schemaOptions('paymentMethod')}
                                             value={form.paymentMethod}
                                             onChange={(v) => updateForm('paymentMethod', v)}
                                             placeholder={tPlaceholders('method')}
@@ -979,7 +979,7 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                                 <div>
                                     <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400 mb-1.5 uppercase tracking-wider">Expense Category</label>
                                     <SearchableSelect
-                                        options={EXPENSE_CATEGORIES.map(cat => ({ value: cat.id, label: cat.name }))}
+                                        options={schemaOptions('category')}
                                         value={form.category}
                                         onChange={(v) => {
                                             updateForm('category', v);
@@ -988,7 +988,7 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                                         placeholder="Select Main Category..."
                                     />
                                 </div>
-                                {form.category && (
+                                {form.category && editorShows(targetRole, 'costType') && (
                                     <div>
                                         <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400 mb-1.5 uppercase tracking-wider">Cost Type</label>
                                         <SearchableSelect

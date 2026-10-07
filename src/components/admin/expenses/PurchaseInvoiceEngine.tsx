@@ -11,9 +11,9 @@ import { useTenant } from '@/context/TenantContext';
 import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import SelectDropdown from '@/components/admin/database/components/SelectDropdown';
-import { EXPENSE_CATEGORIES, COST_TYPES } from '@/lib/expense-taxonomy';
+import { EXPENSE_CATEGORIES, COST_TYPES } from '@/lib/kernel/expense-taxonomy';
 import { READABLE_ACCEPT } from '@/lib/records/readable-document';   // SCAN-2: iOS converts HEIC to JPEG itself
-import { purchaseView, purchaseWrite } from '@/lib/records/purchase-document';
+import { purchaseView, purchaseWrite, editorShows, editorLabel } from '@/lib/records/purchase-document';
 import { isValidated, approveRefusal, REVIEW_APPROVED } from '@/lib/records/validation';
 
 /** The approval check's field ids, as the person reads them. */
@@ -578,9 +578,11 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                                     )}
                                 </div>
                                 <div className="flex items-center gap-2 mt-0.5">
+                                    {editorShows(role, 'status') && (
                                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${STATUS_COLORS[status] || STATUS_COLORS['opt-draft']}`}>
                                         {STATUS_LABELS[status] || status}
                                     </span>
+                                    )}
                                     {resolvedSupplier && (
                                         <span className="text-xs text-neutral-500">• {String(resolvedSupplier.properties.title)}</span>
                                     )}
@@ -621,83 +623,107 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
 
                         {/* Invoice Details */}
                         <div className="space-y-4">
-                            <h3 className="text-xs font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider">Factuur Details</h3>
+                            <h3 className="text-xs font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider">{role === 'tickets' ? 'Ticket' : 'Factuur Details'}</h3>
                             <div className="grid grid-cols-2 gap-4">
+                                {editorShows(role, 'supplierName') && (
                                 <InfoField
-                                    label="Leverancier"
+                                    label={editorLabel(role, 'supplierName', 'Leverancier')}
                                     value={isEditing ? String(editData.supplierName || '') : String(page.properties.supplierName || resolvedSupplier?.properties.title || '—')}
                                     editable={isEditing}
                                     onChange={v => setEditData(p => ({ ...p, supplierName: v }))}
                                 />
+                                )}
+                                {editorShows(role, 'supplierVat') && (
                                 <InfoField
-                                    label="BTW-nummer leverancier"
+                                    label={editorLabel(role, 'supplierVat', 'BTW-nummer leverancier')}
                                     value={isEditing ? String(editData.supplierVat || '') : String(page.properties.supplierVat || resolvedSupplier?.properties.vat || resolvedSupplier?.properties.vatNumber || peppolDetail?.supplierVat || '')}
                                     editable={isEditing}
                                     onChange={v => setEditData(p => ({ ...p, supplierVat: v }))}
                                 />
+                                )}
+                                {editorShows(role, 'contact') && (
                                 <InfoField
-                                    label="Contactpersoon"
+                                    label={editorLabel(role, 'contact', 'Contactpersoon')}
                                     value={isEditing ? String(editData.contact || '') : String(page.properties.contact || '') || '—'}
                                     editable={isEditing}
                                     onChange={v => setEditData(p => ({ ...p, contact: v }))}
                                 />
+                                )}
+                                {editorShows(role, 'ogm') && (
                                 <InfoField
-                                    label="OGM / Gestructureerde mededeling"
+                                    label={editorLabel(role, 'ogm', 'OGM / Gestructureerde mededeling')}
                                     value={isEditing ? String(editData.ogm || '') : String(page.properties.ogm || '') || '—'}
                                     editable={isEditing}
                                     onChange={v => setEditData(p => ({ ...p, ogm: v }))}
                                 />
+                                )}
+                                {editorShows(role, 'betreft') && (
                                 <InfoField
-                                    label="Omschrijving / Betreft"
+                                    label={editorLabel(role, 'betreft', 'Omschrijving / Betreft')}
                                     value={isEditing ? String(editData.betreft || '') : String(page.properties.betreft || '') || '—'}
                                     editable={isEditing}
                                     onChange={v => setEditData(p => ({ ...p, betreft: v }))}
                                 />
+                                )}
+                                {editorShows(role, 'ourRef') && (
                                 <InfoField
-                                    label="Onze Referentie"
+                                    label={editorLabel(role, 'ourRef', 'Onze Referentie')}
                                     value={isEditing ? String(editData.ourRef || '') : String(page.properties.ourRef || '') || '—'}
                                     editable={isEditing}
                                     onChange={v => setEditData(p => ({ ...p, ourRef: v }))}
                                 />
+                                )}
+                                {editorShows(role, 'supplierIban') && (
                                 <InfoField
-                                    label="IBAN"
+                                    label={editorLabel(role, 'supplierIban', 'IBAN')}
                                     value={isEditing ? String(editData.supplierIban || '') : String(page.properties.supplierIban || '') || '—'}
                                     editable={isEditing}
                                     onChange={v => setEditData(p => ({ ...p, supplierIban: v }))}
                                 />
+                                )}
+                                {editorShows(role, 'supplierBic') && (
                                 <InfoField
-                                    label="BIC"
+                                    label={editorLabel(role, 'supplierBic', 'BIC')}
                                     value={isEditing ? String(editData.supplierBic || '') : String(page.properties.supplierBic || '') || '—'}
                                     editable={isEditing}
                                     onChange={v => setEditData(p => ({ ...p, supplierBic: v }))}
                                 />
+                                )}
+                                {editorShows(role, 'reverseCharge') && (
                                 <InfoField
-                                    label="Btw Verlegd / Medecontractant"
+                                    label={editorLabel(role, 'reverseCharge', 'Btw Verlegd / Medecontractant')}
                                     value={isEditing ? (editData.reverseCharge ? 'Ja' : 'Nee') : (page.properties.reverseCharge ? 'Ja' : 'Nee')}
                                     editable={isEditing}
                                     onChange={v => setEditData(p => ({ ...p, reverseCharge: v === 'Ja' || v === 'true' || v === true as unknown as string }))}
                                 />
+                                )}
+                                {editorShows(role, 'invoiceDate') && (
                                 <InfoField
-                                    label="Factuurdatum"
+                                    label={editorLabel(role, 'invoiceDate', 'Factuurdatum')}
                                     value={isEditing ? String(editData.invoiceDate || '') : formatDateBE(String(page.properties.invoiceDate || ''))}
                                     editable={isEditing}
                                     type="date"
                                     onChange={v => setEditData(p => ({ ...p, invoiceDate: v }))}
                                 />
+                                )}
+                                {editorShows(role, 'dueDate') && (
                                 <InfoField
-                                    label="Vervaldatum"
+                                    label={editorLabel(role, 'dueDate', 'Vervaldatum')}
                                     value={isEditing ? String(editData.dueDate || '') : formatDateBE(String(page.properties.dueDate || ''))}
                                     editable={isEditing}
                                     type="date"
                                     onChange={v => setEditData(p => ({ ...p, dueDate: v }))}
                                 />
+                                )}
+                                {editorShows(role, 'deliveryDate') && (
                                 <InfoField
-                                    label="Leveringsdatum"
+                                    label={editorLabel(role, 'deliveryDate', 'Leveringsdatum')}
                                     value={isEditing ? String(editData.deliveryDate || '') : formatDateBE(String(page.properties.deliveryDate || ''))}
                                     editable={isEditing}
                                     type="date"
                                     onChange={v => setEditData(p => ({ ...p, deliveryDate: v }))}
                                 />
+                                )}
                             </div>
                         </div>
 
@@ -741,14 +767,15 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                                     {isEditing ? (
                                         <SelectDropdown
                                             value={editData.category || null}
-                                            options={EXPENSE_CATEGORIES.map(c => ({ id: c.id, name: c.name, color: c.color }))}
+                                            options={getOptionsForProperty('category')}
                                             onChange={(val) => setEditData(p => ({ ...p, category: val || '', costType: '' }))}
                                             placeholder={tPlaceholders('selectCategory')}
                                         />
                                     ) : (
-                                        <OptionDisplay value={page.properties.category as string} options={EXPENSE_CATEGORIES.map(c => ({ id: c.id, name: c.name, color: c.color }))} />
+                                        <OptionDisplay value={page.properties.category as string} options={getOptionsForProperty('category')} />
                                     )}
                                 </div>
+                                {editorShows(role, 'costType') && (
                                 <div>
                                     <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-1.5">Kostensoort (Cost Type)</label>
                                     {isEditing ? (
@@ -769,15 +796,18 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                                             placeholder="Select Cost Type..."
                                         />
                                     ) : (
-                                        <OptionDisplay value={page.properties.costType as string} options={COST_TYPES.map(c => ({ id: c.id, name: c.name, color: 'gray' }))} />
+                                        <OptionDisplay value={page.properties.costType as string} options={getOptionsForProperty('costType')} />
                                     )}
                                 </div>
+                                )}
+                                {editorShows(role, 'ledgerAccount') && (
                                 <InfoField
                                     label="Grootboekrekening (Standaard)"
                                     value={isEditing ? String(editData.ledgerAccount || '') : String(page.properties.ledgerAccount || '') || '—'}
                                     editable={isEditing}
                                     onChange={v => setEditData(p => ({ ...p, ledgerAccount: v }))}
                                 />
+                                )}
                                 <div>
                                     <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-1.5">Munteenheid</label>
                                     {isEditing ? (
@@ -791,6 +821,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                                         <OptionDisplay value={page.properties.currency as string} options={getOptionsForProperty('currency')} />
                                     )}
                                 </div>
+                                {editorShows(role, 'vatRegime') && (
                                 <div>
                                     <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-1.5">BTW-regime</label>
                                     {isEditing ? (
@@ -804,6 +835,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                                         <OptionDisplay value={page.properties.vatRegime as string} options={getOptionsForProperty('vatRegime')} />
                                     )}
                                 </div>
+                                )}
                             </div>
                         </div>
 
@@ -824,6 +856,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                                         <OptionDisplay value={page.properties.paymentMethod as string} options={getOptionsForProperty('paymentMethod')} />
                                     )}
                                 </div>
+                                {editorShows(role, 'paidDate') && (
                                 <InfoField
                                     label="Betaaldatum"
                                     value={isEditing ? String(editData.paidDate || '') : formatDateBE(String(page.properties.paidDate || ''))}
@@ -831,6 +864,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                                     type="date"
                                     onChange={v => setEditData(p => ({ ...p, paidDate: v }))}
                                 />
+                                )}
                             </div>
                             <div>
                                 <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-1.5">Opmerkingen (intern)</label>
@@ -848,7 +882,17 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                             </div>
                         </div>
 
-                        {/* Financial summary */}
+                        {/* Financial summary — a ticket has ONE amount (no VAT split, no amount due) */}
+                        {role === 'tickets' ? (
+                        <div className="grid grid-cols-1 border border-neutral-200 dark:border-white/10 rounded-xl overflow-hidden bg-neutral-50/50 dark:bg-black/10">
+                            <FinancialCell
+                                label={editorLabel(role, 'totalIncVat', 'Total Incl. VAT')}
+                                value={(isEditing ? editData.totalIncVat : page.properties.totalIncVat) as string | number}
+                                editable={isEditing}
+                                onChange={v => setEditData(p => ({ ...p, totalIncVat: v }))}
+                            />
+                        </div>
+                        ) : (
                         <div className="grid grid-cols-4 divide-x divide-neutral-200 dark:divide-white/10 border border-neutral-200 dark:border-white/10 rounded-xl overflow-hidden bg-neutral-50/50 dark:bg-black/10">
                             <FinancialCell
                                 label="Total Excl. VAT"
@@ -874,9 +918,10 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                                 highlight
                             />
                         </div>
+                        )}
 
                         {/* Structured line items */}
-                        {(isEditing || (page.blocks && page.blocks.filter((b: any) => b.type === 'financial-row').length > 0)) && (
+                        {editorShows(role, 'lines') && (isEditing || (page.blocks && page.blocks.filter((b: any) => b.type === 'financial-row').length > 0)) && (
                             <div className="space-y-3 pt-2">
                                 <div className="flex items-center justify-between">
                                     <h3 className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Line Items</h3>
@@ -1022,7 +1067,8 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                     {/* Left Footer Action bar */}
                     <div className="px-6 py-4 border-t border-neutral-200 dark:border-white/10 flex items-center justify-between shrink-0 bg-neutral-50/50 dark:bg-black/10">
                         <div className="flex items-center gap-2">
-                            {status === 'opt-draft' && (
+                            {/* the invoice's payment flow (approve for payment, reject, mark paid) — not a ticket's */}
+                            {editorShows(role, 'status') && status === 'opt-draft' && (
                                 <>
                                     <button
                                         onClick={handleApprove}
@@ -1040,7 +1086,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                                     </button>
                                 </>
                             )}
-                            {status === 'opt-unpaid' && (
+                            {editorShows(role, 'status') && status === 'opt-unpaid' && (
                                 <button
                                     onClick={handleMarkPaid}
                                     className="flex items-center gap-1.5 px-3 py-2 bg-green-500 hover:bg-green-600 text-white text-xs font-bold rounded-lg transition-colors"

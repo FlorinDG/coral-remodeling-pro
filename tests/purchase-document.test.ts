@@ -21,3 +21,13 @@ test('an edit lands in the ticket\'s OWN field; invoice-only fields are never wr
     for (const k of ['dueDate', 'supplierIban', 'ogm', 'status', 'totalVat', 'totalExVat', 'title']) assert.equal(purchaseWrite('tickets', k, 'x'), null, k);
     assert.deepEqual(purchaseWrite('expenses', 'dueDate', '2026-11-01'), { key: 'dueDate', value: '2026-11-01' });
 });
+
+import { editorShows, editorLabel } from '../src/lib/records/purchase-document.ts';
+
+test('a ticket shows only ticket fields — never the invoice fields (throw proof: OGM / IBAN / due date on a receipt)', () => {
+    for (const f of ['supplierName', 'invoiceDate', 'totalIncVat', 'category', 'paymentMethod', 'notes', 'project']) assert.equal(editorShows('tickets', f), true, f);
+    for (const f of ['supplierVat', 'ogm', 'supplierIban', 'dueDate', 'costType', 'ledgerAccount', 'vatRegime', 'paidDate', 'lines', 'totalVat', 'peppol']) assert.equal(editorShows('tickets', f), false, f);
+    assert.equal(editorShows('expenses', 'ogm'), true);
+    assert.equal(editorLabel('tickets', 'supplierName', 'Leverancier'), 'Handelaar');
+    assert.equal(editorLabel('expenses', 'supplierName', 'Leverancier'), 'Leverancier');
+});

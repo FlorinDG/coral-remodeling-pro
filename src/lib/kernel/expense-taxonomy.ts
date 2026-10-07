@@ -1,3 +1,9 @@
+/**
+ * The purchase-expense taxonomy — categories and cost types with their VAT / income-tax rules. KERNEL (moved from
+ * lib/expense-taxonomy, EDIT-1 2026-10-07): the purchase-invoice SCHEMA's `category` / `costType` options are built
+ * from it (system-schemas), so the editor, the grid and the export read ONE list (Florin: "conciliate between the db
+ * properties and the modal options").
+ */
 export interface ExpenseCategory {
     id: string;
     name: string; // NL label

@@ -10,6 +10,11 @@
  *
  * Keys are the legacy base ids ('db-articles', …) — SYSTEM_DATABASES[role].legacyBase.
  */
+import { EXPENSE_CATEGORIES, COST_TYPES } from './expense-taxonomy';
+
+const EXPENSE_CATEGORY_OPTIONS = EXPENSE_CATEGORIES.map(c => ({ id: c.id, name: c.name, color: c.color }));
+const COST_TYPE_OPTIONS = COST_TYPES.map(c => ({ id: c.id, name: c.name, color: 'gray' }));
+
 /** The kernel's own shape of a database field (L0 may not import screen types — PRE-1). Structurally a
  *  subset of the screens' `Property`, so the screens can use these as their properties. */
 export interface KernelProperty {
@@ -230,13 +235,9 @@ export function canonicalSchemas(resolveDbId: (base: string) => string): Record<
       { id: 'reg-reverse',  name: 'Medecontractant', color: 'orange' },
       { id: 'reg-intracom', name: 'Intracommunautair', color: 'purple' },
     ]}},
-    { id: 'category',     name: 'Categorie', type: 'select', config: { options: [
-      { id: 'cat-materials',     name: 'Aankoop materialen', color: 'orange' },
-      { id: 'cat-services',      name: 'Diensten en diverse leveringen', color: 'blue' },
-      { id: 'cat-subcontractor', name: 'Onderaannemers', color: 'purple' },
-      { id: 'cat-equipment',     name: 'Gereedschap & Uitrusting', color: 'green' },
-      { id: 'cat-goods',         name: 'Handelsgoederen', color: 'amber' },
-    ]}},
+    // EDIT-1: built from the kernel taxonomy — the ONE list the editor, the grid and the export read
+    { id: 'category',     name: 'Categorie', type: 'select', config: { options: EXPENSE_CATEGORY_OPTIONS } },
+    { id: 'costType',     name: 'Kostensoort', type: 'select', config: { options: COST_TYPE_OPTIONS } },
     { id: 'ledgerAccount', name: 'Grootboekrekening', type: 'text'     },
     { id: 'notes',         name: 'Opmerkingen (intern)', type: 'text'  },
     { id: 'paidDate',      name: 'Betaaldatum',      type: 'date'     },

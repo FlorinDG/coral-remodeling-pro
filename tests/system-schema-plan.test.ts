@@ -105,3 +105,13 @@ test('upgradesFor: a step for the bestek is not offered to the articles', () => 
     assert.equal(upgradesFor('db-bestek', list).length, 1);
     assert.equal(upgradesFor('db-articles', list).length, 0);
 });
+
+test('U2: the purchase category list becomes the taxonomy — only the exact OLD list; a tenant\'s own list stays (throw proof)', () => {
+    const u2 = SCHEMA_UPGRADES.find(s => s.id === 'U2-expense-category-taxonomy')!;
+    const old = { id: 'category', name: 'Categorie', type: 'select', config: { options: ['cat-goods', 'cat-materials', 'cat-services', 'cat-subcontractor', 'cat-equipment'].map(id => ({ id, name: id })) } };
+    assert.equal(u2.appliesTo(old), true);
+    const next = u2.apply(old) as { config: { options: Array<{ id: string }> } };
+    assert.ok(next.config.options.some(o => o.id === 'cat-2') && next.config.options.length === 12);
+    const own = { ...old, config: { options: [...old.config.options, { id: 'cat-mine', name: 'Eigen' }] } };
+    assert.equal(u2.appliesTo(own), false);
+});

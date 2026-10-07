@@ -573,11 +573,13 @@ export default function AdminLayout({ children, activeModules = [], planType = '
                             children
                         )}
                         <RecordPeekHost />
+                        {/* inside the tenant's context: the bottom bar's camera needs the tenant (plan, scan quota, the
+                            database binding) — outside it the capture ran without them */}
+                        <MobileBottomNav />
                     </TenantProvider>
                 </div>
             </main>
             <GlobalLoadingModal />
-            <MobileBottomNav />
             <VersionWatcher />
             <GlobalMentionDateInterceptor />
             <NotificationWatcher />

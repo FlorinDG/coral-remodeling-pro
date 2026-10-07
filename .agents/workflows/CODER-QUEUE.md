@@ -1,5 +1,5 @@
 # CORAL — CODER QUEUE
-**Current as of 2026-10-06.** Suggested order: GRID-REPLACE-5 (§7, M1…M4, reviewed one by one) → LOC-GRID-1 → DB-HEADER-1 M4 → R2-1-B M4. This file is always the live queue — superseded items are removed, not renamed.
+**Current as of 2026-10-06.** Suggested order: GRID-REPLACE-5 M5 (then §7) → LOC-GRID-1 → DB-HEADER-1 M4 → R2-1-B M4. This file is always the live queue — superseded items are removed, not renamed.
 🛑 **The filename never carries a date.** `PLANNER-HANDOVER.md` §7 points here permanently.
 
 **Work top to bottom. Each item is a separate commit set. Report after each.**
@@ -35,9 +35,11 @@ on the caller's scoped door (session / system / portal), or justified in writing
 📄 `coder-directive-loc-grid-1.md` — every visible string in `v2/NotionGridV2.tsx` + `v2/cells.tsx` → `Admin.grid.*`
 in en/nl/fr/ro; strings only; `tests/i18n.test.ts` is the guard (throw proof). Report `.agents/reports/LOC-GRID-1.md`.
 
-## 0 · `GRID-REPLACE-5` — ✅ M1–M4 ACCEPTED (planner fixed the modal shortcuts) · 🟩 GO §7 (report only, then STOP)
-Write `.agents/reports/GRID-REPLACE-5-S7.md` (plan § PLANNER REVIEW — M1–M4): the DSG behaviours users may rely on vs the
-new grid. Change no code. M5 (the package) is Florin's.
+## 0 · `GRID-REPLACE-5` — ✅ M1–M4 ACCEPTED · 🟩 GO M5 (Florin 2026-10-07: "can he go to M5 and remove the old grid entirely?")
+M5 = `npm uninstall react-datasheet-grid` (package.json + package-lock.json ONLY, nothing else in the commit), prove no
+occurrence left in `src/`, `npm run build` green. Its own commit + `.agents/reports/GRID-REPLACE-5-M5.md`. 🛑 A package
+change: **Florin pushes that range to main himself** — commit on develop, push develop, STOP and say so.
+Then §7 (report only, `.agents/reports/GRID-REPLACE-5-S7.md`): the DSG behaviours users may rely on vs the new grid.
 
 ## ✅ `R2-5` — DONE WITH CORRECTIONS (review 2026-10-02, `MORNING-2026-10-02.md` §2)
 Store tests accepted. 11 of 13 OCC tests tested a COPY of the merge loop (§3a) — removed on

@@ -15,6 +15,8 @@ import { EXPENSE_CATEGORIES, COST_TYPES } from '@/lib/kernel/expense-taxonomy';
 import { READABLE_ACCEPT } from '@/lib/records/readable-document';   // SCAN-2: iOS converts HEIC to JPEG itself
 import { purchaseView, purchaseWrite, editorShows, editorLabel } from '@/lib/records/purchase-document';
 import { prepareUpload } from '@/lib/files/prepare-upload';
+import { RelationCell } from '@/components/admin/database/v2/cells';
+import { useOpenLinkedRecord } from '@/components/admin/database/hooks/useOpenLinkedRecord';
 import { MAX_UPLOAD_BYTES, tooLargeMessage } from '@/lib/files/upload-size';
 import { isValidated, approveRefusal, REVIEW_APPROVED } from '@/lib/records/validation';
 
@@ -137,7 +139,6 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
         if (w) updatePageProperty(expensesDbId, pageId, w.key, w.value as never);
     };
     const suppliersDb = useDatabaseStore(s => s.getDatabase(suppliersDbId));
-    const projectsDb = useDatabaseStore(s => s.getDatabase(projectsDbId));
 
     const [peppolDetail, setPeppolDetail] = useState<ParsedInvoice | null>(null);
     const [loadingPeppol, setLoadingPeppol] = useState(false);
@@ -463,15 +464,6 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
         return null;
     })();
 
-    const resolvedProject = (() => {
-        if (!projectsDb || !page) return null;
-        const relVal = page.properties.project;
-        if (Array.isArray(relVal) && relVal.length > 0) {
-            return projectsDb.pages.find((p: Page) => p.id === relVal[0]);
-        }
-        return null;
-    })();
-
     const handleExportPDF = async () => {
         if (!page) return;
 
@@ -527,17 +519,15 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
         }
     };
 
+    // the record's own schema says where `project` points (purchase invoices and tickets alike)
+    const projectRelation = useDatabaseStore.getState().getDatabase(expensesDbId)?.properties?.find(p => p.id === 'project')?.config as { relationDatabaseId?: string; relationDisplayPropertyId?: string } | undefined;
+    const openLinked = useOpenLinkedRecord();
+
     const getOptionsForProperty = (propId: string) => {
         const db = useDatabaseStore.getState().getDatabase(expensesDbId);
         const prop = db?.properties?.find(p => p.id === propId);
         return prop?.config?.options || [];
     };
-
-    const projectOptions = (projectsDb?.pages || []).map(p => ({
-        id: p.id,
-        name: String(p.properties.title || p.properties.name || p.id),
-        color: 'blue' as const
-    }));
 
     if (!page) {
         return (
@@ -737,29 +727,18 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                             <h3 className="text-xs font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider">Project Koppeling</h3>
                             <div>
                                 <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-1.5">Gekoppeld Project</label>
-                                {isEditing ? (
-                                    <div className="max-w-xs">
-                                        <SelectDropdown
-                                            value={editData.project[0] || null}
-                                            options={projectOptions}
-                                            onChange={(val) => setEditData(p => ({ ...p, project: val ? [val] : [] }))}
-                                            placeholder={tPlaceholders('selectProject')}
-                                        />
-                                    </div>
-                                ) : (
-                                    resolvedProject ? (
-                                        <Link
-                                            href={`/${locale}/admin/database/db-1/${resolvedProject.id}`}
-                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800/30 rounded-lg text-xs font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-100 transition-colors"
-                                        >
-                                            <FileText className="w-3.5 h-3.5" />
-                                            {String(resolvedProject.properties.title || resolvedProject.properties.name || 'Naamloos Project')}
-                                            <ExternalLink className="w-3 h-3 ml-0.5 opacity-70" />
-                                        </Link>
-                                    ) : (
-                                        <span className="text-neutral-400 text-sm italic">—</span>
-                                    )
-                                )}
+                                {/* EDIT-1 (Florin 2026-10-07: "the project select - not the same select and search does not work"): the
+                                    grid's own relation picker — its search, the records' titles, open in place */}
+                                <div className="min-h-[34px] rounded-lg border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5">
+                                    <RelationCell
+                                        value={isEditing ? editData.project : (page.properties.project ?? [])}
+                                        relationDatabaseId={projectRelation?.relationDatabaseId || projectsDbId}
+                                        displayPropertyId={projectRelation?.relationDisplayPropertyId || 'title'}
+                                        readOnly={!isEditing}
+                                        onCommit={v => setEditData(p => ({ ...p, project: Array.isArray(v) ? v.map(String) : [] }))}
+                                        onOpen={(dbId, id) => openLinked(dbId, id)}
+                                    />
+                                </div>
                             </div>
                         </div>
 

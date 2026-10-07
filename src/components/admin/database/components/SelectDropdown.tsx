@@ -84,16 +84,17 @@ export default function SelectDropdown({ value, options, onChange, placeholder =
         setSearchQuery('');
     };
 
-    // Auto-focus search when dropdown opens
+    // Auto-focus search once the list is ON SCREEN — the portal mounts only after `pos` is measured; focusing on
+    // `isOpen` alone found no input yet
     useEffect(() => {
-        if (isOpen && searchInputRef.current) {
+        if (isOpen && pos && searchInputRef.current) {
             searchInputRef.current.focus();
         }
         if (!isOpen) {
             // eslint-disable-next-line react-hooks/set-state-in-effect
             setSearchQuery('');
         }
-    }, [isOpen]);
+    }, [isOpen, pos]);
 
     return (
         <>
@@ -123,7 +124,10 @@ export default function SelectDropdown({ value, options, onChange, placeholder =
                         ? { bottom: window.innerHeight - pos.top, left: pos.left, minWidth: pos.minWidth }
                         : { top: pos.top, left: pos.left, minWidth: pos.minWidth }
                     }
-                    onMouseDown={e => e.preventDefault()}
+                    // keep focus where it is when an OPTION is pressed — but never on the search box itself: preventing its
+                    // mousedown is what kept it from ever taking focus (Florin 2026-10-07: "search does not work, text
+                    // input does not receive the click")
+                    onMouseDown={e => { if ((e.target as HTMLElement).tagName !== 'INPUT') e.preventDefault(); }}
                 >
                     {/* Search input for long lists */}
                     {options.length > 6 && (

@@ -272,6 +272,8 @@ export function canonicalSchemas(resolveDbId: (base: string) => string): Record<
       { id: 'pm-card',     name: 'Kaart',         color: 'blue'   },
       { id: 'pm-transfer', name: 'Bankoverschrijving', color: 'purple' },
     ]}},
+    // EDIT-1: a receipt is booked on a project like a purchase invoice (the capture and the editor offer it)
+    { id: 'project',    name: 'Project',  type: 'relation', config: { relationDatabaseId: resolveDbId('db-1'), relationDisplayPropertyId: 'title' } },
     { id: 'receiptUrl', name: 'Bonnetje',  type: 'url'  },
     { id: 'notes',      name: 'Notities', type: 'text' },
     { id: 'peppolDocId', name: 'Peppol Doc ID',     type: 'text'     },

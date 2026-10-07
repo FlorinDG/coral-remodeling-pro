@@ -126,3 +126,49 @@ export const COST_TYPES: ExpenseCostType[] = [
     { id: 'ct-12-3', categoryId: 'cat-12', name: 'Sociaal verzekeringsfonds', nameEn: 'Social insurance fund', vatDeductiblePct: 0, incomeTaxDeductiblePct: 100, medecontractant: false, vatExempt: true },
     { id: 'ct-12-4', categoryId: 'cat-12', name: 'Aanvullend pensioen / VAPZ', nameEn: 'Supplementary pension', vatDeductiblePct: 0, incomeTaxDeductiblePct: 100, medecontractant: false, vatExempt: true },
 ];
+
+/**
+ * MAR-1 · the Belgian minimum chart of accounts (MAR / PCMN, KB 2001) account per cost type and per ticket category
+ * (Florin 2026-10-07: "do it … the MAR is a standard for him as well"). The export books a line on it when no ledger
+ * account was typed. `basis`: 'MAR' = an account the minimum chart itself defines (60x, 603, 617, 618, 62x, 640, 657,
+ * class 2); 'conventie' = the usual subdivision of group 61 (610–614), which the chart leaves to the company — the
+ * accountant confirms those. VAT stays as it is (the accountant handles it; the document carries it).
+ */
+export type MarBasis = 'MAR' | 'conventie';
+export interface MarAccount { account: string; basis: MarBasis }
+const M = (account: string): MarAccount => ({ account, basis: 'MAR' });
+const C = (account: string): MarAccount => ({ account, basis: 'conventie' });
+
+export const COST_TYPE_MAR: Readonly<Record<string, MarAccount>> = {
+    // 1 Investeringen — vaste activa (klasse 2), afgeschreven
+    'ct-1-1': M('230'), 'ct-1-2': C('601'), 'ct-1-3': M('230'), 'ct-1-4': M('240'), 'ct-1-5': M('240'), 'ct-1-6': M('211'),
+    // 2 Onderaannemingen
+    'ct-2-1': M('603'), 'ct-2-2': M('603'), 'ct-2-3': M('603'), 'ct-2-4': M('603'),
+    // 3 Goederen / bouwmaterialen
+    'ct-3-1': M('600'), 'ct-3-2': M('600'), 'ct-3-3': M('600'), 'ct-3-4': M('600'), 'ct-3-5': M('601'), 'ct-3-6': M('601'),
+    // 4 Huur
+    'ct-4-1': C('610'), 'ct-4-2': C('610'), 'ct-4-3': C('610'), 'ct-4-4': C('610'),
+    // 5 Rollend materieel
+    'ct-5-1': M('241'), 'ct-5-2': M('241'), 'ct-5-3': C('612'), 'ct-5-4': C('611'), 'ct-5-5': C('613'), 'ct-5-6': M('640'), 'ct-5-7': C('613'),
+    // 6 Algemene kosten
+    'ct-6-1': C('613'), 'ct-6-2': C('613'), 'ct-6-3': C('613'), 'ct-6-4': M('657'), 'ct-6-5': C('613'), 'ct-6-6': C('614'),
+    'ct-6-7': C('613'), 'ct-6-8': C('613'), 'ct-6-9': C('613'), 'ct-6-10': C('613'),
+    // 7 Gebouwen / lokalen
+    'ct-7-1': C('612'), 'ct-7-2': C('611'), 'ct-7-3': C('611'), 'ct-7-4': M('640'), 'ct-7-5': C('613'),
+    // 8 Erelonen / commissies
+    'ct-8-1': C('613'), 'ct-8-2': C('613'), 'ct-8-3': C('613'), 'ct-8-4': C('613'), 'ct-8-5': C('613'),
+    // 9 Personeel
+    'ct-9-1': M('617'), 'ct-9-2': M('620'), 'ct-9-3': M('623'), 'ct-9-4': M('623'), 'ct-9-5': C('613'),
+    // 10 Opstartkosten
+    'ct-10-1': M('200'), 'ct-10-2': M('200'), 'ct-10-3': C('230'),
+    // 11 Verzekeringen
+    'ct-11-1': C('613'), 'ct-11-2': C('613'), 'ct-11-3': C('613'), 'ct-11-4': C('623'), 'ct-11-5': C('613'),
+    // 12 Sociale bijdragen
+    'ct-12-1': C('618'), 'ct-12-2': M('621'), 'ct-12-3': C('618'), 'ct-12-4': C('618'),
+};
+
+/** Tickets carry a category only (no cost type): the account per ticket category. */
+export const TICKET_CATEGORY_MAR: Readonly<Record<string, MarAccount>> = {
+    'cat-fuel': C('612'), 'cat-restaurant': C('613'), 'cat-office': C('613'), 'cat-tools': C('601'),
+    'cat-materials': M('600'), 'cat-parking': C('613'), 'cat-transport': C('613'), 'cat-other': C('613'),
+};

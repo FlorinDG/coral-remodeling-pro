@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { scopeFromSession, platformDb } from '@/lib/data/scope';
 import { resolveDatabaseId } from '@/lib/kernel/system-databases';
-import { selectForExport, vatSplit, signedSplit, signed, KIND_LABEL, type ExportDoc, type ExportKind, type ExportSource } from '@/lib/records/accountant-export';
+import { selectForExport, vatSplit, signedSplit, signed, KIND_LABEL, ledgerAccountOf, type ExportDoc, type ExportKind, type ExportSource } from '@/lib/records/accountant-export';
 import { storage, resolveDocumentKey } from '@/lib/storage';
 import { buildAuditLogData, buildAuditLogOperation } from '@/lib/audit';
 import JSZip from 'jszip';
@@ -240,7 +240,7 @@ export async function GET(req: Request) {
                     props.currency === 'cur-usd' ? 'USD' : props.currency === 'cur-gbp' ? 'GBP' : 'EUR',
                     '',
                     props.category || '',
-                    '',
+                    ledgerAccountOf('ticket', props),   // MAR-1
                     props.paymentMethod || '',
                     '',
                     '', '', Number(props.amount) || 0,
@@ -260,7 +260,7 @@ export async function GET(req: Request) {
                 props.currency || 'EUR',
                 props.vatRegime || '',
                 props.category || '',
-                props.ledgerAccount || '',
+                ledgerAccountOf(exp.kind, props),   // MAR-1: typed, else the cost type's MAR account
                 props.paymentMethod || '',
                 props.paidDate || '',
                 signed(exp.kind, Number(props.totalExVat) || 0),

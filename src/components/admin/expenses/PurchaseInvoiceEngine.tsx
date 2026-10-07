@@ -15,6 +15,7 @@ import { EXPENSE_CATEGORIES, COST_TYPES } from '@/lib/kernel/expense-taxonomy';
 import { READABLE_ACCEPT } from '@/lib/records/readable-document';   // SCAN-2: iOS converts HEIC to JPEG itself
 import { purchaseView, purchaseWrite, editorShows, editorLabel } from '@/lib/records/purchase-document';
 import { prepareUpload } from '@/lib/files/prepare-upload';
+import { ledgerAccountOf } from '@/lib/records/accountant-export';
 import { RelationCell } from '@/components/admin/database/v2/cells';
 import { useOpenLinkedRecord } from '@/components/admin/database/hooks/useOpenLinkedRecord';
 import { MAX_UPLOAD_BYTES, tooLargeMessage } from '@/lib/files/upload-size';
@@ -787,7 +788,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                                 {editorShows(role, 'ledgerAccount') && (
                                 <InfoField
                                     label="Grootboekrekening (Standaard)"
-                                    value={isEditing ? String(editData.ledgerAccount || '') : String(page.properties.ledgerAccount || '') || '—'}
+                                    value={isEditing ? String(editData.ledgerAccount || '') : String(page.properties.ledgerAccount || '') || (rawPage && ledgerAccountOf('invoice', rawPage.properties) ? `${ledgerAccountOf('invoice', rawPage.properties)} · MAR (kostensoort)` : '—')}
                                     editable={isEditing}
                                     onChange={v => setEditData(p => ({ ...p, ledgerAccount: v }))}
                                 />

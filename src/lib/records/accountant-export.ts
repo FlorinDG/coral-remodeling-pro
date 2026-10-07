@@ -11,6 +11,7 @@
 type Props = Record<string, unknown>;
 
 import { isValidated } from './validation';
+import { COST_TYPE_MAR, TICKET_CATEGORY_MAR } from '@/lib/kernel/expense-taxonomy';
 export type ExportKind = 'invoice' | 'credit-note' | 'ticket';
 export type ExportSource = 'invoices' | 'expenses' | 'tickets';
 
@@ -150,4 +151,16 @@ export function exportPeriod(preset: PeriodPreset, todayYmd: string): { from: st
         case 'last-calendar-year':
             return { from: `${y - 1}-01-01`, to: `${y - 1}-12-31` };
     }
+}
+
+/**
+ * MAR-1 · the ledger account an export line is booked on: the one a person typed (always wins), else the MAR account of
+ * the cost type (purchase invoices), else of the ticket category. Empty when nothing is known — never a guess.
+ */
+export function ledgerAccountOf(kind: string, props: Props | null | undefined): string {
+    const p = props || {};
+    const typed = String(p.ledgerAccount ?? '').trim();
+    if (typed) return typed;
+    if (kind === 'ticket') return TICKET_CATEGORY_MAR[String(p.category ?? '')]?.account ?? '';
+    return COST_TYPE_MAR[String(p.costType ?? '')]?.account ?? '';
 }

@@ -71,3 +71,19 @@ test('VALIDATE-1: a scan nobody validated is never exported — Peppol and appro
     assert.deepEqual(sel.toExport.map(d => d.id), ['ok', 'pep']);
     assert.deepEqual(sel.unvalidated.map(d => d.id), ['scan', 'ready']);
 });
+
+import { ledgerAccountOf } from '../src/lib/records/accountant-export.ts';
+import { COST_TYPES } from '../src/lib/kernel/expense-taxonomy.ts';
+import { COST_TYPE_MAR, TICKET_CATEGORY_MAR } from '../src/lib/kernel/expense-taxonomy.ts';
+
+test('MAR-1: the line is booked on the typed account, else the cost type / ticket category account (throw proof: an empty column)', () => {
+    assert.equal(ledgerAccountOf('invoice', { costType: 'ct-2-1' }), '603');
+    assert.equal(ledgerAccountOf('invoice', { costType: 'ct-2-1', ledgerAccount: '6030010' }), '6030010');   // typed wins
+    assert.equal(ledgerAccountOf('ticket', { category: 'cat-fuel' }), '612');
+    assert.equal(ledgerAccountOf('invoice', {}), '');                                                      // never a guess
+});
+
+test('MAR-1: every cost type and every ticket category has its account (a new type without one fails here)', () => {
+    for (const ct of COST_TYPES) assert.ok(COST_TYPE_MAR[ct.id], `cost type ${ct.id} has no MAR account`);
+    for (const id of ['cat-fuel', 'cat-restaurant', 'cat-office', 'cat-tools', 'cat-materials', 'cat-parking', 'cat-transport', 'cat-other']) assert.ok(TICKET_CATEGORY_MAR[id], id);
+});

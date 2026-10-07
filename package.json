@@ -97,7 +97,6 @@
     "pdf-parse": "^1.1.1",
     "prisma": "^6.19.2",
     "react": "19.2.3",
-    "react-datasheet-grid": "^4.11.6",
     "react-day-picker": "^9.14.0",
     "react-dom": "19.2.3",
     "react-google-autocomplete": "^2.7.5",

@@ -530,10 +530,11 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
 
     return (
         <div role="dialog" aria-modal="true" className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-            <div className={`relative w-full max-w-7xl md:h-[90vh] bg-white dark:bg-neutral-900 rounded-none md:rounded-2xl shadow-2xl border-0 md:border border-neutral-200 dark:border-white/10 flex flex-col md:flex-row overflow-y-auto md:overflow-hidden min-h-screen md:min-h-0 ${animationDone ? '' : 'animate-in fade-in zoom-in-95 duration-200'}`} onClick={(e) => e.stopPropagation()}>
+            <div className={`relative w-full max-w-[1700px] md:h-[92vh] bg-white dark:bg-neutral-900 rounded-none md:rounded-2xl shadow-2xl border-0 md:border border-neutral-200 dark:border-white/10 flex flex-col md:flex-row overflow-y-auto md:overflow-hidden min-h-screen md:min-h-0 ${animationDone ? '' : 'animate-in fade-in zoom-in-95 duration-200'}`} onClick={(e) => e.stopPropagation()}>
                 
                 {/* Left Pane (Metadata & Lines) */}
-                <div className="w-full md:w-[55%] flex flex-col border-b md:border-b-0 md:border-r border-neutral-200 dark:border-white/10 relative bg-white dark:bg-neutral-900 shrink-0">
+                {/* EDIT-1 (Florin 2026-10-07): the document pane ~15% wider than the data — Florin zooms into documents */}
+                <div className="w-full md:w-[46%] flex flex-col border-b md:border-b-0 md:border-r border-neutral-200 dark:border-white/10 relative bg-white dark:bg-neutral-900 shrink-0">
                     {/* Header */}
                     <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200 dark:border-white/10 shrink-0">
                         <div className="flex items-center gap-3 min-w-0">
@@ -1098,7 +1099,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                 </div>
 
                 {/* Right Pane (Viewer / Attachments) */}
-                <div className="w-full md:w-[45%] h-[75vh] md:h-auto flex flex-col bg-neutral-100 dark:bg-neutral-950 relative">
+                <div className="w-full md:w-[54%] h-[75vh] md:h-auto flex flex-col bg-neutral-100 dark:bg-neutral-950 relative">
                     {/* Right Header Tab bar */}
                     <div className="px-6 py-3 border-b border-neutral-200 dark:border-white/10 flex items-center justify-between shrink-0 bg-white dark:bg-[#191919]">
                         <div className="flex gap-4">

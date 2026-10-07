@@ -1,11 +1,16 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
+import dynamic from 'next/dynamic';
 import { Link, usePathname } from '@/i18n/routing';
 import {
-    LayoutDashboard, Receipt, FolderKanban, CheckSquare, CalendarDays,
-    Users2, Settings, MoreHorizontal
+    LayoutDashboard, FolderKanban, CheckSquare, CalendarDays, MoreHorizontal, Camera
 } from 'lucide-react';
+
+// MOBILE-SCAN-1 (Florin 2026-10-07: "I have no way, from the mobile version of our ERP, to take a photo of a receipt and
+// send it in the system"): the phone's bar had no way to a receipt. The camera sits in its middle — one tap, the photo,
+// the reading, save; the ticket waits in "Te valideren" until approved.
+const TicketCaptureModal = dynamic(() => import('@/components/admin/expenses/TicketCaptureModal'), { ssr: false });
 
 interface MobileNavItem {
     id: string;
@@ -26,11 +31,13 @@ const MOBILE_ITEMS: MobileNavItem[] = [
 
 export default function MobileBottomNav() {
     const pathname = usePathname();
+    const [capturing, setCapturing] = useState(false);
 
     return (
+        <>
         <nav className="fixed bottom-0 inset-x-0 z-[60] md:hidden border-t border-neutral-200 dark:border-white/10 bg-white/90 dark:bg-black/90 backdrop-blur-xl safe-area-bottom">
             <div className="flex items-center justify-around h-16 px-2">
-                {MOBILE_ITEMS.map(item => {
+                {MOBILE_ITEMS.map((item, i) => {
                     const isActive = (() => {
                         if (item.id === 'workhub') {
                             return pathname.startsWith('/admin/hr');
@@ -60,8 +67,18 @@ export default function MobileBottomNav() {
                     })();
 
                     return (
+                        <React.Fragment key={item.id}>
+                        {i === 2 && (
+                            <button type="button" onClick={() => setCapturing(true)} aria-label="Bonnetje scannen"
+                                    className="flex flex-col items-center justify-center -mt-6">
+                                <span className="w-14 h-14 rounded-full flex items-center justify-center text-white shadow-lg active:scale-95 transition-transform"
+                                      style={{ backgroundColor: 'var(--brand-color, #d35400)' }}>
+                                    <Camera className="w-6 h-6" />
+                                </span>
+                                <span className="text-[10px] font-bold tracking-wider text-neutral-500 mt-0.5">Scan</span>
+                            </button>
+                        )}
                         <Link
-                            key={item.id}
                             href={item.href}
                             className={`flex flex-col items-center justify-center gap-0.5 py-1 px-3 rounded-xl transition-all ${
                                 isActive
@@ -82,9 +99,13 @@ export default function MobileBottomNav() {
                                 />
                             )}
                         </Link>
+                        </React.Fragment>
                     );
                 })}
             </div>
         </nav>
+        {/* OUTSIDE the bar: its backdrop blur would make the bar the containing block of a fixed full-screen modal */}
+        {capturing && <TicketCaptureModal targetDatabaseId="db-tickets" onClose={() => setCapturing(false)} />}
+        </>
     );
 }

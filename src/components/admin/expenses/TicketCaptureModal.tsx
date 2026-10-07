@@ -57,6 +57,8 @@ interface ScanResult {
 
 import { COST_TYPES } from '@/lib/kernel/expense-taxonomy';
 import { editorShows } from '@/lib/records/purchase-document';
+import { prepareUpload } from '@/lib/files/prepare-upload';
+import { MAX_UPLOAD_BYTES, tooLargeMessage } from '@/lib/files/upload-size';
 import { READABLE_ACCEPT } from '@/lib/records/readable-document';   // SCAN-2: iOS converts HEIC to JPEG itself
 export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tickets' }: TicketCaptureModalProps) {
     const tPlaceholders = useTranslations('Admin.placeholders');
@@ -162,9 +164,17 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
     };
 
     // ── Server-side scan ──────────────────────────────────────────────────────
-    const runScan = useCallback(async (file: File) => {
-        lastFileRef.current = file;
+    const runScan = useCallback(async (picked: File) => {
         setScanError('');
+        // MOBILE-SCAN-1: a phone photo is shrunk HERE before it travels — sent as is it exceeded the platform's request
+        // limit and never arrived (lib/files/upload-size)
+        const file = await prepareUpload(picked);
+        lastFileRef.current = file;
+        if (file.size > MAX_UPLOAD_BYTES) {
+            setPreviewUrl(null);
+            setScanError(tooLargeMessage(file.size));
+            return;
+        }
 
         // Image preview (images only, not PDFs)
         if (file.type.startsWith('image/') || file.type === 'application/pdf') {
@@ -319,10 +329,15 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                 if (uploadRes.success && uploadRes.key) {
                     receiptUrl = `/api/files/${encodeURIComponent(uploadRes.key)}`;
                 } else {
-                    console.warn('[TicketCaptureModal] Blob upload failed', uploadRes.error);
+                    // MOBILE-SCAN-1: never a ticket without its receipt — the save stops, the person sees why
+                    setSaveError(`Bonnetje kon niet worden opgeslagen: ${uploadRes.error || 'onbekende fout'}`);
+                    setStep('review');
+                    return;
                 }
             } catch (err) {
-                console.warn('[TicketCaptureModal] Blob upload network error', err);
+                setSaveError(`Bonnetje kon niet worden opgeslagen: ${(err as Error)?.message || 'netwerkfout'}`);
+                setStep('review');
+                return;
             }
         }
 

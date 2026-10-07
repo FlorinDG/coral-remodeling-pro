@@ -10,6 +10,8 @@ import { useDatabaseStore } from '../database/store';
 import { useRouter } from 'next/navigation';
 import { useLocale } from 'next-intl';
 import { READABLE_ACCEPT } from '@/lib/records/readable-document';   // SCAN-2: iOS converts HEIC to JPEG itself
+import { prepareUpload } from '@/lib/files/prepare-upload';
+import { MAX_UPLOAD_BYTES, tooLargeMessage } from '@/lib/files/upload-size';
 
 interface AiDocumentImportModalProps {
     onClose: () => void;
@@ -76,9 +78,12 @@ export default function AiDocumentImportModal({ onClose, targetDatabaseId = 'db-
                 stub = { id: pageRes.page.id, properties: { ...(pageRes.page.properties as Record<string, unknown>) } };
                 latest = pageRes.page;
 
-                // 2. The file — stored, then LINKED to the record
+                // 2. The file — shrunk if it is a large photo (MOBILE-SCAN-1: sent as is it exceeded the platform's request
+                //    limit), stored, then LINKED to the record
+                const file = await prepareUpload(job.file);
+                if (file.size > MAX_UPLOAD_BYTES) throw new Error(tooLargeMessage(file.size));
                 const fd = new FormData();
-                fd.append('file', job.file);
+                fd.append('file', file);
                 const uploadRes = await uploadFileAction(fd, isTickets ? 'receipt' : 'purchase-invoice', stub.id);
                 if (!uploadRes.success || !uploadRes.key) throw new Error(uploadRes.error || 'Upload mislukt');
                 stub.properties = { ...stub.properties, receiptUrl: uploadRes.key };
@@ -90,17 +95,17 @@ export default function AiDocumentImportModal({ onClose, targetDatabaseId = 'db-
 
                 // 3. The reading. FREE reads images in the browser (Tesseract); a PDF on FREE is entered by hand.
                 const scanFd = new FormData();
-                scanFd.append('file', job.file);
+                scanFd.append('file', file);
                 scanFd.append('targetDb', target);
                 scanFd.append('pageId', stub.id);
                 if (isFree) {
-                    if (!job.file.type.startsWith('image/')) {
+                    if (!file.type.startsWith('image/')) {
                         await toReview('PDF lezen vraagt PRO — handmatig invullen');
                         setJobs(prev => prev.map(j => j.id === job.id ? { ...j, status: 'done', verdict: 'Na te kijken — handmatig' } : j));
                         continue;
                     }
                     const { recognizeReceipt } = await import('@/lib/ocr');
-                    const r = await recognizeReceipt(job.file);
+                    const r = await recognizeReceipt(file);
                     scanFd.append('clientExtracted', JSON.stringify(isTickets
                         ? { merchant: r.extractedMerchant, date: r.extractedDate, totalAmount: r.extractedAmount, category: null }
                         : { supplierName: r.extractedMerchant, issueDate: r.extractedDate, totalExVat: r.extractedAmount, totalVat: r.extractedVatAmount, lines: [] }));

@@ -14,6 +14,8 @@ import SelectDropdown from '@/components/admin/database/components/SelectDropdow
 import { EXPENSE_CATEGORIES, COST_TYPES } from '@/lib/kernel/expense-taxonomy';
 import { READABLE_ACCEPT } from '@/lib/records/readable-document';   // SCAN-2: iOS converts HEIC to JPEG itself
 import { purchaseView, purchaseWrite, editorShows, editorLabel } from '@/lib/records/purchase-document';
+import { prepareUpload } from '@/lib/files/prepare-upload';
+import { MAX_UPLOAD_BYTES, tooLargeMessage } from '@/lib/files/upload-size';
 import { isValidated, approveRefusal, REVIEW_APPROVED } from '@/lib/records/validation';
 
 /** The approval check's field ids, as the person reads them. */
@@ -176,11 +178,14 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
     };
 
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file || !pageId) return;
+        const picked = e.target.files?.[0];
+        if (!picked || !pageId) return;
 
         setUploading(true);
         try {
+            // MOBILE-SCAN-1: a large photo is shrunk before it travels (the platform refuses bodies above ~4.5 MB)
+            const file = await prepareUpload(picked);
+            if (file.size > MAX_UPLOAD_BYTES) { alert(tooLargeMessage(file.size)); return; }
             const { uploadFileAction } = await import('@/app/actions/files');
             const fd = new FormData();
             fd.append('file', file);

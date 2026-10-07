@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import dynamic from 'next/dynamic';
 import { Link, usePathname } from '@/i18n/routing';
+import ErrorBoundary from '@/components/common/ErrorBoundary';
 import {
     LayoutDashboard, FolderKanban, CheckSquare, CalendarDays, MoreHorizontal, Camera
 } from 'lucide-react';
@@ -105,7 +106,18 @@ export default function MobileBottomNav() {
             </div>
         </nav>
         {/* OUTSIDE the bar: its backdrop blur would make the bar the containing block of a fixed full-screen modal */}
-        {capturing && <TicketCaptureModal targetDatabaseId="db-tickets" onClose={() => setCapturing(false)} />}
+        {capturing && (
+            // contained: a failure in the capture never takes the whole app down
+            <ErrorBoundary componentName="TicketCaptureModal (bottom bar)" fallback={
+                <div role="dialog" aria-modal="true" className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-6" onClick={() => setCapturing(false)}>
+                    <div className="rounded-2xl bg-white dark:bg-neutral-900 p-5 text-sm text-neutral-700 dark:text-neutral-200 max-w-xs text-center">
+                        De camera kon niet geopend worden. Probeer opnieuw, of scan via Financiën → Kassatickets.
+                    </div>
+                </div>
+            }>
+                <TicketCaptureModal targetDatabaseId="db-tickets" onClose={() => setCapturing(false)} />
+            </ErrorBoundary>
+        )}
         </>
     );
 }

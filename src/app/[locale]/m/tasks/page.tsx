@@ -114,6 +114,8 @@ interface PendingUndo {
     timerId: NodeJS.Timeout;
 }
 
+const NO_QUEUE: never[] = [];
+
 export default function MobileTasksPage() {
     const t = useTranslations('Mobile');
     const { resolveDbId } = useTenant();
@@ -125,7 +127,7 @@ export default function MobileTasksPage() {
     const databases = useDatabaseStore(s => s.databases);
     const pageIndex = useDatabaseStore(s => s.pageIndex || {});
     const getPageLabel = useDatabaseStore(s => s.getPageLabel);
-    const syncQueue = useDatabaseStore(s => s.syncQueue || []);
+    const syncQueue = useDatabaseStore(s => s.syncQueue ?? NO_QUEUE);   // a stable empty list (a new [] per check loops React)
     const createPage = useDatabaseStore(s => s.createPage);
     const updatePageProperty = useDatabaseStore(s => s.updatePageProperty);
     const deletePage = useDatabaseStore(s => s.deletePage);

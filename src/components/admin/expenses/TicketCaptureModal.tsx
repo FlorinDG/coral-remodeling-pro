@@ -60,6 +60,8 @@ import { editorShows } from '@/lib/records/purchase-document';
 import { prepareUpload } from '@/lib/files/prepare-upload';
 import { MAX_UPLOAD_BYTES, tooLargeMessage } from '@/lib/files/upload-size';
 import { READABLE_ACCEPT } from '@/lib/records/readable-document';   // SCAN-2: iOS converts HEIC to JPEG itself
+const NO_PAGES: Page[] = [];
+
 export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tickets' }: TicketCaptureModalProps) {
     const tPlaceholders = useTranslations('Admin.placeholders');
     const { data: session } = useSession();
@@ -78,8 +80,10 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
 
     const addConfirmedPage = useDatabaseStore(s => s.addConfirmedPage);
     const isInvoiceMode = isTenantDatabase(targetDatabaseId, 'db-expenses');
-    const projects = useDatabaseStore(s => s.databases.find(db => isTenantDatabase(db.id, 'db-1'))?.pages || []);
-    const suppliers = useDatabaseStore(s => s.databases.find(db => isTenantDatabase(db.id, 'db-suppliers'))?.pages || []);
+    // A selector must return a STABLE value: `?.pages || []` made a new list on every check when the database is not in
+    // the store (the bottom-bar camera on the dashboard) — React's "maximum update depth" crash. NO_PAGES is one list.
+    const projects = useDatabaseStore(s => s.databases.find(db => isTenantDatabase(db.id, 'db-1'))?.pages ?? NO_PAGES);
+    const suppliers = useDatabaseStore(s => s.databases.find(db => isTenantDatabase(db.id, 'db-suppliers'))?.pages ?? NO_PAGES);
 
     const [animationDone, setAnimationDone] = useState(false);
     const router = useRouter();

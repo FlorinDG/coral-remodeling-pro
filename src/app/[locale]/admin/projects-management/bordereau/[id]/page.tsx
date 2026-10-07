@@ -9,6 +9,8 @@ import { Page } from '@/components/admin/database/types';
 import { useTenant } from '@/context/TenantContext';
 import { formatDate } from '@/lib/format/date';
 
+const NO_PAGES: never[] = [];
+
 export default function BordereauPage() {
     const params = useParams();
     const router = useRouter();
@@ -35,7 +37,7 @@ export default function BordereauPage() {
         return state.databases.find(d => d.id === projectDbId)?.pages.find(p => p.id === id) || null;
     });
 
-    const allTasks = useDatabaseStore(state => state.databases.find(d => d.id === tasksDbId)?.pages || []);
+    const allTasks = useDatabaseStore(state => state.databases.find(d => d.id === tasksDbId)?.pages ?? NO_PAGES);   // a stable empty list (a new [] per check loops React)
 
     const tasks = React.useMemo(() => {
         return allTasks.filter(p => {

@@ -6,6 +6,8 @@ import { useDatabaseStore } from '@/components/admin/database/store';
 import { ArrowLeft, Printer, ShoppingCart, Package } from 'lucide-react';
 import { useTenant } from '@/context/TenantContext';
 
+const NO_PAGES: never[] = [];
+
 export default function PurchaseOrderPage() {
     const params = useParams();
     const router = useRouter();
@@ -31,7 +33,7 @@ export default function PurchaseOrderPage() {
         return state.databases.find(d => d.id === projectDbId)?.pages.find(p => p.id === id) || null;
     });
 
-    const allTasks = useDatabaseStore(state => state.databases.find(d => d.id === tasksDbId)?.pages || []);
+    const allTasks = useDatabaseStore(state => state.databases.find(d => d.id === tasksDbId)?.pages ?? NO_PAGES);   // a stable empty list (a new [] per check loops React)
 
     const tasks = React.useMemo(() => {
         return allTasks.filter(p => {

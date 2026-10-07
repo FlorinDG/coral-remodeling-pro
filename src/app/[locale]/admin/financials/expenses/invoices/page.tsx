@@ -9,7 +9,6 @@ import { usePageTitle } from '@/hooks/usePageTitle';
 import { CheckCircle2, AlertTriangle } from 'lucide-react';
 import { useDatabaseStore } from '@/components/admin/database/store';
 import PeppolQuotaBanner from '@/components/admin/PeppolQuotaBanner';
-import { createPageServerFirst } from '@/app/actions/pages';
 import { useTenant } from '@/context/TenantContext';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
@@ -35,8 +34,7 @@ export default function ExpensesInvoicesPage() {
     usePageTitle('Purchase Invoices');
     const t = useTranslations('Admin');
 
-    const { resolveDbId, planType } = useTenant();
-    const expensesDbId = resolveDbId('db-expenses');
+    const { planType } = useTenant();
 
     const [syncing, setSyncing] = useState(false);
     const [syncResult, setSyncResult] = useState<{ count: number; error?: string } | null>(null);
@@ -49,7 +47,6 @@ export default function ExpensesInvoicesPage() {
     } | null>(null);
 
     const addConfirmedPage = useDatabaseStore(s => s.addConfirmedPage);
-    const [isCreatingNew, setIsCreatingNew] = useState(false);
 
     // ── Peppol connection status (checked on mount) ────────────────────────
     const [peppolStatus, setPeppolStatus] = useState<{
@@ -120,36 +117,13 @@ export default function ExpensesInvoicesPage() {
         }
     }, [isPeppolReady, handleSyncPeppol]);
 
-    const handleNewManual = useCallback(async () => {
-        if (isCreatingNew) return;
-        setIsCreatingNew(true);
-        try {
-            const result = await createPageServerFirst(expensesDbId, {
-                source: 'src-manual',
-                status: 'opt-draft',
-                invoiceDate: new Date().toISOString().split('T')[0],
-                supplier: [],
-            });
-            if (result.success) {
-                addConfirmedPage(result.page);
-                setSelectedInvoiceId(result.page.id);
-            }
-        } catch (e) {
-            console.error('[handleNewManual] failed:', e);
-        } finally {
-            setIsCreatingNew(false);
-        }
-    }, [isCreatingNew, addConfirmedPage, expensesDbId]);
-
     const handleAction = useCallback((actionId: string) => {
         if (actionId === 'scan-invoice') {
             setShowScanUpload(true);
-        } else if (actionId === 'manual-invoice') {
-            handleNewManual();
         } else if (actionId === 'peppol-sync') {
             handleSyncPeppol();
         }
-    }, [handleNewManual, handleSyncPeppol]);
+    }, [handleSyncPeppol]);
 
     const peppolHeaderExtra = (
         <div className="flex items-center gap-2">
@@ -212,6 +186,7 @@ export default function ExpensesInvoicesPage() {
                     databaseId="db-expenses"
                     defaultFilter={{ propertyId: 'docType', value: 'opt-invoice' }}
                     validation="validated"
+                    hideFooterNew
                     onOpenRecord={(id) => setSelectedInvoiceId(id)}
                     headerExtra={peppolHeaderExtra}
                     onAction={handleAction}

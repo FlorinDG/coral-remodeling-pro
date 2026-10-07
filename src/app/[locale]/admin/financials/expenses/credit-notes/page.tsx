@@ -23,6 +23,7 @@ export default function ExpensesCreditNotesPage() {
                     databaseId="db-expenses"
                     defaultFilter={{ propertyId: 'docType', value: 'opt-credit-note' }}
                     validation="validated"
+                    hideFooterNew
                 />
             </div>
         </div>

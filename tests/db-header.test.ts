@@ -93,14 +93,14 @@ test('computeDatabaseHeader: Projects carries project type tabs from data (C3)',
 
 // ── 3. PARITY ACTIONS (C4, R4) ────────────────────────────────────────────────
 
-test('computeDatabaseHeader: tickets declares exactly scan, bulk, and manual actions with valid i18n keys (C2, C4, R4)', () => {
+test('computeDatabaseHeader: tickets declares exactly scan and bulk — no manual entry (Florin 2026-10-07) — with valid i18n keys', () => {
     const res = computeDatabaseHeader({
         role: 'tickets',
         databaseName: 'Tickets',
         access: FULL_ACCESS,
     });
 
-    assert.equal(res.actions.length, 3);
+    assert.equal(res.actions.length, 2);
     assert.equal(res.actions[0].id, 'scan-ticket');
     assert.equal(res.actions[0].labelKey, 'Admin.nav.pages.scanUploadTicket');
     assert.equal(res.actions[0].variant, 'primary');
@@ -109,10 +109,6 @@ test('computeDatabaseHeader: tickets declares exactly scan, bulk, and manual act
     assert.equal(res.actions[1].labelKey, 'Admin.nav.pages.bulkUploadTickets');
     assert.equal(res.actions[1].variant, 'secondary');
 
-    assert.equal(res.actions[2].id, 'manual-ticket');
-    assert.equal(res.actions[2].labelKey, 'Admin.nav.pages.manualTicket');
-    assert.equal(res.actions[2].variant, 'outline');
-
     // Every key resolves in nl.json
     for (const act of res.actions) {
         const tr = getTranslation(act.labelKey);
@@ -120,7 +116,7 @@ test('computeDatabaseHeader: tickets declares exactly scan, bulk, and manual act
     }
 });
 
-test('computeDatabaseHeader: purchase invoices declares scan, manual, and peppol-sync actions with valid i18n keys (C4, R4)', () => {
+test('computeDatabaseHeader: purchase invoices declares scan and peppol-sync — no manual entry — with valid i18n keys', () => {
     const res = computeDatabaseHeader({
         role: 'expenses',
         surfaceKey: 'docType=opt-invoice',
@@ -128,18 +124,14 @@ test('computeDatabaseHeader: purchase invoices declares scan, manual, and peppol
         access: FULL_ACCESS,
     });
 
-    assert.equal(res.actions.length, 3);
+    assert.equal(res.actions.length, 2);
     assert.equal(res.actions[0].id, 'scan-invoice');
     assert.equal(res.actions[0].labelKey, 'Admin.nav.pages.scanUpload');
     assert.equal(res.actions[0].variant, 'primary');
 
-    assert.equal(res.actions[1].id, 'manual-invoice');
-    assert.equal(res.actions[1].labelKey, 'Admin.nav.pages.manualInvoice');
-    assert.equal(res.actions[1].variant, 'outline');
-
-    assert.equal(res.actions[2].id, 'peppol-sync');
-    assert.equal(res.actions[2].labelKey, 'Admin.nav.pages.syncPeppolInbox');
-    assert.equal(res.actions[2].variant, 'badge');
+    assert.equal(res.actions[1].id, 'peppol-sync');
+    assert.equal(res.actions[1].labelKey, 'Admin.nav.pages.syncPeppolInbox');
+    assert.equal(res.actions[1].variant, 'badge');
 
     for (const act of res.actions) {
         const tr = getTranslation(act.labelKey);
@@ -472,4 +464,11 @@ test('PROFORMA-2: the proformas screen declares "Nieuwe proforma" — the one wa
     for (const l of LOCALES) assert.ok(getTranslation(pf.actions[0].labelKey.replace(/^Admin\./, 'Admin.'), l), `missing ${l}`);
     const inv = computeDatabaseHeader({ role: 'invoices', surfaceKey: 'docType=opt-invoice', databaseName: 'Facturen', access: FULL_ACCESS } as DatabaseHeaderContext);
     assert.deepEqual(inv.actions, []);
+});
+
+test('a purchase document comes WITH its document: no CSV import on purchase invoices / tickets; other databases keep it (throw proof)', () => {
+    for (const role of ['expenses', 'tickets'] as const) {
+        assert.equal(computeDatabaseHeader({ role, databaseName: 'x', access: FULL_ACCESS } as DatabaseHeaderContext).toolbar.showImportCsv, false, role);
+    }
+    assert.equal(computeDatabaseHeader({ role: 'clients', databaseName: 'Klanten', access: FULL_ACCESS } as DatabaseHeaderContext).toolbar.showImportCsv, true);
 });

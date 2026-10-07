@@ -33,9 +33,7 @@ export interface ScreenTabItem {
 export type ActionId =
     | 'scan-ticket'
     | 'bulk-upload-tickets'
-    | 'manual-ticket'
     | 'scan-invoice'
-    | 'manual-invoice'
     | 'peppol-sync'
     | 'new-proforma';
 
@@ -130,16 +128,14 @@ export function computeDatabaseHeader(ctx: DatabaseHeaderContext): DatabaseHeade
     if (ctx.role === 'tickets') {
         actions.push(
             { id: 'scan-ticket', labelKey: 'Admin.nav.pages.scanUploadTicket', icon: 'camera', variant: 'primary' },
-            { id: 'bulk-upload-tickets', labelKey: 'Admin.nav.pages.bulkUploadTickets', icon: 'files', variant: 'secondary' },
-            { id: 'manual-ticket', labelKey: 'Admin.nav.pages.manualTicket', icon: 'plus', variant: 'outline' }
-        );
+            { id: 'bulk-upload-tickets', labelKey: 'Admin.nav.pages.bulkUploadTickets', icon: 'files', variant: 'secondary' }
+        );   // no manual entry (Florin 2026-10-07): a purchase document comes WITH its document — scan, import or Peppol
     } else if (ctx.role === 'invoices' && ctx.surfaceKey === 'docType=opt-proforma') {
         // PROFORMA-2: the one way a proforma is made (numbered PF-YYYY-NNN by the record door)
         actions.push({ id: 'new-proforma', labelKey: 'Admin.dbHeader.newProforma', icon: 'plus', variant: 'primary' });
     } else if (ctx.role === 'expenses' && (!ctx.surfaceKey || ctx.surfaceKey === 'docType=opt-invoice')) {
         actions.push(
             { id: 'scan-invoice', labelKey: 'Admin.nav.pages.scanUpload', icon: 'camera', variant: 'primary' },
-            { id: 'manual-invoice', labelKey: 'Admin.nav.pages.manualInvoice', icon: 'plus', variant: 'outline' },
             { id: 'peppol-sync', labelKey: 'Admin.nav.pages.syncPeppolInbox', icon: 'refresh', variant: 'badge' }
         );
     }
@@ -153,7 +149,9 @@ export function computeDatabaseHeader(ctx: DatabaseHeaderContext): DatabaseHeade
         isAccountantSource && canRunAccountantExport(ctx.userRole, ctx.isImpersonating);
 
     // R2: Import gate = access.create && !ctx.isLockedSchema
-    const showImportCsv = ctx.access.create && !ctx.isLockedSchema;
+    // Florin 2026-10-07: a CSV cannot bring a purchase document's original file nor all its data — no CSV import on
+    // purchase invoices / tickets (their way in is the scan / the document import / Peppol); other databases keep it
+    const showImportCsv = ctx.access.create && !ctx.isLockedSchema && ctx.role !== 'expenses' && ctx.role !== 'tickets';
 
     // R1: Bulk approve for expenses inbox with selected rows
     const isExpensesInbox =

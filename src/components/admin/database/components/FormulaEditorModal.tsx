@@ -7,7 +7,6 @@ import { useDatabaseStore } from '../store';
 import { evaluateFormula } from '../formulaEngine';
 import { FORMULA_FUNCTIONS, CATEGORY_META, FormulaFunctionDef } from '../formulaReference';
 import { Property } from '../types';
-import { useOverlayEventShield } from '@/hooks/useOverlayEventShield';
 
 interface FormulaEditorModalProps {
     databaseId: string;
@@ -116,7 +115,6 @@ export default function FormulaEditorModal({
     const [copied, setCopied] = useState(false);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const modalRef = useRef<HTMLDivElement>(null);
-    useOverlayEventShield(modalRef);
 
     const database = useDatabaseStore(state => state.databases.find(db => db.id === databaseId));
     const updateProperty = useDatabaseStore(state => state.updateProperty);

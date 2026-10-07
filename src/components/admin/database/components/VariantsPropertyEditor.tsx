@@ -4,7 +4,6 @@ import React, { useState, useRef } from 'react';
 import { useDatabaseStore } from '../store';
 import { VariantsConfig, VariantAxis, VariantOption } from '../types';
 import { Settings2, Plus, Trash2, X } from 'lucide-react';
-import { useOverlayEventShield } from '@/hooks/useOverlayEventShield';
 
 interface Props {
     databaseId: string;
@@ -16,7 +15,6 @@ interface Props {
 export default function VariantsPropertyEditor({ databaseId, pageId, propertyId, initialConfig }: Props) {
     const [isOpen, setIsOpen] = useState(false);
     const modalRef = useRef<HTMLDivElement>(null);
-    useOverlayEventShield(modalRef, isOpen);
     const updatePageProperty = useDatabaseStore(state => state.updatePageProperty);
     const config: VariantsConfig = Array.isArray(initialConfig) ? initialConfig : [];
 

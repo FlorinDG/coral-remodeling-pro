@@ -9,7 +9,6 @@ import { uploadFileAction } from '@/app/actions/files';
 import { useDatabaseStore } from '../database/store';
 import { useRouter } from 'next/navigation';
 import { useLocale } from 'next-intl';
-import { useOverlayEventShield } from '@/hooks/useOverlayEventShield';
 import { READABLE_ACCEPT } from '@/lib/records/readable-document';   // SCAN-2: iOS converts HEIC to JPEG itself
 
 interface AiDocumentImportModalProps {
@@ -43,7 +42,6 @@ export default function AiDocumentImportModal({ onClose, targetDatabaseId = 'db-
     const [isDragging, setIsDragging] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const modalRef = useRef<HTMLDivElement>(null);
-    useOverlayEventShield(modalRef);
     const router = useRouter();
     const locale = useLocale();
 

@@ -2,7 +2,6 @@
 
 import { X } from 'lucide-react';
 import { useRef } from 'react';
-import { useOverlayEventShield } from '@/hooks/useOverlayEventShield';
 import { useScrollLock } from '@/components/mobile/useScrollLock';
 
 interface ModalProps {
@@ -14,7 +13,6 @@ interface ModalProps {
 
 export default function Modal({ isOpen, onClose, title, children }: ModalProps) {
     const modalRef = useRef<HTMLDivElement>(null);
-    useOverlayEventShield(modalRef, isOpen);
     useScrollLock(isOpen, modalRef);
 
     if (!isOpen) return null;

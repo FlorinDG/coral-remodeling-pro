@@ -2,7 +2,6 @@
 
 import React, { useState, useRef } from 'react';
 import { X, FolderKanban } from 'lucide-react';
-import { useOverlayEventShield } from '@/hooks/useOverlayEventShield';
 
 interface CreateProjectModalProps {
     isOpen: boolean;
@@ -24,7 +23,6 @@ const FIELD_DEFS = [
 export default function CreateProjectModal({ isOpen, onClose, onCreated, createPage, projectDbId, preselectedClientId }: CreateProjectModalProps) {
     const [form, setForm] = useState<Record<string, string>>({});
     const modalRef = useRef<HTMLDivElement>(null);
-    useOverlayEventShield(modalRef, isOpen);
 
     if (!isOpen) return null;
 

@@ -14,7 +14,6 @@ import { parseDecimal } from '@/lib/decimal-parser';
 import { useTenant } from '@/context/TenantContext';
 import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/routing';
-import { useOverlayEventShield } from '@/hooks/useOverlayEventShield';
 import { describeError } from '@/lib/describe-error';
 
 interface TicketCaptureModalProps {
@@ -102,7 +101,6 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
     const cameraInputRef = useRef<HTMLInputElement>(null);
     const lastFileRef = useRef<File | null>(null);
     const modalRef = useRef<HTMLDivElement>(null);
-    useOverlayEventShield(modalRef);
 
     const [form, setForm] = useState<TicketFormData>({
         merchant: '',

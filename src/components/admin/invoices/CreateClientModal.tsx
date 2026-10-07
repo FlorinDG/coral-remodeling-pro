@@ -5,7 +5,6 @@ import React, { useState, useRef } from 'react';
 import { X, Search, Loader2, Building2 } from 'lucide-react';
 import postcodesData from '@/lib/belgian-postcodes.json';
 import { useTranslations } from 'next-intl';
-import { useOverlayEventShield } from '@/hooks/useOverlayEventShield';
 
 interface CreateClientModalProps {
     isOpen: boolean;
@@ -36,7 +35,6 @@ export default function CreateClientModal({ isOpen, onClose, onCreated, createPa
     const [suggestions, setSuggestions] = useState<{ zip: string; city: string }[]>([]);
     const [activeInput, setActiveInput] = useState<'postal' | 'city' | null>(null);
     const modalRef = useRef<HTMLDivElement>(null);
-    useOverlayEventShield(modalRef, isOpen);
 
     if (!isOpen) return null;
 

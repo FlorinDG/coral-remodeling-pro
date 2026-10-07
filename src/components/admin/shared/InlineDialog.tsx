@@ -2,7 +2,6 @@
 
 import React, { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
-import { useOverlayEventShield } from '@/hooks/useOverlayEventShield';
 
 interface InlineDialogProps {
     isOpen: boolean;
@@ -26,7 +25,6 @@ export default function InlineDialog({
     variant = 'default',
 }: InlineDialogProps) {
     const overlayRef = useRef<HTMLDivElement>(null);
-    useOverlayEventShield(overlayRef, isOpen);
 
     useEffect(() => {
         if (!isOpen) return;

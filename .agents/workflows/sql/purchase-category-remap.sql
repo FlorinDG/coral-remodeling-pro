@@ -5,7 +5,7 @@
 --   cat-materials      Aankoop materialen             → cat-3 (Handels)goederen
 --   cat-subcontractor  Onderaannemers                 → cat-2 Onderaannemingen
 --   cat-equipment      Gereedschap & Uitrusting       → cat-1 Investeringen
--- Only `category` changes; rows updated must be 12. Re-run purchase-category-census.sql after: no `false` left.
+-- Only `category` changes; only in databases whose schema carries the taxonomy; rows updated must be 12. Re-run purchase-category-census.sql after: no `false` left.
 UPDATE "GlobalPage" p
 SET properties = p.properties || jsonb_build_object('category', CASE p.properties->>'category'
         WHEN 'cat-services'      THEN 'cat-6'
@@ -16,4 +16,10 @@ SET properties = p.properties || jsonb_build_object('category', CASE p.propertie
 FROM "GlobalDatabase" d
 WHERE d.id = p."databaseId"
   AND d."logicalKey" = 'expenses'
-  AND p.properties->>'category' IN ('cat-services', 'cat-materials', 'cat-subcontractor', 'cat-equipment');
+  AND p.properties->>'category' IN ('cat-services', 'cat-materials', 'cat-subcontractor', 'cat-equipment')
+  -- TENANT GUARD: only databases whose schema already carries the taxonomy (upgrade U2 ran — the old default list);
+  -- a tenant that keeps its OWN category list is never touched
+  AND EXISTS (
+    SELECT 1 FROM jsonb_array_elements(d.properties) prop, jsonb_array_elements(prop->'config'->'options') opt
+    WHERE prop->>'id' = 'category' AND opt->>'id' = 'cat-6'
+  );

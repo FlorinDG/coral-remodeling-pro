@@ -64,8 +64,6 @@ export interface DatabaseHeaderProps {
     isLockedSchema?: boolean;
     isUngated?: boolean;
     hasDatabases?: boolean;
-    oldGrid?: boolean;
-    onToggleOldGrid?: () => void;
     onAction?: (actionId: ActionId) => void;
     hardFilter?: { propertyId: string; value: string };
     selectedRowCount?: number;
@@ -95,8 +93,6 @@ export default function DatabaseHeader({
     isLockedSchema = false,
     isUngated = false,
     hasDatabases = false,
-    oldGrid,
-    onToggleOldGrid,
     onAction,
     hardFilter,
     selectedRowCount = 0,
@@ -315,16 +311,6 @@ export default function DatabaseHeader({
                 </Link>
             )}
 
-            {activeView?.type === 'table' && onToggleOldGrid && (
-                <button
-                    type="button"
-                    onClick={onToggleOldGrid}
-                    title={tAdmin('grid.switchHint')}
-                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors shrink-0 ${oldGrid ? 'bg-orange-500 text-white' : 'bg-neutral-100 dark:bg-white/5 text-neutral-500 hover:text-orange-600'}`}
-                >
-                    {oldGrid ? tAdmin('grid.backToNew') : tAdmin('grid.useOld')}
-                </button>
-            )}
 
             {headerResult.toolbar.showAccountantExport && (
                 <button

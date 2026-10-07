@@ -1,6 +1,5 @@
 "use client";
 
-import { useOldGrid } from '@/components/admin/database/v2/grid-v2-flag';
 import { surfaceKey, viewsForSurface, seedSurfaceView } from '@/lib/records/view-scope';
 import { isTenantDatabase } from '@/lib/relations/resolve';
 import React, { useEffect, useState, useMemo } from 'react';
@@ -22,10 +21,7 @@ import { useFilteredPages } from './hooks/useFilteredPages';
 import { sortPages } from '@/lib/records/view-sort';
 import type { ActionId } from '@/lib/records/db-header';
 
-const NotionGridDynamic = dynamic(
-  () => import('@/components/admin/database/NotionGrid'),
-  { ssr: false, loading: () => <div className="w-full h-[600px] bg-neutral-50 dark:bg-neutral-900/50 animate-pulse rounded-b-xl border-x border-b border-neutral-200 dark:border-white/10" /> }
-);
+
 
 const NotionGridV2Dynamic = dynamic(
   () => import('@/components/admin/database/v2/NotionGridV2'),
@@ -95,10 +91,7 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
   const isLockedSchemaDB = role != null;
   const isStoreUngated = useDatabaseStore(state => state.isSchemaUngated(databaseId));
   const isSuperAdmin = (session?.user?.role as string) === 'SUPERADMIN' || (session?.user?.role as string) === 'PLATFORM_ADMIN';
-  // GRID-REPLACE-1: the new grid, per database, switched on by the superadmin (also while impersonating) to try it.
-  // GRID-REPLACE-4: the new grid for everyone; anyone may fall back to the old one on a database for a week.
-  const [oldGrid, setOldGrid] = useOldGrid(resolvedId);
-  const gridV2 = !oldGrid;
+
   const isUngated = isStoreUngated || isSuperAdmin;
   const access = useMemo(() => gridAccess({
     userRole: session?.user?.role as string | undefined,
@@ -373,8 +366,7 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
         isLockedSchema={isLockedSchemaDB && !isUngated && !hasDatabases}
         isUngated={isUngated}
         hasDatabases={hasDatabases}
-        oldGrid={oldGrid}
-        onToggleOldGrid={() => setOldGrid(!oldGrid)}
+
         onAction={onAction}
         hardFilter={defaultFilter}
         sortedPages={sortedPages}
@@ -384,7 +376,7 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
         className={`flex-1 min-w-0 min-h-0 w-full h-full relative ${projectIdParam || openParam ? 'pointer-events-none' : ''}`}
         inert={projectIdParam || openParam ? true : undefined}
       >
-        {activeView.type === 'table' && gridV2 && (
+        {activeView.type === 'table' && (
           <NotionGridV2Dynamic databaseId={database.id} viewId={activeView.id} validationScreen={validation} hideToolbar hardFilter={defaultFilter} onOpenRecord={onOpenRecord} hideFooterNew={!!hideFooterNew}
             lockedSchema={isLockedSchemaDB && !isUngated && !hasDatabases}
             preventDelete={role === 'invoices' ? (row) => { const s = String((row?.properties as Record<string, unknown>)?.status || 'opt-draft'); return s !== 'opt-draft'; } : undefined}
@@ -393,7 +385,6 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
             sortedPages={sortedPages}
           />
         )}
-        {activeView.type === 'table' && !gridV2 && <NotionGridDynamic databaseId={database.id} viewId={activeView.id} hideHeader lockedSchema={isLockedSchemaDB && !isUngated && !hasDatabases} preventDelete={role === 'invoices' ? (row: Record<string, unknown>) => { const s = String((row?.properties as Record<string, unknown>)?.status || row?.status || 'opt-draft'); return s !== 'opt-draft'; } : undefined} hideFooterNew={!!hideFooterNew} hardFilter={defaultFilter} onOpenRecord={onOpenRecord} />}
         {activeView.type === 'board' && <KanbanViewDynamic databaseId={database.id} viewId={activeView.id} hideHeader hardFilter={defaultFilter} onOpenRecord={onOpenRecord} onOpenEditor={handleOpenEditor} />}
         {activeView.type === 'calendar' && <CalendarViewDynamic databaseId={database.id} viewId={activeView.id} hideHeader />}
         {activeView.type === 'timeline' && <TimelineViewDynamic databaseId={database.id} viewId={activeView.id} hideHeader />}

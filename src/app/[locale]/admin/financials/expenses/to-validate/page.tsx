@@ -30,10 +30,11 @@ type Tab = 'tickets' | 'purchase';
 export default function ToValidatePage() {
     const t = useTranslations('Admin');
     usePageTitle(t('nav.financialTabs.toValidate'));
-    const { planType } = useTenant();
+    const { planType, resolveDbId } = useTenant();
     const searchParams = useSearchParams();
     const [tab, setTab] = useState<Tab>(searchParams.get('tab') === 'purchase' ? 'purchase' : 'tickets');
-    const [openPurchaseId, setOpenPurchaseId] = useState<string | null>(null);
+    // EDIT-1: tickets AND purchase documents open in the ONE side-by-side editor (document left, fields right)
+    const [open, setOpen] = useState<{ id: string; databaseId: string } | null>(null);
 
     return (
         <div className="flex flex-col w-full h-full">
@@ -51,14 +52,15 @@ export default function ToValidatePage() {
             </div>
             <div className="w-full flex-1 flex flex-col pt-4 min-h-0">
                 {tab === 'tickets' ? (
-                    <DatabaseCloneDynamic key="tickets" databaseId="db-tickets" validation="to-validate" hideFooterNew />
+                    <DatabaseCloneDynamic key="tickets" databaseId="db-tickets" validation="to-validate" hideFooterNew
+                                          onOpenRecord={id => setOpen({ id, databaseId: resolveDbId('db-tickets') })} />
                 ) : (
                     <DatabaseCloneDynamic key="purchase" databaseId="db-expenses" validation="to-validate" hideFooterNew
-                                          onOpenRecord={id => setOpenPurchaseId(id)} />
+                                          onOpenRecord={id => setOpen({ id, databaseId: resolveDbId('db-expenses') })} />
                 )}
             </div>
-            {openPurchaseId && (
-                <PurchaseInvoiceEngine pageId={openPurchaseId} onClose={() => setOpenPurchaseId(null)} />
+            {open && (
+                <PurchaseInvoiceEngine pageId={open.id} databaseId={open.databaseId} onClose={() => setOpen(null)} />
             )}
         </div>
     );

@@ -646,7 +646,8 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
     const database = useDatabaseStore(state => state.getDatabase(databaseId));
     const role = database?.logicalKey;
     const isProject = role === 'projects';
-    const isExpense = role === 'expenses';
+    // EDIT-1: every purchase document — purchase invoices AND tickets — opens in the ONE side-by-side editor
+    const isExpense = role === 'expenses' || role === 'tickets';
     const isQuotation = role === 'quotations';
     const isInvoice = role === 'invoices';
     const updatePropertyOrder = useDatabaseStore(state => state.updatePropertyOrder);
@@ -831,7 +832,7 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                 ) : isExpense ? (
                     <div className="flex-1 overflow-y-auto">
                         <ErrorBoundary componentName="PurchaseInvoiceEngine">
-                            <PurchaseInvoiceEngine pageId={pageId} onClose={onClose} />
+                            <PurchaseInvoiceEngine pageId={pageId} onClose={onClose} databaseId={databaseId} />
                         </ErrorBoundary>
                     </div>
                 ) : (

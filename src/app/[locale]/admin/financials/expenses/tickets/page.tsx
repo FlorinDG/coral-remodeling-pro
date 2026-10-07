@@ -19,6 +19,12 @@ const AiDocumentImportModal = dynamic(
     { ssr: false }
 );
 
+// EDIT-1: a ticket opens in the ONE side-by-side purchase-document editor (document left, fields right)
+const PurchaseInvoiceEngine = dynamic(
+    () => import('@/components/admin/expenses/PurchaseInvoiceEngine'),
+    { ssr: false }
+);
+
 const TicketCaptureModal = dynamic(
     () => import('@/components/admin/expenses/TicketCaptureModal'),
     { ssr: false }
@@ -29,6 +35,7 @@ export default function ExpenseTicketsPage() {
     const [showCapture, setShowCapture] = useState(false);
     const [showBulk, setShowBulk] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
+    const [openId, setOpenId] = useState<string | null>(null);
     const { planType, resolveDbId } = useTenant();
     const ticketsDbId = resolveDbId('db-tickets');
     const addConfirmedPage = useDatabaseStore(s => s.addConfirmedPage);
@@ -66,8 +73,10 @@ export default function ExpenseTicketsPage() {
         <div className="flex flex-col w-full h-full">
             <ModuleTabs tabs={getFilteredFinancialTabs(planType)} groupId="financials" />
             <div className="w-full flex-1 flex flex-col pt-6 min-h-0">
-                <DatabaseCloneDynamic databaseId="db-tickets" onAction={handleAction} validation="validated" />
+                <DatabaseCloneDynamic databaseId="db-tickets" onAction={handleAction} validation="validated" onOpenRecord={id => setOpenId(id)} />
             </div>
+
+            {openId && <PurchaseInvoiceEngine pageId={openId} databaseId={ticketsDbId} onClose={() => setOpenId(null)} />}
 
             {/* Ticket capture modal */}
             {showBulk && (

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { X, Download, Check, XCircle, FileText, Loader2, ExternalLink, ArrowDownToLine, Camera, CheckCircle2, Upload, Trash2 } from 'lucide-react';
 import { useDatabaseStore } from '@/components/admin/database/store';
 import { Page, Block } from '@/components/admin/database/types';
@@ -13,6 +13,14 @@ import { useLocale, useTranslations } from 'next-intl';
 import SelectDropdown from '@/components/admin/database/components/SelectDropdown';
 import { EXPENSE_CATEGORIES, COST_TYPES } from '@/lib/expense-taxonomy';
 import { READABLE_ACCEPT } from '@/lib/records/readable-document';   // SCAN-2: iOS converts HEIC to JPEG itself
+import { purchaseView, purchaseWrite } from '@/lib/records/purchase-document';
+import { isValidated, approveRefusal, REVIEW_APPROVED } from '@/lib/records/validation';
+
+/** The approval check's field ids, as the person reads them. */
+const APPROVE_FIELD_LABEL: Record<string, string> = {
+    title: 'handelaar', date: 'datum', amount: 'bedrag', supplier: 'leverancier', invoiceDate: 'factuurdatum',
+    totalIncVat: 'totaal', totalVat: 'btw klopt niet',
+};
 
 interface PurchaseInvoiceEngineProps {
     pageId: string;
@@ -112,11 +120,20 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
         return () => clearTimeout(timer);
     }, []);
 
-    const page = useDatabaseStore(s => {
+    // EDIT-1: ONE editor for every purchase document. A ticket is READ through purchaseView (its merchant / date / amount
+    // under the editor's names) and every edit is WRITTEN through purchaseWrite to the record's own field —
+    // a field this kind of document does not have is never written (lib/records/purchase-document).
+    const role = useDatabaseStore(s => s.getDatabase(expensesDbId)?.logicalKey ?? null);
+    const rawPage = useDatabaseStore(s => {
         const db = s.getDatabase(expensesDbId);
         return db?.pages.find((p: Page) => p.id === pageId);
     });
+    const page = useMemo(() => (rawPage ? { ...rawPage, properties: purchaseView(role, rawPage.properties) as Page['properties'] } : rawPage), [rawPage, role]);
     const updatePageProperty = useDatabaseStore(s => s.updatePageProperty);
+    const writeField = (key: string, value: unknown) => {
+        const w = purchaseWrite(role, key, value);
+        if (w) updatePageProperty(expensesDbId, pageId, w.key, w.value as never);
+    };
     const suppliersDb = useDatabaseStore(s => s.getDatabase(suppliersDbId));
     const projectsDb = useDatabaseStore(s => s.getDatabase(projectsDbId));
 
@@ -169,7 +186,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
             fd.append('file', file);
             const result = await uploadFileAction(fd, 'purchase-invoice', pageId);
             if (result.success && result.key) {
-                updatePageProperty(expensesDbId, pageId, 'receiptUrl', result.key);
+                writeField('receiptUrl', result.key);
             } else {
                 alert('Upload failed: ' + (result.error || 'Unknown error'));
             }
@@ -183,7 +200,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
 
     const handleRemoveReceipt = () => {
         if (confirm('Weet u zeker dat u dit document wilt ontkoppelen?')) {
-            updatePageProperty(expensesDbId, pageId, 'receiptUrl', '');
+            writeField('receiptUrl', '');
         }
     };
 
@@ -331,7 +348,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                 body: JSON.stringify({ docId: page.properties.peppolDocId, action }),
             });
             if (res.ok) {
-                updatePageProperty(expensesDbId, pageId, 'status', action === 'accept' ? 'opt-unpaid' : 'opt-disputed');
+                writeField('status', action === 'accept' ? 'opt-unpaid' : 'opt-disputed');
             }
         } catch (err) {
             console.error('Peppol action failed:', err);
@@ -347,7 +364,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
             if (key === 'lines') return;
             const numericFields = ['totalExVat', 'totalVat', 'totalIncVat'];
             const finalVal = numericFields.includes(key) && value ? parseFloat(value as string) : value;
-            updatePageProperty(expensesDbId, pageId, key, finalVal);
+            writeField(key, finalVal);
         });
 
         const newBlocks = editData.lines.map((line: any) => ({
@@ -374,9 +391,9 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
     };
 
     const handleMarkPaid = () => {
-        updatePageProperty(expensesDbId, pageId, 'status', 'opt-paid');
+        writeField('status', 'opt-paid');
         const today = new Date().toISOString().slice(0, 10);
-        updatePageProperty(expensesDbId, pageId, 'paidDate', today);
+        writeField('paidDate', today);
     };
 
     // Universal approve / reject (works for all invoice sources)
@@ -386,7 +403,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
         if (isPeppolInvoice && page?.properties.peppolDocId) {
             await handlePeppolAction('accept');
         } else {
-            updatePageProperty(expensesDbId, pageId, 'status', 'opt-unpaid');
+            writeField('status', 'opt-unpaid');
         }
         setApproveLoading(false);
     };
@@ -397,10 +414,10 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
         if (isPeppolInvoice && page?.properties.peppolDocId) {
             await handlePeppolAction('reject');
         } else {
-            updatePageProperty(expensesDbId, pageId, 'status', 'opt-disputed');
+            writeField('status', 'opt-disputed');
         }
         if (rejectComment.trim()) {
-            updatePageProperty(expensesDbId, pageId, 'rejectionNote', rejectComment.trim());
+            writeField('rejectionNote', rejectComment.trim());
         }
         setRejectMode(false);
         setRejectComment('');
@@ -570,9 +587,27 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                                 </div>
                             </div>
                         </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                        {/* VALIDATE-1: correct side by side, then approve here — the essentials checked by the ONE rule
+                            (lib/records/validation); the door refuses an incomplete approval anyway */}
+                        {rawPage && !isValidated(rawPage.properties) && (() => {
+                            const missing = approveRefusal(role, rawPage.properties);
+                            return missing ? (
+                                <span className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
+                                      title="Vul eerst aan om goed te keuren">
+                                    Ontbreekt: {missing.map(f => APPROVE_FIELD_LABEL[f] || f).join(', ')}
+                                </span>
+                            ) : (
+                                <button type="button" onClick={() => writeField('reviewStatus', REVIEW_APPROVED)}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700">
+                                    <CheckCircle2 className="w-3.5 h-3.5" /> Goedkeuren
+                                </button>
+                            );
+                        })()}
                         <button onClick={onClose} className="p-2 rounded-lg hover:bg-neutral-200/80 dark:hover:bg-white/10 text-neutral-400 hover:text-neutral-600 transition-colors shrink-0 block">
                             <X className="w-5 h-5" />
                         </button>
+                        </div>
                     </div>
 
                     {/* Left Body */}

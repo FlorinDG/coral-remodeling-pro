@@ -1,5 +1,5 @@
 # CORAL — CODER QUEUE
-**Current as of 2026-10-06.** Suggested order: GRID-REPLACE-5 M5 (then §7) → LOC-GRID-1 → DB-HEADER-1 M4 → R2-1-B M4. This file is always the live queue — superseded items are removed, not renamed.
+**Current as of 2026-10-07.** Order: **R2-1-B M4 FIRST (Florin 2026-10-07)** → GRID-REPLACE-5 §7 → LOC-GRID-1 → DB-HEADER-1 M4. This file is always the live queue — superseded items are removed, not renamed.
 🛑 **The filename never carries a date.** `PLANNER-HANDOVER.md` §7 points here permanently.
 
 **Work top to bottom. Each item is a separate commit set. Report after each.**
@@ -26,8 +26,15 @@ the R1-5 allowlist and lowers `CEILING` by the files removed, from its current v
 📄 `coder-directive-db-header-1.md` + **`.agents/plans/DB-HEADER-1.md` § PLANNER REVIEW — M3 (C11 first: actions carry
 busy / disabled + reason)**, then M4 = CRM & Projects. Report `.agents/reports/DB-HEADER-1-M4.md`. Push, STOP.
 
-## 3 · `R2-1-B` — the remaining direct record writes onto the one door — ✅ M3 ACCEPTED · 🟩 GO M4 (stop after M4)
-**Binding for M4: `.agents/plans/R2-1-B.md` § PLANNER REVIEW — M3 note (scoped client to the dedupe, no `as never`).** M4 = portal routes & export route.
+## 3 · `R2-1-B` — the remaining direct record writes onto the one door — ✅ M3 ACCEPTED · 🟩 GO M4 NOW — FIRST in the queue (stop after M4)
+**Binding for M4** (plan § PLANNER REVIEW — M3 note + these):
+1. `scan/route.ts`: `checkDuplicateExpense` gets the SCOPED client (`db` from `scopeFromSession`), no `platformDb() as never`
+   — closes the open item of the Planner's tenant audit (2026-10-07).
+2. `api/financials/export/route.ts` changed TODAY (VALIDATE-1 `unvalidated`, MAR-1 `ledgerAccountOf` in both row builders):
+   work on current HEAD; move ONLY the `accountantExportedAt` stamp write onto `saveRecord` — the selection, the rows
+   and the ledger column stay as they are (tests/accountant-export.test.ts must stay green unchanged).
+3. Portal routes write through `portalScope(...)` (the portal's own tenant) — never the office session, never `platformDb`.
+4. Every new test with a throw proof; report `.agents/reports/R2-1-B-M4.md`; push; STOP.
 📄 `coder-directive-r2-1-b.md` — re-measure the census, every direct GlobalPage write → `saveRecord` / `deleteRecord`
 on the caller's scoped door (session / system / portal), or justified in writing. Plan `.agents/plans/R2-1-B.md`, STOP.
 

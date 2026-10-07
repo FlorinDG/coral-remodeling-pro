@@ -9,6 +9,7 @@
  * approval check or export reads. Now the editor READS a ticket through `purchaseView` and WRITES through
  * `purchaseWrite`: every change lands in the ticket's own field; a field a ticket does not have is never written.
  */
+import { formatEuro } from './grid-cell';
 type Props = Record<string, unknown>;
 
 const TICKET_FROM_VIEW: Readonly<Record<string, string>> = { supplierName: 'title', invoiceDate: 'date', totalIncVat: 'amount' };
@@ -69,6 +70,6 @@ export function readingSummary(role: string | null | undefined, props: Props): s
     const d = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(v.invoiceDate ?? ''));
     const n = Number(v.totalIncVat);
     const amount = v.totalIncVat !== '' && v.totalIncVat !== null && v.totalIncVat !== undefined && Number.isFinite(n)
-        ? `€ ${new Intl.NumberFormat('nl-BE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n)}` : '';
+        ? formatEuro(n) : '';
     return [who, d ? `${d[3]}/${d[2]}/${d[1]}` : '', amount].filter(Boolean).join(' · ');
 }

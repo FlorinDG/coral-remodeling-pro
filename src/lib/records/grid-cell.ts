@@ -36,6 +36,11 @@ export function parseCellInput(prop: CellProperty, text: string): { ok: true; va
 }
 
 const AMOUNT = new Intl.NumberFormat('nl-BE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+/** An amount the Belgian way — "€ 1.234,50" (ONE format: grid cells, the import summary, the purchase editor). */
+export function formatEuro(n: number): string {
+    return `€ ${AMOUNT.format(n)}`;
+}
 const DECIMAL = new Intl.NumberFormat('nl-BE', { maximumFractionDigits: 10 });
 
 /** Types shown right-aligned (amounts and numbers line up). */
@@ -52,7 +57,7 @@ export function cellDisplay(prop: CellProperty, value: unknown, titleOf?: (id: s
             const v = numberValue(value, prop.id);
             const n = typeof v === 'number' ? v : Number(String(v ?? '').replace(',', '.'));
             if (v === null || v === undefined || v === '' || !Number.isFinite(n)) return cellText(prop, value, titleOf);
-            if (prop.type === 'currency') return `€ ${AMOUNT.format(n)}`;
+            if (prop.type === 'currency') return formatEuro(n);
             if (prop.type === 'percent') return `${DECIMAL.format(n)} %`;
             return DECIMAL.format(n);
         }

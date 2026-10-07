@@ -15,6 +15,7 @@ import { EXPENSE_CATEGORIES, COST_TYPES } from '@/lib/kernel/expense-taxonomy';
 import { READABLE_ACCEPT } from '@/lib/records/readable-document';   // SCAN-2: iOS converts HEIC to JPEG itself
 import { purchaseView, purchaseWrite, editorShows, editorLabel } from '@/lib/records/purchase-document';
 import { prepareUpload } from '@/lib/files/prepare-upload';
+import { formatEuro } from '@/lib/records/grid-cell';
 import { urlFieldHref } from '@/lib/files';
 import { ledgerAccountOf } from '@/lib/records/accountant-export';
 import { RelationCell } from '@/components/admin/database/v2/cells';
@@ -515,8 +516,8 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
         return (
             <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50">
                 <div className="bg-white dark:bg-neutral-900 rounded-2xl p-8 text-center">
-                    <p className="text-neutral-500">Invoice not found</p>
-                    <button onClick={onClose} className="mt-4 text-sm text-orange-500 hover:underline">Close</button>
+                    <p className="text-neutral-500">Document niet gevonden</p>
+                    <button onClick={onClose} className="mt-4 text-sm text-orange-500 hover:underline">Sluiten</button>
                 </div>
             </div>
         );
@@ -544,7 +545,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                             <div className="min-w-0">
                                 <div className="flex items-center gap-2">
                                     <h2 className="text-base font-bold text-neutral-900 dark:text-white truncate">
-                                        {page.properties.title || 'Untitled Invoice'}
+                                        {page.properties.title || 'Naamloos document'}
                                     </h2>
                                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${sourceBadge.color}`}>
                                         {sourceBadge.label}
@@ -780,7 +781,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                                                     return newData;
                                                 });
                                             }}
-                                            placeholder="Select Cost Type..."
+                                            placeholder="Kies kostensoort…"
                                         />
                                     ) : (
                                         <OptionDisplay value={page.properties.costType as string} options={getOptionsForProperty('costType')} />
@@ -873,7 +874,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                         {role === 'tickets' ? (
                         <div className="grid grid-cols-1 border border-neutral-200 dark:border-white/10 rounded-xl overflow-hidden bg-neutral-50/50 dark:bg-black/10">
                             <FinancialCell
-                                label={editorLabel(role, 'totalIncVat', 'Total Incl. VAT')}
+                                label={editorLabel(role, 'totalIncVat', 'Totaal incl. btw')}
                                 value={(isEditing ? editData.totalIncVat : page.properties.totalIncVat) as string | number}
                                 editable={isEditing}
                                 onChange={v => setEditData(p => ({ ...p, totalIncVat: v }))}
@@ -882,25 +883,25 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                         ) : (
                         <div className="grid grid-cols-4 divide-x divide-neutral-200 dark:divide-white/10 border border-neutral-200 dark:border-white/10 rounded-xl overflow-hidden bg-neutral-50/50 dark:bg-black/10">
                             <FinancialCell
-                                label="Total Excl. VAT"
+                                label="Totaal excl. btw"
                                 value={(isEditing ? editData.totalExVat : page.properties.totalExExVat || page.properties.totalExVat) as string | number}
                                 editable={isEditing && editData.lines.length === 0}
                                 onChange={v => setEditData(p => ({ ...p, totalExVat: v }))}
                             />
                             <FinancialCell
-                                label="Total VAT"
+                                label="Btw"
                                 value={(isEditing ? editData.totalVat : page.properties.totalVat) as string | number}
                                 editable={isEditing && editData.lines.length === 0}
                                 onChange={v => setEditData(p => ({ ...p, totalVat: v }))}
                             />
                             <FinancialCell
-                                label="Total Incl. VAT"
+                                label="Totaal incl. btw"
                                 value={(isEditing ? editData.totalIncVat : page.properties.totalIncVat) as string | number}
                                 editable={isEditing && editData.lines.length === 0}
                                 onChange={v => setEditData(p => ({ ...p, totalIncVat: v }))}
                             />
                             <FinancialCell
-                                label="Amount Due"
+                                label="Te betalen"
                                 value={amountDue}
                                 highlight
                             />
@@ -911,7 +912,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                         {editorShows(role, 'lines') && (isEditing || (page.blocks && page.blocks.filter((b: any) => b.type === 'financial-row').length > 0)) && (
                             <div className="space-y-3 pt-2">
                                 <div className="flex items-center justify-between">
-                                    <h3 className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Line Items</h3>
+                                    <h3 className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Factuurlijnen</h3>
                                     {isEditing && (
                                         <button onClick={() => setEditData(p => {
                                             const newLines = [...p.lines, { id: `temp-${Date.now()}`, description: '', quantity: 1, unitCode: 'C62', unitPrice: 0, vatRate: 21, lineTotal: 0, category: '', costType: '', ledgerAccount: '' }];
@@ -926,12 +927,12 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                                     <table className="w-full text-left text-xs">
                                         <thead className="bg-neutral-50 dark:bg-white/5 border-b border-neutral-200 dark:border-white/10">
                                             <tr>
-                                                <th className="px-3 py-2 font-semibold text-neutral-600 dark:text-neutral-400">Description</th>
-                                                <th className="px-3 py-2 font-semibold text-neutral-600 dark:text-neutral-400">Accounting</th>
-                                                <th className="px-3 py-2 font-semibold text-neutral-600 dark:text-neutral-400 text-right w-16">Qty</th>
-                                                <th className="px-3 py-2 font-semibold text-neutral-600 dark:text-neutral-400 text-right w-24">Price</th>
-                                                <th className="px-3 py-2 font-semibold text-neutral-600 dark:text-neutral-400 text-right w-20">VAT%</th>
-                                                <th className="px-3 py-2 font-semibold text-neutral-600 dark:text-neutral-400 text-right w-24">Total</th>
+                                                <th className="px-3 py-2 font-semibold text-neutral-600 dark:text-neutral-400">Omschrijving</th>
+                                                <th className="px-3 py-2 font-semibold text-neutral-600 dark:text-neutral-400">Boekhouding</th>
+                                                <th className="px-3 py-2 font-semibold text-neutral-600 dark:text-neutral-400 text-right w-16">Aantal</th>
+                                                <th className="px-3 py-2 font-semibold text-neutral-600 dark:text-neutral-400 text-right w-24">Prijs</th>
+                                                <th className="px-3 py-2 font-semibold text-neutral-600 dark:text-neutral-400 text-right w-20">Btw %</th>
+                                                <th className="px-3 py-2 font-semibold text-neutral-600 dark:text-neutral-400 text-right w-24">Totaal</th>
                                                 {isEditing && <th className="px-3 py-2 w-8"></th>}
                                             </tr>
                                         </thead>
@@ -972,7 +973,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                                                                             // The app handles vatRate numerically per line. 
                                                                             setEditData({ ...editData, lines: l });
                                                                         }}
-                                                                        placeholder="Cost Type..."
+                                                                        placeholder="Kostensoort…"
                                                                         compact
                                                                     />
                                                                 )}
@@ -1018,7 +1019,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                                                         {isEditing ? (
                                                             <input type="number" step="0.01" value={line.unitPrice} onChange={e => { const l = [...editData.lines]; l[i].unitPrice = parseFloat(e.target.value) || 0; l[i].lineTotal = l[i].quantity * l[i].unitPrice; const computed = calculateHeaderTotalsFromLines(l); setEditData({ ...editData, lines: l, ...computed }); }} className="w-full px-2 py-1 bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-right" />
                                                         ) : (
-                                                            <span className="text-neutral-500">€{Number(line.unitPrice || 0).toFixed(2)}</span>
+                                                            <span className="text-neutral-500">{formatEuro(Number(line.unitPrice || 0))}</span>
                                                         )}
                                                     </td>
                                                     <td className="px-3 py-2 text-right">
@@ -1032,7 +1033,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                                                         {isEditing ? (
                                                             <input type="number" step="0.01" value={line.lineTotal} onChange={e => { const l = [...editData.lines]; l[i].lineTotal = parseFloat(e.target.value) || 0; const computed = calculateHeaderTotalsFromLines(l); setEditData({ ...editData, lines: l, ...computed }); }} className="w-full px-2 py-1 bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-right font-medium" />
                                                         ) : (
-                                                            <span className="text-neutral-900 dark:text-white font-medium">€{Number(line.lineTotal || 0).toFixed(2)}</span>
+                                                            <span className="text-neutral-900 dark:text-white font-medium">{formatEuro(Number(line.lineTotal || 0))}</span>
                                                         )}
                                                     </td>
                                                     {isEditing && (
@@ -1062,14 +1063,14 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                                         className="flex items-center gap-1.5 px-3 py-2 bg-green-50 dark:bg-green-950/20 hover:bg-green-100 dark:hover:bg-green-950/40 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800/30 text-xs font-bold rounded-lg transition-colors"
                                     >
                                         <CheckCircle2 className="w-3.5 h-3.5" />
-                                        Approve
+                                        Akkoord voor betaling
                                     </button>
                                     <button
                                         onClick={() => setRejectMode(true)}
                                         className="flex items-center gap-1.5 px-3 py-2 bg-red-50 dark:bg-red-950/20 hover:bg-red-100 dark:hover:bg-red-950/40 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800/30 text-xs font-bold rounded-lg transition-colors"
                                     >
                                         <XCircle className="w-3.5 h-3.5" />
-                                        Reject
+                                        Betwisten
                                     </button>
                                 </>
                             )}
@@ -1078,7 +1079,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                                     onClick={handleMarkPaid}
                                     className="flex items-center gap-1.5 px-3 py-2 bg-green-500 hover:bg-green-600 text-white text-xs font-bold rounded-lg transition-colors"
                                 >
-                                    <Check className="w-3.5 h-3.5" /> Mark Paid
+                                    <Check className="w-3.5 h-3.5" /> Markeer betaald
                                 </button>
                             )}
                             {status === 'opt-disputed' && page?.properties.rejectionNote && (
@@ -1095,21 +1096,21 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                                     onClick={handleSaveEdit}
                                     className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold rounded-lg transition-colors"
                                 >
-                                    Save Changes
+                                    Opslaan
                                 </button>
                             ) : (
                                 <button
                                     onClick={() => setIsEditing(true)}
                                     className="px-4 py-2 bg-neutral-200 dark:bg-white/10 hover:bg-neutral-300 dark:hover:bg-white/20 text-neutral-700 dark:text-neutral-300 text-xs font-bold rounded-lg transition-colors"
                                 >
-                                    Edit
+                                    Bewerken
                                 </button>
                             )}
                             <button
                                 onClick={handleExportPDF}
                                 disabled={exportingPdf}
                                 className="flex items-center gap-1.5 px-3 py-2 bg-neutral-200 dark:bg-white/10 hover:bg-neutral-300 dark:hover:bg-white/20 text-neutral-700 dark:text-neutral-300 text-xs font-bold rounded-lg transition-colors disabled:opacity-50"
-                                title="Export PDF"
+                                title="PDF exporteren"
                             >
                                 {exportingPdf ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ArrowDownToLine className="w-3.5 h-3.5" />}
                                 PDF
@@ -1127,7 +1128,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                                 onClick={() => setRightTab('preview')}
                                 className={`text-sm font-bold pb-1 border-b-2 transition-all ${rightTab === 'preview' ? 'border-orange-500 text-orange-500' : 'border-transparent text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300'}`}
                             >
-                                Preview Document
+                                Document
                             </button>
                             <button
                                 onClick={() => setRightTab('attachments')}
@@ -1167,7 +1168,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                                                 <img src={docHref} alt="Document" className="w-full h-full object-contain" style={{ touchAction: 'pinch-zoom' }} />
                                             </a>
                                         ) : (
-                                            <iframe src={docHref} className="w-full h-full border-none bg-white" title="Original Document" />
+                                            <iframe src={docHref} className="w-full h-full border-none bg-white" title="Origineel document" />
                                         )}
                                     </div>
                                 </div>
@@ -1218,7 +1219,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                                         <button
                                             onClick={handleDownloadXml}
                                             className="p-2 rounded-lg bg-neutral-100 hover:bg-neutral-200 dark:bg-white/5 dark:hover:bg-white/10 text-neutral-700 dark:text-neutral-300 transition-colors"
-                                            title="Download XML"
+                                            title="XML downloaden"
                                         >
                                             <Download className="w-4 h-4" />
                                         </button>
@@ -1335,8 +1336,8 @@ function FinancialCell({ label, value, editable, highlight, onChange }: {
     onChange?: (v: string) => void;
 }) {
     const formatted = value && !isNaN(parseFloat(String(value)))
-        ? `€${parseFloat(String(value)).toFixed(2)}`
-        : '-';
+        ? formatEuro(parseFloat(String(value)))
+        : '—';
 
     return (
         <div className={`px-4 py-3 ${highlight ? 'bg-orange-50/50 dark:bg-blue-950/10' : ''}`}>

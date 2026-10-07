@@ -58,3 +58,17 @@ const TICKET_LABEL: Readonly<Record<string, string>> = { supplierName: 'Handelaa
 export function editorLabel(role: string | null | undefined, field: string, invoiceLabel: string): string {
     return role === 'tickets' ? (TICKET_LABEL[field] ?? invoiceLabel) : invoiceLabel;
 }
+
+/**
+ * What a reading found, in one line — "Brico · 02/10/2026 · € 12,50" (Florin 2026-10-07: the import "does not show any
+ * sort of info on the imported doc, just confirms"). Belgian date, euro amount; only what is there.
+ */
+export function readingSummary(role: string | null | undefined, props: Props): string {
+    const v = purchaseView(role, props);
+    const who = String(v.supplierName ?? '').trim();
+    const d = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(v.invoiceDate ?? ''));
+    const n = Number(v.totalIncVat);
+    const amount = v.totalIncVat !== '' && v.totalIncVat !== null && v.totalIncVat !== undefined && Number.isFinite(n)
+        ? `€ ${new Intl.NumberFormat('nl-BE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n)}` : '';
+    return [who, d ? `${d[3]}/${d[2]}/${d[1]}` : '', amount].filter(Boolean).join(' · ');
+}

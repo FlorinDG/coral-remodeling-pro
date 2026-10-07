@@ -11,6 +11,7 @@ import { useRouter } from 'next/navigation';
 import { useLocale } from 'next-intl';
 import { READABLE_ACCEPT } from '@/lib/records/readable-document';   // SCAN-2: iOS converts HEIC to JPEG itself
 import { prepareUpload } from '@/lib/files/prepare-upload';
+import { readingSummary } from '@/lib/records/purchase-document';
 import { MAX_UPLOAD_BYTES, tooLargeMessage } from '@/lib/files/upload-size';
 
 interface AiDocumentImportModalProps {
@@ -25,6 +26,10 @@ interface UploadJob {
     status: 'pending' | 'uploading' | 'processing' | 'done' | 'error';
     error?: string;
     verdict?: string;
+    /** what the reading found — "Brico · 02/10/2026 · € 12,50" — and why it needs a person, if it does */
+    summary?: string;
+    reason?: string;
+    pageId?: string;
 }
 
 /**
@@ -46,6 +51,14 @@ export default function AiDocumentImportModal({ onClose, targetDatabaseId = 'db-
     const modalRef = useRef<HTMLDivElement>(null);
     const router = useRouter();
     const locale = useLocale();
+    // VALIDATE-1: imports wait in "Te valideren" (the Tickets / Purchase-invoice screens show only what counts) — the
+    // right tab, and the document itself when a row is chosen
+    const openInValidation = (pageId?: string) => {
+        const q = new URLSearchParams({ tab: isTickets ? 'tickets' : 'purchase', ...(pageId ? { open: pageId } : {}) });
+        onComplete?.();
+        router.push(`/${locale}/admin/financials/expenses/to-validate?${q}`);
+        onClose();
+    };
 
     const handleFiles = useCallback(async (files: File[]) => {
         const newJobs: UploadJob[] = files.map(file => ({
@@ -126,13 +139,23 @@ export default function AiDocumentImportModal({ onClose, targetDatabaseId = 'db-
                 if (scanData.page) latest = scanData.page;
 
                 const reviewStatus = scanData.page?.properties?.reviewStatus;
-                const verdictText = reviewStatus === 'Klaar' ? 'Klaar' : (reviewStatus ? `Na te kijken — ${reviewStatus}` : 'Klaar');
+                const verdictText = reviewStatus === 'Klaar' ? 'Klaar om goed te keuren' : 'Na te kijken';
                 setJobs(prev => prev.map(j => j.id === job.id ? { ...j, status: 'done', verdict: verdictText } : j));
             } catch (err: any) {
                 await toReview(`Import onderbroken: ${err?.message || 'fout'}`).catch(() => {});
                 setJobs(prev => prev.map(j => j.id === job.id ? { ...j, status: 'error', error: err.message } : j));
             } finally {
-                if (latest) useDatabaseStore.getState().addConfirmedPage(latest);
+                if (latest) {
+                    useDatabaseStore.getState().addConfirmedPage(latest);
+                    // what was read, on the row — the import used to say only "Klaar"
+                    const props = (latest.properties || {}) as Record<string, unknown>;
+                    const pageId = String(latest.id);
+                    setJobs(prev => prev.map(j => j.id === job.id ? {
+                        ...j, pageId,
+                        summary: readingSummary(isTickets ? 'tickets' : 'expenses', props),
+                        reason: props.reviewStatus === 'Klaar' ? '' : String(props.reviewReason || ''),
+                    } : j));
+                }
             }
         }
     }, [target, isTickets, isFree]);
@@ -213,10 +236,17 @@ export default function AiDocumentImportModal({ onClose, targetDatabaseId = 'db-
                     {jobs.length > 0 && (
                         <div className="mt-6 space-y-2">
                             {jobs.map(job => (
-                                <div key={job.id} className="flex items-center justify-between p-3 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+                                <div key={job.id}
+                                     onClick={() => { if (job.pageId) openInValidation(job.pageId); }}
+                                     className={`flex items-center justify-between p-3 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 ${job.pageId ? 'cursor-pointer hover:border-orange-300 dark:hover:border-orange-500/40' : ''}`}
+                                     title={job.pageId ? 'Openen in Te valideren' : undefined}>
                                     <div className="flex items-center gap-3 overflow-hidden">
                                         <FileText className="w-5 h-5 text-neutral-400 flex-shrink-0" />
-                                        <span className="text-sm font-medium text-neutral-900 dark:text-white truncate">{job.file.name}</span>
+                                        <div className="min-w-0">
+                                            <span className="block text-sm font-medium text-neutral-900 dark:text-white truncate">{job.summary || job.file.name}</span>
+                                            {job.summary && <span className="block text-[11px] text-neutral-400 truncate">{job.file.name}</span>}
+                                            {job.reason && <span className="block text-[11px] text-amber-600 dark:text-amber-400 truncate">{job.reason}</span>}
+                                        </div>
                                     </div>
                                     <div className="flex items-center gap-2 flex-shrink-0 ml-4">
                                         {job.status === 'pending' && <span className="text-xs text-neutral-500">Waiting...</span>}
@@ -232,18 +262,11 @@ export default function AiDocumentImportModal({ onClose, targetDatabaseId = 'db-
                     {jobs.filter(j => j.status === 'done').length > 0 && (
                         <div className="mt-6 flex justify-end">
                             <button
-                                onClick={() => {
-                                    if (onComplete) {
-                                        onComplete();
-                                    } else {
-                                        router.push(`/${locale}${isTickets ? '/admin/financials/expenses/tickets' : '/admin/financials/expenses/invoices'}`);
-                                    }
-                                    onClose();
-                                }}
+                                onClick={() => openInValidation()}
                                 className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors"
                             >
                                 <Inbox className="w-4 h-4" />
-                                Bekijk in Inbox ({jobs.filter(j => j.status === 'done').length})
+                                Naar Te valideren ({jobs.filter(j => j.status === 'done').length})
                                 <ArrowRight className="w-4 h-4 opacity-70" />
                             </button>
                         </div>

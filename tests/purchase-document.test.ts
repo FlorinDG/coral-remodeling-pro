@@ -31,3 +31,11 @@ test('a ticket shows only ticket fields — never the invoice fields (throw proo
     assert.equal(editorLabel('tickets', 'supplierName', 'Leverancier'), 'Handelaar');
     assert.equal(editorLabel('expenses', 'supplierName', 'Leverancier'), 'Leverancier');
 });
+
+import { readingSummary } from '../src/lib/records/purchase-document.ts';
+
+test('what a reading found, in one Belgian line (throw proof: the import only said "Klaar")', () => {
+    assert.equal(readingSummary('tickets', { title: 'Brico', date: '2026-10-02', amount: 12.5 }), 'Brico · 02/10/2026 · € 12,50');
+    assert.equal(readingSummary('expenses', { supplierName: 'Aveve', invoiceDate: '2026-09-30', totalIncVat: 1210 }), 'Aveve · 30/09/2026 · € 1.210,00');
+    assert.equal(readingSummary('tickets', { title: 'scan.jpg' }), 'scan.jpg');   // nothing else read
+});

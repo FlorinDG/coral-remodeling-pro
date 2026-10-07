@@ -466,7 +466,7 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
     // ── Render ────────────────────────────────────────────────────────────────
     return (
         <div
-            ref={modalRef}
+            ref={modalRef} role="dialog" aria-modal="true"
             className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4 sm:p-6"
             onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
         >

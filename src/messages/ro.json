@@ -262,7 +262,6 @@
       "draftOnlyDelete": "Doar ciornele pot fi șterse",
       "wrapText": "Încadrare text"
     },
-    "grid": {"useOld": "Grila veche", "backToNew": "Înapoi la grila nouă", "switchHint": "Doar pentru tine, în această bază de date, în acest browser — grila veche dispare după o săptămână"},
     "toValidate": {"tickets": "Bonuri", "purchaseInvoices": "Facturi de achiziție", "hint": "Scanările și importurile așteaptă aici aprobarea — abia apoi contează (totaluri, costuri de proiect, export contabil)."},
     "comments": {"title": "Comentarii", "placeholder": "Scrie un comentariu… (@ pentru a menționa pe cineva)", "send": "Publică", "resolve": "Rezolvă", "reopen": "Redeschide", "edit": "Editează", "delete": "Șterge", "save": "Salvează", "cancel": "Anulează", "empty": "Încă nu sunt comentarii.", "resolved": "rezolvat", "edited": "editat", "deleteConfirm": "Ștergi acest comentariu?", "failed": "Eșuat", "summary": "{count, plural, one {# comentariu} other {# comentarii}}{open, plural, =0 {} other {, # deschise}}"},
     "werkbon": {"title": "Bon de lucru — semnat de client", "signedBy": "Semnat de {name} la {date}", "openPdf": "Deschide bonul de lucru (PDF)", "pdfPending": "PDF-ul se generează…", "notSent": "Încă netrimis", "sentTo": "Trimis la {date} către {to}", "cc": "copie: {cc}"},

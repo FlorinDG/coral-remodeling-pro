@@ -35,13 +35,9 @@ on the caller's scoped door (session / system / portal), or justified in writing
 📄 `coder-directive-loc-grid-1.md` — every visible string in `v2/NotionGridV2.tsx` + `v2/cells.tsx` → `Admin.grid.*`
 in en/nl/fr/ro; strings only; `tests/i18n.test.ts` is the guard (throw proof). Report `.agents/reports/LOC-GRID-1.md`.
 
-## 0 · `GRID-REPLACE-5` — removing the old grid — 🟩 GO M1 → M4 (Florin 2026-10-06: "go") · stop + report after EACH milestone
-📄 `.agents/plans/GRID-REPLACE-5.md` § PLANNER REVIEW (G1–G3). Order: **§7 first** (the DSG behaviours users may rely on —
-fill handle, row insert, undo, Ctrl+D, multi-row duplicate, paste semantics: in the new grid? → table) → M1 (moves) →
-M2 (switch + fallback branch + `grid.useOld` / `grid.backToNew` / `grid.switchHint` keys) → M3 (old grid, CSS, columns/)
-→ M4 (the shield, G3 grep per site). 🛑 If §7 finds a behaviour the new grid lacks that a screen depends on: STOP before
-M2. Each milestone: its own commit + `.agents/reports/GRID-REPLACE-5-M<n>.md`, then WAIT for the Planner's review before
-the next. M5 (the package) is NOT yours — leave it.
+## 0 · `GRID-REPLACE-5` — ✅ M1–M4 ACCEPTED (planner fixed the modal shortcuts) · 🟩 GO §7 (report only, then STOP)
+Write `.agents/reports/GRID-REPLACE-5-S7.md` (plan § PLANNER REVIEW — M1–M4): the DSG behaviours users may rely on vs the
+new grid. Change no code. M5 (the package) is Florin's.
 
 ## ✅ `R2-5` — DONE WITH CORRECTIONS (review 2026-10-02, `MORNING-2026-10-02.md` §2)
 Store tests accepted. 11 of 13 OCC tests tested a COPY of the merge loop (§3a) — removed on

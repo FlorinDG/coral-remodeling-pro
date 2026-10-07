@@ -18,7 +18,7 @@ export default function Modal({ isOpen, onClose, title, children }: ModalProps) 
     if (!isOpen) return null;
 
     return (
-        <div ref={modalRef} className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+        <div ref={modalRef} role="dialog" aria-modal="true" className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
             <div
                 className="absolute inset-0 bg-black/75 animate-in fade-in duration-300"
                 onClick={onClose}

@@ -6,6 +6,7 @@ import { Search, X, FileText, Users, Receipt, FolderKanban, Database, ArrowRight
 import { useDatabaseStore } from '@/components/admin/database/store';
 import { useRouter } from 'next/navigation';
 import { useLocale } from 'next-intl';
+import { isFromModal } from '@/lib/dom/page-shortcut';
 
 // ── Lightweight fuzzy match ──────────────────────────────────────────────────
 function fuzzyMatch(text: string, query: string): { match: boolean; score: number } {
@@ -106,7 +107,7 @@ export default function UniversalSearch() {
     // ⌘K / Ctrl+K shortcut
     useEffect(() => {
         const handler = (e: KeyboardEvent) => {
-            if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'k' && !isFromModal(e.target)) {
                 e.preventDefault();
                 setIsOpen(prev => !prev);
             }

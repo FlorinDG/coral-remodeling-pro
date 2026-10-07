@@ -786,7 +786,7 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
 
     return createPortal(
         <div 
-            ref={modalRef}
+            ref={modalRef} role="dialog" aria-modal="true"
             tabIndex={-1}
             className="fixed inset-0 z-[99999] flex justify-end outline-none"
             onPointerDown={(e) => e.stopPropagation()}

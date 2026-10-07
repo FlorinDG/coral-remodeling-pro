@@ -88,7 +88,7 @@ export default function VariantsPropertyEditor({ databaseId, pageId, propertyId,
             </button>
 
             {isOpen && (
-                <div ref={modalRef} className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4">
+                <div ref={modalRef} role="dialog" aria-modal="true" className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4">
                     <div className="bg-white dark:bg-[#1a1a1a] border border-neutral-200 dark:border-white/10 w-full max-w-2xl max-h-[80vh] overflow-y-auto rounded-xl shadow-2xl flex flex-col">
                         <div className="sticky top-0 bg-white dark:bg-[#1a1a1a] border-b border-neutral-200 dark:border-white/10 p-4 flex items-center justify-between z-10">
                             <div>

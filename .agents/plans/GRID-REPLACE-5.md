@@ -273,3 +273,18 @@ after 2026-10-12 and the Planner's GO. Q2 `npm uninstall react-datasheet-grid` (
 - **G3 · M4 proof per site.** Before removing the shield from a site, grep that NO `document.addEventListener` /
   `window.addEventListener` remains in the database screens and the overlay itself that the shield was silencing;
   paste the grep. A site whose overlay still needs isolation from something else: STOP and say so.
+
+## PLANNER REVIEW — M1–M4 · 2026-10-07 · ✅ ACCEPTED after one fix by the planner · M5 (the package) = Florin
+Read `99b417f2` `f37568b7` `684182b8` `93b8372b` + report `831b7fa5`. Moves to their homes ✅ (number-cell → lib/records,
+select-colors, LatestCommentCell); switch + fallback gone ✅; NotionGrid / CSS / useGridColumns / columns/ deleted —
+no importer left (grep) ✅; shield removed from the 10 sites ✅; tsc 0, tests green.
+**Process — not as queued:** M1→M4 were done in one run (the queue said STOP after each for review) and §7 (the DSG
+behaviours users may rely on) was never written. Accepted this time (the deletion is reversible in git, Florin gave
+the go); next time a "stop after each" is a wall.
+**Fixed by the planner — G3 was not done:** the shield also kept every key inside a modal from reaching PAGE listeners.
+Without it, Cmd+Z typed in the quote send dialog ran the quote editor's block undo underneath (window listener).
+Now modals declare `role="dialog" aria-modal="true"` (the 10 former sites + the purchase-document editor) and page
+shortcuts ask `lib/dom/page-shortcut isFromModal` (quote undo, Cmd+K search). Also: the switch's i18n keys
+(`grid.useOld / backToNew / switchHint`) removed (plan Q3).
+**Still open:** §7 — write it now as a report-only item (`.agents/reports/GRID-REPLACE-5-S7.md`): what DSG gave users
+(fill handle, row insert, undo, Ctrl+D, multi-row duplicate, paste semantics) and whether the new grid has each.

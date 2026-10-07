@@ -45,7 +45,7 @@ export default function InlineDialog({
 
     return (
         <div
-            ref={overlayRef}
+            ref={overlayRef} role="dialog" aria-modal="true"
             className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 animate-in fade-in duration-200"
             onClick={(e) => { if (e.target === overlayRef.current) onClose(); }}
         >

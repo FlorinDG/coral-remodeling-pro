@@ -41,6 +41,7 @@ import InternalTasklist from './InternalTasklist';
 import { isQuoteLocked } from '@/lib/records/document-lock';
 import { reviseQuotation } from '@/lib/data/quote-revision';
 import { describeError } from '@/lib/describe-error';
+import { isFromModal } from '@/lib/dom/page-shortcut';
 
 const FALLBACK_PAGES: Page[] = [];
 
@@ -212,6 +213,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
+            if (isFromModal(e.target)) return;   // Cmd+Z in a dialog (e.g. the send dialog) undoes its text, never the quote
             const isZ = e.key.toLowerCase() === 'z';
             const isMod = e.metaKey || e.ctrlKey;
             const isShift = e.shiftKey;

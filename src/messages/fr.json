@@ -261,7 +261,6 @@
       "draftOnlyDelete": "Seuls les brouillons peuvent être supprimés",
       "wrapText": "Retour à la ligne"
     },
-    "grid": {"useOld": "Ancienne grille", "backToNew": "Retour à la nouvelle grille", "switchHint": "Uniquement pour vous, sur cette base, dans ce navigateur — l’ancienne grille disparaît dans une semaine"},
     "toValidate": {"tickets": "Tickets", "purchaseInvoices": "Factures d’achat", "hint": "Les scans et imports attendent ici leur approbation — ils ne comptent qu’ensuite (totaux, coûts de projet, export comptable)."},
     "comments": {"title": "Commentaires", "placeholder": "Écrire un commentaire… (@ pour mentionner quelqu'un)", "send": "Publier", "resolve": "Résoudre", "reopen": "Rouvrir", "edit": "Modifier", "delete": "Supprimer", "save": "Enregistrer", "cancel": "Annuler", "empty": "Pas encore de commentaires.", "resolved": "résolu", "edited": "modifié", "deleteConfirm": "Supprimer ce commentaire ?", "failed": "Échec", "summary": "{count, plural, one {# commentaire} other {# commentaires}}{open, plural, =0 {} other {, # ouvert(s)}}"},
     "werkbon": {"title": "Bon de travail — signé par le client", "signedBy": "Signé par {name} le {date}", "openPdf": "Ouvrir le bon de travail (PDF)", "pdfPending": "PDF en cours de création…", "notSent": "Pas encore envoyé", "sentTo": "Envoyé le {date} à {to}", "cc": "copie : {cc}"},

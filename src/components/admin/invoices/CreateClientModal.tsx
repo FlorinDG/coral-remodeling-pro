@@ -79,7 +79,7 @@ export default function CreateClientModal({ isOpen, onClose, onCreated, createPa
     };
 
     return (
-        <div ref={modalRef} className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50" onClick={onClose}>
+        <div ref={modalRef} role="dialog" aria-modal="true" className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50" onClick={onClose}>
             <div
                 className="w-full max-w-lg bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border border-neutral-200 dark:border-white/10 overflow-hidden animate-in fade-in zoom-in-95 duration-150"
                 onClick={(e) => e.stopPropagation()}

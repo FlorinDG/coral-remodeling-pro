@@ -552,7 +552,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
     const amountDue = status === 'opt-paid' ? 0 : parseFloat(String(page.properties.totalIncVat || 0));
 
     return (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+        <div role="dialog" aria-modal="true" className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
             <div className={`relative w-full max-w-7xl md:h-[90vh] bg-white dark:bg-neutral-900 rounded-none md:rounded-2xl shadow-2xl border-0 md:border border-neutral-200 dark:border-white/10 flex flex-col md:flex-row overflow-y-auto md:overflow-hidden min-h-screen md:min-h-0 ${animationDone ? '' : 'animate-in fade-in zoom-in-95 duration-200'}`} onClick={(e) => e.stopPropagation()}>
                 
                 {/* Left Pane (Metadata & Lines) */}

@@ -15,6 +15,7 @@ import { EXPENSE_CATEGORIES, COST_TYPES } from '@/lib/kernel/expense-taxonomy';
 import { READABLE_ACCEPT } from '@/lib/records/readable-document';   // SCAN-2: iOS converts HEIC to JPEG itself
 import { purchaseView, purchaseWrite, editorShows, editorLabel } from '@/lib/records/purchase-document';
 import { prepareUpload } from '@/lib/files/prepare-upload';
+import { urlFieldHref } from '@/lib/files';
 import { ledgerAccountOf } from '@/lib/records/accountant-export';
 import { RelationCell } from '@/components/admin/database/v2/cells';
 import { useOpenLinkedRecord } from '@/components/admin/database/hooks/useOpenLinkedRecord';
@@ -155,29 +156,6 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [uploading, setUploading] = useState(false);
     const [rightTab, setRightTab] = useState<'preview' | 'attachments'>('preview');
-
-    // PDF Zoom & Pan state
-    const [zoom, setZoom] = useState(1);
-    const [pan, setPan] = useState({ x: 0, y: 0 });
-    const [isDragging, setIsDragging] = useState(false);
-    const dragStart = useRef({ x: 0, y: 0 });
-
-    const handleMouseDown = (e: React.MouseEvent) => {
-        setIsDragging(true);
-        dragStart.current = { x: e.clientX - pan.x, y: e.clientY - pan.y };
-    };
-
-    const handleMouseMove = (e: React.MouseEvent) => {
-        if (!isDragging) return;
-        setPan({
-            x: e.clientX - dragStart.current.x,
-            y: e.clientY - dragStart.current.y
-        });
-    };
-
-    const handleMouseUp = () => {
-        setIsDragging(false);
-    };
 
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const picked = e.target.files?.[0];
@@ -523,6 +501,9 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
     // the record's own schema says where `project` points (purchase invoices and tickets alike)
     const projectRelation = useDatabaseStore.getState().getDatabase(expensesDbId)?.properties?.find(p => p.id === 'project')?.config as { relationDatabaseId?: string; relationDisplayPropertyId?: string } | undefined;
     const openLinked = useOpenLinkedRecord();
+    // the document's address and kind — a photo is shown as an image, a PDF in the browser's own viewer
+    const docHref = typeof page?.properties.receiptUrl === 'string' ? urlFieldHref(page.properties.receiptUrl) : '';
+    const docIsImage = /\.(jpe?g|png|webp|gif)(\?|$)/i.test(String(page?.properties.receiptUrl || ''));
 
     const getOptionsForProperty = (propId: string) => {
         const db = useDatabaseStore.getState().getDatabase(expensesDbId);
@@ -1117,7 +1098,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                 </div>
 
                 {/* Right Pane (Viewer / Attachments) */}
-                <div className="w-[45%] flex flex-col bg-neutral-100 dark:bg-neutral-950 relative">
+                <div className="w-full md:w-[45%] h-[75vh] md:h-auto flex flex-col bg-neutral-100 dark:bg-neutral-950 relative">
                     {/* Right Header Tab bar */}
                     <div className="px-6 py-3 border-b border-neutral-200 dark:border-white/10 flex items-center justify-between shrink-0 bg-white dark:bg-[#191919]">
                         <div className="flex gap-4">
@@ -1143,49 +1124,30 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                     <div className="flex-1 p-4 flex flex-col min-h-0 relative">
                         {rightTab === 'preview' ? (
                             page.properties.receiptUrl && typeof page.properties.receiptUrl === 'string' ? (
-                                <div className="w-full h-full relative overflow-hidden rounded-xl border border-neutral-200 dark:border-white/10 bg-white">
-                                    {/* Zoom & Pan Toolbar */}
-                                    <div className="absolute top-4 right-4 z-10 flex items-center gap-1 bg-white/80 dark:bg-neutral-900/80 backdrop-blur border border-neutral-200 dark:border-white/10 rounded-lg p-1 shadow-lg">
-                                        <button
-                                            onClick={() => setZoom(z => Math.min(z + 0.15, 3))}
-                                            className="px-2.5 py-1 rounded hover:bg-neutral-250 dark:hover:bg-white/5 text-neutral-600 dark:text-neutral-300 font-bold text-sm"
-                                            title="Zoom In"
-                                        >
-                                            +
+                                // EDIT-1 (Florin 2026-10-07: "two overlapping and conflicting zoom/pan options. leave the default pdf one,
+                                // the webview, bigger buttons, more fluid and responsive"): a PDF in the browser's OWN viewer (its zoom),
+                                // a photo fitted to the pane (pinch to zoom on a phone, a tap opens it full size) — no second zoom layer.
+                                <div className="w-full h-full flex flex-col overflow-hidden rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-neutral-900">
+                                    <div className="flex items-center justify-end gap-2 p-2 border-b border-neutral-200 dark:border-white/10 shrink-0">
+                                        <a href={docHref} target="_blank" rel="noopener noreferrer"
+                                           className="inline-flex items-center gap-2 h-10 px-4 rounded-lg text-sm font-semibold bg-neutral-100 dark:bg-white/10 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-white/15">
+                                            <ExternalLink className="w-4 h-4" /> Openen
+                                        </a>
+                                        <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploading}
+                                                className="inline-flex items-center gap-2 h-10 px-4 rounded-lg text-sm font-semibold bg-neutral-100 dark:bg-white/10 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-white/15 disabled:opacity-50">
+                                            {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />} Ander bestand
                                         </button>
-                                        <button
-                                            onClick={() => setZoom(z => Math.max(z - 0.15, 0.5))}
-                                            className="px-2.5 py-1 rounded hover:bg-neutral-250 dark:hover:bg-white/5 text-neutral-600 dark:text-neutral-300 font-bold text-sm"
-                                            title="Zoom Out"
-                                        >
-                                            -
-                                        </button>
-                                        <button
-                                            onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); }}
-                                            className="px-2 py-1 rounded hover:bg-neutral-250 dark:hover:bg-white/5 text-neutral-600 dark:text-neutral-300 text-[10px] font-bold"
-                                            title="Reset"
-                                        >
-                                            Reset
-                                        </button>
+                                        <input ref={fileInputRef} type="file" accept={READABLE_ACCEPT} className="hidden" onChange={handleFileChange} />
                                     </div>
-
-                                    {/* Viewer Container */}
-                                    <div 
-                                        className="w-full h-full cursor-grab active:cursor-grabbing overflow-hidden relative"
-                                        onMouseDown={handleMouseDown}
-                                        onMouseMove={handleMouseMove}
-                                        onMouseUp={handleMouseUp}
-                                        onMouseLeave={handleMouseUp}
-                                    >
-                                        {zoom !== 1 && (
-                                            <div className="absolute inset-0 z-20 bg-transparent" />
+                                    <div className="flex-1 min-h-0">
+                                        {docIsImage ? (
+                                            <a href={docHref} target="_blank" rel="noopener noreferrer" className="block w-full h-full" title="Volledig openen">
+                                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                <img src={docHref} alt="Document" className="w-full h-full object-contain" style={{ touchAction: 'pinch-zoom' }} />
+                                            </a>
+                                        ) : (
+                                            <iframe src={docHref} className="w-full h-full border-none bg-white" title="Original Document" />
                                         )}
-                                        <iframe 
-                                            src={page.properties.receiptUrl.startsWith('http') ? page.properties.receiptUrl : `/api/files/${page.properties.receiptUrl}`} 
-                                            className={`w-full h-full border-none bg-white transition-transform duration-75 origin-center ${isDragging ? 'pointer-events-none' : ''}`}
-                                            style={{ transform: `scale(${zoom}) translate(${pan.x}px, ${pan.y}px)` }}
-                                            title="Original Document"
-                                        />
                                     </div>
                                 </div>
                             ) : (

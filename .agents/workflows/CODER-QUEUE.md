@@ -1,5 +1,5 @@
 # CORAL — CODER QUEUE
-**Current as of 2026-10-07.** Order: GRID-REPLACE-5 §7 → LOC-GRID-1 → DB-HEADER-1 M4 → R2-1-B M4. This file is always the live queue — superseded items are removed, not renamed.
+**Current as of 2026-10-08.** Order: GRID-REPLACE-5 §7 → LOC-GRID-1 → DB-HEADER-1 M4 → R2-1-B M4 → **HR MVP close:** DEAD-HR-1 → LOC-HR-1 → HR-SERAPH-1 → EMP-PROFILE-1 → GRID-SURFACE-1. This file is always the live queue — superseded items are removed, not renamed.
 🛑 **The filename never carries a date.** `PLANNER-HANDOVER.md` §7 points here permanently.
 
 **Work top to bottom. Each item is a separate commit set. Report after each.**
@@ -71,6 +71,60 @@ test in `write-path-store.test.ts` also asserts a copy — fold into the next it
 `write-policy.ts` does not yet cover `shifts`, `shift-tasks`, `shift-attachments` (crew writes those legitimately: user-initiated shifts, task progress, uploads). Needs reach-on-parent — **rides with `R1-4`.**
 
 ---
+
+---
+
+## HR MVP CLOSE (Florin 2026-10-08: "i think this will close the MVP stage for HR module") — after R2-1-B M4, in this order
+The Planner shipped the judgement half on 2026-10-08 (`3869b484..8cdfd8cd`): kernel `shift-status.ts` + `absence.ts`,
+leave = TimeOffRequest, conflicts, timesheets grouping/period/stats/cache, the werkbon viewer, two cross-tenant holes
+closed. 🛑 **Planner-only, do NOT touch:** `src/lib/kernel/**`, `src/lib/records/**`, `src/lib/data/**`,
+`src/app/api/hr/[entity]/route.ts` (clock-in path — a defect stops a crew), `src/app/actions/timesheets.ts`,
+`src/components/time-tracker/hooks/**`, `src/components/workhub/**`, anything under `prisma/` unless the item says so.
+Each item: plan → STOP for review → build → report `.agents/reports/<ID>.md` → push develop → STOP.
+
+### 5 · `DEAD-HR-1` — remove the HR code nothing reaches (deletions only)
+Prove each unreachable FIRST (no import, no route link, no `href`), list the proof in the plan, STOP. Candidates (verify,
+do not assume): `app/[locale]/workhub/schedule/page.tsx` + `components/time-tracker/pages/Schedule.tsx` (writes a status
+the server now refuses, builds `new Date(\`${date}T${time}\`)`), `schedule/ScheduleCalendar.tsx`, `hooks/useProjects.ts`
+(🛑 it is under hooks/ — list it, the Planner deletes it), `components/admin/UserManager.tsx` / `UserDetailView.tsx` /
+`RoleManager.tsx`, `app/[locale]/admin/hr/time-tracker/{time-off,profile,performance,documents}` pages, the
+`'projects': 'hrProject'` entity slug (retired by PROJ-SSOT-1 — Planner removes it from the route on your list).
+If `UserDetailView` goes, `app/actions/hr-admin.ts` has no caller: delete it and take it off nothing (it is already
+off the R1-5 list). Each removed raw importer leaves the eslint allowlist and lowers `CEILING`. tsc + lint + tests green.
+
+### 6 · `LOC-HR-1` — the HR module speaks the user's language (strings only)
+Every visible string in `app/[locale]/admin/hr/**` (employees, leave, dashboard, timesheets, werkbon print page),
+`components/time-tracker/components/admin/ScheduleManagement.tsx`, `schedule/**` (matrix, table, shift editor, the
+`shift-status-ui.ts` LABELS → keys; the colours stay), `werkbon/WerkbonDocument.tsx`, and `config/tabs.ts` `hrTabs`
+labels → `Hr.*` keys in en/nl/fr/ro (Dutch is today's wording; English proper; FR/RO first-pass, mark doubtful ones).
+Dates shown through the existing formatters — no new `toLocaleDateString('en-US')`. NO logic change.
+`tests/i18n.test.ts` is the guard (throw proof: drop one key, show it fail).
+
+### 7 · `HR-SERAPH-1` — the HR read side onto the scoped client
+Move to `scopeFromSession()` (seraph): `api/hr/timesheet-reports`, `api/hr/timesheet-export`, `api/hr/timesheet-rates`
+(+ `undo`), `api/hr/audit-logs`, `api/hr/lib/team-scoping.ts`, `app/[locale]/admin/hr/page.tsx`,
+`app/[locale]/admin/hr/leave/page.tsx`, `app/actions/hr-documents.ts`, `app/actions/hr-announcements.ts`.
+Binding: (1) the holes this closes are the UNSCOPED lookups by id list — `user.findMany({ id: { in } })`,
+`employee.findMany({ userId: { in } })` with no tenant: they become scoped; (2) a manual `tenantId` filter may stay as a
+second wall, never be the only one; (3) behaviour identical — same rows, same JSON (the timesheet screen and its export
+are what Florin checks); (4) one file = one commit, each leaves the allowlist and lowers `CEILING`; (5) a test per file
+that a foreign-tenant id is not returned, with throw proof. STOP after the plan.
+
+### 8 · `EMP-PROFILE-1` — the employee profile is stored, not kept in the browser
+Today department, contract type, address, birth date and notes live in `localStorage` (`emp-profile-<id>`,
+employees/page.tsx): personal data on one browser, invisible to the rest of the tenant, lost on another device.
+Additive migration on `Employee`: `department String?`, `employmentType String?`, `address String?`,
+`birthDate String?` ('YYYY-MM-DD', a calendar date — not DateTime), `notes String?`; `api/tenant/employees` (already
+scoped) reads/writes them; the page drops `loadProfile`/`saveProfile`. Existing browser values are NOT migrated
+(re-entered by hand — Florin: root to leaf). 🛑 A `prisma/` change: commit on develop, push develop, STOP —
+**Florin runs the migration and pushes the range himself.**
+
+### 9 · `GRID-SURFACE-1` — the scheduler's table view in the ONE grid (Florin 2026-10-08: "wrong table" → our grid)
+Plan first, STOP. Split `v2/NotionGridV2.tsx` into a presentational surface (columns, rows, cell renderers, sort,
+column resize — no store) and the store-bound grid that uses it (behaviour of every database screen unchanged). Then
+`schedule/ScheduleTable.tsx` renders shifts through the surface: Datum · Tijd · Medewerker · Project · Adres · Rol ·
+Status (the kernel status select as today, `in-progress` shown never chosen) · conflict mark; rows = the weeks the
+matrix shows. After LOC-GRID-1 (same files). Throw-proof tests on the shift → row mapping.
 
 ## THEN, in order
 `TD-4` tail *(5 grandfathered files)* · `KERN-8` · `R1-2`/`R1-3` → `R1-4`+`R1-5` · `ENT-1…24` · `WB-A…E` *(the werkbon — phasing awaits Florin)*.

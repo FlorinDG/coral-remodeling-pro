@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useScheduledShifts } from '@/components/time-tracker/hooks/useScheduledShifts';
 import { isBlockingAbsence } from '@/lib/kernel/absence';
-import { formatCalendarDay } from '@/components/time-tracker/components/schedule/shift-editor/model';
+import { formatCalendarDay } from '@/lib/format/date';
 import { useUserRoles } from '@/components/time-tracker/hooks/useUserRoles';
 import { useClockEntries } from '@/components/time-tracker/hooks/useClockEntries';
 import { useGeolocation, validateGeofence } from '@/components/time-tracker/hooks/useGeolocation';

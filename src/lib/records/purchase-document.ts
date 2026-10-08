@@ -19,6 +19,12 @@ const TICKET_FIELDS: ReadonlySet<string> = new Set([
     'vatDeductiblePct', 'reviewStatus', 'reviewReason',
 ]);
 
+/** The databases whose records ARE purchase documents — they open in the one purchase editor (EDIT-1), never in the
+ *  generic record panel. */
+export function isPurchaseDocumentRole(role: string | null | undefined): boolean {
+    return role === 'expenses' || role === 'tickets';
+}
+
 /** A record as the editor reads it. Purchase invoices: unchanged. Tickets: their facts under the editor's names. */
 export function purchaseView(role: string | null | undefined, props: Props): Props {
     if (role !== 'tickets') return props;

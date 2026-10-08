@@ -161,7 +161,7 @@ describe('HR-SERAPH-1 · Exact Query Shape Pins & Throw Proofs (B5)', () => {
 
     // 9. B8 undo rate grouping covers every entry once (timesheet-rates/undo/route.ts)
     test('9 · timesheet-rates/undo B8 — groupSnapshotByRate groups by oldRate covering every entry exactly once', async () => {
-        const { groupSnapshotByRate } = await import('../src/app/api/hr/timesheet-rates/undo/route.ts');
+        const { groupSnapshotByRate } = await import('../src/lib/records/rate-snapshot.ts');
 
         const snapshot = [
             { entryId: 'e1', oldRate: 35 },

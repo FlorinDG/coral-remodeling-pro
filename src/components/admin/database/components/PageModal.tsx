@@ -1,6 +1,7 @@
 "use client";
 /* eslint-disable */
 
+import { isPurchaseDocumentRole } from '@/lib/records/purchase-document';
 import { isTenantDatabase } from '@/lib/relations/resolve';
 import { urlFieldHref } from '@/lib/files';
 import CommentThread from '@/components/admin/comments/CommentThread';
@@ -503,7 +504,7 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
     const role = database?.logicalKey;
     const isProject = role === 'projects';
     // EDIT-1: every purchase document — purchase invoices AND tickets — opens in the ONE side-by-side editor
-    const isExpense = role === 'expenses' || role === 'tickets';
+    const isExpense = isPurchaseDocumentRole(role);
     const isQuotation = role === 'quotations';
     const isInvoice = role === 'invoices';
     const updatePropertyOrder = useDatabaseStore(state => state.updatePropertyOrder);

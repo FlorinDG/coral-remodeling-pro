@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { CalendarOff, CheckCircle2, XCircle, Clock, AlertCircle } from "lucide-react";
 import { getTranslations } from 'next-intl/server';
 import LeaveActions from "./LeaveActions";
-import { formatCalendarDay } from '@/components/time-tracker/components/schedule/shift-editor/model';
+import { formatCalendarDay } from '@/lib/format/date';
 import { zonedParts } from '@/lib/kernel/shift-time';
 
 // ── Server Data ───────────────────────────────────────────────────

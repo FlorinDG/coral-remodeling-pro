@@ -3,6 +3,7 @@ import { isTenantHrRole } from '@/app/api/hr/lib/actor-reach';
 import { auth } from '@/auth';
 import { scopeFromSession } from '@/lib/data/scope';
 import { describeError } from '@/lib/describe-error';
+import { groupSnapshotByRate } from '@/lib/records/rate-snapshot';
 
 async function getContext() {
     const session = await auth();
@@ -15,20 +16,6 @@ async function getContext() {
     };
 }
 
-export function groupSnapshotByRate(
-    snapshot: Array<{ entryId: string; oldRate: number | null }>
-): Map<number | null, string[]> {
-    const rateGroups = new Map<number | null, string[]>();
-    for (const item of snapshot) {
-        const existing = rateGroups.get(item.oldRate);
-        if (existing) {
-            existing.push(item.entryId);
-        } else {
-            rateGroups.set(item.oldRate, [item.entryId]);
-        }
-    }
-    return rateGroups;
-}
 
 export async function POST(req: Request) {
     const ctx = await getContext();

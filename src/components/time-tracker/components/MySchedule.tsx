@@ -6,6 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useScheduledShifts } from '@/components/time-tracker/hooks/useScheduledShifts';
+import { isBlockingAbsence } from '@/lib/kernel/absence';
+import { formatCalendarDay } from '@/components/time-tracker/components/schedule/shift-editor/model';
 import { useUserRoles } from '@/components/time-tracker/hooks/useUserRoles';
 import { useClockEntries } from '@/components/time-tracker/hooks/useClockEntries';
 import { useGeolocation, validateGeofence } from '@/components/time-tracker/hooks/useGeolocation';
@@ -136,7 +138,7 @@ export function MySchedule() {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const { isManager } = useUserRoles();
-  const { shifts, loading, error, failedEndpoints, refetch: refetchShifts } = useScheduledShifts();
+  const { shifts, absences, loading, error, failedEndpoints, refetch: refetchShifts } = useScheduledShifts();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { activeEntry, clockIn, clockOut } = useClockEntries();
   const { requestLocation, explainerDialog } = useGeolocation();
@@ -219,6 +221,12 @@ export function MySchedule() {
       // Chronological by date AND start time (was date only — same-day shifts came in creation order).
       .sort(compareShifts);
   }, [shifts, user?.id, rangeStartStr, rangeEndStr]);
+
+  // LEAVE-1: my days off in the same window — an absence, shown as such (never a shift card with a clock button).
+  const myAbsences = useMemo(() => absences
+    .filter(a => a.userId === user?.id && isBlockingAbsence(a))
+    .filter(a => a.startDate.slice(0, 10) <= rangeEndStr && (a.endDate || a.startDate).slice(0, 10) >= rangeStartStr)
+    .sort((a, b) => a.startDate.localeCompare(b.startDate)), [absences, user?.id, rangeStartStr, rangeEndStr]);
 
   // Find the next upcoming shift (today or future)
   // The first shift that is not over yet (running or upcoming) — by time, not just by date.
@@ -398,6 +406,21 @@ export function MySchedule() {
         )}
       </CardHeader>
       <CardContent className="p-0">
+        {myAbsences.length > 0 && (
+          <div className="px-3 pt-3 md:px-4 md:pt-4 space-y-2">
+            {myAbsences.map(a => {
+              const from = formatCalendarDay(a.startDate.slice(0, 10), i18n.language);
+              const to = formatCalendarDay((a.endDate || a.startDate).slice(0, 10), i18n.language);
+              return (
+                <div key={a.id} className="rounded-lg border border-purple-200 dark:border-purple-900/40 bg-purple-50/70 dark:bg-purple-950/20 px-3 py-2 text-sm text-purple-900 dark:text-purple-200">
+                  🌴 <span className="font-semibold">{t('nav.timeOff')}</span> · {from === to ? from : `${from} – ${to}`}
+                  {a.requestType ? ` · ${a.requestType}` : ''}
+                  {a.status === 'pending' ? ` · ${t('timeOff.pending')}` : ''}
+                </div>
+              );
+            })}
+          </div>
+        )}
         {filteredShifts.length === 0 ? (
           <p className="text-center text-muted-foreground py-8 px-4 text-sm">
             {t('schedule.noShiftsScheduledPeriod')}

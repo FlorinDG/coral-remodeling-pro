@@ -7,6 +7,7 @@ import { CreateShiftForm, EditShiftDialog } from '@/components/time-tracker/comp
 import type { EditScope } from '@/components/ui/ScopePicker';
 import { describeError } from '@/lib/describe-error';
 import { localDateKey, shiftMoment } from '@/lib/kernel/shift-time';
+import { leaveConflicts } from '@/lib/kernel/absence';
 import { useScheduledShifts, ScheduledShift } from '@/components/time-tracker/hooks/useScheduledShifts';
 import { toast } from 'sonner';
 import {
@@ -31,7 +32,10 @@ function getMonday(date: Date): Date {
 }
 
 export function ScheduleManagement() {
-  const { shifts, projects, loading, createShift, createProject, updateShift, updateShiftStatus, deleteShift, canManage } = useScheduledShifts();
+  const { shifts, projects, absences, loading, createShift, createLeave, updateShift, updateShiftStatus, deleteShift, canManage } = useScheduledShifts();
+  // LEAVE-1 (Florin 2026-10-08): a shift planned on a day its worker is off is a conflict — flagged everywhere it shows.
+  const conflicts = useMemo(() => leaveConflicts(shifts, absences), [shifts, absences]);
+  const conflictIds = useMemo(() => new Set(conflicts.map(c => c.shiftId)), [conflicts]);
   const [workers, setWorkers] = useState<WorkerOption[]>([
     {
       id: 'unassigned',
@@ -263,14 +267,16 @@ export function ScheduleManagement() {
               projects={projects}
               workers={workers}
               onCreateShift={createShift}
-              onCreateProject={createProject}
+              onCreateLeave={createLeave}
+              absences={absences}
             />
             {/* Hidden controlled CreateShiftForm for matrix plus button */}
             <CreateShiftForm
               projects={projects}
               workers={workers}
               onCreateShift={createShift}
-              onCreateProject={createProject}
+              onCreateLeave={createLeave}
+              absences={absences}
               open={createShiftDialogOpen}
               onOpenChange={setCreateShiftDialogOpen}
               prefilledUserId={prefilledUserId}
@@ -288,6 +294,7 @@ export function ScheduleManagement() {
           onStatusChange={handleStatusChange}
           onShiftClick={handleShiftClick}
           canManage={canManage}
+          conflictIds={conflictIds}
         />
       ) : (
         <ScheduleMatrixView
@@ -303,6 +310,8 @@ export function ScheduleManagement() {
           onAddShift={handleAddShift}
           onCopyWeek={handleCopyWeek}
           canManage={canManage}
+          absences={absences}
+          conflictIds={conflictIds}
         />
       )}
 
@@ -317,6 +326,7 @@ export function ScheduleManagement() {
         onCreateShift={createShift}
         onStatusChange={handleStatusChange}
         canManage={canManage}
+        leaveConflict={editingShift ? (conflicts.find(c => c.shiftId === editingShift.id) ?? null) : null}
       />
     </div>
   );

@@ -3,6 +3,8 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { hrList, hrCreate, hrUpdate, hrDelete } from '@/lib/hr-api';
 import { useUserRoles } from '@/components/time-tracker/hooks/useUserRoles';
 import { pickShiftNow, localDateKey, isShiftSubmitted } from '@/lib/kernel/shift-time';
+import type { Absence } from '@/lib/kernel/absence';
+import type { LeaveRequestPayload } from '@/components/time-tracker/components/schedule/shift-editor/model';
 
 export const NOTION_COLORS = [
   { name: 'blue',    value: '#3b82f6', bg: '#dbeafe' },
@@ -104,6 +106,8 @@ function addSnakeCase(s: ScheduledShift): ScheduledShift {
 export function useScheduledShifts() {
   const [rawShifts, setRawShifts] = useState<ScheduledShift[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
+  // LEAVE-1: who is off — TimeOffRequests, read beside the shifts (never mixed into them).
+  const [absences, setAbsences] = useState<Absence[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [errors, setErrors] = useState<Record<string, Error>>({});
@@ -148,7 +152,7 @@ export function useScheduledShifts() {
       withTimeout(hrList<any>('time-off'), 9000, 'time-off'),
     ]);
 
-    const [shiftsRes, erpProjectsRes, employeesRes] = results;
+    const [shiftsRes, erpProjectsRes, employeesRes, timeOffRes] = results;
     if (mutationSeq.current !== startedAt) {
       // A change landed while this reload was on the wire — its list is stale.
       return fetchAll(true);
@@ -219,6 +223,7 @@ export function useScheduledShifts() {
     // blank a week that loaded. The banner (failedEndpoints) says the data could not be refreshed.
 
     setProjects(allProjects);
+    if (timeOffRes.status === 'fulfilled') setAbsences(timeOffRes.value as Absence[]);
     setLoading(false);
   }, []);
 
@@ -338,44 +343,16 @@ export function useScheduledShifts() {
   // createUserShift / completeUserShift REMOVED (Florin 2026-10-04): NO ad-hoc shifts. A clock-in without a
   // planned shift is recorded as such, pending approval; the admin may plan a shift in the past to match it.
 
-  const createProject = useCallback(async (nameOrData: string | Partial<Project>, address?: string | null, color?: string) => {
-    // Support both legacy (name, address, color) and new ({ name, address, color }) signatures
-    // Resolve color name → hex value for storage
-    const resolveColor = (c?: string) => {
-      if (!c) return NOTION_COLORS[0].value;
-      const found = NOTION_COLORS.find(nc => nc.name === c || nc.value === c);
-      return found ? found.value : c;
-    };
-    const data: Partial<Project> = typeof nameOrData === 'string'
-      ? { name: nameOrData, address: address || null, color: resolveColor(color) }
-      : { ...nameOrData, color: resolveColor(nameOrData.color) };
-
+  // LEAVE-1: leave is written as a TimeOffRequest (approved by its author — the server stamps who and when).
+  const createLeave = useCallback(async (req: LeaveRequestPayload) => {
+    mutationSeq.current++;
     try {
-      const project = await hrCreate<Project>('projects', data);
-      setProjects(prev => [project, ...prev]);
-      return { data: project, error: null };
+      const created = await hrCreate<Absence>('time-off', { ...req });
+      mutationSeq.current++;
+      setAbsences(prev => [created, ...prev]);
+      return { data: created, error: null };
     } catch (err: any) {
       return { data: null, error: err };
-    }
-  }, []);
-
-  const updateProject = useCallback(async (id: string, data: Partial<Project>) => {
-    try {
-      const project = await hrUpdate<Project>('projects', id, data);
-      setProjects(prev => prev.map(p => p.id === id ? { ...p, ...project } : p));
-      return { data: project, error: null };
-    } catch (err: any) {
-      return { data: null, error: err };
-    }
-  }, []);
-
-  const deleteProject = useCallback(async (id: string) => {
-    try {
-      await hrDelete('projects', id);
-      setProjects(prev => prev.filter(p => p.id !== id));
-      return { error: null };
-    } catch (err: any) {
-      return { error: err };
     }
   }, []);
 
@@ -392,9 +369,8 @@ export function useScheduledShifts() {
     updateShiftStatus,
     deleteShift,
     getTodayShift,
-    createProject,
-    updateProject,
-    deleteProject,
+    absences,
+    createLeave,
     refetch: () => fetchAll(),
   };
 }

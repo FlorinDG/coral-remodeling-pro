@@ -55,11 +55,14 @@ import { listRecordFiles, uploadFileAction } from '@/app/actions/files';
 import { addShiftFile } from '@/lib/data/shift-files';
 import { WorkerOption } from '@/components/time-tracker/types/timesheet';
 import { toast } from 'sonner';
+import { describeError } from '@/lib/describe-error';
 
-import { InlineCreateProjectModal } from './components/InlineCreateProjectModal';
+import { leaveConflicts, type Absence } from '@/lib/kernel/absence';
 import {
   validateShiftForm,
   buildCreateShiftPayloads,
+  buildLeaveRequests,
+  type LeaveRequestPayload,
   formatCalendarDay,
   CreateShiftPayload,
   ShiftEditorFormInput,
@@ -70,13 +73,10 @@ export interface CreateShiftFormProps {
   projects: Project[];
   workers: WorkerOption[];
   onCreateShift: (shift: CreateShiftPayload) => Promise<{ id?: string } | unknown>;
-  onCreateProject: (data: {
-    name: string;
-    address?: string | null;
-    color?: string;
-    latitude?: number;
-    longitude?: number;
-  }) => Promise<unknown>;
+  /** LEAVE-1: leave is a TimeOffRequest, never a shift. */
+  onCreateLeave: (req: LeaveRequestPayload) => Promise<unknown>;
+  /** Who is off — a planned shift on one of those days is flagged (kernel/absence.ts). */
+  absences?: Absence[];
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   prefilledUserId?: string;
@@ -135,7 +135,8 @@ export function CreateShiftForm({
   projects,
   workers,
   onCreateShift,
-  onCreateProject,
+  onCreateLeave,
+  absences = [],
   open: controlledOpen,
   onOpenChange: controlledOnOpenChange,
   prefilledUserId,
@@ -157,7 +158,6 @@ export function CreateShiftForm({
     }
   };
 
-  const [projectDialogOpen, setProjectDialogOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [templates, setTemplates] = useState<ShiftTemplate[]>([]);
   const [activeTab, setActiveTab] = useState('details');
@@ -428,27 +428,36 @@ export function CreateShiftForm({
     );
   };
 
+  const formInput: ShiftEditorFormInput = useMemo(() => ({
+    userIds,
+    projectId: projectId || null,
+    contactPageId: contactPageId || null,
+    shiftDate,
+    shiftEndDate: scheduleType === 'leave' ? shiftEndDate : undefined,
+    shiftStart,
+    shiftEnd,
+    role: role || null,
+    notes: notes || null,
+    siteAddress: siteAddress.trim() || null,
+    materialsEnabled,
+    scheduleType,
+    recurringWeeks: scheduleType === 'recurring' ? recurringWeeks : undefined,
+    selectedDays: scheduleType === 'recurring' ? selectedDays : undefined,
+    leaveReason: scheduleType === 'leave' ? leaveReason : undefined,
+    includeWeekends: scheduleType === 'leave' ? includeWeekends : undefined,
+  }), [userIds, projectId, contactPageId, shiftDate, shiftEndDate, shiftStart, shiftEnd, role, notes, siteAddress,
+    materialsEnabled, scheduleType, recurringWeeks, selectedDays, leaveReason, includeWeekends]);
+
+  // LEAVE-1 (Florin 2026-10-08): a shift planned on a day its worker is off is flagged — not refused.
+  const conflicts = useMemo(() => {
+    if (scheduleType === 'leave' || !shiftDate) return [];
+    const planned = buildCreateShiftPayloads(formInput, () => 'preview').map((p, i) => ({ id: String(i), userId: p.userId, shiftDate: p.shiftDate }));
+    return leaveConflicts(planned, absences);
+  }, [formInput, scheduleType, shiftDate, absences]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const formInput: ShiftEditorFormInput = {
-      userIds,
-      projectId: projectId || null,
-      contactPageId: contactPageId || null,
-      shiftDate,
-      shiftEndDate: scheduleType === 'leave' ? shiftEndDate : undefined,
-      shiftStart,
-      shiftEnd,
-      role: role || null,
-      notes: notes || null,
-      siteAddress: siteAddress.trim() || null,
-      materialsEnabled,
-      scheduleType,
-      recurringWeeks: scheduleType === 'recurring' ? recurringWeeks : undefined,
-      selectedDays: scheduleType === 'recurring' ? selectedDays : undefined,
-      leaveReason: scheduleType === 'leave' ? leaveReason : undefined,
-      includeWeekends: scheduleType === 'leave' ? includeWeekends : undefined,
-    };
 
     const validation = validateShiftForm(formInput);
     if (!validation.valid) {
@@ -476,6 +485,20 @@ export function CreateShiftForm({
         }
       }
 
+      // LEAVE-1: a leave is written as time-off requests — one per worker per run of days, never shifts.
+      if (scheduleType === 'leave') {
+        const requests = buildLeaveRequests(formInput);
+        for (const req of requests) {
+          const r = await onCreateLeave(req);
+          const failed = r && typeof r === 'object' && 'error' in r ? (r as { error: unknown }).error : null;
+          if (failed) throw failed;
+        }
+        toast.success(requests.length === 1 ? 'Verlof ingepland' : `${requests.length} verlofperiodes ingepland`);
+        resetForm();
+        setOpen(false);
+        return;
+      }
+
       // Build payloads using the pure model
       const payloads = buildCreateShiftPayloads(formInput);
 
@@ -499,8 +522,8 @@ export function CreateShiftForm({
 
       resetForm();
       setOpen(false);
-    } catch {
-      toast.error('Kan dienst niet inplannen');
+    } catch (err) {
+      toast.error(`Kan niet inplannen — ${describeError(err)}`);
     } finally {
       setLoading(false);
     }
@@ -667,18 +690,8 @@ export function CreateShiftForm({
             {/* Project Selection (Single/Recurring) */}
             {scheduleType !== 'leave' && (
               <div>
-                <div className="flex items-center justify-between mb-1">
-                  <Label>Project</Label>
-                  <Button
-                    type="button"
-                    variant="link"
-                    size="sm"
-                    className="h-auto p-0 text-xs"
-                    onClick={() => setProjectDialogOpen(true)}
-                  >
-                    + Nieuw project
-                  </Button>
-                </div>
+                {/* The scheduler plans work on projects; it never creates them (Florin 2026-10-08). */}
+                <Label className="block mb-1">Project</Label>
                 <SearchableSelect
                   options={[
                     { value: '', label: '— Geen project —' },
@@ -941,6 +954,18 @@ export function CreateShiftForm({
               </div>
             )}
 
+            {conflicts.length > 0 && (
+              <div role="alert" className="rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800 px-3 py-2 text-sm text-amber-900 dark:text-amber-200">
+                <p className="font-semibold">Conflict met verlof</p>
+                <ul className="mt-1 space-y-0.5">
+                  {conflicts.map(c => (
+                    <li key={c.shiftId}>
+                      {workers.find(w => w.id === c.userId)?.name || 'Medewerker'} · {formatCalendarDay(c.date)} — {c.requestType}{c.pending ? ' (aangevraagd)' : ''}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
             <div className="flex justify-end gap-2 pt-4 border-t">
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>
                 Annuleren
@@ -1131,21 +1156,9 @@ export function CreateShiftForm({
 
   return (
     <>
-      {/* Inline Create Project Modal */}
-      <InlineCreateProjectModal
-        open={projectDialogOpen}
-        onOpenChange={setProjectDialogOpen}
-        onCreateProject={onCreateProject}
-        onProjectCreated={newProjectId => setProjectId(newProjectId)}
-      />
-
       {/* When in uncontrolled mode, render trigger buttons */}
       {!isControlled ? (
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => setProjectDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-1" />
-            Project
-          </Button>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button size="sm">

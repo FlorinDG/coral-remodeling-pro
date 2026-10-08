@@ -78,7 +78,6 @@ function ShiftCard({ shift, isNextShift, activeEntry, elapsedTime, now, onClick 
             {/* Primary line: Project Name */}
             <div className="flex items-start justify-between gap-2">
               <h3 className="text-lg font-semibold text-foreground leading-snug break-words min-w-0">
-                {shift.status === 'leave' ? '🌴 ' : ''}
                 {primaryTitle}
               </h3>
               {isClockedIn && (

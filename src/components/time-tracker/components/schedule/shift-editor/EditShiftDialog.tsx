@@ -52,6 +52,8 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
 import { ShiftLockBanner } from './components/ShiftLockBanner';
+import { shiftStatus, isWritableShiftStatus, SHIFT_STATUS_OPTIONS, type ShiftStatus } from '@/lib/kernel/shift-status';
+import { SHIFT_STATUS_LABEL, SHIFT_STATUS_PILL } from '../shift-status-ui';
 import { ShiftTasksTab } from './components/ShiftTasksTab';
 import { ShiftAttachmentsTab } from './components/ShiftAttachmentsTab';
 import {
@@ -91,10 +93,11 @@ export interface EditShiftDialogProps {
   onDeleteShift: (shiftId: string, scope?: EditScope) => Promise<void>;
   onStatusChange: (shiftId: string, status: string) => Promise<void>;
   canManage?: boolean;
+  /** LEAVE-1: the worker is off on this shift's day (kernel/absence) — flagged, not refused. */
+  leaveConflict?: { requestType: string; pending: boolean } | null;
 }
 
 const ROLE_OPTIONS = ['Crew', 'Lead', 'Supervisor', 'Driver', 'Helper'];
-const STATUS_OPTIONS = ['Scheduled', 'Active', 'In Progress', 'Completed', 'Cancelled'];
 
 const getParsedDate = (dateStr: string) => {
   if (!dateStr) return undefined;
@@ -117,6 +120,7 @@ export function EditShiftDialog({
   onDeleteShift,
   onStatusChange,
   canManage = true,
+  leaveConflict = null,
 }: EditShiftDialogProps) {
   const [loading, setLoading] = useState(false);
   const [userId, setUserId] = useState('');
@@ -128,7 +132,9 @@ export function EditShiftDialog({
   const [notes, setNotes] = useState('');
   const [siteAddress, setSiteAddress] = useState('');
   const [materialsEnabled, setMaterialsEnabled] = useState(false);
-  const [status, setStatus] = useState('');
+  // SCHED-STATUS-1: what the person sees (kernel) — derived 'late' / 'in-progress' included.
+  const [status, setStatus] = useState<ShiftStatus>('scheduled');
+  const [shownStatus, setShownStatus] = useState<ShiftStatus>('scheduled');
   const [activeTab, setActiveTab] = useState('details');
   const [editScope, setEditScope] = useState<EditScope>('occurrence');
   const [isConvertingToRecurring, setIsConvertingToRecurring] = useState(false);
@@ -155,7 +161,9 @@ export function EditShiftDialog({
       setNotes(s.notes || '');
       setSiteAddress(s.siteAddress || '');
       setMaterialsEnabled(!!s.materialsEnabled);
-      setStatus(s.status || 'Scheduled');
+      const seen = shiftStatus(s, s.clockEntries || []);
+      setStatus(seen);
+      setShownStatus(seen);
       setEditScope('occurrence');
       setIsConvertingToRecurring(false);
       setActiveTab('details');
@@ -242,7 +250,8 @@ export function EditShiftDialog({
 
       await onUpdateShift(shift.id, updatePayload, editScope);
 
-      if (status !== shift.status) {
+      // Only a status the person changed, and only one that can be written ('in-progress' is the clock's).
+      if (status !== shownStatus && isWritableShiftStatus(status)) {
         await onStatusChange(shift.id, status);
       }
 
@@ -337,6 +346,11 @@ export function EditShiftDialog({
           </TabsList>
 
           <TabsContent value="details" className="h-[min(648px,70vh)] overflow-y-auto pr-1">
+            {leaveConflict && (
+              <div role="alert" className="mb-4 rounded-lg border border-red-300 bg-red-50 dark:bg-red-950/30 dark:border-red-800 px-3 py-2 text-sm text-red-800 dark:text-red-200">
+                ⚠ Conflict: deze medewerker heeft verlof op deze dag — {leaveConflict.requestType}{leaveConflict.pending ? ' (aangevraagd)' : ''}.
+              </div>
+            )}
             {/* WO-4b / C7: WerkbonCard at top of details tab */}
             <WerkbonCard shiftId={shift?.id} className="mb-4" />
 
@@ -442,16 +456,16 @@ export function EditShiftDialog({
                 <Label>Status</Label>
                 <Select
                   value={status}
-                  onValueChange={setStatus}
+                  onValueChange={v => setStatus(v as ShiftStatus)}
                   disabled={isInputDisabled}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className={SHIFT_STATUS_PILL[status]}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {STATUS_OPTIONS.map(s => (
-                      <SelectItem key={s} value={s}>
-                        {s}
+                    {SHIFT_STATUS_OPTIONS.map(s => (
+                      <SelectItem key={s} value={s} disabled={!isWritableShiftStatus(s)}>
+                        {SHIFT_STATUS_LABEL[s]}
                       </SelectItem>
                     ))}
                   </SelectContent>

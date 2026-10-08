@@ -7,6 +7,9 @@ import { ScheduledShift, NOTION_COLORS } from '@/components/time-tracker/hooks/u
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { formatTime } from '@/lib/format/date';
+import { shiftStatus } from '@/lib/kernel/shift-status';
+import { absenceOn, type Absence } from '@/lib/kernel/absence';
+import { SHIFT_STATUS_DOT, SHIFT_STATUS_LABEL } from './shift-status-ui';
 
 interface ScheduleMatrixViewProps {
   shifts: ScheduledShift[];
@@ -21,6 +24,10 @@ interface ScheduleMatrixViewProps {
   onAddShift?: (userId: string, date: string) => void;
   onCopyWeek?: (sourceWeekStart: Date, targetWeekStart: Date) => Promise<void>;
   canManage?: boolean;
+  /** LEAVE-1: who is off (TimeOffRequests) — shown as absence days, never as shifts. */
+  absences?: Absence[];
+  /** Shifts planned on a day their worker is off (kernel/absence leaveConflicts). */
+  conflictIds?: Set<string>;
 }
 
 function calculateShiftHours(shiftStart: string, shiftEnd: string): number {
@@ -38,24 +45,6 @@ function getNotionColor(colorInput: string): string {
   return NOTION_COLORS[6]?.value || '#14b8a6';
 }
 
-function getStatusDot(status: string) {
-  switch (status) {
-    case 'in-progress':
-    case 'Active':
-      return 'bg-[var(--brand-color,#d35400)]';
-    case 'completed':
-    case 'Completed':
-      return 'bg-blue-400';
-    case 'Cancelled':
-      return 'bg-red-400';
-    case 'leave':
-    case 'Leave':
-      return 'bg-purple-500';
-    default:
-      return 'bg-neutral-400';
-  }
-}
-
 export function ScheduleMatrixView({
   shifts,
   workers,
@@ -69,6 +58,8 @@ export function ScheduleMatrixView({
   onAddShift,
   onCopyWeek,
   canManage,
+  absences = [],
+  conflictIds,
 }: ScheduleMatrixViewProps) {
   const [draggedShiftId, setDraggedShiftId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<{ userId: string; date: string } | null>(null);
@@ -480,6 +471,7 @@ export function ScheduleMatrixView({
                       {dates.map((date, i) => {
                         const dateStr = toDateStr(date);
                         const dayShifts = shiftMap[worker.id]?.[dateStr] || [];
+                        const off = absenceOn(absences, worker.id, dateStr);
                         const isTarget = isDropTarget(worker.id, dateStr);
                         const weekend = isWeekend(date);
                         
@@ -490,6 +482,7 @@ export function ScheduleMatrixView({
                               "border-b border-r border-neutral-200 dark:border-white/10 p-1 align-top transition-colors relative",
                               isToday(date) && "bg-primary/5",
                               weekend && !isToday(date) && "bg-neutral-50 dark:bg-white/5",
+                              off && "bg-purple-50/70 dark:bg-purple-950/20",
                               isTarget && "bg-primary/10 ring-2 ring-primary ring-inset",
                             )}
                             onDragOver={canManage ? (e) => handleDragOver(e, worker.id, dateStr) : undefined}
@@ -497,13 +490,21 @@ export function ScheduleMatrixView({
                             onDrop={canManage ? (e) => handleDrop(e, worker.id, dateStr) : undefined}
                           >
                             <div className="space-y-0.5 min-h-[52px] p-0.5 relative group/cell">
+                              {/* LEAVE-1: the absence — a day off, not a shift (no hours, no times, no editor). */}
+                              {off && (
+                                <div className="text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-md text-purple-700 dark:text-purple-300 bg-purple-100/80 dark:bg-purple-900/30"
+                                     title={off.status === 'pending' ? 'Verlof aangevraagd' : 'Verlof'}>
+                                  🌴 {off.requestType || 'Verlof'}{off.status === 'pending' ? ' · aangevraagd' : ''}
+                                </div>
+                              )}
                               {dayShifts.map(shift => {
                                 const projectColor = shift.project?.color ? getNotionColor(shift.project.color) : null;
                                 const isDragging = draggedShiftId === shift.id;
                                 const ss = shift.shiftStart || '08:00';
                                 const se = shift.shiftEnd || '17:00';
                                 const hours = calculateShiftHours(ss, se);
-                                const status = shift.status || 'Scheduled';
+                                const status = shiftStatus(shift, shift.clockEntries || []);
+                                const conflict = conflictIds?.has(shift.id) ?? false;
                                 
                                 return (
                                   <div
@@ -522,10 +523,10 @@ export function ScheduleMatrixView({
                                       "hover:shadow-sm hover:border-primary/40",
                                       projectColor
                                         ? "bg-white dark:bg-neutral-900 border-neutral-200 dark:border-white/10"
-                                        : (status === 'leave')
-                                          ? "bg-purple-50/60 dark:bg-purple-950/20 border-purple-200 dark:border-purple-900/30"
-                                          : "bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-white/10"
+                                        : "bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-white/10",
+                                      conflict && "ring-2 ring-red-500 ring-inset"
                                     )}
+                                    title={conflict ? 'Conflict: deze medewerker heeft verlof op deze dag' : undefined}
                                     style={projectColor ? {
                                       borderLeftColor: projectColor,
                                       borderLeftWidth: '3px'
@@ -537,8 +538,7 @@ export function ScheduleMatrixView({
                                       )}
                                       <div className="flex-1 min-w-0">
                                         {(() => {
-                                          const isLeave = status === 'leave';
-                                          const title = shift.shiftName || shift.projectName || shift.project?.name || (isLeave ? 'Leave' : `${formatTime(ss)}–${formatTime(se)}`);
+                                          const title = shift.shiftName || shift.projectName || shift.project?.name || `${formatTime(ss)}–${formatTime(se)}`;
                                           const showTimeSecondary = title !== `${formatTime(ss)}–${formatTime(se)}`;
                                           
                                           return (
@@ -546,11 +546,17 @@ export function ScheduleMatrixView({
                                               {/* The title in FULL, wrapped — never cut (Florin 2026-10-04: "someone who doesn't
                                                   recognise it from the first two words has no idea what it's about"). */}
                                               <div className="flex items-start gap-1.5 mb-0.5">
-                                                <div className={cn("h-1.5 w-1.5 rounded-full flex-shrink-0 mt-[5px]", getStatusDot(status))} />
-                                                <span className={cn("font-bold leading-tight break-words min-w-0", isLeave ? "text-purple-700 dark:text-purple-400 tracking-wide uppercase text-[10px]" : "text-neutral-900 dark:text-white")} title={title}>
-                                                  {isLeave ? `🌴 ${title}` : title}
+                                                <div className={cn("h-1.5 w-1.5 rounded-full flex-shrink-0 mt-[5px]", SHIFT_STATUS_DOT[status])} title={SHIFT_STATUS_LABEL[status]} />
+                                                <span className="font-bold leading-tight break-words min-w-0 text-neutral-900 dark:text-white" title={title}>
+                                                  {title}
                                                 </span>
                                               </div>
+                                              {conflict && (
+                                                <div className="text-[10px] font-bold text-red-600 dark:text-red-400 mb-0.5">⚠ Conflict met verlof</div>
+                                              )}
+                                              {status === 'late' && (
+                                                <div className="text-[10px] font-bold text-red-600 dark:text-red-400 mb-0.5">{SHIFT_STATUS_LABEL.late}</div>
+                                              )}
                                               {showTimeSecondary ? (
                                                 <div className="flex justify-between items-center mb-1">
                                                   <span className="text-[10px] font-medium text-neutral-500 truncate">{formatTime(ss)}–{formatTime(se)}</span>

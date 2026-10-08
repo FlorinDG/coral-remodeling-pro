@@ -32,6 +32,7 @@ import { recordClockPlace } from '@/lib/data/geo';
 import { after } from 'next/server';
 import type { Prisma } from '@prisma/client';
 import { isTenantHrRole, isTenantTopRole } from '@/lib/roles';
+import { isWritableShiftStatus } from '@/lib/kernel/shift-status';
 
 const resend = new Resend(process.env.RESEND_API_KEY || 're_dummy_fallback');
 
@@ -182,6 +183,9 @@ export async function GET(
         : { tenantId: ctx.tenantId };
 
     if (userId) where.userId = userId;
+    // One record by id (the werkbon viewer read every clock entry, employee and shift of the tenant to show one).
+    const idParam = url.searchParams.get('id');
+    if (idParam) where.id = idParam;
 
     // Gate 2 (actor reach) — asked of ONE authority, never decided here (pd.md 5a).
     const reach = await resolveReach(ctx);
@@ -264,6 +268,7 @@ export async function GET(
                     });
                     onlyIds = Array.from(new Set(shifts.map(s => s.projectId).filter(Boolean))) as string[];
                 }
+                if (idParam) onlyIds = onlyIds ? onlyIds.filter(x => x === idParam) : [idParam];   // one project, within reach
                 const projects = await resolveProjects(ctx.tenantId, onlyIds ? { onlyIds } : undefined);
                 return NextResponse.json(projects);
             }
@@ -327,47 +332,8 @@ export async function GET(
             orderBy: { createdAt: 'desc' },
         });
 
-        if (entity === 'shifts') {
-            const timeOffWhere = { ...where, status: 'approved' };
-            const approvedTimeOff = await prisma.timeOffRequest.findMany({
-                where: timeOffWhere,
-                orderBy: { createdAt: 'desc' },
-            });
-            
-            const shadowShifts: any[] = [];
-            for (const t of approvedTimeOff) {
-                if (!t.userId || !t.startDate || !t.endDate) continue;
-                try {
-                    const start = new Date(t.startDate);
-                    const end = new Date(t.endDate);
-                    
-                    let days = 0;
-                    for (let d = new Date(start); d <= end && days <= 365; d.setDate(d.getDate() + 1), days++) {
-                        const shiftDate = d.toISOString().split('T')[0];
-                        shadowShifts.push({
-                            id: `leave-${t.id}-${shiftDate}`,
-                            userId: t.userId,
-                            shiftDate: shiftDate,
-                            shiftStart: '08:00',
-                            shiftEnd: '17:00',
-                            shiftName: t.requestType || 'Leave',
-                            projectId: null,
-                            role: null,
-                            notes: t.notes || null,
-                            status: 'leave',
-                            createdBy: 'system',
-                            lastEditedBy: 'system',
-                            createdAt: t.createdAt,
-                            updatedAt: t.updatedAt,
-                            isSynthetic: true,
-                            sourceType: 'timeoff',
-                            sourceId: t.id
-                        });
-                    }
-                } catch (e) {}
-            }
-            records = [...records, ...shadowShifts];
-        }
+        // LEAVE-1 (Florin 2026-10-08): leave is not a shift. Absences are read from 'time-off' (kernel/absence.ts);
+        // the synthetic 08:00–17:00 'leave' rows that were mixed into this list are gone.
 
         // Enrich user names for clock-entries, time-off, and shifts
         if (entity === 'clock-entries' || entity === 'time-off' || entity === 'shifts') {
@@ -426,7 +392,7 @@ export async function GET(
 
             // WORKHUB-CLOCKLINK: Enrich clock entries for shifts
             if (entity === 'shifts') {
-                const shiftIds = records.map((r: any) => r.id).filter((id: string) => id && !id.startsWith('leave-'));
+                const shiftIds = records.map((r: any) => r.id).filter(Boolean);
                 if (shiftIds.length > 0) {
                     const entries = await prisma.clockEntry.findMany({
                         where: { shiftId: { in: shiftIds } },
@@ -539,43 +505,15 @@ export async function POST(
         }
     }
 
-    // SCH-1: Reroute shift creations with status 'leave' to TimeOffRequest
-    if (entity === 'shifts' && data.status === 'leave') {
-        try {
-            // Gate 2: 'admin'/'owner' matched no real role, so every admin-created leave landed pending.
-            const isAdminRole = (await resolveReach(ctx)).mayApprove;
-            const leaveBody = {
-                tenantId: ctx.tenantId,
-                userId: data.userId as string,
-                requestType: (data.shiftName as string) || 'vacation',
-                startDate: data.shiftDate as string,
-                endDate: data.shiftDate as string,
-                status: isAdminRole ? 'approved' : 'pending',
-                notes: data.notes as string | undefined
-            };
-            const t = await prisma.timeOffRequest.create({ data: leaveBody });
-            const synthetic = {
-                id: `leave-${t.id}-${t.startDate}`,
-                userId: t.userId,
-                shiftDate: t.startDate,
-                shiftStart: '08:00',
-                shiftEnd: '17:00',
-                shiftName: t.requestType,
-                projectId: null,
-                role: null,
-                notes: t.notes || null,
-                status: 'leave',
-                isSynthetic: true,
-                sourceType: 'timeoff',
-                sourceId: t.id,
-                createdAt: t.createdAt,
-                updatedAt: t.updatedAt,
-            };
-            return NextResponse.json(synthetic, { status: 201 });
-        } catch (error: unknown) {
-            console.error(`[HR API] POST shifts (leave reroute) error:`, error);
-            return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 });
-        }
+    // LEAVE-1: a shift is never leave. Leave is a TimeOffRequest, written to 'time-off' (SCH-1's reroute
+    // made one single-day request per day; the scheduler now writes the range itself).
+    if ((entity === 'shifts' || entity === 'scheduled-shifts') && 'status' in data && !isWritableShiftStatus(data.status)) {
+        return NextResponse.json({ error: data.status === 'leave' ? 'leave_is_time_off' : `invalid_shift_status: ${String(data.status)}` }, { status: 400 });
+    }
+    // Who approved a leave is a fact the server records (the scheduler's leave is approved by its author).
+    if (entity === 'time-off') {
+        delete data.reviewedBy; delete data.reviewedAt;
+        if (data.status === 'approved') { data.reviewedBy = ctx.userId; data.reviewedAt = new Date(); }
     }
 
     // ── PRE-CREATE Automations ───────────────────────────────────────
@@ -679,22 +617,8 @@ export async function POST(
                 warnings.push('shift_link_failed');
             }
         }
-        // Clock-in with shiftId → set shift status to 'in-progress' (HRA-2)
-        if (entity === 'clock-entries' && parentShift && (record as { shiftId?: string }).shiftId) {
-            try {
-                const result = await prisma.scheduledShift.updateMany({
-                    where: { id: (record as { shiftId: string }).shiftId, tenantId: ctx.tenantId },
-                    data: { status: 'in-progress' },
-                });
-                if (result.count === 0) {
-                    console.error(`[HR API] POST clock-entries: shift ${(record as { shiftId: string }).shiftId} not found for tenant ${ctx.tenantId}`);
-                    warnings.push('shift_status_not_updated');
-                }
-            } catch (err) {
-                console.error('[HR API] Failed to update shift status on clock-in:', err);
-                warnings.push('shift_status_not_updated');
-            }
-        }
+        // SCHED-STATUS-1: no status is written on clock-in — 'in progress' and 'late' are derived from the shift's
+        // clock entries by kernel/shift-status.ts (HRA-2's stored 'in-progress' stayed behind after clock-out).
 
         return NextResponse.json(
             warnings.length > 0 ? { ...(typeof record === 'object' && record !== null ? record : {}), warnings } : record,
@@ -790,6 +714,11 @@ export async function PATCH(
     const body = await req.json();
     const data = sanitize(body);
     const warnings: string[] = [];
+
+    // LEAVE-1 / SCHED-STATUS-1: a shift's status is one of the kernel's stored statuses — never 'leave'.
+    if ((entity === 'shifts' || entity === 'scheduled-shifts') && 'status' in data && !isWritableShiftStatus(data.status)) {
+        return NextResponse.json({ error: data.status === 'leave' ? 'leave_is_time_off' : `invalid_shift_status: ${String(data.status)}` }, { status: 400 });
+    }
 
     // ── WO-3 · a signed work order is closed for every role ──
     {

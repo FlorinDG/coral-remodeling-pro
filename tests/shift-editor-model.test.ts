@@ -9,8 +9,7 @@ import {
   buildRecurringExpansionFromExisting,
   evaluateShiftLockState,
   formatCalendarDay,
-  type ShiftEditorFormInput,
-} from '../src/components/time-tracker/components/schedule/shift-editor/model.ts';
+  type ShiftEditorFormInput, buildLeaveRequests } from '../src/components/time-tracker/components/schedule/shift-editor/model.ts';
 import { weekdayOfYmd } from '../src/lib/kernel/shift-time.ts';
 
 // ── 1. VALIDATION ─────────────────────────────────────────────────────────────
@@ -261,31 +260,32 @@ test('buildCreateShiftPayloads: multiple workers on single day share same series
   assert.equal(payloads[2].seriesId, 'shared-wo-series');
 });
 
-test('buildCreateShiftPayloads: characterizes leave shift formatting (CreateShiftForm.tsx:532-544)', () => {
+test('LEAVE-1: a leave yields no shift — one approved time-off request per worker per run of days', () => {
   const form: ShiftEditorFormInput = {
-    userIds: ['u1'],
+    userIds: ['u1', 'u2'],
     projectId: 'p-should-be-ignored',
-    shiftDate: '2026-10-05',
-    shiftStart: '07:00', // user custom times
+    shiftDate: '2026-10-08',      // Thursday
+    shiftEndDate: '2026-10-13',   // next Tuesday
+    shiftStart: '07:00',
     shiftEnd: '19:00',
     notes: 'special request',
     materialsEnabled: true,
     scheduleType: 'leave',
     leaveReason: 'Doctor',
+    includeWeekends: false,
   };
 
-  const payloads = buildCreateShiftPayloads(form);
-  assert.equal(payloads.length, 1);
-  const p = payloads[0];
-  // Leave enforces standard hours, null project/siteAddress, materials false, and formatted notes
-  assert.equal(p.shiftStart, '08:00');
-  assert.equal(p.shiftEnd, '17:00');
-  assert.equal(p.projectId, null);
-  assert.equal(p.siteAddress, null);
-  assert.equal(p.materialsEnabled, false);
-  assert.equal(p.status, 'leave');
-  assert.equal(p.shiftName, 'Doctor');
-  assert.equal(p.notes, 'Leave: Doctor - special request');
+  assert.deepEqual(buildCreateShiftPayloads(form), []);
+  const reqs = buildLeaveRequests(form);
+  // Thu–Fri, then Mon–Tue: the weekend splits the range; never one row per day.
+  assert.deepEqual(reqs.map(r => [r.userId, r.startDate, r.endDate]), [
+    ['u1', '2026-10-08', '2026-10-09'], ['u1', '2026-10-12', '2026-10-13'],
+    ['u2', '2026-10-08', '2026-10-09'], ['u2', '2026-10-12', '2026-10-13'],
+  ]);
+  assert.equal(reqs[0].requestType, 'Doctor');
+  assert.equal(reqs[0].notes, 'special request');
+  assert.equal(reqs[0].status, 'approved');
+  assert.equal(buildLeaveRequests({ ...form, includeWeekends: true }).length, 2);   // one range per worker
 });
 
 test('buildUpdateShiftPayload: produces strictly camelCase update payload', () => {

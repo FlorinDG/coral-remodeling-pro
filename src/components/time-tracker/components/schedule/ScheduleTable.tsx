@@ -21,6 +21,9 @@ import {
 import { formatTime } from '@/lib/format/date';
 import { ScheduledShift, NOTION_COLORS } from '@/components/time-tracker/hooks/useScheduledShifts';
 import { cn } from '@/lib/utils';
+import { shiftStatus, isWritableShiftStatus, SHIFT_STATUS_OPTIONS } from '@/lib/kernel/shift-status';
+import { shiftMoment, zonedParts } from '@/lib/kernel/shift-time';
+import { SHIFT_STATUS_LABEL, SHIFT_STATUS_PILL } from './shift-status-ui';
 
 interface ScheduleTableProps {
   shifts: ScheduledShift[];
@@ -28,38 +31,23 @@ interface ScheduleTableProps {
   onStatusChange?: (shiftId: string, status: string) => void;
   onShiftClick?: (shift: ScheduledShift) => void;
   canManage?: boolean;
+  /** Shifts planned on a day their worker is off (kernel/absence leaveConflicts). */
+  conflictIds?: Set<string>;
 }
 
 function getNotionColor(colorName: string) {
   return NOTION_COLORS.find(c => c.name === colorName) || NOTION_COLORS[6];
 }
 
+/** 'YYYY-MM-DD' → 'do 8 okt.' — built from parts at local noon (no UTC parse of a date string). */
 function formatDate(dateStr: string) {
-  const date = new Date(dateStr + 'T00:00:00');
-  return date.toLocaleDateString('en-US', { 
-    weekday: 'short',
-    month: 'short', 
-    day: 'numeric' 
-  });
+  return shiftMoment(dateStr, '12:00').toLocaleDateString('nl-BE', { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
-const STATUS_OPTIONS = ['Scheduled', 'Active', 'In Progress', 'Completed', 'Cancelled'];
-
-function getStatusColor(status: string) {
-  switch (status) {
-    case 'Scheduled': return 'bg-muted text-muted-foreground';
-    case 'Active': return 'bg-primary/20 text-primary';
-    case 'In Progress': return 'bg-secondary/20 text-secondary';
-    case 'Completed': return 'bg-accent/20 text-accent-foreground';
-    case 'Cancelled': return 'bg-destructive/20 text-destructive';
-    default: return 'bg-muted text-muted-foreground';
-  }
-}
-
-export function ScheduleTable({ shifts, onDelete, onStatusChange, onShiftClick, canManage }: ScheduleTableProps) {
+export function ScheduleTable({ shifts, onDelete, onStatusChange, onShiftClick, canManage, conflictIds }: ScheduleTableProps) {
   const [filter, setFilter] = useState<'all' | 'upcoming' | 'past'>('all');
   
-  const today = new Date().toISOString().split('T')[0];
+  const today = zonedParts(new Date()).date;   // the business day — never toISOString() (UTC)
   
   const filteredShifts = shifts.filter(shift => {
     const d = shift.shiftDate || '';
@@ -110,6 +98,8 @@ export function ScheduleTable({ shifts, onDelete, onStatusChange, onShiftClick, 
               ) : (
                 filteredShifts.map(shift => {
                   const projectColor = shift.project?.color ? getNotionColor(shift.project.color) : null;
+                  const status = shiftStatus(shift, shift.clockEntries || []);
+                  const conflict = conflictIds?.has(shift.id) ?? false;
                   
                   return (
                     <TableRow 
@@ -148,27 +138,30 @@ export function ScheduleTable({ shifts, onDelete, onStatusChange, onShiftClick, 
                         {shift.role || '—'}
                       </TableCell>
                       <TableCell>
+                        <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
                         {canManage && onStatusChange ? (
-                          <Select 
-                            value={shift.status} 
-                            onValueChange={(v) => onStatusChange(shift.id, v)}
+                          <Select
+                            value={status}
+                            onValueChange={(v) => { if (isWritableShiftStatus(v)) onStatusChange(shift.id, v); }}
                           >
-                            <SelectTrigger className={cn("w-28 h-7 text-xs", getStatusColor(shift.status))}>
+                            <SelectTrigger className={cn("w-32 h-7 text-xs", SHIFT_STATUS_PILL[status])}>
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              {STATUS_OPTIONS.map(status => (
-                                <SelectItem key={status} value={status}>
-                                  {status}
+                              {SHIFT_STATUS_OPTIONS.map(s => (
+                                <SelectItem key={s} value={s} disabled={!isWritableShiftStatus(s)}>
+                                  {SHIFT_STATUS_LABEL[s]}
                                 </SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
                         ) : (
-                          <span className={cn("px-2 py-0.5 rounded-full text-xs", getStatusColor(shift.status))}>
-                            {shift.status}
+                          <span className={cn("px-2 py-0.5 rounded-full text-xs", SHIFT_STATUS_PILL[status])}>
+                            {SHIFT_STATUS_LABEL[status]}
                           </span>
                         )}
+                        {conflict && <span className="text-[10px] font-bold text-red-600" title="Deze medewerker heeft verlof op deze dag">⚠ Verlof</span>}
+                        </div>
                       </TableCell>
                       {canManage && (
                         <TableCell>
@@ -176,7 +169,7 @@ export function ScheduleTable({ shifts, onDelete, onStatusChange, onShiftClick, 
                             variant="ghost" 
                             size="icon" 
                             className="h-8 w-8 text-destructive hover:text-destructive"
-                            onClick={() => onDelete?.(shift.id)}
+                            onClick={(e) => { e.stopPropagation(); onDelete?.(shift.id); }}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>

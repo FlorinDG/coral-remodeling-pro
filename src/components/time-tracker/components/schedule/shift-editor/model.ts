@@ -201,7 +201,7 @@ export function expandRangeShiftDates(
  * - Multi-day shifts share a single `seriesId`.
  * - Single worker single-day shifts have `seriesId: undefined`.
  * - Recurring shifts share a single `seriesId`.
- * - Leave shifts enforce 08:00–17:00, status 'leave', and `shiftName` equal to leave reason.
+ * - Leave is NOT a shift (LEAVE-1): a leave form yields no shift payloads — see buildLeaveRequests.
  */
 export function buildCreateShiftPayloads(
   input: ShiftEditorFormInput,
@@ -222,14 +222,13 @@ export function buildCreateShiftPayloads(
     scheduleType,
     recurringWeeks = 1,
     selectedDays = [],
-    leaveReason,
     includeWeekends = true,
   } = input;
 
   if (userIds.length === 0) return [];
 
   const useRecurring = scheduleType === 'recurring';
-  const isLeave = scheduleType === 'leave';
+  if (scheduleType === 'leave') return [];   // LEAVE-1: leave is a TimeOffRequest (buildLeaveRequests)
 
   if (useRecurring) {
     const dates = expandRecurringShiftDates(shiftDate, recurringWeeks, selectedDays);
@@ -239,25 +238,25 @@ export function buildCreateShiftPayloads(
     for (const d of dates) {
       for (const uid of userIds) {
         payloads.push({
-          userId: uid,
-          projectId: projectId || null,
-          contactPageId: contactPageId || null,
-          shiftDate: d,
-          shiftStart,
-          shiftEnd,
-          role: role || null,
-          notes: notes || null,
-          siteAddress: siteAddress?.trim() || null,
-          materialsEnabled: !!materialsEnabled,
-          status: 'scheduled',
-          seriesId,
-        });
+        userId: uid,
+        projectId: projectId || null,
+        contactPageId: contactPageId || null,
+        shiftDate: d,
+        shiftStart,
+        shiftEnd,
+        role: role || null,
+        notes: notes || null,
+        siteAddress: siteAddress?.trim() || null,
+        materialsEnabled: !!materialsEnabled,
+        status: 'scheduled',
+        seriesId,
+      });
       }
     }
     return payloads;
   }
 
-  // Single or Leave
+  // Single (one day or a range)
   const effectiveEndDate = shiftEndDate || shiftDate;
   const dates = expandRangeShiftDates(shiftDate, effectiveEndDate, includeWeekends);
   const isMultiDay = shiftDate !== effectiveEndDate;
@@ -268,38 +267,20 @@ export function buildCreateShiftPayloads(
   const payloads: CreateShiftPayload[] = [];
   for (const d of dates) {
     for (const uid of userIds) {
-      if (isLeave) {
-        payloads.push({
-          userId: uid,
-          projectId: null,
-          contactPageId: null,
-          shiftDate: d,
-          shiftStart: '08:00',
-          shiftEnd: '17:00',
-          role: null,
-          notes: `Leave: ${leaveReason || ''}${notes ? ` - ${notes}` : ''}`,
-          siteAddress: null,
-          materialsEnabled: false,
-          status: 'leave',
-          shiftName: leaveReason || undefined,
-          seriesId,
-        });
-      } else {
-        payloads.push({
-          userId: uid,
-          projectId: projectId || null,
-          contactPageId: contactPageId || null,
-          shiftDate: d,
-          shiftStart,
-          shiftEnd,
-          role: role || null,
-          notes: notes || null,
-          siteAddress: siteAddress?.trim() || null,
-          materialsEnabled: !!materialsEnabled,
-          status: 'scheduled',
-          seriesId,
-        });
-      }
+      payloads.push({
+        userId: uid,
+        projectId: projectId || null,
+        contactPageId: contactPageId || null,
+        shiftDate: d,
+        shiftStart,
+        shiftEnd,
+        role: role || null,
+        notes: notes || null,
+        siteAddress: siteAddress?.trim() || null,
+        materialsEnabled: !!materialsEnabled,
+        status: 'scheduled',
+        seriesId,
+      });
     }
   }
 
@@ -433,3 +414,32 @@ export function formatCalendarDay(dateYmd: string, locale: string = 'nl-BE'): st
   }).format(noonUtc);
 }
 
+
+/** A leave written from the scheduler — a TimeOffRequest (kernel/absence.ts), approved by its author (the server stamps who). */
+export interface LeaveRequestPayload {
+  userId: string;
+  startDate: string;   // 'YYYY-MM-DD'
+  endDate: string;     // 'YYYY-MM-DD'
+  requestType: string;
+  notes: string | null;
+  status: 'approved';
+}
+
+/**
+ * LEAVE-1 (Florin 2026-10-08: "leave should not be treated as a shift"). The leave form → ONE request per worker
+ * per run of consecutive days (weekends left out split the range into week runs) — never one row per day, never a
+ * shift. Calendar math through kernel strings only.
+ */
+export function buildLeaveRequests(input: ShiftEditorFormInput): LeaveRequestPayload[] {
+  if (input.scheduleType !== 'leave' || input.userIds.length === 0) return [];
+  const days = expandRangeShiftDates(input.shiftDate, input.shiftEndDate || input.shiftDate, input.includeWeekends ?? true);
+  const runs: Array<[string, string]> = [];
+  for (const d of days) {
+    const last = runs[runs.length - 1];
+    if (last && addDaysYmd(last[1], 1) === d) last[1] = d;
+    else runs.push([d, d]);
+  }
+  const requestType = (input.leaveReason || '').trim() || 'vacation';
+  const notes = (input.notes || '').trim() || null;
+  return input.userIds.flatMap(userId => runs.map(([startDate, endDate]) => ({ userId, startDate, endDate, requestType, notes, status: 'approved' as const })));
+}

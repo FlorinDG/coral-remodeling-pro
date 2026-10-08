@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import prisma from '@/lib/prisma';
+import { scopeFromSession } from '@/lib/data/scope';
 
 export async function GET(req: NextRequest) {
     const session = await auth();
     const user = session?.user;
     if (!user?.tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     const tenantId = user.tenantId;
+    const db = await scopeFromSession();
 
     const url = new URL(req.url);
     const entityId = url.searchParams.get('entityId');
@@ -17,7 +18,7 @@ export async function GET(req: NextRequest) {
     }
 
     try {
-        const logs = await prisma.auditLog.findMany({
+        const logs = await db.auditLog.findMany({
             where: {
                 tenantId: tenantId,
                 entityId,

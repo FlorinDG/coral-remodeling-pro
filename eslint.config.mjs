@@ -166,7 +166,6 @@ const eslintConfig = defineConfig([
       "src/app/api/email/connect/google/callback/route.ts",
       "src/app/api/emergency-access/route.ts",
       "src/app/api/hr/*entity*/route.ts",
-      "src/app/api/hr/audit-logs/route.ts",
       "src/app/api/hr/lib/team-scoping.ts",
       "src/app/api/integrations/parse-pdf/route.ts",
       "src/app/api/leads/route.ts",

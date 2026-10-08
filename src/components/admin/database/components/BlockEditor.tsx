@@ -33,7 +33,12 @@ export default function BlockEditor({ databaseId, pageId }: BlockEditorProps) {
     const database = useDatabaseStore(state => state.databases.find(db => db.id === databaseId));
     const page = database?.pages.find(p => p.id === pageId);
 
-    const blocks = page?.blocks || [];
+    const storedBlocks = page?.blocks || [];
+    // An empty page shows ONE empty paragraph to type in — but it is not SAVED until something is typed (LIB-SUB-1):
+    // writing it on open put a block into every record that was merely looked at (an article inserted into a quote then
+    // carried it as a "subcomponent").
+    const [placeholderId] = useState(() => uuidv4());
+    const blocks: Block[] = storedBlocks.length ? storedBlocks : [{ id: placeholderId, type: 'paragraph', content: '' }];
 
     // ── Slash command state ───────────────────────────────────────────────────
     const [slashMenu, setSlashMenu] = useState<{ blockId: string; filter: string; top: number; left: number } | null>(null);
@@ -66,12 +71,6 @@ export default function BlockEditor({ databaseId, pageId }: BlockEditorProps) {
         return () => document.removeEventListener('click', handler);
     }, [slashMenu]);
 
-    // Ensure at least one empty block exists
-    useEffect(() => {
-        if (blocks.length === 0) {
-            updatePageBlocks(databaseId, pageId, [{ id: uuidv4(), type: 'paragraph', content: '' }]);
-        }
-    }, [blocks.length, databaseId, pageId, updatePageBlocks]);
 
     if (!database || !page) return null;
 

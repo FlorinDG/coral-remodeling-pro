@@ -3,6 +3,7 @@ import { lineVariantDelta, variantDelta } from '@/lib/records/variant-price';
 import { pricingValue, type PricingRole, type PropDef } from '@/lib/article-pricing';
 import React, { useMemo, useState } from 'react';
 import { Block, BlockType, VariantsConfig } from '@/components/admin/database/types';
+import { libraryComponents } from '@/lib/records/library-components';
 import { useDatabaseStore } from '@/components/admin/database/store';
 import { Database as DatabaseIcon, Check, Search, X } from 'lucide-react';
 import { t } from '@/lib/document-i18n';
@@ -308,19 +309,9 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                     }
                 }
 
-                // Morph subcomponents recursively from template library
-                if (page.blocks && page.blocks.length > 0) {
-                    const cloneBlocks = (blocks: Block[]): Block[] => {
-                        return (blocks || []).filter(Boolean).map(b => ({
-                            ...b,
-                            id: crypto.randomUUID(),
-                            children: b.children ? cloneBlocks(b.children) : undefined
-                        }));
-                    };
-                    payload.children = cloneBlocks(page.blocks);
-                } else {
-                    payload.children = []; // Purge previous structure if switching to empty
-                }
+                // LIB-SUB-1: only the record's FINANCIAL blocks become subcomponents — its notes (and the empty paragraph
+                // the page editor used to leave in every record) never do. [] also purges a previous structure.
+                payload.children = libraryComponents(page.blocks as Block[] | undefined, () => crypto.randomUUID());
             }
         }
 

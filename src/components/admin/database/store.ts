@@ -220,6 +220,8 @@ interface DatabaseState {
     loadedDatabaseIds: string[];
     loadingDatabaseIds: string[];
     loadDatabasePages: (databaseId: string) => Promise<Page[]>;
+    /** Re-read a database's pages from the server even when loaded (unsynced local edits are kept — same merge). */
+    reloadDatabasePages: (databaseId: string) => Promise<Page[]>;
     isDatabasePagesLoaded: (databaseId: string) => boolean;
 
     // Sync status (for UI indicators)
@@ -316,6 +318,14 @@ export const useDatabaseStore = create<DatabaseState>()(
 
             isDatabasePagesLoaded: (databaseId: string) => {
                 return get().loadedDatabaseIds.includes(databaseId);
+            },
+
+            reloadDatabasePages: async (databaseId: string) => {
+                // a load already on the wire may have started BEFORE the writes it should show — wait for it, then read again
+                const pending = inFlightPageLoads.get(databaseId);
+                if (pending) await pending.catch(() => {});
+                set(s => ({ loadedDatabaseIds: s.loadedDatabaseIds.filter(id => id !== databaseId) }));
+                return get().loadDatabasePages(databaseId);
             },
 
             loadDatabasePages: async (databaseId: string) => {

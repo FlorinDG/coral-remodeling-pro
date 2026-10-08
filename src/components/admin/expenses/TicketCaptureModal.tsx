@@ -3,6 +3,7 @@
 
 import { isTenantDatabase } from '@/lib/relations/resolve';
 import React, { useState, useRef, useCallback } from 'react';
+import { zonedParts } from '@/lib/kernel/shift-time';
 import { useSession } from 'next-auth/react';
 import { X, Camera, Upload, FileText, Loader2, Sparkles, Receipt, CheckCircle, AlertCircle, RefreshCw, AlertTriangle, Plus, Trash2 } from 'lucide-react';
 import { useDatabaseStore } from '@/components/admin/database/store';
@@ -62,13 +63,21 @@ import { MAX_UPLOAD_BYTES, tooLargeMessage } from '@/lib/files/upload-size';
 import { READABLE_ACCEPT } from '@/lib/records/readable-document';   // SCAN-2: iOS converts HEIC to JPEG itself
 const NO_PAGES: Page[] = [];
 
-export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tickets' }: TicketCaptureModalProps) {
+export default function TicketCaptureModal({ onClose: closeModal, targetDatabaseId = 'db-tickets' }: TicketCaptureModalProps) {
     const tPlaceholders = useTranslations('Admin.placeholders');
     const { data: session } = useSession();
     const planType = (session?.user as any)?.planType ?? 'FREE';
     const isFree = planType === 'FREE';
     
     const { tenant, resolveDbId } = useTenant();
+    // Florin 2026-10-08: photo after photo ("Scan another") on the phone, and Te valideren showed them only after a
+    // refresh. Each camera trip sends the browser to the background and back; a page load racing the saves can leave the
+    // list without them. When the session closes after a save, the list is re-read from the server — it equals the server.
+    const savedSomething = useRef(false);
+    const onClose = () => {
+        if (savedSomething.current) void useDatabaseStore.getState().reloadDatabasePages(resolveDbId(targetDatabaseId)).catch(() => {});
+        closeModal();
+    };
     // EDIT-1: the option lists are the TARGET database's own (schema) — a ticket gets the ticket categories / payment
     // methods, a purchase invoice the purchase taxonomy; never one database's list written into the other.
     const targetDb = useDatabaseStore(s => s.getDatabase(resolveDbId(targetDatabaseId)));
@@ -110,7 +119,7 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
 
     const [form, setForm] = useState<TicketFormData>({
         merchant: '',
-        date: new Date().toISOString().split('T')[0],
+        date: zonedParts(new Date()).date,   // the business day — toISOString() is UTC (yesterday before 02:00)
         amount: '',
         vatAmount: '',
         category: '',
@@ -144,7 +153,7 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
     const handleResetFlow = () => {
         setForm({
             merchant: '',
-            date: new Date().toISOString().split('T')[0],
+            date: zonedParts(new Date()).date,   // the business day — toISOString() is UTC (yesterday before 02:00)
             amount: '',
             vatAmount: '',
             category: '',
@@ -383,7 +392,7 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                         lines: linesPayload,
                     });
                     if (result.success) {
-                        addConfirmedPage(result.page);
+                        addConfirmedPage(result.page); savedSomething.current = true;
                         onClose();
                         router.push(`/admin/expenses/${result.page.id}`);
                         return;
@@ -401,7 +410,7 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                         receiptUrl: receiptUrl,
                         project: form.project ? [form.project] : [],
                     });
-                    if (result.success) addConfirmedPage(result.page);
+                    if (result.success) { addConfirmedPage(result.page); savedSomething.current = true; }
                 }
                 setStep('done');
             } catch (e) {
@@ -464,7 +473,7 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                 return;
             }
 
-            addConfirmedPage(result.page);
+            addConfirmedPage(result.page); savedSomething.current = true;
             setStep('done');
         } catch (e: any) {
             console.error('[TicketCaptureModal] Save failed:', e);

@@ -319,150 +319,6 @@ const PropertySelectPicker = ({ value, options, onChange }: { value: string; opt
     );
 };
 
-// ─── Purchase Invoice Paper View ────────────────────────────────────────────
-const PurchaseInvoiceSheet = ({ databaseId, pageId }: { databaseId: string; pageId: string }) => {
-    const page = useDatabaseStore(state => state.getDatabase(databaseId))?.pages.find(p => p.id === pageId);
-    const database = useDatabaseStore(state => state.getDatabase(databaseId));
-    const supplierDb = useDatabaseStore(state => state.getDatabase('db-suppliers'));
-    const updatePageProperty = useDatabaseStore(state => state.updatePageProperty);
-
-    if (!page || !database) return null;
-
-    const fmt = (val: any) => {
-        if (!val && val !== 0) return '—';
-        return new Intl.NumberFormat('fr-BE', { style: 'currency', currency: 'EUR' }).format(Number(val));
-    };
-    const fmtDate = (val: any) => {
-        if (!val) return '—';
-        try { return new Date(val).toLocaleDateString('fr-BE'); } catch { return String(val); }
-    };
-
-    const statusProp = database.properties.find(p => p.id === 'status');
-    const statusOpt = statusProp?.config?.options?.find((o: any) => o.id === page.properties['status']);
-    const statusStyles = statusOpt ? (COLOR_STYLES[statusOpt.color] || COLOR_STYLES.gray) : null;
-
-    const sourceProp = database.properties.find(p => p.id === 'source');
-    const sourceOpt = sourceProp?.config?.options?.find((o: any) => o.id === page.properties['source']);
-
-    const supplierIds = page.properties['supplier'] as string[] | undefined;
-    const supplierId = Array.isArray(supplierIds) ? supplierIds[0] : undefined;
-    const supplierPage = supplierId ? supplierDb?.pages.find(p => p.id === supplierId) : undefined;
-    const supplierName = supplierPage ? String(supplierPage.properties['title'] || '') : '';
-
-    const totalExVat = page.properties['totalExVat'];
-    const totalVat = page.properties['totalVat'];
-    const totalIncVat = page.properties['totalIncVat'];
-    const description = page.properties['betreft'];
-    const invoiceDate = page.properties['invoiceDate'];
-    const dueDate = page.properties['dueDate'];
-    const peppolDocId = page.properties['peppolDocId'];
-
-    // Parse stored Peppol line items
-    let lines: Array<{ description: string; quantity: number; unitCode: string; unitPrice: number; vatRate: number; lineTotal: number }> = [];
-    try {
-        const raw = page.properties['invoiceLines'];
-        if (raw && typeof raw === 'string') lines = JSON.parse(raw);
-    } catch { /* no lines */ }
-
-    return (
-        <div className="mt-6 mb-8 max-w-3xl">
-            <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700/60 rounded-2xl shadow-sm overflow-hidden">
-                {/* Header band */}
-                <div className="flex items-start justify-between px-8 pt-8 pb-6 border-b border-neutral-100 dark:border-neutral-800">
-                    <div>
-                        <p className="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-1">
-                            {sourceOpt ? sourceOpt.name : 'Purchase Invoice'}
-                        </p>
-                        <h2 className="text-2xl font-bold text-neutral-900 dark:text-white tracking-tight">
-                            {String(page.properties['title'] || 'Untitled')}
-                        </h2>
-                        {supplierName && (
-                            <p className="text-sm text-neutral-500 mt-1 font-medium">{supplierName}</p>
-                        )}
-                        {peppolDocId && (
-                            <p className="text-xs text-neutral-400 mt-0.5 font-mono">{String(peppolDocId)}</p>
-                        )}
-                    </div>
-                    {statusOpt && statusStyles && (
-                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${statusStyles.badge}`}>
-                            <span className={`w-1.5 h-1.5 rounded-full ${statusStyles.dot}`} />
-                            {statusOpt.name}
-                        </span>
-                    )}
-                </div>
-
-                {/* Date row */}
-                <div className="grid grid-cols-2 gap-0 divide-x divide-neutral-100 dark:divide-neutral-800 border-b border-neutral-100 dark:divide-neutral-800">
-                    <div className="px-8 py-4">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 mb-0.5">Invoice Date</p>
-                        <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">{fmtDate(invoiceDate)}</p>
-                    </div>
-                    <div className="px-8 py-4">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 mb-0.5">Due Date</p>
-                        <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">{fmtDate(dueDate)}</p>
-                    </div>
-                </div>
-
-                {/* Description (only when no line items) */}
-                {description && lines.length === 0 && (
-                    <div className="px-8 py-4 border-b border-neutral-100 dark:border-neutral-800">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 mb-1">Description</p>
-                        <p className="text-sm text-neutral-700 dark:text-neutral-300">{String(description)}</p>
-                    </div>
-                )}
-
-                {/* Line items table (Peppol / parsed invoices) */}
-                {lines.length > 0 && (
-                    <div className="border-b border-neutral-100 dark:border-neutral-800">
-                        <table className="w-full text-xs">
-                            <thead>
-                                <tr className="bg-neutral-50 dark:bg-neutral-800/50">
-                                    <th className="text-left px-8 py-3 text-[10px] font-bold uppercase tracking-widest text-neutral-400">Description</th>
-                                    <th className="text-right px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-neutral-400 whitespace-nowrap">Qty</th>
-                                    <th className="text-right px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-neutral-400 whitespace-nowrap">Unit Price</th>
-                                    <th className="text-right px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-neutral-400 whitespace-nowrap">VAT %</th>
-                                    <th className="text-right px-8 py-3 text-[10px] font-bold uppercase tracking-widest text-neutral-400 whitespace-nowrap">Total</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
-                                {lines.map((line, i) => (
-                                    <tr key={i} className="hover:bg-neutral-50/50 dark:hover:bg-neutral-800/20 transition-colors">
-                                        <td className="px-8 py-3 text-neutral-700 dark:text-neutral-300 font-medium">{line.description || '—'}</td>
-                                        <td className="px-4 py-3 text-right text-neutral-600 dark:text-neutral-400 tabular-nums">
-                                            {line.quantity} <span className="text-neutral-400">{line.unitCode}</span>
-                                        </td>
-                                        <td className="px-4 py-3 text-right text-neutral-600 dark:text-neutral-400 tabular-nums">{fmt(line.unitPrice)}</td>
-                                        <td className="px-4 py-3 text-right text-neutral-600 dark:text-neutral-400 tabular-nums">{line.vatRate}%</td>
-                                        <td className="px-8 py-3 text-right font-semibold text-neutral-800 dark:text-neutral-200 tabular-nums">{fmt(line.lineTotal)}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
-
-                {/* Totals */}
-                <div className="px-8 py-6">
-                    <div className="space-y-2 max-w-xs ml-auto">
-                        <div className="flex items-center justify-between text-sm">
-                            <span className="text-neutral-500">Total Excl. VAT</span>
-                            <span className="font-semibold text-neutral-800 dark:text-neutral-200 tabular-nums">{fmt(totalExVat)}</span>
-                        </div>
-                        <div className="flex items-center justify-between text-sm">
-                            <span className="text-neutral-500">VAT</span>
-                            <span className="font-semibold text-neutral-800 dark:text-neutral-200 tabular-nums">{fmt(totalVat)}</span>
-                        </div>
-                        <div className="h-px bg-neutral-200 dark:bg-neutral-700 my-3" />
-                        <div className="flex items-center justify-between">
-                            <span className="text-sm font-bold text-neutral-900 dark:text-white">Total Incl. VAT</span>
-                            <span className="text-lg font-bold text-neutral-900 dark:text-white tabular-nums">{fmt(totalIncVat)}</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-};
 
 function ScheduledLabourCard({ pageId }: { pageId: string }) {
     const [shifts, setShifts] = useState<any[]>([]);
@@ -784,6 +640,16 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
         return null;
     }
 
+    // EDIT-1: a purchase document opens in its OWN full editor — never inside this side panel (Florin 2026-10-08: from
+    // a notification the side panel opened too and stayed underneath; closing the editor closed both).
+    if (isExpense) {
+        return (
+            <ErrorBoundary componentName="PurchaseInvoiceEngine">
+                <PurchaseInvoiceEngine pageId={pageId} onClose={onClose} databaseId={databaseId} />
+            </ErrorBoundary>
+        );
+    }
+
     return createPortal(
         <div 
             ref={modalRef} role="dialog" aria-modal="true"
@@ -827,12 +693,6 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                     <div className="flex-1 overflow-y-auto">
                         <ErrorBoundary componentName="ProjectDetailView">
                             <ProjectDetailView databaseId={databaseId} pageId={pageId} locale="nl" />
-                        </ErrorBoundary>
-                    </div>
-                ) : isExpense ? (
-                    <div className="flex-1 overflow-y-auto">
-                        <ErrorBoundary componentName="PurchaseInvoiceEngine">
-                            <PurchaseInvoiceEngine pageId={pageId} onClose={onClose} databaseId={databaseId} />
                         </ErrorBoundary>
                     </div>
                 ) : (
@@ -1324,9 +1184,7 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
 
                         {/* Content / Invoice Preview */}
                         <div className="mt-8 mb-12 px-6 md:px-0">
-                            {isExpense ? (
-                                <PurchaseInvoiceSheet databaseId={databaseId} pageId={pageId} />
-                            ) : isQuotation ? (
+                            {isQuotation ? (
                                 <div className="p-12 text-center border-2 border-dashed border-neutral-200 dark:border-white/10 rounded-2xl bg-neutral-50/50 dark:bg-white/5">
                                     <h3 className="text-sm font-bold text-neutral-800 dark:text-neutral-200 mb-2">Quotation Editor</h3>
                                     <p className="text-xs text-neutral-500 dark:text-neutral-400 max-w-sm mx-auto mb-6 leading-relaxed">

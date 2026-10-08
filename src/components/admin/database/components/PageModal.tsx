@@ -39,6 +39,7 @@ import { Checkbox } from '@/components/common/Checkbox';
 import postcodesData from '@/lib/belgian-postcodes.json';
 import { calculateInvoiceTotals } from '@/lib/invoice-totals';
 import { getProjectScheduledShifts, getProjectLaborStats } from '@/app/actions/timesheets';
+import DecimalInput from '@/components/ui/DecimalInput';
 
 const isPostalField = (name: string, id: string) => {
     const n = name.toLowerCase();
@@ -892,11 +893,10 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                                                                                 )}
                                                                             </div>
                                                                         ) : prop.type === 'number' ? (
-                                                                            <input
-                                                                                type="number"
+                                                                            <DecimalInput
                                                                                 className="w-full h-full bg-transparent outline-none placeholder:text-neutral-300 dark:placeholder:text-neutral-700 font-medium"
-                                                                                value={(page.properties[prop.id] as number) || ''}
-                                                                                onChange={(e) => updatePageProperty(databaseId, pageId, prop.id, parseFloat(e.target.value))}
+                                                                                value={page.properties[prop.id] as number | null | undefined}
+                                                                                onValueChange={n => updatePageProperty(databaseId, pageId, prop.id, n as never)}
                                                                                 placeholder="0"
                                                                             />
                                                                         ) : prop.type === 'date' ? (

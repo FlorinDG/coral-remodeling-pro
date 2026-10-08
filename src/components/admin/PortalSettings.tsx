@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Settings, Save, Lock, Euro, Link2 } from 'lucide-react';
 import SearchableSelect from '@/components/ui/SearchableSelect';
+import DecimalInput from '@/components/ui/DecimalInput';
 
 interface PortalSettingsProps {
     portal: {
@@ -89,11 +90,9 @@ export default function PortalSettings({ portal }: PortalSettingsProps) {
                         <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest px-1 flex items-center gap-1">
                             <Euro className="w-3 h-3" /> Budget
                         </label>
-                        <input
-                            type="number"
-                            step="0.01"
+                        <DecimalInput
                             value={formData.budget}
-                            onChange={e => setFormData({ ...formData, budget: e.target.value })}
+                            onValueChange={n => setFormData({ ...formData, budget: n === null ? '' : String(n) })}
                             className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm focus:border-[var(--brand-color,#d35400)] outline-none transition-colors"
                         />
                     </div>
@@ -101,11 +100,9 @@ export default function PortalSettings({ portal }: PortalSettingsProps) {
                         <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest px-1 flex items-center gap-1">
                             <Euro className="w-3 h-3" /> Paid Amount
                         </label>
-                        <input
-                            type="number"
-                            step="0.01"
+                        <DecimalInput
                             value={formData.paidAmount}
-                            onChange={e => setFormData({ ...formData, paidAmount: e.target.value })}
+                            onValueChange={n => setFormData({ ...formData, paidAmount: n === null ? '' : String(n) })}
                             className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm focus:border-[var(--brand-color,#d35400)] outline-none transition-colors"
                         />
                     </div>

@@ -24,6 +24,7 @@ import { useOpenLinkedRecord } from '@/components/admin/database/hooks/useOpenLi
 import { MAX_UPLOAD_BYTES, tooLargeMessage } from '@/lib/files/upload-size';
 import { isValidated, approveRefusal, REVIEW_APPROVED } from '@/lib/records/validation';
 import { hasDuplicateFlag, clearDuplicateFlag } from '@/lib/records/duplicates';
+import DecimalInput from '@/components/ui/DecimalInput';
 
 /** The approval check's field ids, as the person reads them. */
 const APPROVE_FIELD_LABEL: Record<string, string> = {
@@ -1082,28 +1083,28 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                                                     </td>
                                                     <td className="px-3 py-2 text-right">
                                                         {isEditing ? (
-                                                            <input type="number" step="1" value={line.quantity} onChange={e => { const l = [...editData.lines]; l[i].quantity = parseFloat(e.target.value) || 0; l[i].lineTotal = lineNet(l[i].quantity, l[i].unitPrice, l[i].discountPct || 0); const computed = calculateHeaderTotalsFromLines(l); setEditData({ ...editData, lines: l, ...computed }); }} className="w-full px-2 py-1 bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-right" />
+                                                            <DecimalInput decimals={3} value={line.quantity} onValueChange={n => { const l = [...editData.lines]; l[i].quantity = n ?? 0; l[i].lineTotal = lineNet(l[i].quantity, l[i].unitPrice, l[i].discountPct || 0); const computed = calculateHeaderTotalsFromLines(l); setEditData({ ...editData, lines: l, ...computed }); }} className="w-full px-2 py-1 bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-right" />
                                                         ) : (
                                                             <span className="text-neutral-500">{line.quantity || 0}</span>
                                                         )}
                                                     </td>
                                                     <td className="px-3 py-2 text-right">
                                                         {isEditing ? (
-                                                            <input type="number" step="0.01" value={line.unitPrice} onChange={e => { const l = [...editData.lines]; l[i].unitPrice = parseFloat(e.target.value) || 0; l[i].lineTotal = lineNet(l[i].quantity, l[i].unitPrice, l[i].discountPct || 0); const computed = calculateHeaderTotalsFromLines(l); setEditData({ ...editData, lines: l, ...computed }); }} className="w-full px-2 py-1 bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-right" />
+                                                            <DecimalInput value={line.unitPrice} onValueChange={n => { const l = [...editData.lines]; l[i].unitPrice = n ?? 0; l[i].lineTotal = lineNet(l[i].quantity, l[i].unitPrice, l[i].discountPct || 0); const computed = calculateHeaderTotalsFromLines(l); setEditData({ ...editData, lines: l, ...computed }); }} className="w-full px-2 py-1 bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-right" />
                                                         ) : (
                                                             <span className="text-neutral-500">{formatEuro(Number(line.unitPrice || 0))}</span>
                                                         )}
                                                     </td>
                                                     <td className="px-3 py-2 text-right">
                                                         {isEditing ? (
-                                                            <input type="number" step="0.01" value={line.discountPct ?? 0} onChange={e => { const l = [...editData.lines]; l[i].discountPct = parseFloat(e.target.value) || 0; l[i].lineTotal = lineNet(l[i].quantity, l[i].unitPrice, l[i].discountPct); const computed = calculateHeaderTotalsFromLines(l); setEditData({ ...editData, lines: l, ...computed }); }} className="w-full px-2 py-1 bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-right" />
+                                                            <DecimalInput value={line.discountPct ?? 0} onValueChange={n => { const l = [...editData.lines]; l[i].discountPct = n ?? 0; l[i].lineTotal = lineNet(l[i].quantity, l[i].unitPrice, l[i].discountPct); const computed = calculateHeaderTotalsFromLines(l); setEditData({ ...editData, lines: l, ...computed }); }} className="w-full px-2 py-1 bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-right" />
                                                         ) : (
                                                             <span className="text-neutral-500">{line.discountPct ? `${String(line.discountPct).replace('.', ',')}%` : '—'}</span>
                                                         )}
                                                     </td>
                                                     <td className="px-3 py-2 text-right">
                                                         {isEditing ? (
-                                                            <input type="number" step="0.01" value={line.lineTotal} onChange={e => { const l = [...editData.lines]; l[i].lineTotal = parseFloat(e.target.value) || 0; const computed = calculateHeaderTotalsFromLines(l); setEditData({ ...editData, lines: l, ...computed }); }} className="w-full px-2 py-1 bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-right font-medium" />
+                                                            <DecimalInput value={line.lineTotal} onValueChange={n => { const l = [...editData.lines]; l[i].lineTotal = n ?? 0; const computed = calculateHeaderTotalsFromLines(l); setEditData({ ...editData, lines: l, ...computed }); }} className="w-full px-2 py-1 bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-right font-medium" />
                                                         ) : (
                                                             <span className="text-neutral-900 dark:text-white font-medium">{formatEuro(Number(line.lineTotal || 0))}</span>
                                                         )}
@@ -1415,11 +1416,9 @@ function FinancialCell({ label, value, editable, highlight, onChange }: {
         <div className={`px-4 py-3 ${highlight ? 'bg-orange-50/50 dark:bg-blue-950/10' : ''}`}>
             <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-0.5">{label}</p>
             {editable ? (
-                <input
-                    type="number"
-                    step="0.01"
-                    value={String(value || '')}
-                    onChange={e => onChange?.(e.target.value)}
+                <DecimalInput
+                    value={value as number | string | null | undefined}
+                    onValueChange={n => onChange?.(n === null ? '' : String(n))}
                     className="w-full px-2 py-1.5 bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/30"
                 />
             ) : (

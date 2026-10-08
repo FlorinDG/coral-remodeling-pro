@@ -915,10 +915,13 @@ export default function TicketCaptureModal({ onClose: closeModal, targetDatabase
                                                             </div>
                                                             <div className="col-span-4 md:col-span-2">
                                                                 <input
-                                                                    type="number"
+                                                                    type="text"
+                                                                    inputMode="decimal"
                                                                     placeholder="Qty"
                                                                     value={line.quantity}
                                                                     onChange={e => {
+                                                                        // DEC-1: a comma or a point — read by lib/records/decimal on save
+                                                                        if (!/^-?[\d.,]*$/.test(e.target.value)) return;
                                                                         const newLines = [...form.lines];
                                                                         newLines[idx].quantity = e.target.value;
                                                                         updateForm('lines', newLines);

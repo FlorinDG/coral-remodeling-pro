@@ -13,6 +13,7 @@ import { emailOwner } from '@/lib/data/identity';
 const scoped = () => scopeFromSession();
 import { WORKSPACE_OWNER_ROLES, PLATFORM_ADMIN_ROLES, ROLES } from '@/lib/roles';
 import { syncSeatQuantities } from '@/lib/stripe';
+import { parseDecimal } from '@/lib/records/decimal';   // DEC-1: '12,5' is 12.5 (parseFloat read 12)
 
 // ── PUT — update employee (User record) ───────────────────────────────
 export async function PUT(
@@ -64,7 +65,7 @@ export async function PUT(
                 ...(phone !== undefined && { phone: phone || null }),
                 ...(role !== undefined && { role }),
                 ...(status !== undefined && { employeeStatus: status }),
-                ...(hourlyCost !== undefined && { hourlyCost: hourlyCost ? parseFloat(hourlyCost) : null }),
+                ...(hourlyCost !== undefined && { hourlyCost: hourlyCost ? parseDecimal(hourlyCost) : null }),
                 ...(hireDate !== undefined && { hireDate: hireDate ? new Date(hireDate) : null }),
             },
         });
@@ -90,7 +91,7 @@ export async function PUT(
                     phone: phone ?? existing.phone,
                     role: role ?? existing.role,
                     status: status ?? existing.employeeStatus ?? 'ACTIVE',
-                    hourlyCost: hourlyCost ? parseFloat(hourlyCost) : (existing.hourlyCost ?? null),
+                    hourlyCost: hourlyCost ? parseDecimal(hourlyCost) : (existing.hourlyCost ?? null),
                     hireDate: hireDate ? new Date(hireDate) : (existing.hireDate ?? null),
                     userId: employeeId,
                     ...(schedule !== undefined && { schedule: Boolean(schedule) }),
@@ -106,7 +107,7 @@ export async function PUT(
                     phone: phone ?? existing.phone,
                     role: role ?? existing.role,
                     status: status ?? existing.employeeStatus ?? 'ACTIVE',
-                    hourlyCost: hourlyCost ? parseFloat(hourlyCost) : (existing.hourlyCost ?? null),
+                    hourlyCost: hourlyCost ? parseDecimal(hourlyCost) : (existing.hourlyCost ?? null),
                     hireDate: hireDate ? new Date(hireDate) : (existing.hireDate ?? null),
                     schedule: schedule !== undefined ? Boolean(schedule) : true,
                     userId: employeeId,

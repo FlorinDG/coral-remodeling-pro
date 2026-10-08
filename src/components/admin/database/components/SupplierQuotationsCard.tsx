@@ -5,6 +5,7 @@ import { Upload, Trash2, ExternalLink, FileText, Plus, X } from 'lucide-react';
 import SearchableSelect from '@/components/ui/SearchableSelect';
 import { uploadFileAction, deleteFileAction } from '@/app/actions/files';
 import { describeError } from '@/lib/describe-error';
+import DecimalInput from '@/components/ui/DecimalInput';
 
 interface SupplierQuotation {
     id: string;
@@ -145,12 +146,10 @@ export default function SupplierQuotationsCard({ projectId, quotations, supplier
                                         <label className="block text-[10px] font-bold uppercase tracking-wider text-neutral-500 mb-1">Amount (Excl. VAT)</label>
                                         <div className="relative">
                                             <span className="absolute left-3 top-2.5 text-neutral-400">€</span>
-                                            <input 
-                                                type="number"
-                                                step="0.01"
+                                            <DecimalInput
                                                 required
                                                 value={formData.amount}
-                                                onChange={e => setFormData({ ...formData, amount: e.target.value })}
+                                                onValueChange={n => setFormData({ ...formData, amount: n === null ? '' : String(n) })}
                                                 className="w-full pl-8 pr-3 py-2 text-sm bg-white dark:bg-black/40 border border-neutral-200 dark:border-white/10 rounded-xl focus:border-[#d35400] outline-none font-mono"
                                                 placeholder="0.00"
                                             />

@@ -14,6 +14,7 @@ import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { Link } from '@/i18n/routing';
 import { Page } from '@/components/admin/database/types';
+import DecimalInput from '@/components/ui/DecimalInput';
 
 interface LineItem {
     id: string;
@@ -248,22 +249,19 @@ export default function MobileCreateInvoicePage() {
                                 <div className="grid grid-cols-3 gap-2">
                                     <div>
                                         <label className="text-[9px] font-semibold text-neutral-400 block mb-0.5">{t('inv_form_qty')}</label>
-                                        <input
-                                            type="number"
-                                            min="1"
+                                        <DecimalInput
+                                            decimals={3}
                                             value={line.quantity}
-                                            onChange={e => updateLine(line.id, 'quantity', Number(e.target.value))}
+                                            onValueChange={n => updateLine(line.id, 'quantity', n ?? 0)}
                                             className="w-full px-2 py-1.5 text-sm bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-lg text-neutral-900 dark:text-white outline-none focus:ring-2 focus:ring-[var(--brand-color,#d35400)]/30 transition-all"
                                         />
                                     </div>
                                     <div>
                                         <label className="text-[9px] font-semibold text-neutral-400 block mb-0.5">{t('inv_form_unit')}</label>
-                                        <input
-                                            type="number"
-                                            step="0.01"
-                                            value={line.unitPrice || ''}
-                                            onChange={e => updateLine(line.id, 'unitPrice', Number(e.target.value))}
-                                            placeholder="0.00"
+                                        <DecimalInput
+                                            value={line.unitPrice || null}
+                                            onValueChange={n => updateLine(line.id, 'unitPrice', n ?? 0)}
+                                            placeholder="0,00"
                                             className="w-full px-2 py-1.5 text-sm bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-lg text-neutral-900 dark:text-white outline-none focus:ring-2 focus:ring-[var(--brand-color,#d35400)]/30 transition-all"
                                         />
                                     </div>

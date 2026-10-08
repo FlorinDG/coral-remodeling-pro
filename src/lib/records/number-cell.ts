@@ -9,6 +9,8 @@
  */
 
 /** The number a stored value stands for. Also unwraps the legacy `{ [propertyId]: v }` the old cell stored. */
+import { parseDecimal } from './decimal';
+
 export function cellValue(raw: unknown, propertyId: string): unknown {
     if (raw !== null && typeof raw === 'object' && !Array.isArray(raw) && propertyId in (raw as Record<string, unknown>)) {
         return (raw as Record<string, unknown>)[propertyId];
@@ -18,8 +20,5 @@ export function cellValue(raw: unknown, propertyId: string): unknown {
 
 /** What typed or pasted text is stored as: a number, or null for empty / not a number. "12,5" → 12.5. */
 export function parseCellInput(text: unknown): number | null {
-    const str = String(text ?? '').trim().replace(/\s/g, '').replace(/,/g, '.');
-    if (str === '') return null;
-    const n = Number(str);
-    return Number.isFinite(n) ? n : null;
+    return parseDecimal(text);   // DEC-1: the one typed-number rule
 }

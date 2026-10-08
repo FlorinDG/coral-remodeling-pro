@@ -17,6 +17,7 @@ import SelectDropdown from './SelectDropdown';
 import { RecurrenceSelector } from '../../tasks/RecurrenceSelector';
 import postcodesData from '@/lib/belgian-postcodes.json';
 import { useRelationTarget, resolveRelationTitle } from '@/lib/relations/resolve';
+import { parseDecimal, formatDecimalInput } from '@/lib/records/decimal';
 
 const isPostalField = (name: string, id: string) => {
     const n = name.toLowerCase();
@@ -207,7 +208,8 @@ function DebouncedInput({
     inputBase, 
     type = 'text',
     step,
-    placeholder = '—'
+    placeholder = '—',
+    inputMode,
 }: { 
     value: PropertyValue; 
     onChange: (val: string) => void; 
@@ -216,6 +218,7 @@ function DebouncedInput({
     type?: string;
     step?: string;
     placeholder?: string;
+    inputMode?: React.HTMLAttributes<HTMLInputElement>['inputMode'];
 }) {
     const [localValue, setLocalValue] = useState(String(value ?? ''));
 
@@ -226,6 +229,7 @@ function DebouncedInput({
     return (
         <input
             type={type}
+            inputMode={inputMode}
             value={localValue}
             readOnly={isReadOnly}
             step={step}
@@ -524,15 +528,15 @@ function PropertyRow({
         const display = value !== null && value !== undefined && String(value) !== '' ? String(value) : '—';
         valueEl = <span className="text-sm font-medium text-neutral-500 dark:text-neutral-400 font-mono">{display}</span>;
     } else if (property.type === 'number' || property.type === 'currency' || property.type === 'percent') {
-        const numVal = value !== null && value !== undefined && String(value) !== '' ? Number(value) : '';
+        // DEC-1: a comma or a point, shown with the Belgian comma (a browser number field refused the comma)
         valueEl = (
             <DebouncedInput 
-                type="number"
-                value={value} 
-                onChange={val => onChange(property.id, val === '' ? null : Number(val))} 
+                type="text"
+                inputMode="decimal"
+                value={formatDecimalInput(parseDecimal(value), 4)} 
+                onChange={val => onChange(property.id, parseDecimal(val))} 
                 isReadOnly={isReadOnly} 
                 inputBase={inputBase} 
-                step="any"
             />
         );
     } else if (property.type === 'email') {

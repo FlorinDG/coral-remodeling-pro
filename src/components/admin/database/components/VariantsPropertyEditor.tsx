@@ -4,6 +4,7 @@ import React, { useState, useRef } from 'react';
 import { useDatabaseStore } from '../store';
 import { VariantsConfig, VariantAxis, VariantOption } from '../types';
 import { Settings2, Plus, Trash2, X } from 'lucide-react';
+import DecimalInput from '@/components/ui/DecimalInput';
 
 interface Props {
     databaseId: string;
@@ -125,10 +126,9 @@ export default function VariantsPropertyEditor({ databaseId, pageId, propertyId,
                                                 />
                                                 <div className="flex items-center gap-1 w-[120px]">
                                                     <span className="text-xs text-neutral-500">€</span>
-                                                    <input
-                                                        type="number"
+                                                    <DecimalInput
                                                         value={opt.priceDelta}
-                                                        onChange={(e) => updateOption(axis.id, opt.id, { priceDelta: parseFloat(e.target.value) || 0 })}
+                                                        onValueChange={n => updateOption(axis.id, opt.id, { priceDelta: n ?? 0 })}
                                                         className="w-full bg-white dark:bg-[#111] border border-neutral-200 dark:border-neutral-800 rounded px-2 py-1 text-sm outline-none focus:border-orange-500"
                                                         placeholder="Delta (+20)"
                                                     />

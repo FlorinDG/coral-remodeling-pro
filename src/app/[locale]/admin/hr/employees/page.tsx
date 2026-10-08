@@ -13,6 +13,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
 import { useTranslations, useLocale } from 'next-intl';
+import { parseDecimal } from '@/lib/records/decimal';
 
 interface Employee {
     id: string;
@@ -230,7 +231,7 @@ export default function EmployeesPage() {
                     phone: form.phone || null,
                     role: form.role,
                     status: form.status,
-                    hourlyCost: form.hourlyCost ? parseFloat(form.hourlyCost) : null,
+                    hourlyCost: parseDecimal(form.hourlyCost),
                     hireDate: form.hireDate || null,
                     schedule: form.schedule,
                 });
@@ -319,7 +320,7 @@ export default function EmployeesPage() {
                             </div>
                         </div>
                         <div className="grid grid-cols-2 gap-4 mt-4">
-                            <Field label={t("hourlyCost")} type="number" value={form.hourlyCost} onChange={v => setForm(f => ({ ...f, hourlyCost: v }))} placeholder="0.00" />
+                            <Field label={t("hourlyCost")} type="text" inputMode="decimal" value={form.hourlyCost} onChange={v => setForm(f => ({ ...f, hourlyCost: v }))} placeholder="0.00" />
                             <div>
                                 <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1.5 block">{t("hireDate")}</label>
                                 <Popover>
@@ -686,11 +687,11 @@ function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: strin
     );
 }
 
-function Field({ label, value, onChange, type = "text", placeholder }: { label: string; value: string; onChange: (v: string) => void; type?: string; placeholder?: string }) {
+function Field({ label, value, onChange, type = "text", placeholder, inputMode }: { label: string; value: string; onChange: (v: string) => void; type?: string; placeholder?: string; inputMode?: React.HTMLAttributes<HTMLInputElement>['inputMode'] }) {
     return (
         <div>
             <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1.5 block">{label}</label>
-            <input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
+            <input type={type} inputMode={inputMode} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
                 className="w-full px-3 py-2.5 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm font-medium text-neutral-900 dark:text-white outline-none focus:ring-2 focus:ring-[var(--brand-color,#d35400)]/30"
             />
         </div>

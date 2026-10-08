@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Modal from './Modal';
 import { useTranslations } from 'next-intl';
+import DecimalInput from '@/components/ui/DecimalInput';
 
 interface CreatePortalModalProps {
     isOpen: boolean;
@@ -122,20 +123,16 @@ export default function CreatePortalModal({ isOpen, onClose, onSuccess }: Create
                     )}
 
                     <div className="grid grid-cols-2 gap-4 mt-2">
-                        <input
-                            type="number"
-                            step="0.01"
+                        <DecimalInput
                             placeholder={t('placeholders.totalBudget')}
                             value={formData.budget}
-                            onChange={e => setFormData({ ...formData, budget: e.target.value })}
+                            onValueChange={n => setFormData({ ...formData, budget: n === null ? '' : String(n) })}
                             className="w-full bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-2xl px-5 py-3.5 text-sm focus:border-[var(--brand-color,#d35400)] outline-none transition-all"
                         />
-                        <input
-                            type="number"
-                            step="0.01"
+                        <DecimalInput
                             placeholder={t('placeholders.paidAmount')}
                             value={formData.paidAmount}
-                            onChange={e => setFormData({ ...formData, paidAmount: e.target.value })}
+                            onValueChange={n => setFormData({ ...formData, paidAmount: n === null ? '' : String(n) })}
                             className="w-full bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-2xl px-5 py-3.5 text-sm focus:border-[var(--brand-color,#d35400)] outline-none transition-all"
                         />
                     </div>

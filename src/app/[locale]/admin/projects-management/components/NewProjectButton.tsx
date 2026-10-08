@@ -5,6 +5,7 @@ import { Plus, X, FolderKanban, Loader2 } from 'lucide-react';
 import { useDatabaseStore } from '@/components/admin/database/store';
 import { createPageServerFirst } from '@/app/actions/pages';
 import { useTenant } from '@/context/TenantContext';
+import DecimalInput from '@/components/ui/DecimalInput';
 
 export default function NewProjectButton() {
     const { resolveDbId } = useTenant();
@@ -101,11 +102,10 @@ export default function NewProjectButton() {
 
                             <div className="space-y-1">
                                 <label className="text-xs font-bold text-neutral-500 uppercase tracking-widest">Internal Budget (€)</label>
-                                <input
-                                    type="number"
+                                <DecimalInput
                                     disabled={isLoading}
                                     value={formData.budget}
-                                    onChange={e => setFormData({ ...formData, budget: e.target.value })}
+                                    onValueChange={n => setFormData({ ...formData, budget: n === null ? '' : String(n) })}
                                     className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-white/10 rounded-xl px-3 py-2 text-sm focus:border-[var(--brand-color)] outline-none transition-colors"
                                     placeholder="0.00"
                                 />

@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { X, ClipboardCheck, Percent, HelpCircle, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { Block, Page } from '../database/types';
+import DecimalInput from '@/components/ui/DecimalInput';
 
 interface CreateVorderingstaatModalProps {
     isOpen: boolean;
@@ -262,10 +263,9 @@ export default function CreateVorderingstaatModal({
                                         <td className="py-4 px-3">
                                             {isSelected ? (
                                                 <div className="flex items-center bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-lg px-2 py-1 max-w-[90px] ml-auto">
-                                                    <input
-                                                        type="number"
+                                                    <DecimalInput
                                                         value={current}
-                                                        onChange={(e) => handleProgressChange(line.id, parseFloat(e.target.value) || 0)}
+                                                        onValueChange={n => handleProgressChange(line.id, n ?? 0)}
                                                         className="w-full text-right bg-transparent text-xs font-bold focus:outline-none text-neutral-800 dark:text-white"
                                                         min={0}
                                                         max={100 - prev}

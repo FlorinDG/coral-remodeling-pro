@@ -16,6 +16,7 @@ import { emailOwner } from '@/lib/data/identity';
 const scoped = () => scopeFromSession();
 import { WORKSPACE_OWNER_ROLES, PLATFORM_ADMIN_ROLES, ROLES } from '@/lib/roles';
 import { syncSeatQuantities } from '@/lib/stripe';
+import { parseDecimal } from '@/lib/records/decimal';   // DEC-1: '12,5' is 12.5 (parseFloat read 12)
 
 // Roles that count as "employees" in HR context
 const HR_EMPLOYEE_ROLES = [
@@ -123,7 +124,7 @@ export async function POST(req: Request) {
                 email,
                 phone: phone || null,
                 role: role || 'TENANT_ENTERPRISE_WORKFORCE',
-                hourlyCost: hourlyCost ? parseFloat(hourlyCost) : null,
+                hourlyCost: hourlyCost ? parseDecimal(hourlyCost) : null,
                 hireDate: hireDate ? new Date(hireDate) : null,
                 employeeStatus: 'ACTIVE',
                 invitedBy: user.id,
@@ -146,7 +147,7 @@ export async function POST(req: Request) {
                     phone: phone || null,
                     role: role || 'TENANT_ENTERPRISE_WORKFORCE',
                     status: 'ACTIVE',
-                    hourlyCost: hourlyCost ? parseFloat(hourlyCost) : null,
+                    hourlyCost: hourlyCost ? parseDecimal(hourlyCost) : null,
                     hireDate: hireDate ? new Date(hireDate) : null,
                     schedule: schedule !== undefined ? Boolean(schedule) : true,
                     userId: newUser.id,
@@ -162,7 +163,7 @@ export async function POST(req: Request) {
                     phone: phone || null,
                     role: role || 'TENANT_ENTERPRISE_WORKFORCE',
                     status: 'ACTIVE',
-                    hourlyCost: hourlyCost ? parseFloat(hourlyCost) : null,
+                    hourlyCost: hourlyCost ? parseDecimal(hourlyCost) : null,
                     hireDate: hireDate ? new Date(hireDate) : null,
                     schedule: schedule !== undefined ? Boolean(schedule) : true,
                     userId: newUser.id,

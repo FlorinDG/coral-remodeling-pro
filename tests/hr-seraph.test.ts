@@ -183,29 +183,43 @@ describe('HR-SERAPH-1 · Exact Query Shape Pins & Throw Proofs (B5)', () => {
         assert.deepEqual(grouped.get(0), ['e5']);
 
         // Invariant: every entry appears exactly once
-        const seen = new Set<string>();
-        let totalCount = 0;
-        for (const ids of grouped.values()) {
-            for (const id of ids) {
-                assert.ok(!seen.has(id), `Duplicate entryId found across groups: ${id}`);
-                seen.add(id);
-                totalCount++;
+        function assertSnapshotCoveredExactlyOnce(
+            orig: typeof snapshot,
+            res: Map<number | null, string[]>
+        ) {
+            const seen = new Set<string>();
+            let count = 0;
+            for (const ids of res.values()) {
+                for (const id of ids) {
+                    if (seen.has(id)) throw new Error(`duplicate entryId: ${id}`);
+                    seen.add(id);
+                    count++;
+                }
             }
-        }
-        assert.equal(totalCount, snapshot.length, 'Grouped count must equal snapshot length');
-        for (const item of snapshot) {
-            assert.ok(seen.has(item.entryId), `Missing entryId in grouped result: ${item.entryId}`);
+            if (count !== orig.length) {
+                throw new Error(`count mismatch: expected ${orig.length}, got ${count}`);
+            }
+            for (const item of orig) {
+                if (!seen.has(item.entryId)) throw new Error(`missing entryId: ${item.entryId}`);
+            }
         }
 
-        // Throw proof: if an entry is dropped or duplicated, the assertion fails
+        // Verified on actual grouped output
+        assertSnapshotCoveredExactlyOnce(snapshot, grouped);
+
+        // Throw proof 1: dropped entry triggers failure
         assert.throws(() => {
-            const badSeen = new Set<string>();
-            const corruptedIds = ['e1', 'e1', 'e2']; // artificial duplicate
-            for (const id of corruptedIds) {
-                if (badSeen.has(id)) throw new Error(`duplicate ${id}`);
-                badSeen.add(id);
-            }
-        }, /duplicate e1/);
+            const missingOne = new Map(grouped);
+            missingOne.set(35, ['e1']); // dropped e2
+            assertSnapshotCoveredExactlyOnce(snapshot, missingOne);
+        }, /count mismatch/);
+
+        // Throw proof 2: duplicated entry triggers failure
+        assert.throws(() => {
+            const dupedOne = new Map(grouped);
+            dupedOne.set(35, ['e1', 'e2', 'e3']); // e3 duplicated from group 40
+            assertSnapshotCoveredExactlyOnce(snapshot, dupedOne);
+        }, /duplicate entryId: e3/);
     });
 });
 

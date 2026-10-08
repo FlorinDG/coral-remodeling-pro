@@ -168,7 +168,6 @@ const eslintConfig = defineConfig([
       "src/app/api/hr/*entity*/route.ts",
       "src/app/api/hr/audit-logs/route.ts",
       "src/app/api/hr/lib/team-scoping.ts",
-      "src/app/api/hr/timesheet-export/route.tsx",
       "src/app/api/hr/timesheet-rates/route.ts",
       "src/app/api/hr/timesheet-rates/undo/route.ts",
       "src/app/api/integrations/parse-pdf/route.ts",

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import prisma from '@/lib/prisma';
+import { scopeFromSession } from '@/lib/data/scope';
 import { resolveReach } from '@/app/api/hr/lib/actor-reach';
 import { computeWorkedDuration, minutesToDecimalHours, formatHoursMinutes } from '@/lib/computeWorkedDuration';
 import * as XLSX from 'xlsx';
@@ -41,6 +41,7 @@ async function getContext(req: Request) {
 export async function GET(req: Request) {
     const ctx = await getContext(req);
     if (!ctx) return new NextResponse('Unauthorized', { status: 401 });
+    const db = await scopeFromSession();
 
     const url = new URL(req.url);
     const exportFormat = url.searchParams.get('format') || 'xlsx';
@@ -88,7 +89,7 @@ export async function GET(req: Request) {
     }
 
     // Fetch entries
-    const entries = (await prisma.clockEntry.findMany({
+    const entries = (await db.clockEntry.findMany({
         where,
         orderBy: { clockInTime: 'asc' }
     })).filter(e => inBusinessPeriod(e.clockInTime, period));
@@ -97,7 +98,7 @@ export async function GET(req: Request) {
     if (targetUserIds) {
         employeesWhere.userId = { in: targetUserIds };
     }
-    const employees = await prisma.employee.findMany({
+    const employees = await db.employee.findMany({
         where: employeesWhere,
         select: { userId: true, firstName: true, lastName: true, hourlyCost: true }
     });
@@ -106,7 +107,7 @@ export async function GET(req: Request) {
     // PROJ-SSOT-1: the one resolver (was HrProject — zero rows → "Unknown Project" on every attributed line).
     const projMap = new Map((await resolveProjects(ctx.tenantId)).map(p => [p.id, p]));
 
-    const users = await prisma.user.findMany({
+    const users = await db.user.findMany({
         where: { tenantId: ctx.tenantId },
         select: { id: true, name: true }
     });

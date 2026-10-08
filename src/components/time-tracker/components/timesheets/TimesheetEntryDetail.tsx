@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { hrUpdate, hrList } from '@/lib/hr-api';
 import { format, parseISO } from 'date-fns';
 import { nl, fr, enUS } from 'date-fns/locale';
+import { WerkbonViewer } from '@/components/time-tracker/components/werkbon/WerkbonDocument';
 import { useLocale, useTranslations } from 'next-intl';
 import { Loader2, MapPin, Clock, Edit2, ShieldAlert, X, FileText } from 'lucide-react';
 import { resolveFileUrl } from '@/lib/files';
@@ -26,6 +27,7 @@ export function TimesheetEntryDetail({ entry, onUpdate, unlockTokenValid }: Time
     const dateFnsLocale = locale === 'nl' ? nl : locale === 'fr' ? fr : enUS;
 
     const [loading, setLoading] = useState(false);
+    const [werkbonOpen, setWerkbonOpen] = useState(false);
     const [editing, setEditing] = useState(false);
     const [clockInTime, setClockInTime] = useState(entry.clockInTime ? format(parseISO(entry.clockInTime), 'HH:mm') : '');
     const [clockOutTime, setClockOutTime] = useState(entry.clockOutTime ? format(parseISO(entry.clockOutTime), 'HH:mm') : '');
@@ -220,7 +222,9 @@ export function TimesheetEntryDetail({ entry, onUpdate, unlockTokenValid }: Time
 
     return (
         <div className="bg-neutral-50 dark:bg-white/5 border border-border p-4 rounded-xl m-2 space-y-4 shadow-inner">
-            
+            {/* WERKBON-VIEW-1: the werkbon opens in a viewer over the timesheet, like every other document */}
+            {werkbonOpen && <WerkbonViewer entryId={entry.id} onClose={() => setWerkbonOpen(false)} />}
+
             {showUnlockWarning && (
                 <div className="bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200 p-3 rounded-lg flex items-center gap-2 text-sm font-medium">
                     <ShieldAlert className="w-4 h-4" />
@@ -277,7 +281,7 @@ export function TimesheetEntryDetail({ entry, onUpdate, unlockTokenValid }: Time
                                     {isRunning ? t('forceClockOut', { fallback: 'Klok stopzetten' }) : t('edit', { fallback: 'Bewerken' })}
                                 </Button>
                                 
-                                <Button size="sm" variant="secondary" className="w-full text-xs" onClick={() => window.open(`/${locale}/admin/hr/timesheets/${entry.id}`, '_blank')}>
+                                <Button size="sm" variant="secondary" className="w-full text-xs" onClick={() => setWerkbonOpen(true)}>
                                     <FileText className="w-3 h-3 mr-1" />
                                     {t('viewWorkOrder', { fallback: 'Bekijk werkbon' })}
                                 </Button>

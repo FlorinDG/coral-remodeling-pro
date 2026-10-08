@@ -112,7 +112,6 @@ const eslintConfig = defineConfig([
   // The length of this array is the DI progress metric (coral-decision-dependency-injection.md).
       "src/app/*locale*/admin/content/page.tsx",
       "src/app/*locale*/admin/dashboard/page.tsx",
-      "src/app/*locale*/admin/hr/leave/page.tsx",
       "src/app/*locale*/admin/layout.tsx",
       "src/app/*locale*/admin/portals/*id*/page.tsx",
       "src/app/*locale*/admin/projects/*id*/page.tsx",

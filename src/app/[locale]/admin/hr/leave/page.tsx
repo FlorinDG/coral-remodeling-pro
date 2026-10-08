@@ -1,4 +1,4 @@
-import prisma from "@/lib/prisma";
+import { scopeFromSession, type TenantScopedClient } from "@/lib/data/scope";
 import ModuleTabs from "@/components/admin/ModuleTabs";
 import { hrTabs } from "@/config/tabs";
 import { auth } from "@/auth";
@@ -8,8 +8,8 @@ import { getTranslations } from 'next-intl/server';
 import LeaveActions from "./LeaveActions";
 
 // ── Server Data ───────────────────────────────────────────────────
-async function getLeaveData(tenantId: string) {
-    const requests = await prisma.timeOffRequest.findMany({
+async function getLeaveData(db: TenantScopedClient, tenantId: string) {
+    const requests = await db.timeOffRequest.findMany({
         where: { tenantId },
         orderBy: { createdAt: 'desc' },
         take: 50,
@@ -19,11 +19,11 @@ async function getLeaveData(tenantId: string) {
     const nameMap = new Map<string, string>();
     
     if (userIds.length > 0) {
-        const users = await prisma.user.findMany({
+        const users = await db.user.findMany({
             where: { id: { in: userIds } },
             select: { id: true, name: true, email: true }
         });
-        const employees = await prisma.employee.findMany({
+        const employees = await db.employee.findMany({
             where: { userId: { in: userIds } },
             select: { userId: true, firstName: true, lastName: true }
         });
@@ -91,11 +91,12 @@ export default async function LeavePage() {
     const user = session?.user;
     if (!user?.tenantId) redirect("/login");
 
+    const db = await scopeFromSession();
     const t = await getTranslations('Hr.leave');
 
     let data;
     try {
-        data = await getLeaveData(user.tenantId);
+        data = await getLeaveData(db, user.tenantId);
     } catch (err) {
         console.error("[Leave] Data fetch error:", err);
         data = { requests: [], nameMap: new Map<string, string>() };

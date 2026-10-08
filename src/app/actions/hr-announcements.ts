@@ -1,6 +1,6 @@
 "use server";
 
-import prisma from "@/lib/prisma";
+import { scopeFromSession } from "@/lib/data/scope";
 import { auth } from "@/auth";
 
 export async function getHrAnnouncements() {
@@ -13,14 +13,15 @@ export async function getHrAnnouncements() {
     if (!tenantId) {
         throw new Error("No tenant context");
     }
+    const db = await scopeFromSession();
 
-    const announcements = await prisma.hrAnnouncement.findMany({
+    const announcements = await db.hrAnnouncement.findMany({
         where: { tenantId },
         orderBy: { createdAt: 'desc' },
         take: 10,
     });
 
-    const readRecords = await prisma.hrAnnouncementRead.findMany({
+    const readRecords = await db.hrAnnouncementRead.findMany({
         where: {
             userId: session.user.id,
             announcementId: { in: announcements.map(a => a.id) }
@@ -30,7 +31,7 @@ export async function getHrAnnouncements() {
     const readIds = new Set(readRecords.map(r => r.announcementId));
 
     const userIds = Array.from(new Set(announcements.map(a => a.createdBy)));
-    const users = await prisma.user.findMany({
+    const users = await db.user.findMany({
         where: { id: { in: userIds } },
         select: { id: true, name: true }
     });
@@ -58,8 +59,9 @@ export async function markHrAnnouncementRead(announcementId: string) {
     if (!session?.user?.id) {
         throw new Error("Unauthorized");
     }
+    const db = await scopeFromSession();
 
-    await prisma.hrAnnouncementRead.upsert({
+    await db.hrAnnouncementRead.upsert({
         where: {
             userId_announcementId: {
                 userId: session.user.id,

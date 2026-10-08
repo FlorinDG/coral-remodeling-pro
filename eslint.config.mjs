@@ -138,7 +138,6 @@ const eslintConfig = defineConfig([
       "src/app/actions/get-contacts.ts",
       "src/app/actions/get-invoice.ts",
       "src/app/actions/global-databases.ts",
-      "src/app/actions/hr-announcements.ts",
       "src/app/actions/internal-projects.ts",
       "src/app/actions/next-document-number.ts",
       "src/app/actions/notifications.ts",

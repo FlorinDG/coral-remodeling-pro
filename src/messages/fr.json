@@ -255,6 +255,8 @@
   },
   "Admin": {
     "dbHeader": {
+      "sortAdded": "Date d’ajout",
+      "sortEdited": "Dernière modification",
       "newProforma": "Nouvelle proforma",
       "editCustomFields": "Modifier les champs personnalisés",
       "editSchemaFields": "Modifier les champs du schéma",

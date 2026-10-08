@@ -6,6 +6,7 @@ import { useDatabaseStore } from '../store';
 import { SortDirection } from '../types';
 import { ArrowUpDown, X, Plus, Trash2, ChevronDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { SORT_ADDED, SORT_EDITED } from '@/lib/records/view-sort';
 
 interface SortToolbarProps {
     databaseId: string;
@@ -81,9 +82,15 @@ export default function SortToolbar({ databaseId, viewId }: SortToolbarProps) {
 
     if (!database) return null;
 
+    // The fields to sort on: the record's own dates first (added / changed — lib/records/view-sort), then every field
+    const sortFields: { id: string; name: string }[] = [
+        { id: SORT_ADDED, name: t('dbHeader.sortAdded') },
+        { id: SORT_EDITED, name: t('dbHeader.sortEdited') },
+        ...database.properties.map(p => ({ id: p.id, name: p.name })),
+    ];
+
     const handleAddSort = () => {
-        if (database.properties.length === 0) return;
-        const unassignedProps = database.properties.filter(p => !activeSorts.some(s => s.propertyId === p.id));
+        const unassignedProps = sortFields.filter(p => !activeSorts.some(s => s.propertyId === p.id));
         if (unassignedProps.length === 0) return;
         addSort(databaseId, viewId, {
             propertyId: unassignedProps[0].id,
@@ -141,7 +148,7 @@ export default function SortToolbar({ databaseId, viewId }: SortToolbarProps) {
                                     value={sort.propertyId}
                                     onChange={e => updateSort(databaseId, viewId, sort.id, { propertyId: e.target.value })}
                                 >
-                                    {database.properties.map(p => (
+                                    {sortFields.map(p => (
                                         <option key={p.id} value={p.id} disabled={activeSorts.some(s => s.propertyId === p.id && s.id !== sort.id)}>
                                             {p.name}
                                         </option>
@@ -179,7 +186,7 @@ export default function SortToolbar({ databaseId, viewId }: SortToolbarProps) {
             <div className="px-4 py-2.5 border-t border-neutral-100 dark:border-white/5 bg-neutral-50/50 dark:bg-white/[0.02]">
                 <button
                     onClick={handleAddSort}
-                    disabled={activeSorts.length >= database.properties.length}
+                    disabled={activeSorts.length >= sortFields.length}
                     className="flex items-center gap-1.5 text-xs font-medium text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                     <Plus className="w-3.5 h-3.5" />

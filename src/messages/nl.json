@@ -256,6 +256,8 @@
   },
   "Admin": {
     "dbHeader": {
+      "sortAdded": "Toegevoegd",
+      "sortEdited": "Laatst gewijzigd",
       "newProforma": "Nieuwe proforma",
       "editCustomFields": "Aangepaste velden bewerken",
       "editSchemaFields": "Schemavelden bewerken",

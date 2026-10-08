@@ -5,7 +5,21 @@
  *   - no sort: newest first; sorts in order: empties last (ascending) / first (descending), numbers as numbers
  *     ("1,5" = 1.5), text naturally ("10" after "2"), case-insensitive.
  */
-export interface SortablePage { id: string; createdAt: string; properties: Record<string, unknown> }
+export interface SortablePage { id: string; createdAt: string; updatedAt?: string; properties: Record<string, unknown> }
+
+/**
+ * Sort keys of the RECORD itself, not of a field (Florin 2026-10-08: "add the added option to sorts in db") — when it
+ * was added and last changed. Reserved ids: never a property id (properties are ids without '@').
+ */
+export const SORT_ADDED = '@createdAt';
+export const SORT_EDITED = '@updatedAt';
+export const RECORD_SORT_KEYS: readonly string[] = [SORT_ADDED, SORT_EDITED];
+
+function sortValue(p: SortablePage, key: string): unknown {
+    if (key === SORT_ADDED) return p.createdAt ? t(p.createdAt) : undefined;
+    if (key === SORT_EDITED) return p.updatedAt ? t(p.updatedAt) : undefined;
+    return p.properties[key];
+}
 export interface SortRuleLike { propertyId: string; direction: 'ascending' | 'descending' }
 
 const RECENT_MS = 120_000;
@@ -16,8 +30,8 @@ const t = (iso: string) => new Date(iso).getTime();
 export function compareBySorts(a: SortablePage, b: SortablePage, sorts: SortRuleLike[]): number {
     if (!sorts.length) return t(b.createdAt) - t(a.createdAt);
     for (const sort of sorts) {
-        const valA = a.properties[sort.propertyId];
-        const valB = b.properties[sort.propertyId];
+        const valA = sortValue(a, sort.propertyId);
+        const valB = sortValue(b, sort.propertyId);
         if (valA === valB) continue;
         const asc = sort.direction === 'ascending';
         if (empty(valA)) return asc ? 1 : -1;

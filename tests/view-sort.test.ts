@@ -21,3 +21,28 @@ test('while editing, rows hold their place; new rows join at the end; gone rows 
     assert.deepEqual(holdOrder(['a', 'b', 'gone'], sorted).map(x => x.id), ['a', 'b', 'n']);
     assert.deepEqual(holdOrder(null, sorted).map(x => x.id), ['b', 'a', 'n']);
 });
+
+// Florin 2026-10-08: "add the added option to sorts in db" — the record's own dates, not a field
+import { SORT_ADDED, SORT_EDITED } from '../src/lib/records/view-sort.ts';
+
+test('sort by "Toegevoegd": the record\'s creation moment, oldest first or newest first', () => {
+    const pages = [
+        { id: 'b', createdAt: '2026-10-02T09:00:00Z', properties: {} },
+        { id: 'a', createdAt: '2026-10-01T09:00:00Z', properties: {} },
+        { id: 'c', createdAt: '2026-10-03T09:00:00Z', properties: {} },
+    ];
+    const far = Date.parse('2026-12-01T00:00:00Z');   // none of them "recent"
+    assert.deepEqual(sortPages(pages, [{ propertyId: SORT_ADDED, direction: 'ascending' }], far).map(p => p.id), ['a', 'b', 'c']);
+    assert.deepEqual(sortPages(pages, [{ propertyId: SORT_ADDED, direction: 'descending' }], far).map(p => p.id), ['c', 'b', 'a']);
+});
+
+test('sort by "Gewijzigd": the last change, a record never changed sorts as empty', () => {
+    const pages = [
+        { id: 'old', createdAt: '2026-10-01T09:00:00Z', updatedAt: '2026-10-01T09:00:00Z', properties: {} },
+        { id: 'new', createdAt: '2026-10-01T08:00:00Z', updatedAt: '2026-10-05T09:00:00Z', properties: {} },
+        { id: 'none', createdAt: '2026-10-01T07:00:00Z', properties: {} },
+    ];
+    const far = Date.parse('2026-12-01T00:00:00Z');
+    assert.deepEqual(sortPages(pages, [{ propertyId: SORT_EDITED, direction: 'descending' }], far).map(p => p.id), ['none', 'new', 'old']);
+    assert.deepEqual(sortPages(pages, [{ propertyId: SORT_EDITED, direction: 'ascending' }], far).map(p => p.id), ['old', 'new', 'none']);
+});

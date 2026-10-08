@@ -222,6 +222,147 @@ export default function EmployeesPage() {
         return matchesSearch && matchesStatus;
     });
 
+    // The add/edit dialog — rendered in BOTH views (the detail view's "Edit" opened nothing until "Back to Directory").
+    const dialog = showDialog && (
+        <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 flex items-center justify-center">
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowDialog(false)} />
+            <div className="relative bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto border border-neutral-200 dark:border-white/10">
+                <div className="flex items-center justify-between p-6 border-b border-neutral-200 dark:border-white/10">
+                    <h2 className="text-lg font-bold text-neutral-900 dark:text-white">{editing ? "Edit Employee" : "Add Employee"}</h2>
+                    <button onClick={() => setShowDialog(false)} className="p-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-white/10"><X className="w-5 h-5 text-neutral-500" /></button>
+                </div>
+                <div className="p-6 space-y-4">
+                    {error && <p className="text-red-600 text-sm font-medium bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</p>}
+
+                    {/* Personal Info Section */}
+                    <div>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-3">Personal Information</p>
+                        <div className="grid grid-cols-2 gap-4">
+                            <Field label="First Name *" value={form.firstName} onChange={v => setForm(f => ({ ...f, firstName: v }))} />
+                            <Field label="Last Name *" value={form.lastName} onChange={v => setForm(f => ({ ...f, lastName: v }))} />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4 mt-4">
+                            <Field label="Email *" type="email" value={form.email} onChange={v => setForm(f => ({ ...f, email: v }))} />
+                            <Field label="Phone" type="tel" value={form.phone} onChange={v => setForm(f => ({ ...f, phone: v }))} />
+                        </div>
+                    </div>
+
+                    {/* Employment Section */}
+                    <div className="pt-4 border-t border-neutral-200 dark:border-white/10">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-3">Employment</p>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1.5 block">Role *</label>
+                                <SearchableSelect
+                                    options={ROLE_OPTIONS.map(r => ({ value: r.value, label: r.label }))}
+                                    value={form.role}
+                                    onChange={v => setForm(f => ({ ...f, role: v }))}
+                                    placeholder="Select role..."
+                                />
+                            </div>
+                            <div>
+                                <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1.5 block">Status</label>
+                                <SearchableSelect
+                                    options={[
+                                        { value: 'ACTIVE', label: 'Active' },
+                                        { value: 'INACTIVE', label: 'Inactive' },
+                                        { value: 'ON_LEAVE', label: 'On Leave' },
+                                    ]}
+                                    value={form.status}
+                                    onChange={v => setForm(f => ({ ...f, status: v }))}
+                                    placeholder="Select status..."
+                                />
+                                <div className="flex items-center space-x-2 mt-2.5">
+                                    <input
+                                        type="checkbox"
+                                        id="schedule"
+                                        checked={form.schedule}
+                                        onChange={(e) => setForm(f => ({ ...f, schedule: e.target.checked }))}
+                                        className="h-4 w-4 rounded border-neutral-300 text-[var(--brand-color,#d35400)] focus:ring-[var(--brand-color,#d35400)]"
+                                    />
+                                    <label htmlFor="schedule" className="text-xs font-bold text-neutral-600 dark:text-neutral-400 cursor-pointer">
+                                        Show in Scheduler
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4 mt-4">
+                            <Field label="Hourly Cost (€)" type="number" value={form.hourlyCost} onChange={v => setForm(f => ({ ...f, hourlyCost: v }))} placeholder="0.00" />
+                            <div>
+                                <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1.5 block">Hire Date</label>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <button
+                                            type="button"
+                                            className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm font-medium outline-none focus:ring-2 focus:ring-[var(--brand-color,#d35400)]/30 text-left ${
+                                                form.hireDate ? 'text-neutral-900 dark:text-white' : 'text-neutral-400'
+                                            }`}
+                                        >
+                                            <CalendarIcon className="w-4 h-4 text-neutral-400 shrink-0" />
+                                            {form.hireDate ? format(new Date(form.hireDate), 'dd/MM/yyyy') : 'Select date...'}
+                                        </button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl shadow-xl" align="start">
+                                        <Calendar
+                                            mode="single"
+                                            selected={form.hireDate ? new Date(form.hireDate) : undefined}
+                                            onSelect={(date) => setForm(f => ({ ...f, hireDate: date ? format(date, 'yyyy-MM-dd') : '' }))}
+                                        />
+                                    </PopoverContent>
+                                </Popover>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4 mt-4">
+                            <div>
+                                <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1.5 block">Department</label>
+                                <SearchableSelect
+                                    options={DEPARTMENTS.map(d => ({ value: d, label: d }))}
+                                    value={form.department}
+                                    onChange={v => setForm(f => ({ ...f, department: v }))}
+                                    placeholder="Select department..."
+                                />
+                            </div>
+                            <div>
+                                <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1.5 block">Employment Type</label>
+                                <SearchableSelect
+                                    options={EMPLOYMENT_TYPES.map(t => ({ value: t, label: t }))}
+                                    value={form.employmentType}
+                                    onChange={v => setForm(f => ({ ...f, employmentType: v }))}
+                                    placeholder="Select type..."
+                                />
+                            </div>
+                        </div>
+                        <div className="mt-4">
+                            <Field label="Address" value={form.address} onChange={v => setForm(f => ({ ...f, address: v }))} placeholder="Street, City, ZIP" />
+                        </div>
+                    </div>
+
+
+
+                    {/* Notes */}
+                    <div className="pt-4 border-t border-neutral-200 dark:border-white/10">
+                        <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1.5 block">Notes</label>
+                        <textarea
+                            value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+                            rows={3} placeholder="Additional notes..."
+                            className="w-full px-3 py-2.5 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm font-medium text-neutral-900 dark:text-white outline-none focus:ring-2 focus:ring-[var(--brand-color,#d35400)]/30 resize-none"
+                        />
+                    </div>
+                </div>
+                <div className="flex items-center justify-end gap-3 p-6 border-t border-neutral-200 dark:border-white/10">
+                    <button onClick={() => setShowDialog(false)} className="px-4 py-2.5 rounded-xl text-sm font-bold text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/5 transition-colors">Cancel</button>
+                    <button onClick={handleSave} disabled={saving}
+                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white shadow-sm hover:opacity-90 transition-colors disabled:opacity-50"
+                        style={{ backgroundColor: "var(--brand-color, #d35400)" }}
+                    >
+                        {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+                        {editing ? "Save Changes" : "Add Employee"}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+
     // ── Employee Detail View ──────────────────────────────────────────
     if (selectedEmployee) {
         const emp = selectedEmployee;
@@ -362,6 +503,7 @@ export default function EmployeesPage() {
                         </div>
                     </div>
                 </div>
+                {dialog}
             </div>
         );
     }
@@ -495,146 +637,7 @@ export default function EmployeesPage() {
                 </div>
             </div>
 
-            {/* ── Add/Edit Dialog ────────────────────────────────────── */}
-            {showDialog && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center">
-                    <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowDialog(false)} />
-                    <div className="relative bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto border border-neutral-200 dark:border-white/10">
-                        <div className="flex items-center justify-between p-6 border-b border-neutral-200 dark:border-white/10">
-                            <h2 className="text-lg font-bold text-neutral-900 dark:text-white">{editing ? "Edit Employee" : "Add Employee"}</h2>
-                            <button onClick={() => setShowDialog(false)} className="p-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-white/10"><X className="w-5 h-5 text-neutral-500" /></button>
-                        </div>
-                        <div className="p-6 space-y-4">
-                            {error && <p className="text-red-600 text-sm font-medium bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</p>}
-
-                            {/* Personal Info Section */}
-                            <div>
-                                <p className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-3">Personal Information</p>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <Field label="First Name *" value={form.firstName} onChange={v => setForm(f => ({ ...f, firstName: v }))} />
-                                    <Field label="Last Name *" value={form.lastName} onChange={v => setForm(f => ({ ...f, lastName: v }))} />
-                                </div>
-                                <div className="grid grid-cols-2 gap-4 mt-4">
-                                    <Field label="Email *" type="email" value={form.email} onChange={v => setForm(f => ({ ...f, email: v }))} />
-                                    <Field label="Phone" type="tel" value={form.phone} onChange={v => setForm(f => ({ ...f, phone: v }))} />
-                                </div>
-                            </div>
-
-                            {/* Employment Section */}
-                            <div className="pt-4 border-t border-neutral-200 dark:border-white/10">
-                                <p className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-3">Employment</p>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1.5 block">Role *</label>
-                                        <SearchableSelect
-                                            options={ROLE_OPTIONS.map(r => ({ value: r.value, label: r.label }))}
-                                            value={form.role}
-                                            onChange={v => setForm(f => ({ ...f, role: v }))}
-                                            placeholder="Select role..."
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1.5 block">Status</label>
-                                        <SearchableSelect
-                                            options={[
-                                                { value: 'ACTIVE', label: 'Active' },
-                                                { value: 'INACTIVE', label: 'Inactive' },
-                                                { value: 'ON_LEAVE', label: 'On Leave' },
-                                            ]}
-                                            value={form.status}
-                                            onChange={v => setForm(f => ({ ...f, status: v }))}
-                                            placeholder="Select status..."
-                                        />
-                                        <div className="flex items-center space-x-2 mt-2.5">
-                                            <input
-                                                type="checkbox"
-                                                id="schedule"
-                                                checked={form.schedule}
-                                                onChange={(e) => setForm(f => ({ ...f, schedule: e.target.checked }))}
-                                                className="h-4 w-4 rounded border-neutral-300 text-[var(--brand-color,#d35400)] focus:ring-[var(--brand-color,#d35400)]"
-                                            />
-                                            <label htmlFor="schedule" className="text-xs font-bold text-neutral-600 dark:text-neutral-400 cursor-pointer">
-                                                Show in Scheduler
-                                            </label>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4 mt-4">
-                                    <Field label="Hourly Cost (€)" type="number" value={form.hourlyCost} onChange={v => setForm(f => ({ ...f, hourlyCost: v }))} placeholder="0.00" />
-                                    <div>
-                                        <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1.5 block">Hire Date</label>
-                                        <Popover>
-                                            <PopoverTrigger asChild>
-                                                <button
-                                                    type="button"
-                                                    className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm font-medium outline-none focus:ring-2 focus:ring-[var(--brand-color,#d35400)]/30 text-left ${
-                                                        form.hireDate ? 'text-neutral-900 dark:text-white' : 'text-neutral-400'
-                                                    }`}
-                                                >
-                                                    <CalendarIcon className="w-4 h-4 text-neutral-400 shrink-0" />
-                                                    {form.hireDate ? format(new Date(form.hireDate), 'dd/MM/yyyy') : 'Select date...'}
-                                                </button>
-                                            </PopoverTrigger>
-                                            <PopoverContent className="w-auto p-0 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl shadow-xl" align="start">
-                                                <Calendar
-                                                    mode="single"
-                                                    selected={form.hireDate ? new Date(form.hireDate) : undefined}
-                                                    onSelect={(date) => setForm(f => ({ ...f, hireDate: date ? format(date, 'yyyy-MM-dd') : '' }))}
-                                                />
-                                            </PopoverContent>
-                                        </Popover>
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4 mt-4">
-                                    <div>
-                                        <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1.5 block">Department</label>
-                                        <SearchableSelect
-                                            options={DEPARTMENTS.map(d => ({ value: d, label: d }))}
-                                            value={form.department}
-                                            onChange={v => setForm(f => ({ ...f, department: v }))}
-                                            placeholder="Select department..."
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1.5 block">Employment Type</label>
-                                        <SearchableSelect
-                                            options={EMPLOYMENT_TYPES.map(t => ({ value: t, label: t }))}
-                                            value={form.employmentType}
-                                            onChange={v => setForm(f => ({ ...f, employmentType: v }))}
-                                            placeholder="Select type..."
-                                        />
-                                    </div>
-                                </div>
-                                <div className="mt-4">
-                                    <Field label="Address" value={form.address} onChange={v => setForm(f => ({ ...f, address: v }))} placeholder="Street, City, ZIP" />
-                                </div>
-                            </div>
-
-
-
-                            {/* Notes */}
-                            <div className="pt-4 border-t border-neutral-200 dark:border-white/10">
-                                <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1.5 block">Notes</label>
-                                <textarea
-                                    value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-                                    rows={3} placeholder="Additional notes..."
-                                    className="w-full px-3 py-2.5 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm font-medium text-neutral-900 dark:text-white outline-none focus:ring-2 focus:ring-[var(--brand-color,#d35400)]/30 resize-none"
-                                />
-                            </div>
-                        </div>
-                        <div className="flex items-center justify-end gap-3 p-6 border-t border-neutral-200 dark:border-white/10">
-                            <button onClick={() => setShowDialog(false)} className="px-4 py-2.5 rounded-xl text-sm font-bold text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/5 transition-colors">Cancel</button>
-                            <button onClick={handleSave} disabled={saving}
-                                className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white shadow-sm hover:opacity-90 transition-colors disabled:opacity-50"
-                                style={{ backgroundColor: "var(--brand-color, #d35400)" }}
-                            >
-                                {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-                                {editing ? "Save Changes" : "Add Employee"}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            {dialog}
         </div>
     );
 }

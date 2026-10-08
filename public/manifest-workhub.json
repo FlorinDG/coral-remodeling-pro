@@ -39,7 +39,7 @@
   "shortcuts": [
     {
       "name": "Schedule",
-      "url": "/workhub/schedule",
+      "url": "/workhub",
       "icons": [{ "src": "/icon-192.png?v=2", "sizes": "192x192" }]
     },
     {

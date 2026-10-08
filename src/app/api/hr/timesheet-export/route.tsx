@@ -8,6 +8,7 @@ import { ClockEntry } from '@prisma/client';
 import { zonedParts } from '@/lib/kernel/shift-time';
 import { resolveProjects } from '@/lib/data/projects';
 import { isSelfApproved } from '@/lib/provenance';
+import { businessPeriod, periodQueryWindow, inBusinessPeriod } from '@/lib/records/business-period';
 import { Document, Page, Text, View, StyleSheet, renderToBuffer } from '@react-pdf/renderer';
 
 const styles = StyleSheet.create({
@@ -77,22 +78,20 @@ export async function GET(req: Request) {
         where.userId = { in: targetUserIds };
     }
 
-    if (fromParam && toParam) {
-        where.clockInTime = {
-            gte: new Date(fromParam),
-            lte: new Date(toParam)
-        };
-    }
+    // TS-PERIOD-1: the same business-day period as the timesheet screen (lib/records/business-period).
+    const period = businessPeriod(fromParam, toParam);
+    const window = periodQueryWindow(period);
+    if (window) where.clockInTime = window;
 
     if (requestedProjectIds.length > 0) {
         where.projectId = { in: requestedProjectIds };
     }
 
     // Fetch entries
-    const entries = await prisma.clockEntry.findMany({
+    const entries = (await prisma.clockEntry.findMany({
         where,
         orderBy: { clockInTime: 'asc' }
-    });
+    })).filter(e => inBusinessPeriod(e.clockInTime, period));
 
     const employeesWhere: any = { tenantId: ctx.tenantId };
     if (targetUserIds) {
@@ -195,7 +194,7 @@ export async function GET(req: Request) {
         return new NextResponse(finalCsv, {
             status: 200,
             headers: {
-                'Content-Disposition': `attachment; filename="timesheet-export-${new Date().toISOString().split('T')[0]}.csv"`,
+                'Content-Disposition': `attachment; filename="timesheet-export-${zonedParts(new Date()).date}.csv"`,
                 'Content-Type': 'text/csv',
             }
         });
@@ -249,7 +248,7 @@ export async function GET(req: Request) {
         return new NextResponse(pdfBuffer as any, {
             status: 200,
             headers: {
-                'Content-Disposition': `attachment; filename="timesheet-export-${new Date().toISOString().split('T')[0]}.pdf"`,
+                'Content-Disposition': `attachment; filename="timesheet-export-${zonedParts(new Date()).date}.pdf"`,
                 'Content-Type': 'application/pdf',
             }
         });
@@ -282,7 +281,7 @@ export async function GET(req: Request) {
         return new NextResponse(buf as any, {
             status: 200,
             headers: {
-                'Content-Disposition': `attachment; filename="timesheet-export-${new Date().toISOString().split('T')[0]}.xlsx"`,
+                'Content-Disposition': `attachment; filename="timesheet-export-${zonedParts(new Date()).date}.xlsx"`,
                 'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             }
         });

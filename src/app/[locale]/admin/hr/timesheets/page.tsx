@@ -61,6 +61,28 @@ function hoursLabel(hours: number, locale: string): string {
     return `${formatDecimalHours(minutes, locale)} u (${formatHoursMinutes(minutes)})`;
 }
 
+/** The report as the server sends it — kept per query for this session (TS-SPEED-1). */
+interface Report { entries: ClockEntry[]; summary: any; rollups: { byWorker: any[]; byProject: any[] } }
+/** TS-SPEED-1 (Florin 2026-10-08: "has to reload every time … even inside the same active session"). Each HR tab is
+ *  its own page, so this screen mounted empty on every visit. The last report per query is kept for the session: a
+ *  return shows it at once and refreshes it quietly. */
+const reportCache = new Map<string, Report>();
+
+/** The query with the default period (this month) filled in — the key a report is cached under. */
+function withDefaultPeriod(params: URLSearchParams | { toString(): string }): URLSearchParams {
+    const p = new URLSearchParams(params.toString());
+    if (!p.has('from') || !p.has('to')) {
+        const now = new Date();
+        p.set('from', format(startOfMonth(now), 'yyyy-MM-dd'));
+        p.set('to', format(endOfMonth(now), 'yyyy-MM-dd'));
+        p.set('period', 'thisMonth');
+    }
+    return p;
+}
+
+/** The By Project group of hours without a project — the same key the report route uses. */
+const UNATTRIBUTED = 'unattributed';
+
 function TimesheetsContent() {
     const t = useTranslations('Hr.timesheets');
     const locale = useLocale();
@@ -68,10 +90,14 @@ function TimesheetsContent() {
     const pathname = usePathname();
     const searchParams = useSearchParams();
 
-    const [entries, setEntries] = useState<ClockEntry[]>([]);
-    const [summary, setSummary] = useState<any>(null);
+    const cached = reportCache.get(withDefaultPeriod(searchParams).toString());
+    const [entries, setEntries] = useState<ClockEntry[]>(cached?.entries ?? []);
+    const [summary, setSummary] = useState<any>(cached?.summary ?? null);
+    // The groups of By Worker / By Project — they come BESIDE the summary (they were read from summary.rollups,
+    // which never exists, so both views were empty).
+    const [rollups, setRollups] = useState<Report['rollups'] | null>(cached?.rollups ?? null);
     const [error, setError] = useState<string | null>(null);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(!cached);
     const [modalOpen, setModalOpen] = useState(false);
     
     // Grouping & Selection state
@@ -160,35 +186,31 @@ function TimesheetsContent() {
     /** `silent`: re-read the report without the full-page spinner — after every action, so totals,
      *  counts, approver, project and source labels match the server (they were stale until a reload). */
     const fetchData = async (silent = false) => {
-        if (!silent) setLoading(true);
+        if (!silent && !reportCache.has(withDefaultPeriod(searchParams).toString())) setLoading(true);
         setError(null);
         try {
-            const currentParams = new URLSearchParams(searchParams.toString());
-            let needsRedirect = false;
-            
-            if (!currentParams.has('from') || !currentParams.has('to')) {
-                const now = new Date();
-                currentParams.set('from', format(startOfMonth(now), 'yyyy-MM-dd'));
-                currentParams.set('to', format(endOfMonth(now), 'yyyy-MM-dd'));
-                currentParams.set('period', 'thisMonth');
-                needsRedirect = true;
-            }
-            
-            if (needsRedirect) {
+            const currentParams = withDefaultPeriod(searchParams);
+            if (currentParams.toString() !== searchParams.toString()) {
                 router.replace(`${pathname}?${currentParams.toString()}`);
                 return; // The redirect will re-trigger the effect
             }
             
-            const qs = `?${currentParams.toString()}`;
-            const data = await hrFetch<{ entries: ClockEntry[], summary: any }>(`timesheet-reports${qs}`);
-            
+            const key = currentParams.toString();
+            const hit = reportCache.get(key);
+            if (hit && !silent) {   // shown at once; refreshed below without the spinner
+                setEntries(hit.entries); setSummary(hit.summary); setRollups(hit.rollups); setLoading(false);
+            }
+            const data = await hrFetch<Report>(`timesheet-reports?${key}`);
+
             const mappedEntries = data.entries.map((e: any) => ({
                 ...e,
                 userName: e.workerName === 'Unknown' ? t('unknownWorker', { fallback: 'Onbekend' }) : e.workerName
             }));
 
+            reportCache.set(key, { entries: mappedEntries as ClockEntry[], summary: data.summary, rollups: data.rollups });
             setEntries(mappedEntries as ClockEntry[]);
             setSummary(data.summary);
+            setRollups(data.rollups);
         } catch (err: any) {
             console.error('Failed to fetch timesheets:', err);
             setError(`Failed to load timesheets. — ${describeError(err)}`);
@@ -482,28 +504,24 @@ function TimesheetsContent() {
                             </button>
                         )}
                         {summary && !error && (
+                            /* Each its own category (Florin 2026-10-08): billable · internal · approved · to review. */
                             <div className="flex flex-wrap items-center gap-4 xl:gap-6 text-sm">
-                                <div className="flex flex-col">
-                                    <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">{t('totalHours', { fallback: 'Totaal uren' })}</span>
-                                    <span className="font-black text-lg leading-none">{hoursLabel(summary.totalHours, locale)}</span>
-                                </div>
-                                <div className="w-px h-8 bg-neutral-200 dark:bg-white/10 hidden xl:block"></div>
-                                <div className="flex flex-col">
-                                    <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">{t('billableInternal', { fallback: 'Factureerbaar / Intern' })}</span>
-                                    <span className="font-black text-lg leading-none">{hoursLabel(summary.billableHours, locale)} <span className="text-neutral-400 font-normal">/ {hoursLabel(summary.internalHours, locale)}</span></span>
-                                </div>
-                                <div className="w-px h-8 bg-neutral-200 dark:bg-white/10 hidden xl:block"></div>
-                                <div className="flex flex-col">
-                                    <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">{t('approvedPending', { fallback: 'Goedgekeurd / Te beoordelen' })}</span>
-                                    <span className="font-black text-lg leading-none text-green-600">{hoursLabel(summary.approvedHours, locale)} <span className="text-orange-500 font-normal">/ {hoursLabel(summary.pendingHours, locale)}</span></span>
-                                </div>
-                                <div className="w-px h-8 bg-neutral-200 dark:bg-white/10 hidden xl:block"></div>
-                                <div className="flex flex-col">
-                                    <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">{t('unattributedHours', { fallback: 'Niet toegewezen uren' })}</span>
-                                    <span className="font-black text-lg leading-none text-red-500">
-                                        {hoursLabel(entries.filter(e => !(e as any).projectId).reduce((acc, e) => acc + ((e as any).hoursDecimal || 0), 0), locale)}
-                                    </span>
-                                </div>
+                                {([
+                                    ['totalHours', 'Totaal uren', summary.totalHours, ''],
+                                    ['billableHours', 'Factureerbaar', summary.billableHours, ''],
+                                    ['internalHours', 'Intern', summary.internalHours, 'text-neutral-500'],
+                                    ['approvedHours', 'Goedgekeurd', summary.approvedHours, 'text-green-600'],
+                                    ['toReviewHours', 'Te beoordelen', summary.pendingHours, 'text-orange-500'],
+                                    ['unattributedHours', 'Niet toegewezen uren', entries.filter(e => !(e as any).projectId).reduce((acc, e) => acc + ((e as any).hoursDecimal || 0), 0), 'text-red-500'],
+                                ] as const).map(([key, fallback, hours, tone], i) => (
+                                    <React.Fragment key={key}>
+                                        {i > 0 && <div className="w-px h-8 bg-neutral-200 dark:bg-white/10 hidden xl:block"></div>}
+                                        <div className="flex flex-col">
+                                            <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">{t(key, { fallback })}</span>
+                                            <span className={`font-black text-lg leading-none ${tone}`}>{hoursLabel(hours, locale)}</span>
+                                        </div>
+                                    </React.Fragment>
+                                ))}
                             </div>
                         )}
                     </div>
@@ -671,7 +689,7 @@ function TimesheetsContent() {
                             {groupBy === 'flat' && entries.map((entry: any) => renderRow(entry))}
 
                             {/* Group By Worker Rendering */}
-                            {groupBy === 'worker' && summary && summary.rollups?.byWorker.map((worker: any) => (
+                            {groupBy === 'worker' && rollups?.byWorker.map((worker: any) => (
                                 <React.Fragment key={worker.userId}>
                                     <tr className="bg-neutral-50 dark:bg-neutral-800 border-b border-neutral-200 dark:border-white/10 cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors" onClick={() => toggleGroup(worker.userId)}>
                                         <td colSpan={7} className="px-6 py-4 text-sm">
@@ -689,45 +707,25 @@ function TimesheetsContent() {
                             ))}
                             
                             {/* Group By Project Rendering */}
-                            {groupBy === 'project' && summary && summary.rollups?.byProject.map((project: any) => (
+                            {groupBy === 'project' && rollups?.byProject.map((project: any) => (
                                 <React.Fragment key={project.projectId}>
-                                    <tr className="bg-neutral-50 dark:bg-neutral-800 border-b border-neutral-200 dark:border-white/10 cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors" onClick={() => toggleGroup(project.projectId)}>
+                                    <tr className={`border-b cursor-pointer transition-colors ${project.projectId === UNATTRIBUTED
+                                        ? 'bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-500/20 hover:bg-red-100 dark:hover:bg-red-900/20'
+                                        : 'bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-white/10 hover:bg-neutral-100 dark:hover:bg-neutral-700'}`} onClick={() => toggleGroup(project.projectId)}>
                                         <td colSpan={7} className="px-6 py-4 text-sm">
                                             <div className="flex items-center justify-between">
-                                                <span className="font-bold flex items-center gap-2">
+                                                <span className={`font-bold flex items-center gap-2 ${project.projectId === UNATTRIBUTED ? 'text-red-700 dark:text-red-400' : ''}`}>
                                                     {expandedGroups[project.projectId] ? <ChevronDown className="w-4 h-4"/> : <ChevronRight className="w-4 h-4"/>}
-                                                    {project.projectName}
+                                                    {project.projectId === UNATTRIBUTED ? t('unassignedProject', { fallback: 'Niet toegewezen uren' }) : project.projectName}
                                                 </span>
                                                 <span className="font-medium bg-neutral-200 dark:bg-neutral-700 px-3 py-1 rounded-lg">{hoursLabel(project.hours, locale)}</span>
                                             </div>
                                         </td>
                                     </tr>
-                                    {expandedGroups[project.projectId] && entries.filter((e: any) => e.projectId === project.projectId).map((entry: any) => renderRow(entry))}
+                                    {expandedGroups[project.projectId] && entries.filter((e: any) => (e.projectId || UNATTRIBUTED) === project.projectId).map((entry: any) => renderRow(entry))}
                                 </React.Fragment>
                             ))}
 
-                            {/* Unattributed Project Bucket */}
-                            {groupBy === 'project' && summary && entries.filter((e: any) => !e.projectId).length > 0 && (
-                                <React.Fragment key="unassigned">
-                                    <tr className="bg-red-50 dark:bg-red-900/10 border-b border-red-200 dark:border-red-500/20 cursor-pointer hover:bg-red-100 dark:hover:bg-red-900/20 transition-colors" onClick={() => toggleGroup('unassigned')}>
-                                        <td colSpan={7} className="px-6 py-4 text-sm">
-                                            <div className="flex items-center justify-between">
-                                                <span className="font-bold text-red-700 dark:text-red-400 flex items-center gap-2">
-                                                    {expandedGroups['unassigned'] ? <ChevronDown className="w-4 h-4"/> : <ChevronRight className="w-4 h-4"/>}
-                                                    {t('unassignedProject', { fallback: 'Niet toegewezen uren' })}
-                                                </span>
-                                                <div className="flex items-center gap-3">
-                                                    <span className="text-xs text-red-600 underline hover:no-underline" onClick={(e) => { e.stopPropagation(); /* TODO Bulk assign action */ }}>Bulk Assign</span>
-                                                    <span className="font-medium bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300 px-3 py-1 rounded-lg">
-                                                        {hoursLabel(entries.filter((e: any) => !e.projectId).reduce((acc: number, e: any) => acc + (e.hoursDecimal || 0), 0), locale)}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    {expandedGroups['unassigned'] && entries.filter((e: any) => !e.projectId).map((entry: any) => renderRow(entry))}
-                                </React.Fragment>
-                            )}
                         </tbody>
                     </table>
 

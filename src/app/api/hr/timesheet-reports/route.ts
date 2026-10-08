@@ -6,6 +6,10 @@ import { resolveProjects } from '@/lib/data/projects';
 import { computeWorkedDuration } from '@/lib/computeWorkedDuration';
 import { resolveWorkerUserId } from '@/lib/resolveWorkerIdentity';
 import { ClockEntry } from '@prisma/client';
+import { zonedParts } from '@/lib/kernel/shift-time';
+import { businessPeriod, periodQueryWindow, inBusinessPeriod } from '@/lib/records/business-period';
+/** The By Project group of hours with no project — the page matches entries to it by the same key. */
+const UNATTRIBUTED = 'unattributed';
 
 type ExtendedClockEntry = ClockEntry & {
     projectId?: string | null;
@@ -72,16 +76,10 @@ export async function GET(req: Request) {
         where.userId = { in: targetUserIds };
     }
 
-    if (fromParam && toParam) {
-        where.clockInTime = {
-            gte: new Date(fromParam),
-            lte: new Date(toParam)
-        };
-    } else if (fromParam) {
-        where.clockInTime = { gte: new Date(fromParam) };
-    } else if (toParam) {
-        where.clockInTime = { lte: new Date(toParam) };
-    }
+    // TS-PERIOD-1: the period is BUSINESS days (lib/records/business-period) — the last day whole, Brussels midnight.
+    const period = businessPeriod(fromParam, toParam);
+    const window = periodQueryWindow(period);
+    if (window) where.clockInTime = window;
 
     if (requestedProjectIds.length > 0) {
         where.projectId = { in: requestedProjectIds };
@@ -113,10 +111,10 @@ export async function GET(req: Request) {
     }
 
     // Fetch entries
-    const entries = await prisma.clockEntry.findMany({
+    const entries = (await prisma.clockEntry.findMany({
         where,
         orderBy: { clockInTime: 'asc' }
-    });
+    })).filter(e => inBusinessPeriod(e.clockInTime, period));
 
     // Count entries without date bounds to see if they exist outside the period
     const whereWithoutDates = { ...where };
@@ -145,6 +143,7 @@ export async function GET(req: Request) {
     let invoicedHours = 0;
     let selfApprovedHours = 0;
     let pendingHours = 0;
+    let deniedHours = 0;
     let openEntries = 0;
 
     const byWorkerMap = new Map<string, any>();
@@ -168,7 +167,7 @@ export async function GET(req: Request) {
         const duration = computeWorkedDuration(entry.clockInTime, entry.clockOutTime, entry.noBreak || false);
         const hoursDecimal = duration.totalMinutes / 60;
 
-        const dayStr = entry.clockInTime.toISOString().split('T')[0];
+        const dayStr = zonedParts(entry.clockInTime).date;   // the business day, never UTC
 
         const flags: string[] = [];
         if (entry.source === 'manual') flags.push('manual');
@@ -189,6 +188,28 @@ export async function GET(req: Request) {
         };
         processedEntries.push(processed);
 
+        // Rollups: EVERY entry belongs to its worker and project group (an open one too — it was missing from the
+        // By Worker / By Project views); only closed hours are added.
+        const closedHours = entry.clockOutTime ? hoursDecimal : 0;
+        if (!byWorkerMap.has(entry.userId)) {
+            byWorkerMap.set(entry.userId, { userId: entry.userId, workerName, hours: 0, billableHours: 0 });
+        }
+        const w = byWorkerMap.get(entry.userId);
+        w.hours += closedHours;
+        if (entry.billable && entry.projectId) w.billableHours += closedHours;
+
+        const pId = entry.projectId || UNATTRIBUTED;
+        if (!byProjectMap.has(pId)) {
+            byProjectMap.set(pId, { projectId: pId, projectName, hours: 0 });
+        }
+        byProjectMap.get(pId).hours += closedHours;
+
+        const wpId = `${entry.userId}-${pId}`;
+        if (!byWorkerProjectMap.has(wpId)) {
+            byWorkerProjectMap.set(wpId, { userId: entry.userId, workerName, projectId: pId, projectName, hours: 0 });
+        }
+        byWorkerProjectMap.get(wpId).hours += closedHours;
+
         if (!entry.clockOutTime) {
             openEntries++;
         } else {
@@ -207,31 +228,11 @@ export async function GET(req: Request) {
                 if (entry.approvedBy && entry.approvedBy === entry.createdBy) {
                     selfApprovedHours += hoursDecimal;
                 }
+            } else if (entry.approvalStatus === 'denied') {
+                deniedHours += hoursDecimal;
             } else {
-                pendingHours += hoursDecimal;
+                pendingHours += hoursDecimal;   // to review: pending (or never asked)
             }
-
-            // Worker Rollup
-            if (!byWorkerMap.has(entry.userId)) {
-                byWorkerMap.set(entry.userId, { userId: entry.userId, workerName, hours: 0, billableHours: 0 });
-            }
-            const w = byWorkerMap.get(entry.userId);
-            w.hours += hoursDecimal;
-            if (entry.billable && entry.projectId) w.billableHours += hoursDecimal;
-
-            // Project Rollup
-            const pId = entry.projectId || 'unattributed';
-            if (!byProjectMap.has(pId)) {
-                byProjectMap.set(pId, { projectId: pId, projectName, hours: 0 });
-            }
-            byProjectMap.get(pId).hours += hoursDecimal;
-
-            // Worker x Project Rollup
-            const wpId = `${entry.userId}-${pId}`;
-            if (!byWorkerProjectMap.has(wpId)) {
-                byWorkerProjectMap.set(wpId, { userId: entry.userId, workerName, projectId: pId, projectName, hours: 0 });
-            }
-            byWorkerProjectMap.get(wpId).hours += hoursDecimal;
 
             // Day Rollup
             if (!byDayMap.has(dayStr)) {
@@ -257,6 +258,7 @@ export async function GET(req: Request) {
             invoicedHours: Math.round(invoicedHours * 100) / 100,
             selfApprovedHours: Math.round(selfApprovedHours * 100) / 100,
             pendingHours: Math.round(pendingHours * 100) / 100,
+            deniedHours: Math.round(deniedHours * 100) / 100,
             openEntries,
             outsidePeriodCount,
         }

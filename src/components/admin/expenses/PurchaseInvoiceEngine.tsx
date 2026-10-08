@@ -13,7 +13,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import SelectDropdown from '@/components/admin/database/components/SelectDropdown';
 import { EXPENSE_CATEGORIES, COST_TYPES } from '@/lib/kernel/expense-taxonomy';
 import { READABLE_ACCEPT } from '@/lib/records/readable-document';   // SCAN-2: iOS converts HEIC to JPEG itself
-import { purchaseView, purchaseWrite, editorShows, editorLabel } from '@/lib/records/purchase-document';
+import { purchaseView, purchaseWrite, editorShows, editorLabel, needsValidation } from '@/lib/records/purchase-document';
 import { prepareUpload } from '@/lib/files/prepare-upload';
 import { formatEuro } from '@/lib/records/grid-cell';
 import { lineNet } from '@/lib/records/purchase-lines';
@@ -581,7 +581,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                         <div className="flex items-center gap-2 shrink-0">
                         {/* VALIDATE-1: correct side by side, then approve here — the essentials checked by the ONE rule
                             (lib/records/validation); the door refuses an incomplete approval anyway */}
-                        {rawPage && !isValidated(rawPage.properties) && (() => {
+                        {needsValidation(role) && rawPage && !isValidated(rawPage.properties) && (() => {
                             const missing = approveRefusal(role, rawPage.properties);
                             return missing ? (
                                 <span className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
@@ -612,7 +612,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
 
                         {/* Invoice Details */}
                         <div className="space-y-4">
-                            <h3 className="text-xs font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider">{role === 'tickets' ? 'Ticket' : 'Factuur Details'}</h3>
+                            <h3 className="text-xs font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider">{editorLabel(role, 'details', role === 'tickets' ? 'Ticket' : 'Factuur Details')}</h3>
                             <div className="grid grid-cols-2 gap-4">
                                 {editorShows(role, 'supplierName') && (
                                 <InfoField
@@ -704,6 +704,18 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                                     onChange={v => setEditData(p => ({ ...p, dueDate: v }))}
                                 />
                                 )}
+                                {/* QUOTE-IN-1: the quote's own status — live, like the project (one click, saved at once) */}
+                                {editorShows(role, 'quoteStatus') && (
+                                <div>
+                                    <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-1.5">Status</label>
+                                    <SelectDropdown
+                                        value={(page.properties.quoteStatus as string) || null}
+                                        options={getOptionsForProperty('quoteStatus')}
+                                        onChange={(val) => writeField('quoteStatus', val || '')}
+                                        placeholder="Kies status…"
+                                    />
+                                </div>
+                                )}
                                 {editorShows(role, 'deliveryDate') && (
                                 <InfoField
                                     label={editorLabel(role, 'deliveryDate', 'Leveringsdatum')}
@@ -756,7 +768,8 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                             </div>
                         </div>
 
-                        {/* Accounting */}
+                        {/* Accounting — a cost's; a supplier quote has none (QUOTE-IN-1) */}
+                        {editorShows(role, 'category') && (
                         <div className="space-y-4 pt-4 border-t border-neutral-150 dark:border-white/5">
                             <h3 className="text-xs font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider">Boekhouding</h3>
                             <div className="grid grid-cols-2 gap-4">
@@ -836,11 +849,13 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                                 )}
                             </div>
                         </div>
+                        )}
 
                         {/* Payment & Notes */}
                         <div className="space-y-4 pt-4 border-t border-neutral-150 dark:border-white/5">
-                            <h3 className="text-xs font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider">Betaling & Opmerkingen</h3>
+                            <h3 className="text-xs font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider">{editorLabel(role, 'paymentNotes', 'Betaling & Opmerkingen')}</h3>
                             <div className="grid grid-cols-2 gap-4">
+                                {editorShows(role, 'paymentMethod') && (
                                 <div>
                                     <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-1.5">Betaalwijze</label>
                                     {isEditing ? (
@@ -854,6 +869,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                                         <OptionDisplay value={page.properties.paymentMethod as string} options={getOptionsForProperty('paymentMethod')} />
                                     )}
                                 </div>
+                                )}
                                 {editorShows(role, 'paidDate') && (
                                 <InfoField
                                     label="Betaaldatum"
@@ -910,11 +926,13 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                                 editable={isEditing && editData.lines.length === 0}
                                 onChange={v => setEditData(p => ({ ...p, totalIncVat: v }))}
                             />
+                            {editorShows(role, 'amountDue') && (
                             <FinancialCell
                                 label="Te betalen"
                                 value={amountDue}
                                 highlight
                             />
+                            )}
                         </div>
                         )}
 

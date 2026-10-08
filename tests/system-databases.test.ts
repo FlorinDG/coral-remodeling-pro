@@ -2,11 +2,11 @@
  * KERN-5 / KERN-6 — System Database Vocabulary & Specification Invariant Tests
  *
  * Verifies:
- * 1. SYSTEM_DATABASE_ROLES contains exactly 16 roles with no duplicates.
+ * 1. SYSTEM_DATABASE_ROLES contains exactly 17 roles with no duplicates.
  * 2. SYSTEM_DATABASES specification table has a complete spec for every role with no undefined fields.
  * 3. No duplicate legacyBase across all specs.
  * 4. Every role has an explicit module property (string or explicit null).
- * 5. All four derived lists (BASE_TO_KEY, SYSTEM_DB_PREFIXES, SERVER_PROVISIONED_BASES, DB_ID_MODULE_MAP) have length 16.
+ * 5. All four derived lists (BASE_TO_KEY, SYSTEM_DB_PREFIXES, SERVER_PROVISIONED_BASES, DB_ID_MODULE_MAP) have length 17.
  * 6. Live defect fix: isSystemDatabase('db-hr') and isSystemDatabase('db-journal-general') are true.
  */
 
@@ -25,13 +25,13 @@ import type { SystemDatabaseRole } from '../src/lib/kernel/system-databases.ts';
 import { isSystemDatabase, getBaseDbId } from '../src/lib/systemDatabases.ts';
 
 describe('KERN-5 — System Database Vocabulary (L0 Kernel)', () => {
-    test('SYSTEM_DATABASE_ROLES has exactly 16 roles', () => {
-        assert.equal(SYSTEM_DATABASE_ROLES.length, 16, 'Must contain exactly 16 system database roles');
+    test('SYSTEM_DATABASE_ROLES has exactly 17 roles', () => {
+        assert.equal(SYSTEM_DATABASE_ROLES.length, 17, 'Must contain exactly 17 system database roles');
     });
 
     test('SYSTEM_DATABASE_ROLES contains no duplicates', () => {
         const unique = new Set(SYSTEM_DATABASE_ROLES);
-        assert.equal(unique.size, 16, 'All 16 roles must be distinct');
+        assert.equal(unique.size, 17, 'All 17 roles must be distinct');
     });
 
     test('SYSTEM_DATABASE_NAMES has an entry for every role in SYSTEM_DATABASE_ROLES', () => {
@@ -41,9 +41,9 @@ describe('KERN-5 — System Database Vocabulary (L0 Kernel)', () => {
         }
     });
 
-    test('SYSTEM_DATABASE_NAMES contains exactly the 16 roles and no extras', () => {
+    test('SYSTEM_DATABASE_NAMES contains exactly the 17 roles and no extras', () => {
         const nameKeys = Object.keys(SYSTEM_DATABASE_NAMES);
-        assert.equal(nameKeys.length, 16, 'Names dictionary must have exactly 16 entries');
+        assert.equal(nameKeys.length, 17, 'Names dictionary must have exactly 17 entries');
         for (const key of nameKeys) {
             assert.ok(
                 SYSTEM_DATABASE_ROLES.includes(key as SystemDatabaseRole),
@@ -91,10 +91,10 @@ describe('KERN-6 / Pass 3a — SYSTEM_DATABASES Table and Derived Lists', () => 
     test('no duplicate legacyBase across specifications', () => {
         const legacyBases = SYSTEM_DATABASE_ROLES.map(role => SYSTEM_DATABASES[role].legacyBase);
         const uniqueBases = new Set(legacyBases);
-        assert.equal(uniqueBases.size, 16, 'All 16 legacyBase values must be unique');
+        assert.equal(uniqueBases.size, 17, 'All 17 legacyBase values must be unique');
     });
 
-    test('explicit module property (possibly null) present for all 16 roles', () => {
+    test('explicit module property (possibly null) present for all 17 roles', () => {
         for (const role of SYSTEM_DATABASE_ROLES) {
             const spec = SYSTEM_DATABASES[role];
             assert.ok('module' in spec, `spec for "${role}" must have module property`);
@@ -102,11 +102,11 @@ describe('KERN-6 / Pass 3a — SYSTEM_DATABASES Table and Derived Lists', () => 
         }
     });
 
-    test('all four derived lists have length 16 (census: 16 / 16 / 16 / 16)', () => {
-        assert.equal(Object.keys(BASE_TO_KEY).length, 16, 'Object.keys(BASE_TO_KEY).length must be 16');
-        assert.equal(SERVER_PROVISIONED_BASES.size, 16, 'SERVER_PROVISIONED_BASES.size must be 16');
-        assert.equal(SYSTEM_DB_PREFIXES.length, 16, 'SYSTEM_DB_PREFIXES.length must be 16');
-        assert.equal(DB_ID_MODULE_MAP.length, 16, 'DB_ID_MODULE_MAP.length must be 16');
+    test('all four derived lists have length 17 (census: 17 / 17 / 17 / 17)', () => {
+        assert.equal(Object.keys(BASE_TO_KEY).length, 17, 'Object.keys(BASE_TO_KEY).length must be 17');
+        assert.equal(SERVER_PROVISIONED_BASES.size, 17, 'SERVER_PROVISIONED_BASES.size must be 17');
+        assert.equal(SYSTEM_DB_PREFIXES.length, 17, 'SYSTEM_DB_PREFIXES.length must be 17');
+        assert.equal(DB_ID_MODULE_MAP.length, 17, 'DB_ID_MODULE_MAP.length must be 17');
     });
 
     test('live defect resolved: isSystemDatabase recognises db-hr and db-journal-general', () => {

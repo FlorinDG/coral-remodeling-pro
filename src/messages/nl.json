@@ -378,6 +378,7 @@
       "financialTabs": {
         "toValidate": "TE VALIDEREN",
         "purchaseInvoices": "AANKOOPFACTUREN",
+        "supplierQuotes": "OFFERTES LEVERANCIERS",
         "expenseTickets": "KASSATICKETEN",
         "purchaseCreditNotes": "CREDITNOTA - AANKOOP",
         "salesCreditNotes": "CREDITNOTA - VERKOOP",

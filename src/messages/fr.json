@@ -377,6 +377,7 @@
       "financialTabs": {
         "toValidate": "À VALIDER",
         "purchaseInvoices": "FACTURES D'ACHAT",
+        "supplierQuotes": "DEVIS FOURNISSEURS",
         "expenseTickets": "REÇUS",
         "purchaseCreditNotes": "NOTE DE CRÉDIT - ACHAT",
         "salesCreditNotes": "NOTE DE CRÉDIT - VENTE",

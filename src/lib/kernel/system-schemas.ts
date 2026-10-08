@@ -248,6 +248,31 @@ export function canonicalSchemas(resolveDbId: (base: string) => string): Record<
       { id: 'pay-domicile', name: 'Domiciliëring',        color: 'orange' },
     ]}},
   ],
+  // QUOTE-IN-1 · a supplier's quote. Shares the purchase invoice's field ids where the fact is the same (the scan, the
+  // line builder and the one purchase editor read them unchanged); its own where it differs (status, valid until).
+  'db-purchase-quotes': [
+    { id: 'title',       name: 'Offerte #',         type: 'text' },
+    { id: 'supplier',    name: 'Leverancier',       type: 'relation', config: { relationDatabaseId: resolveDbId('db-suppliers'), relationDisplayPropertyId: 'title' } },
+    { id: 'supplierName', name: 'Leverancier (gelezen)', type: 'text' },
+    { id: 'supplierVat', name: 'BTW-nummer leverancier', type: 'text' },
+    { id: 'betreft',     name: 'Omschrijving',      type: 'text' },
+    { id: 'quoteStatus', name: 'Status', type: 'select', config: { options: [
+      { id: 'qs-received', name: 'Ontvangen', color: 'blue'   },
+      { id: 'qs-accepted', name: 'Aanvaard',  color: 'green'  },
+      { id: 'qs-rejected', name: 'Afgewezen', color: 'red'    },
+      { id: 'qs-expired',  name: 'Verlopen',  color: 'gray'   },
+    ]}},
+    { id: 'invoiceDate', name: 'Offertedatum',      type: 'date'     },
+    { id: 'validUntil',  name: 'Geldig tot',        type: 'date'     },
+    { id: 'project',     name: 'Project',           type: 'relation', config: { relationDatabaseId: resolveDbId('db-1'), relationDisplayPropertyId: 'title' } },
+    { id: 'totalExVat',  name: 'Totaal excl. BTW',  type: 'currency' },
+    { id: 'totalVat',    name: 'BTW',               type: 'currency' },
+    { id: 'totalIncVat', name: 'Totaal incl. BTW',  type: 'currency' },
+    { id: 'ourRef',      name: 'Onze Referentie',   type: 'text'     },
+    { id: 'receiptUrl',  name: 'Origineel Document', type: 'url'     },
+    { id: 'notes',       name: 'Opmerkingen (intern)', type: 'text'  },
+    ...SCAN_REVIEW_FIELDS,
+  ],
   'db-tickets': [
     { id: 'title',         name: 'Handelaar / Beschrijving', type: 'text' },
     { id: 'date',          name: 'Datum',                    type: 'date'     },

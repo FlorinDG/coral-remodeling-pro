@@ -23,6 +23,8 @@ export const SYSTEM_DATABASE_ROLES = [
     'bestek',
     'journal-general',
     'hr',
+    // QUOTE-IN-1 (Florin 2026-10-08: "a db for quotes inbound … from there i can extract materials for library")
+    'purchase-quotes',
 ] as const;
 
 export type SystemDatabaseRole = typeof SYSTEM_DATABASE_ROLES[number];
@@ -142,6 +144,14 @@ export const SYSTEM_DATABASES: Readonly<Record<SystemDatabaseRole, SystemDatabas
         legacyBase:  'db-hr',
         displayName: 'HR',
         module:      'HR',
+    },
+    // A supplier's quote: lines and prices to compare and to take into the library — never a cost, never booked,
+    // never validated or exported (a separate database, so no cost consumer can count it by a missed filter).
+    'purchase-quotes': {
+        role:        'purchase-quotes',
+        legacyBase:  'db-purchase-quotes',
+        displayName: 'Supplier Quotes',
+        module:      'INVOICING',
     },
 } as const;
 

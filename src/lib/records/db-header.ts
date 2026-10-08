@@ -16,6 +16,7 @@
  * - R6: showWrapText for table views; unused context pruned.
  */
 
+import { isPurchaseDocumentRole } from './purchase-document';
 import type { SystemDatabaseRole } from '@/lib/kernel/system-databases';
 import { ACCOUNTANT_EXPORT_SOURCES } from '@/lib/kernel/system-databases';
 import { canRunAccountantExport } from '@/lib/roles';
@@ -138,6 +139,9 @@ export function computeDatabaseHeader(ctx: DatabaseHeaderContext): DatabaseHeade
             { id: 'scan-invoice', labelKey: 'Admin.nav.pages.scanUpload', icon: 'camera', variant: 'primary' },
             { id: 'peppol-sync', labelKey: 'Admin.nav.pages.syncPeppolInbox', icon: 'refresh', variant: 'badge' }
         );
+    } else if (ctx.role === 'purchase-quotes') {
+        // QUOTE-IN-1: a supplier quote comes in WITH its document — scanned / imported, like a purchase invoice (no Peppol)
+        actions.push({ id: 'scan-invoice', labelKey: 'Admin.nav.pages.scanUpload', icon: 'camera', variant: 'primary' });
     }
 
     // 5. Toolbar Configuration
@@ -151,7 +155,7 @@ export function computeDatabaseHeader(ctx: DatabaseHeaderContext): DatabaseHeade
     // R2: Import gate = access.create && !ctx.isLockedSchema
     // Florin 2026-10-07: a CSV cannot bring a purchase document's original file nor all its data — no CSV import on
     // purchase invoices / tickets (their way in is the scan / the document import / Peppol); other databases keep it
-    const showImportCsv = ctx.access.create && !ctx.isLockedSchema && ctx.role !== 'expenses' && ctx.role !== 'tickets';
+    const showImportCsv = ctx.access.create && !ctx.isLockedSchema && !isPurchaseDocumentRole(ctx.role);
 
     // R1: Bulk approve for expenses inbox with selected rows
     const isExpensesInbox =

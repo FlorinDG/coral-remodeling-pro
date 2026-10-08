@@ -5,6 +5,7 @@ import { auth } from '@/auth';
 import { platformDb, scopeFromSession } from '@/lib/data/scope';
 import { saveRecord } from '@/lib/data/records';
 import { readableDocument, unreadableMessage } from '@/lib/records/readable-document';
+import { quoteScanProperties } from '@/lib/records/quote-scan';
 import { purchaseLineBlocks } from '@/lib/records/purchase-lines';
 import { isEmptyReading, ticketFields } from '@/lib/records/scan-reading';
 import { buildScanUpdateIntent, buildScanCreateData } from '@/lib/records/peppol-scan-intents';
@@ -318,7 +319,10 @@ export async function POST(req: Request) {
             }
         }
 
-        const isInvoice = role === 'expenses';
+        // A supplier quote (QUOTE-IN-1) is READ like an invoice — supplier, number, date, totals, lines — and mapped to its
+        // own fields (lib/records/quote-scan). `isInvoice` here means "read as an invoice".
+        const isQuote = role === 'purchase-quotes';
+        const isInvoice = role === 'expenses' || isQuote;
 
         // SCHEMA-1a: Resolve system DB to the tenant's canonical scoped ID
         if (role) {
@@ -490,7 +494,7 @@ export async function POST(req: Request) {
                 data: {
                     id: targetDb,
                     tenantId,
-                    name: isInvoice ? 'Purchase Invoices' : 'Expense Tickets',
+                    name: isQuote ? 'Supplier Quotes' : isInvoice ? 'Purchase Invoices' : 'Expense Tickets',
                     properties: [],
                     views: [],
                     activeFilters: [],
@@ -510,7 +514,9 @@ export async function POST(req: Request) {
         let reviewReason = '';
         let ocrConfidence = 1.0; // Todo: map engine confidence
 
-        if (isInvoice) {
+        if (isQuote) {
+            properties = quoteScanProperties(extracted, { fileName: file.name, isNew: !existingPageId });
+        } else if (isInvoice) {
             const amountsReconcile = 
                 extracted.totalExVat != null && 
                 extracted.totalVat != null && 

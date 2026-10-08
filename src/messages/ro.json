@@ -378,6 +378,7 @@
       "financialTabs": {
         "toValidate": "DE VALIDAT",
         "purchaseInvoices": "FACTURI ACHIZIȚIE",
+        "supplierQuotes": "OFERTE FURNIZORI",
         "expenseTickets": "TICHETE",
         "purchaseCreditNotes": "NOTA CREDIT - ACHIZIȚIE",
         "salesCreditNotes": "NOTA CREDIT - VÂNZARE",

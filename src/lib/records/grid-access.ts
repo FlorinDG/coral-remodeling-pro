@@ -32,7 +32,7 @@ export function licensedColumns<P extends { name?: string }>(props: P[], ctx: { 
  * payment reference and the accountant-export stamp — a second invoice with the same OGM. Their editors have their
  * own copy flows. Other records: everything but stamps and the computed comments field; the title marked "(kopie)".
  */
-const NO_GRID_DUPLICATE: ReadonlySet<string> = new Set(['invoices', 'quotations', 'expenses', 'payments-in', 'payments-out', 'tickets']);
+const NO_GRID_DUPLICATE: ReadonlySet<string> = new Set(['invoices', 'quotations', 'expenses', 'payments-in', 'payments-out', 'tickets', 'purchase-quotes']);
 const STAMPS = /^(accountantExported|peppol|structuredComm$|sentAt$|lastSentAt$|signedAt$|clientSignature$|acceptedAt$|rejectedAt$|receiptUrl$|comments$)/;
 
 /** A field that records what HAPPENED to one document (sent, signed, exported, its OGM…) — never copied to another. */

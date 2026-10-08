@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { purchaseView, purchaseWrite } from '../src/lib/records/purchase-document.ts';
+import { editorLabel, editorShows, isPurchaseDocumentRole, needsValidation, purchaseView, purchaseWrite, readingSummary } from '../src/lib/records/purchase-document.ts';
 
 test('a ticket in the editor: its merchant / date / amount shown as supplier / date / total', () => {
     const v = purchaseView('tickets', { title: 'Brico', date: '2026-10-02', amount: 12.5, category: 'cat-tools' });
@@ -22,7 +22,6 @@ test('an edit lands in the ticket\'s OWN field; invoice-only fields are never wr
     assert.deepEqual(purchaseWrite('expenses', 'dueDate', '2026-11-01'), { key: 'dueDate', value: '2026-11-01' });
 });
 
-import { editorShows, editorLabel } from '../src/lib/records/purchase-document.ts';
 
 test('a ticket shows only ticket fields — never the invoice fields (throw proof: OGM / IBAN / due date on a receipt)', () => {
     for (const f of ['supplierName', 'invoiceDate', 'totalIncVat', 'category', 'paymentMethod', 'notes', 'project']) assert.equal(editorShows('tickets', f), true, f);
@@ -32,10 +31,39 @@ test('a ticket shows only ticket fields — never the invoice fields (throw proo
     assert.equal(editorLabel('expenses', 'supplierName', 'Leverancier'), 'Leverancier');
 });
 
-import { readingSummary } from '../src/lib/records/purchase-document.ts';
 
 test('what a reading found, in one Belgian line (throw proof: the import only said "Klaar")', () => {
     assert.equal(readingSummary('tickets', { title: 'Brico', date: '2026-10-02', amount: 12.5 }), 'Brico · 02/10/2026 · € 12,50');
     assert.equal(readingSummary('expenses', { supplierName: 'Aveve', invoiceDate: '2026-09-30', totalIncVat: 1210 }), 'Aveve · 30/09/2026 · € 1.210,00');
     assert.equal(readingSummary('tickets', { title: 'scan.jpg' }), 'scan.jpg');   // nothing else read
+});
+
+// QUOTE-IN-1 · a supplier quote in the same editor
+
+test('QUOTE-IN-1: a quote opens in the purchase editor, but is never validated (it is not a cost)', () => {
+    assert.equal(isPurchaseDocumentRole('purchase-quotes'), true);
+    assert.equal(needsValidation('purchase-quotes'), false);
+    assert.equal(needsValidation('expenses'), true);
+    assert.equal(needsValidation('tickets'), true);
+});
+
+test('QUOTE-IN-1: the editor\'s "due date" is the quote\'s validity — read and written as validUntil', () => {
+    assert.equal(purchaseView('purchase-quotes', { validUntil: '2026-11-30' }).dueDate, '2026-11-30');
+    assert.deepEqual(purchaseWrite('purchase-quotes', 'dueDate', '2026-12-01'), { key: 'validUntil', value: '2026-12-01' });
+    assert.equal(editorLabel('purchase-quotes', 'dueDate', 'Vervaldatum'), 'Geldig tot');
+    assert.equal(editorLabel('purchase-quotes', 'invoiceDate', 'Factuurdatum'), 'Offertedatum');
+});
+
+test('QUOTE-IN-1: no payment, accounting or Peppol fields on a quote — and they are never written', () => {
+    for (const f of ['status', 'costType', 'ledgerAccount', 'vatRegime', 'paidDate', 'structuredCommunication', 'supplierIban', 'accounting']) {
+        assert.equal(editorShows('purchase-quotes', f), false, f);
+    }
+    assert.equal(purchaseWrite('purchase-quotes', 'paidDate', '2026-10-01'), null);
+    assert.equal(purchaseWrite('purchase-quotes', 'status', 'opt-paid'), null);
+    for (const f of ['quoteStatus', 'lines', 'project', 'totalExVat']) assert.equal(editorShows('purchase-quotes', f), true, f);
+});
+
+test('QUOTE-IN-1: the quote status never shows on an invoice or a ticket', () => {
+    assert.equal(editorShows('expenses', 'quoteStatus'), false);
+    assert.equal(editorShows('tickets', 'quoteStatus'), false);
 });

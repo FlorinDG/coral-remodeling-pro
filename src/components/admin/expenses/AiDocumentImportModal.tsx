@@ -11,7 +11,7 @@ import { useRouter } from 'next/navigation';
 import { useLocale } from 'next-intl';
 import { READABLE_ACCEPT } from '@/lib/records/readable-document';   // SCAN-2: iOS converts HEIC to JPEG itself
 import { prepareUpload } from '@/lib/files/prepare-upload';
-import { readingSummary } from '@/lib/records/purchase-document';
+import { readingSummary, needsValidation } from '@/lib/records/purchase-document';
 import { MAX_UPLOAD_BYTES, tooLargeMessage } from '@/lib/files/upload-size';
 
 interface AiDocumentImportModalProps {
@@ -40,9 +40,13 @@ interface UploadJob {
  * a person decides, the import never discards.
  */
 export default function AiDocumentImportModal({ onClose, targetDatabaseId = 'db-expenses', onComplete }: AiDocumentImportModalProps) {
-    const [kind, setKind] = useState<'db-expenses' | 'db-tickets'>(isTenantDatabase(targetDatabaseId, 'db-tickets') ? 'db-tickets' : 'db-expenses');
+    const [kind, setKind] = useState<'db-expenses' | 'db-tickets' | 'db-purchase-quotes'>(
+        isTenantDatabase(targetDatabaseId, 'db-tickets') ? 'db-tickets'
+            : isTenantDatabase(targetDatabaseId, 'db-purchase-quotes') ? 'db-purchase-quotes' : 'db-expenses');
     const target = kind;
     const isTickets = kind === 'db-tickets';
+    /** The record's kind for the shared purchase rules (readingSummary) — QUOTE-IN-1 adds supplier quotes. */
+    const role = isTickets ? 'tickets' : kind === 'db-purchase-quotes' ? 'purchase-quotes' : 'expenses';
     const { planType } = useTenant();
     const isFree = (planType || 'FREE') === 'FREE';
     const [jobs, setJobs] = useState<UploadJob[]>([]);
@@ -53,10 +57,15 @@ export default function AiDocumentImportModal({ onClose, targetDatabaseId = 'db-
     const locale = useLocale();
     // VALIDATE-1: imports wait in "Te valideren" (the Tickets / Purchase-invoice screens show only what counts) — the
     // right tab, and the document itself when a row is chosen
+    // QUOTE-IN-1: a supplier quote is not a cost — it is never validated; it opens in its own list
     const openInValidation = (pageId?: string) => {
-        const q = new URLSearchParams({ tab: isTickets ? 'tickets' : 'purchase', ...(pageId ? { open: pageId } : {}) });
         onComplete?.();
-        router.push(`/${locale}/admin/financials/expenses/to-validate?${q}`);
+        if (!needsValidation(role)) {
+            router.push(`/${locale}/admin/financials/expenses/quotes${pageId ? `?open=${pageId}` : ''}`);
+        } else {
+            const q = new URLSearchParams({ tab: isTickets ? 'tickets' : 'purchase', ...(pageId ? { open: pageId } : {}) });
+            router.push(`/${locale}/admin/financials/expenses/to-validate?${q}`);
+        }
         onClose();
     };
 
@@ -152,13 +161,13 @@ export default function AiDocumentImportModal({ onClose, targetDatabaseId = 'db-
                     const pageId = String(latest.id);
                     setJobs(prev => prev.map(j => j.id === job.id ? {
                         ...j, pageId,
-                        summary: readingSummary(isTickets ? 'tickets' : 'expenses', props),
+                        summary: readingSummary(role, props),
                         reason: props.reviewStatus === 'Klaar' ? '' : String(props.reviewReason || ''),
                     } : j));
                 }
             }
         }
-    }, [target, isTickets, isFree]);
+    }, [target, isTickets, isFree, role]);
 
     const handleDrop = useCallback((e: React.DragEvent) => {
         e.preventDefault(); e.stopPropagation(); setIsDragging(false);
@@ -185,7 +194,7 @@ export default function AiDocumentImportModal({ onClose, targetDatabaseId = 'db-
                         <div>
                             <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">AI Document Import</h2>
                             <div className="mt-1 inline-flex rounded-lg border border-neutral-200 dark:border-neutral-700 p-0.5 text-xs font-semibold">
-                                {([['db-expenses', 'Aankoopfacturen'], ['db-tickets', 'Tickets']] as const).map(([k, label]) => (
+                                {([['db-expenses', 'Aankoopfacturen'], ['db-tickets', 'Tickets'], ['db-purchase-quotes', 'Offertes']] as const).map(([k, label]) => (
                                     <button
                                         key={k}
                                         type="button"
@@ -266,7 +275,7 @@ export default function AiDocumentImportModal({ onClose, targetDatabaseId = 'db-
                                 className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors"
                             >
                                 <Inbox className="w-4 h-4" />
-                                Naar Te valideren ({jobs.filter(j => j.status === 'done').length})
+                                {needsValidation(role) ? 'Naar Te valideren' : 'Naar offertes'} ({jobs.filter(j => j.status === 'done').length})
                                 <ArrowRight className="w-4 h-4 opacity-70" />
                             </button>
                         </div>

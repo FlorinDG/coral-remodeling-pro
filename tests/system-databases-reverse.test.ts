@@ -178,7 +178,7 @@ describe('R1-1c · provisionLockedDatabases mock behavior tests', () => {
         };
     }
 
-    test('R1-1c · Fresh tenant: 16 databases created with both lockedDbIds and logicalKey', async () => {
+    test('R1-1c · Fresh tenant: 17 databases created with both lockedDbIds and logicalKey', async () => {
         const { provisionLockedDatabases } = await import('../src/lib/provisionTenantDbs.ts');
         const mock = createMockDb({
             tenant: { id: 'tenant-fresh', lockedDbIds: null },
@@ -187,7 +187,7 @@ describe('R1-1c · provisionLockedDatabases mock behavior tests', () => {
 
         const lockedDbIds = await provisionLockedDatabases('tenant-fresh', mock as any);
 
-        assert.equal(mock.getCreatedRows().length, 16, 'Must create exactly 16 database rows');
+        assert.equal(mock.getCreatedRows().length, 17, 'Must create exactly 17 database rows');
         assert.equal(mock.getTenantUpdates().length, 1, 'Must update tenant lockedDbIds once');
 
         const dbRows = mock.getDbRows();

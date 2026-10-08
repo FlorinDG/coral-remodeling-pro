@@ -378,6 +378,7 @@
       "financialTabs": {
         "toValidate": "TO VALIDATE",
         "purchaseInvoices": "PURCHASE INVOICES",
+        "supplierQuotes": "SUPPLIER QUOTES",
         "expenseTickets": "RECEIPTS",
         "purchaseCreditNotes": "CREDIT NOTE - PURCHASE",
         "salesCreditNotes": "CREDIT NOTE - SALES",

@@ -22,11 +22,26 @@ const TICKET_FIELDS: ReadonlySet<string> = new Set([
 /** The databases whose records ARE purchase documents — they open in the one purchase editor (EDIT-1), never in the
  *  generic record panel. */
 export function isPurchaseDocumentRole(role: string | null | undefined): boolean {
+    return role === 'expenses' || role === 'tickets' || role === 'purchase-quotes';
+}
+
+/** The purchase documents that are COSTS — validated before they count (VALIDATE-1). A supplier quote is not. */
+export function needsValidation(role: string | null | undefined): boolean {
     return role === 'expenses' || role === 'tickets';
 }
 
+// QUOTE-IN-1 · a supplier's quote in the same editor: the invoice's facts under the same ids, its "due date" is the
+// quote's validity, its status its own select (no payment flow, no accounting, no Peppol).
+const QUOTE_FROM_VIEW: Readonly<Record<string, string>> = { dueDate: 'validUntil' };
+const QUOTE_EDITOR: ReadonlySet<string> = new Set([
+    'supplierName', 'supplierVat', 'contact', 'betreft', 'ourRef', 'invoiceDate', 'dueDate', 'quoteStatus',
+    'totalExVat', 'totalVat', 'totalIncVat', 'lines', 'project', 'notes',
+]);
+const QUOTE_LABEL: Readonly<Record<string, string>> = { invoiceDate: 'Offertedatum', dueDate: 'Geldig tot', details: 'Offerte', paymentNotes: 'Opmerkingen' };
+
 /** A record as the editor reads it. Purchase invoices: unchanged. Tickets: their facts under the editor's names. */
 export function purchaseView(role: string | null | undefined, props: Props): Props {
+    if (role === 'purchase-quotes') return { ...props, dueDate: props.validUntil ?? '' };
     if (role !== 'tickets') return props;
     const amount = props.amount;
     return {
@@ -42,6 +57,10 @@ export function purchaseView(role: string | null | undefined, props: Props): Pro
 
 /** Where an edit in the editor lands — the record's own field, or null (a field this kind of document does not have). */
 export function purchaseWrite(role: string | null | undefined, key: string, value: unknown): { key: string; value: unknown } | null {
+    if (role === 'purchase-quotes') {
+        if (key in QUOTE_FROM_VIEW) return { key: QUOTE_FROM_VIEW[key], value };
+        return QUOTE_EDITOR.has(key) || ['title', 'supplier', 'receiptUrl', 'reviewStatus', 'reviewReason'].includes(key) ? { key, value } : null;
+    }
     if (role !== 'tickets') return { key, value };
     if (key in TICKET_FROM_VIEW) return { key: TICKET_FROM_VIEW[key], value };
     return TICKET_FIELDS.has(key) ? { key, value } : null;
@@ -56,6 +75,8 @@ export function purchaseWrite(role: string | null | undefined, key: string, valu
 const TICKET_EDITOR: ReadonlySet<string> = new Set(['supplierName', 'invoiceDate', 'totalIncVat', 'category', 'currency', 'paymentMethod', 'project', 'notes']);
 
 export function editorShows(role: string | null | undefined, field: string): boolean {
+    if (role === 'purchase-quotes') return QUOTE_EDITOR.has(field);
+    if (field === 'quoteStatus') return false;
     return role !== 'tickets' || TICKET_EDITOR.has(field);
 }
 
@@ -63,6 +84,7 @@ export function editorShows(role: string | null | undefined, field: string): boo
 const TICKET_LABEL: Readonly<Record<string, string>> = { supplierName: 'Handelaar', invoiceDate: 'Datum', totalIncVat: 'Bedrag' };
 
 export function editorLabel(role: string | null | undefined, field: string, invoiceLabel: string): string {
+    if (role === 'purchase-quotes') return QUOTE_LABEL[field] ?? invoiceLabel;
     return role === 'tickets' ? (TICKET_LABEL[field] ?? invoiceLabel) : invoiceLabel;
 }
 

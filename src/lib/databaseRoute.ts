@@ -30,6 +30,7 @@ export function getDatabaseRoute(
         case 'tasks': return `/admin/tasks?open=${pageId}`;
         case 'invoices': return `/admin/financials/income/invoices/${pageId}`;
         case 'expenses': return `/admin/financials/expenses/invoices?open=${pageId}`;
+        case 'purchase-quotes': return `/admin/financials/expenses/quotes?open=${pageId}`;
         case 'quotations': return `/admin/quotations/${pageId}`;
         case 'payments-in': return `/admin/financials/income/payments?open=${pageId}`;
         case 'payments-out': return `/admin/financials/expenses/payments?open=${pageId}`;

@@ -669,3 +669,30 @@ describe('6 · partialize — IndexedDB persistence filter', () => {
         assert.ok(result.pageIndex['p-queued']);
     });
 });
+
+describe('STORE-LOAD-1 · the schema-only database list never empties pages a screen fetched', () => {
+    beforeEach(() => { resetStoreState(); });
+
+    test('Florin 2026-10-08 (no tasks on mobile): pages read this session survive the list that arrives after them', async () => {
+        setMockGetDatabasePages(async () => [{ id: 't1', databaseId: 'db-tasks-x', properties: { title: 'Tegels' }, blocks: [], updatedAt: '2026-10-08T08:00:00.000Z' }]);
+        // the screen fetched BEFORE the list arrived — no entry for the database yet
+        await useDatabaseStore.getState().loadDatabasePages('db-tasks-x');
+        assert.deepEqual(useDatabaseStore.getState().getDatabase('db-tasks-x')?.pages.map(p => p.id), ['t1']);
+        // the list (schemas only, lazy data) arrives
+        useDatabaseStore.getState().hydrateDatabases([{ id: 'db-tasks-x', name: 'Tasks', pages: [], properties: [{ id: 'title', name: 'Titel', type: 'text' }], views: [] } as any]);
+        const db = useDatabaseStore.getState().getDatabase('db-tasks-x');
+        assert.deepEqual(db?.pages.map(p => p.id), ['t1'], 'the fetched tasks are still there');
+        assert.equal(db?.name, 'Tasks', 'the schema came from the list');
+        assert.ok(useDatabaseStore.getState().loadedDatabaseIds.includes('db-tasks-x'));
+    });
+
+    test('pages only from the browser cache stay visible but are re-read (not marked loaded)', () => {
+        useDatabaseStore.setState({
+            databases: [{ id: 'db-cache-only', name: 'C', pages: [{ id: 'old', databaseId: 'db-cache-only', properties: {}, blocks: [], updatedAt: '2026-01-01T00:00:00.000Z' }] as any[] } as any],
+            loadedDatabaseIds: ['db-cache-only'],
+        });
+        useDatabaseStore.getState().hydrateDatabases([{ id: 'db-cache-only', name: 'C', pages: [], properties: [], views: [] } as any]);
+        assert.deepEqual(useDatabaseStore.getState().getDatabase('db-cache-only')?.pages.map(p => p.id), ['old']);
+        assert.equal(useDatabaseStore.getState().loadedDatabaseIds.includes('db-cache-only'), false, 'the screen will re-read it');
+    });
+});

@@ -297,6 +297,15 @@ interface DatabaseState {
 }
 
 // In-flight request map for single-flight deduplication
+/**
+ * STORE-LOAD-1 (Florin 2026-10-08: "logged in as tfo, i see no tasks" on mobile). Databases whose pages were READ FROM
+ * THE SERVER in this session. The server's database list (GlobalDatabaseSyncer → hydrateDatabases) carries schemas
+ * only (lazy data) — its empty `pages` used to REPLACE pages a screen had just fetched while the "loaded" mark stayed:
+ * the screen stayed empty for the session. Pages fetched this session are kept; pages only from the browser's cache
+ * are kept on screen but re-read.
+ */
+const pagesReadThisSession = new Set<string>();
+
 const inFlightPageLoads = new Map<string, Promise<Page[]>>();
 
 export const useDatabaseStore = create<DatabaseState>()(
@@ -406,12 +415,15 @@ export const useDatabaseStore = create<DatabaseState>()(
                                 };
                             });
 
+                            pagesReadThisSession.add(databaseId);
+                            // STORE-LOAD-1: the database list may not have arrived yet — keep the pages under a minimal
+                            // entry (the list's schema replaces it, the pages stay) instead of dropping them while
+                            // marking the database loaded.
+                            const known = state.databases.some(db => db.id === databaseId);
                             return {
-                                databases: state.databases.map(db =>
-                                    db.id === databaseId
-                                        ? { ...db, pages: mergedPages }
-                                        : db
-                                ),
+                                databases: known
+                                    ? state.databases.map(db => db.id === databaseId ? { ...db, pages: mergedPages } : db)
+                                    : [...state.databases, { id: databaseId, name: databaseId, description: null, pages: mergedPages, properties: [], views: [], activeFilters: [], activeSorts: [], isTemplate: false, tenantId: '', ownerId: 'system', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } as Database],
                                 loadedDatabaseIds: nextLoaded,
                                 loadingDatabaseIds: nextLoading,
                                 pageIndex: updatedIndex,
@@ -865,6 +877,10 @@ export const useDatabaseStore = create<DatabaseState>()(
 
                 const merged = serverDatabases.map(serverDb => {
                     const localViewMap = localViewStateMap.get(serverDb.id);
+                    // STORE-LOAD-1: a schema-only entry (no pages from the server) never empties the pages held here
+                    const heldPages = (!serverDb.pages || serverDb.pages.length === 0)
+                        ? (localDbs.find(d => d.id === serverDb.id)?.pages ?? [])
+                        : [];
                     
                     // KEEP LOCAL IF DIRTY logic
                     const serverPagesMap = new Map(serverDb.pages.map((p: Page) => [p.id, p]));
@@ -913,7 +929,7 @@ export const useDatabaseStore = create<DatabaseState>()(
 
                     return {
                         ...serverDb,
-                        pages: mergedPages,
+                        pages: heldPages.length > 0 ? heldPages : mergedPages,
                         views: viewsMerged,
                     };
                 });
@@ -934,11 +950,16 @@ export const useDatabaseStore = create<DatabaseState>()(
                     });
                 });
 
-                const dbsWithPages = merged.filter(d => d.pages && d.pages.length > 0).map(d => d.id);
+                // Loaded = the server gave the pages (in this list, or read this session). Pages from the browser's cache
+                // alone stay on screen but are NOT loaded — the screen re-reads them (STORE-LOAD-1).
+                const serverGavePages = new Set(serverDatabases.filter(d => d.pages && d.pages.length > 0).map(d => d.id));
                 set(s => ({
                     databases: merged,
                     pageIndex: nextIndex,
-                    loadedDatabaseIds: Array.from(new Set([...s.loadedDatabaseIds, ...dbsWithPages]))
+                    loadedDatabaseIds: Array.from(new Set([
+                        ...s.loadedDatabaseIds.filter(id => pagesReadThisSession.has(id) || serverGavePages.has(id)),
+                        ...serverGavePages,
+                    ]))
                 }));
             },
 

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import prisma from '@/lib/prisma';
+import { scopeFromSession } from '@/lib/data/scope';
 import { resolveReach } from '@/app/api/hr/lib/actor-reach';
 import { resolveProjects } from '@/lib/data/projects';
 import { computeWorkedDuration } from '@/lib/computeWorkedDuration';
@@ -32,6 +32,7 @@ async function getContext(req: Request) {
 export async function GET(req: Request) {
     const ctx = await getContext(req);
     if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const db = await scopeFromSession();
 
     const url = new URL(req.url);
     const fromParam = url.searchParams.get('from');
@@ -111,7 +112,7 @@ export async function GET(req: Request) {
     }
 
     // Fetch entries
-    const entries = (await prisma.clockEntry.findMany({
+    const entries = (await db.clockEntry.findMany({
         where,
         orderBy: { clockInTime: 'asc' }
     })).filter(e => inBusinessPeriod(e.clockInTime, period));
@@ -119,12 +120,12 @@ export async function GET(req: Request) {
     // Count entries without date bounds to see if they exist outside the period
     const whereWithoutDates = { ...where };
     delete whereWithoutDates.clockInTime;
-    const outsidePeriodCount = await prisma.clockEntry.count({
+    const outsidePeriodCount = await db.clockEntry.count({
         where: whereWithoutDates
     });
 
     // We also need employees to get names. User table is the unified source of truth.
-    const users = await prisma.user.findMany({
+    const users = await db.user.findMany({
         where: { tenantId: ctx.tenantId },
         select: { id: true, name: true }
     });

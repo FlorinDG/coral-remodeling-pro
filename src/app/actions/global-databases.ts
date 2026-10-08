@@ -484,9 +484,18 @@ function storeAnswer(r: SaveRecordResult, page: Page): StoreSaveAnswer {
 }
 
 /** The store page's create-if-missing and meta (one place for both adapters). */
-function storePageWrite(page: Page) {
+/**
+ * SYNC-AUTHOR-1 (2026-10-09): the write is labelled with WHO made it — the session's user. It used the page's own stored
+ * lastEditedBy, so a person's edit of a scanned record was recorded as 'system:scan' (it sent the investigation of lost
+ * ticket values after the scanner).
+ */
+function actorOf(session: { user?: { id?: string | null } | null } | null): string {
+    return session?.user?.id || 'unknown-user';
+}
+
+function storePageWrite(page: Page, actorId: string) {
     return {
-        by: page.lastEditedBy || 'admin',
+        by: actorId,
         meta: { coverImage: page.coverImage, icon: page.icon, order: page.order, driveFolderId: page.driveFolderId },
         createIfMissing: { databaseId: page.databaseId, properties: (page.properties || {}) as Record<string, unknown>, blocks: (page.blocks as unknown[]) ?? [], createdBy: page.createdBy || 'admin' },
     };
@@ -507,7 +516,7 @@ export async function saveGlobalPage(page: Page): Promise<StoreSaveAnswer> {
         // queue is unchanged. Before: tenant check (partial — a missing database let the write through),
         // read, merge and write were separate steps, and the whole properties object was written back.
         const db = await scopeFromSession();
-        const r = await saveRecord(db, intentFromPage(page), storePageWrite(page));
+        const r = await saveRecord(db, intentFromPage(page), storePageWrite(page, actorOf(session)));
         const answer = storeAnswer(r, page);
         if (answer.success && answer.changed) revalidatePath('/admin', 'layout');
         return answer;
@@ -538,7 +547,7 @@ export async function saveGlobalPagesBatch(pages: Page[]) {
         const results: Array<Record<string, unknown> & { id: string; success: boolean }> = [];
         for (const page of pages) {
             try {
-                const r = await saveRecord(db, intentFromPage(page), storePageWrite(page));
+                const r = await saveRecord(db, intentFromPage(page), storePageWrite(page, actorOf(session)));
                 results.push({ id: page.id, ...storeAnswer(r, page) });
             } catch (pageError: any) {
                 console.error(`[saveGlobalPagesBatch] Failed for page ${page.id}:`, pageError);

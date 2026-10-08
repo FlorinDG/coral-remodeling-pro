@@ -82,7 +82,7 @@ closed. 🛑 **Planner-only, do NOT touch:** `src/lib/kernel/**`, `src/lib/recor
 `src/components/time-tracker/hooks/**`, `src/components/workhub/**`, anything under `prisma/` unless the item says so.
 Each item: plan → STOP for review → build → report `.agents/reports/<ID>.md` → push develop → STOP.
 
-### 5 · `DEAD-HR-1` — remove the HR code nothing reaches (deletions only)
+### ✅ 5 · `DEAD-HR-1` — ACCEPTED 2026-10-08 (Planner review: no dangling import/route/href; manifest shortcut fixed; fence kept) — remove the HR code nothing reaches (deletions only)
 Prove each unreachable FIRST (no import, no route link, no `href`), list the proof in the plan, STOP. Candidates (verify,
 do not assume): `app/[locale]/workhub/schedule/page.tsx` + `components/time-tracker/pages/Schedule.tsx` (writes a status
 the server now refuses, builds `new Date(\`${date}T${time}\`)`), `schedule/ScheduleCalendar.tsx`, `hooks/useProjects.ts`
@@ -92,7 +92,7 @@ the server now refuses, builds `new Date(\`${date}T${time}\`)`), `schedule/Sched
 If `UserDetailView` goes, `app/actions/hr-admin.ts` has no caller: delete it and take it off nothing (it is already
 off the R1-5 list). Each removed raw importer leaves the eslint allowlist and lowers `CEILING`. tsc + lint + tests green.
 
-### 6 · `LOC-HR-1` — the HR module speaks the user's language (strings only)
+### ✅ 6 · `LOC-HR-1` — ACCEPTED 2026-10-08 (Planner review: option VALUES unchanged, status/conflict logic untouched, tests green). Leftover for HR-SERAPH-1: `leave/page.tsx` dates still `toLocaleDateString('en-GB')` (English months; `createdAt` formatted on the UTC server) → business date + locale formatter — the HR module speaks the user's language (strings only)
 Every visible string in `app/[locale]/admin/hr/**` (employees, leave, dashboard, timesheets, werkbon print page),
 `components/time-tracker/components/admin/ScheduleManagement.tsx`, `schedule/**` (matrix, table, shift editor, the
 `shift-status-ui.ts` LABELS → keys; the colours stay), `werkbon/WerkbonDocument.tsx`, and `config/tabs.ts` `hrTabs`

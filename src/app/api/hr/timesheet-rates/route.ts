@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { isTenantHrRole } from '@/app/api/hr/lib/actor-reach';
 import { auth } from '@/auth';
-import prisma from '@/lib/prisma';
+import { scopeFromSession } from '@/lib/data/scope';
 import { describeError } from '@/lib/describe-error';
 
 async function getContext() {
@@ -18,6 +18,7 @@ async function getContext() {
 export async function POST(req: Request) {
     const ctx = await getContext();
     if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const db = await scopeFromSession();
 
     // Gate 2 — restamping cost rates is an HR act (actor-reach.ts).
     if (!isTenantHrRole(ctx.role)) return NextResponse.json({ error: 'requires_hr_role' }, { status: 403 });
@@ -41,7 +42,7 @@ export async function POST(req: Request) {
             where.id = referenceEntryId;
         } else if (scope === 'FUTURE' || scope === 'PAST') {
             if (!referenceEntryId) return NextResponse.json({ error: 'referenceEntryId required for FUTURE/PAST scope' }, { status: 400 });
-            const refEntry = await prisma.clockEntry.findUnique({ where: { id: referenceEntryId } });
+            const refEntry = await db.clockEntry.findFirst({ where: { id: referenceEntryId } });
             if (!refEntry) return NextResponse.json({ error: 'Reference entry not found' }, { status: 404 });
             
             if (scope === 'FUTURE') {
@@ -57,7 +58,7 @@ export async function POST(req: Request) {
         }
 
         // 1. Fetch entries to be modified to create a snapshot
-        const entriesToModify = await prisma.clockEntry.findMany({
+        const entriesToModify = await db.clockEntry.findMany({
             where,
             select: { id: true, costRateApplied: true }
         });
@@ -72,7 +73,7 @@ export async function POST(req: Request) {
         }));
 
         // Use a transaction to ensure audit and update happen together
-        const result = await prisma.$transaction(async (tx) => {
+        const result = await db.$transaction(async (tx) => {
             const audit = await tx.rateChangeAudit.create({
                 data: {
                     tenantId: ctx.tenantId,

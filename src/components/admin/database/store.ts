@@ -9,7 +9,8 @@ import { mintDatabaseId } from '@/lib/database-identity';
 import { Database, Page, Property, PropertyValue, PropertyType, PropertyConfig, FilterRule, SortRule, Block, DatabaseView, ViewPropertyState, PageIndexEntry } from './types';
 import { changeDatabaseDefinition } from '@/app/actions/database-definition';
 import { diffDefinition, type Definition } from '@/lib/records/database-definition';
-import { saveGlobalDatabase, saveGlobalPage, saveGlobalPagesBatch, deleteGlobalDatabase, deleteGlobalPage, getDatabasePages } from '@/app/actions/global-databases';
+import { saveGlobalDatabase, saveGlobalPage, saveGlobalPagesBatch, deleteGlobalDatabase, deleteGlobalPage, getDatabasePages, getDatabaseVersion } from '@/app/actions/global-databases';
+import { versionOf, versionChanged, type DatabaseVersion } from '@/lib/records/database-version';
 import { generateOGM } from '@/lib/ogm';
 import { toast } from 'sonner';
 import { type SystemDatabaseRole, SYSTEM_DATABASES, BASE_TO_KEY } from '@/lib/kernel/system-databases';
@@ -222,6 +223,8 @@ interface DatabaseState {
     loadDatabasePages: (databaseId: string) => Promise<Page[]>;
     /** Re-read a database's pages from the server even when loaded (unsynced local edits are kept — same merge). */
     reloadDatabasePages: (databaseId: string) => Promise<Page[]>;
+    /** LIVE-1: re-read a loaded database when the server's version differs from the one read (another device changed it). */
+    refreshIfChanged: (databaseId: string) => Promise<boolean>;
     isDatabasePagesLoaded: (databaseId: string) => boolean;
 
     // Sync status (for UI indicators)
@@ -306,6 +309,10 @@ interface DatabaseState {
  */
 const pagesReadThisSession = new Set<string>();
 
+/** LIVE-1: the server's version of each database as this screen last READ it (count + newest change). */
+const serverVersionSeen = new Map<string, DatabaseVersion>();
+const versionChecks = new Map<string, Promise<boolean>>();
+
 const inFlightPageLoads = new Map<string, Promise<Page[]>>();
 
 export const useDatabaseStore = create<DatabaseState>()(
@@ -327,6 +334,26 @@ export const useDatabaseStore = create<DatabaseState>()(
 
             isDatabasePagesLoaded: (databaseId: string) => {
                 return get().loadedDatabaseIds.includes(databaseId);
+            },
+
+            refreshIfChanged: (databaseId: string) => {
+                if (!get().loadedDatabaseIds.includes(databaseId) || inFlightPageLoads.has(databaseId)) return Promise.resolve(false);
+                const running = versionChecks.get(databaseId);
+                if (running) return running;
+                const check = (async () => {
+                    try {
+                        const now = await getDatabaseVersion(databaseId);
+                        if (!versionChanged(serverVersionSeen.get(databaseId), now)) return false;
+                        await get().reloadDatabasePages(databaseId);
+                        return true;
+                    } catch {
+                        return false;   // a failed check never blanks a screen; the next one tries again
+                    } finally {
+                        versionChecks.delete(databaseId);
+                    }
+                })();
+                versionChecks.set(databaseId, check);
+                return check;
             },
 
             reloadDatabasePages: async (databaseId: string) => {
@@ -360,6 +387,7 @@ export const useDatabaseStore = create<DatabaseState>()(
                 const fetchPromise = (async () => {
                     try {
                         const serverPages = await getDatabasePages(databaseId);
+                        serverVersionSeen.set(databaseId, versionOf(serverPages));   // LIVE-1
 
                         // Dirty-page protection (Unsynced offline edits in syncQueue must never be evicted)
                         const syncQueue = get().syncQueue || [];
@@ -2316,6 +2344,8 @@ export function usePagesOf(databaseIdOrIds: string | string[] | undefined | null
         });
     }, [rawIds, databases]);
 
+    useLiveDatabases(resolvedIds);   // LIVE-1: changes from another device arrive while the screen is open
+
     // Request any databases that are not loaded and not currently loading
     useEffect(() => {
         if (resolvedIds.length === 0) return;
@@ -2400,4 +2430,26 @@ export function useLabelsOf(databaseIdOrIds?: string | string[] | null): UseLabe
         entries,
         getLabel: getPageLabel,
     };
+}
+
+
+/**
+ * LIVE-1 · keep the given databases current while the screen is in front of a person (Florin 2026-10-08: a receipt
+ * saved on the phone did not appear on the open desktop "Te valideren"). Asks the server's version every 20 s while
+ * the tab is visible, and at once when the tab comes back; re-reads only when it changed.
+ */
+export function useLiveDatabases(databaseIds: string[]): void {
+    const key = databaseIds.filter(Boolean).join('|');
+    useEffect(() => {
+        if (!key) return;
+        const ids = key.split('|');
+        const check = () => {
+            if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
+            for (const id of ids) void useDatabaseStore.getState().refreshIfChanged(id);
+        };
+        const timer = setInterval(check, 20_000);
+        document.addEventListener('visibilitychange', check);
+        window.addEventListener('focus', check);
+        return () => { clearInterval(timer); document.removeEventListener('visibilitychange', check); window.removeEventListener('focus', check); };
+    }, [key]);
 }

@@ -10,6 +10,7 @@ import { auth } from '@/auth';
 import { scopeFromSession } from '@/lib/data/scope';
 import { saveRecord, deleteRecord, type SaveRecordResult } from '@/lib/data/records';
 import { intentFromPage } from '@/lib/records/record-intent';
+import type { DatabaseVersion } from '@/lib/records/database-version';
 
 /**
  * Validates and sanitizes a string ID, preventing undefined/null values from hitting Prisma
@@ -180,6 +181,19 @@ export async function getGlobalDatabaseSchemas(): Promise<Database[]> {
         console.error("Error fetching global database schemas:", e);
         throw e;
     }
+}
+
+/**
+ * LIVE-1 · the database's version (count + newest change) for the CALLER's tenant — a screen compares it with what it
+ * holds and re-reads on a difference (lib/records/database-version). One aggregate on the scoped client.
+ */
+export async function getDatabaseVersion(databaseId: string): Promise<DatabaseVersion> {
+    const session = await auth();
+    if (!session?.user?.tenantId) throw new Error('Unauthorized');
+    if (isWorkforceRole((session.user as { role?: string }).role)) throw new Error('Forbidden: workforce');
+    const db = await scopeFromSession();
+    const agg = await db.globalPage.aggregate({ where: { databaseId }, _count: { _all: true }, _max: { updatedAt: true } });
+    return { count: agg._count._all, lastUpdatedAt: agg._max.updatedAt ? agg._max.updatedAt.toISOString() : null };
 }
 
 /**

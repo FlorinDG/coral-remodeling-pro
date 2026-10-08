@@ -34,3 +34,11 @@ export async function deleteGlobalPage(_pageId: string) {
     return { success: true };
 }
 
+
+export let mockGetDatabaseVersion = async (_databaseId: string): Promise<{ count: number; lastUpdatedAt: string | null }> => ({ count: 0, lastUpdatedAt: null });
+export function setMockGetDatabaseVersion(fn: (dbId: string) => Promise<{ count: number; lastUpdatedAt: string | null }>) {
+    mockGetDatabaseVersion = fn;
+}
+export async function getDatabaseVersion(databaseId: string) {
+    return mockGetDatabaseVersion(databaseId);
+}

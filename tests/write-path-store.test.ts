@@ -14,6 +14,7 @@ import { useDatabaseStore } from '../src/components/admin/database/store.ts';
 import {
     setMockGetDatabasePages,
     setMockSaveGlobalPage,
+    setMockGetDatabaseVersion,
 } from './stubs/global-databases.ts';
 
 // Helper to reset store to pristine initial state between tests
@@ -694,5 +695,32 @@ describe('STORE-LOAD-1 · the schema-only database list never empties pages a sc
         useDatabaseStore.getState().hydrateDatabases([{ id: 'db-cache-only', name: 'C', pages: [], properties: [], views: [] } as any]);
         assert.deepEqual(useDatabaseStore.getState().getDatabase('db-cache-only')?.pages.map(p => p.id), ['old']);
         assert.equal(useDatabaseStore.getState().loadedDatabaseIds.includes('db-cache-only'), false, 'the screen will re-read it');
+    });
+});
+
+
+describe('LIVE-1 · an open screen picks up a change made on another device', () => {
+    beforeEach(() => { resetStoreState(); });
+
+    test('Florin 2026-10-08: a receipt saved on the phone appears on the open desktop list', async () => {
+        let server = [{ id: 'r1', databaseId: 'db-live', properties: {}, blocks: [], updatedAt: '2026-10-08T08:00:00.000Z' }];
+        setMockGetDatabasePages(async () => server);
+        useDatabaseStore.setState({ databases: [{ id: 'db-live', name: 'Tickets', pages: [] as any[] } as any] });
+        await useDatabaseStore.getState().loadDatabasePages('db-live');
+
+        // nothing changed elsewhere → no re-read
+        setMockGetDatabaseVersion(async () => ({ count: 1, lastUpdatedAt: '2026-10-08T08:00:00.000Z' }));
+        assert.equal(await useDatabaseStore.getState().refreshIfChanged('db-live'), false);
+
+        // the phone saved a receipt
+        server = [...server, { id: 'r2', databaseId: 'db-live', properties: {}, blocks: [], updatedAt: '2026-10-08T09:00:00.000Z' }];
+        setMockGetDatabaseVersion(async () => ({ count: 2, lastUpdatedAt: '2026-10-08T09:00:00.000Z' }));
+        assert.equal(await useDatabaseStore.getState().refreshIfChanged('db-live'), true);
+        assert.deepEqual(useDatabaseStore.getState().getDatabase('db-live')?.pages.map(p => p.id).sort(), ['r1', 'r2']);
+    });
+
+    test('a database this screen never read is not polled into existence', async () => {
+        setMockGetDatabaseVersion(async () => ({ count: 5, lastUpdatedAt: '2026-10-08T09:00:00.000Z' }));
+        assert.equal(await useDatabaseStore.getState().refreshIfChanged('db-never'), false);
     });
 });

@@ -4,7 +4,7 @@ import { surfaceKey, viewsForSurface, seedSurfaceView } from '@/lib/records/view
 import { isTenantDatabase } from '@/lib/relations/resolve';
 import React, { useEffect, useState, useMemo } from 'react';
 import dynamic from 'next/dynamic';
-import { useDatabaseStore } from '@/components/admin/database/store';
+import { useDatabaseStore, useLiveDatabases } from '@/components/admin/database/store';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import PageModal from '@/components/admin/database/components/PageModal';
 import { useTenant } from '@/context/TenantContext';
@@ -67,6 +67,8 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
   const loadDatabasePages = useDatabaseStore(state => state.loadDatabasePages);
   const isPagesLoaded = useDatabaseStore(state => state.loadedDatabaseIds.includes(resolvedId));
   const isPagesLoading = useDatabaseStore(state => state.loadingDatabaseIds.includes(resolvedId));
+
+  useLiveDatabases([resolvedId]);   // LIVE-1: a record added / changed on another device appears without a refresh
 
   useEffect(() => {
     if (resolvedId && !isPagesLoaded && !isPagesLoading) {

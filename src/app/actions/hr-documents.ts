@@ -1,6 +1,6 @@
 "use server";
 
-import prisma from "@/lib/prisma";
+import { scopeFromSession } from "@/lib/data/scope";
 import { auth } from "@/auth";
 
 export async function getHrDocuments() {
@@ -13,13 +13,14 @@ export async function getHrDocuments() {
     if (!tenantId) {
         throw new Error("No tenant context");
     }
+    const db = await scopeFromSession();
 
-    const documents = await prisma.hrDocument.findMany({
+    const documents = await db.hrDocument.findMany({
         where: { tenantId },
         orderBy: { createdAt: 'desc' }
     });
 
-    const acknowledgments = await prisma.hrDocumentAcknowledgment.findMany({
+    const acknowledgments = await db.hrDocumentAcknowledgment.findMany({
         where: {
             userId: session.user.id,
             documentId: { in: documents.map(d => d.id) }
@@ -51,8 +52,9 @@ export async function acknowledgeHrDocument(documentId: string, signatureData?: 
     if (!session?.user?.id) {
         throw new Error("Unauthorized");
     }
+    const db = await scopeFromSession();
 
-    await prisma.hrDocumentAcknowledgment.upsert({
+    await db.hrDocumentAcknowledgment.upsert({
         where: {
             userId_documentId: {
                 userId: session.user.id,

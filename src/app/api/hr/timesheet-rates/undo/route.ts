@@ -15,6 +15,21 @@ async function getContext() {
     };
 }
 
+export function groupSnapshotByRate(
+    snapshot: Array<{ entryId: string; oldRate: number | null }>
+): Map<number | null, string[]> {
+    const rateGroups = new Map<number | null, string[]>();
+    for (const item of snapshot) {
+        const existing = rateGroups.get(item.oldRate);
+        if (existing) {
+            existing.push(item.entryId);
+        } else {
+            rateGroups.set(item.oldRate, [item.entryId]);
+        }
+    }
+    return rateGroups;
+}
+
 export async function POST(req: Request) {
     const ctx = await getContext();
     if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -41,16 +56,19 @@ export async function POST(req: Request) {
         const snapshot = audit.snapshot as { entryId: string, oldRate: number | null }[];
         if (!Array.isArray(snapshot)) return NextResponse.json({ error: 'Invalid snapshot format' }, { status: 500 });
 
+        // B8 · Group snapshot by distinct oldRate so large undos run in a few bulk updateMany calls
+        const rateGroups = groupSnapshotByRate(snapshot);
+
         // B3 · Interactive transaction form ensures audit and update happen together under scoped client
         await db.$transaction(async (tx) => {
-            for (const item of snapshot) {
+            for (const [oldRate, entryIds] of rateGroups) {
                 await tx.clockEntry.updateMany({
                     where: { 
-                        id: item.entryId, 
+                        id: { in: entryIds }, 
                         tenantId: ctx.tenantId,
                         accountantExportedAt: null // Never undo an exported entry
                     },
-                    data: { costRateApplied: item.oldRate }
+                    data: { costRateApplied: oldRate }
                 });
             }
 

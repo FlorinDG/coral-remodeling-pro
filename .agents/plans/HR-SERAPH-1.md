@@ -233,3 +233,15 @@ Its own commit.
 (`lib/records/business-period.ts`, the `.filter(inBusinessPeriod)` after `findMany`) or the rollups; only the client changes.
 
 Order unchanged (Step 1 tests → Steps 2–11 → B6 → full run). Report `.agents/reports/HR-SERAPH-1.md`, push develop, STOP.
+
+## PLANNER REVIEW 2 — 2026-10-08 · commits 12521a8d..03612fc5 accepted, ONE fix before the item closes
+
+Reviewed: reports, export, rates (B2, B3 ✓), audit-logs, team-scoping (B1 ✓ — session tenant asserted), dashboard,
+leave page (scoped lookups ✓), the contract tests. Behaviour unchanged where it must be (period filter and rollups intact).
+
+**B8 · `timesheet-rates/undo` — no per-entry round trip inside the transaction.** The converted loop runs one
+`updateMany` per snapshot entry inside ONE interactive transaction: an undo of an ALL-scope restamp (hundreds of entries)
+spends a network round trip per entry and can exceed Prisma's 5 s interactive-transaction timeout — the old array form
+did not. Group the snapshot by `oldRate` and run ONE `updateMany({ where: { id: { in: ids }, accountantExportedAt: null } })`
+per distinct rate (a handful at most), then the audit update — same transaction. Its own commit; a test that the
+grouping covers every entry once (throw proof). The Planner holds promotion to main until this lands.

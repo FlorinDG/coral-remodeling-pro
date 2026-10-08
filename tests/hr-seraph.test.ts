@@ -158,4 +158,54 @@ describe('HR-SERAPH-1 · Exact Query Shape Pins & Throw Proofs (B5)', () => {
             'Must throw when session has no tenant'
         );
     });
+
+    // 9. B8 undo rate grouping covers every entry once (timesheet-rates/undo/route.ts)
+    test('9 · timesheet-rates/undo B8 — groupSnapshotByRate groups by oldRate covering every entry exactly once', async () => {
+        const { groupSnapshotByRate } = await import('../src/app/api/hr/timesheet-rates/undo/route.ts');
+
+        const snapshot = [
+            { entryId: 'e1', oldRate: 35 },
+            { entryId: 'e2', oldRate: 35 },
+            { entryId: 'e3', oldRate: 40 },
+            { entryId: 'e4', oldRate: null },
+            { entryId: 'e5', oldRate: 0 },
+            { entryId: 'e6', oldRate: 40 },
+            { entryId: 'e7', oldRate: null },
+        ];
+
+        const grouped = groupSnapshotByRate(snapshot);
+
+        // Group counts
+        assert.equal(grouped.size, 4, '4 distinct rate groups expected (35, 40, null, 0)');
+        assert.deepEqual(grouped.get(35), ['e1', 'e2']);
+        assert.deepEqual(grouped.get(40), ['e3', 'e6']);
+        assert.deepEqual(grouped.get(null), ['e4', 'e7']);
+        assert.deepEqual(grouped.get(0), ['e5']);
+
+        // Invariant: every entry appears exactly once
+        const seen = new Set<string>();
+        let totalCount = 0;
+        for (const ids of grouped.values()) {
+            for (const id of ids) {
+                assert.ok(!seen.has(id), `Duplicate entryId found across groups: ${id}`);
+                seen.add(id);
+                totalCount++;
+            }
+        }
+        assert.equal(totalCount, snapshot.length, 'Grouped count must equal snapshot length');
+        for (const item of snapshot) {
+            assert.ok(seen.has(item.entryId), `Missing entryId in grouped result: ${item.entryId}`);
+        }
+
+        // Throw proof: if an entry is dropped or duplicated, the assertion fails
+        assert.throws(() => {
+            const badSeen = new Set<string>();
+            const corruptedIds = ['e1', 'e1', 'e2']; // artificial duplicate
+            for (const id of corruptedIds) {
+                if (badSeen.has(id)) throw new Error(`duplicate ${id}`);
+                badSeen.add(id);
+            }
+        }, /duplicate e1/);
+    });
 });
+

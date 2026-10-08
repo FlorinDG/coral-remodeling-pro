@@ -583,8 +583,25 @@ export const useDatabaseStore = create<DatabaseState>()(
                         const storeNow = get();
                         const entry = storeNow.syncQueue[0];
                         if (entry.retryCount >= 5) {
-                            set({ syncStatus: 'error' as const });
-                            break;
+                            // SYNC-STUCK-1 (Florin 2026-10-08: "second time that updates reset scanned items in to validate").
+                            // A change that keeps FAILING (not refused — e.g. a tab still running the old version after a
+                            // deploy, whose calls no longer reach the server) used to stop the whole queue here and stay
+                            // queued forever: persisted across reloads, its record kept showing this browser's OLD copy over
+                            // the server's, and every change behind it never reached the server. Now: it is given up with a
+                            // visible message naming the record, the screen re-reads the server's version, the queue goes on.
+                            const stuckDb = storeNow.databases.find(d => d.id === entry.databaseId);
+                            const stuckPage = stuckDb?.pages.find((p: Page) => p.id === entry.pageId);
+                            get()._dequeueSync(entry.pageId);
+                            set(s => ({
+                                syncStatus: 'error' as const,
+                                databases: s.databases.map(d => d.id !== entry.databaseId ? d : {
+                                    ...d,
+                                    pages: d.pages.map((p: Page) => p.id !== entry.pageId ? p : { ...p, dirtyBase: undefined, dirtyBaseBlocks: false }),
+                                }),
+                            }));
+                            toast.error(`Een wijziging aan "${stuckPage ? extractPageTitle(stuckPage.properties) : entry.pageId}" kon niet bewaard worden — de versie op de server wordt getoond.`, { duration: 10000 });
+                            void get().reloadDatabasePages(entry.databaseId).catch(() => {});
+                            continue;
                         }
 
                         const db = storeNow.databases.find(d => d.id === entry.databaseId);

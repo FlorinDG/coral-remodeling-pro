@@ -724,3 +724,32 @@ describe('LIVE-1 · an open screen picks up a change made on another device', ()
         assert.equal(await useDatabaseStore.getState().refreshIfChanged('db-never'), false);
     });
 });
+
+describe('SYNC-STUCK-1 · a change that keeps failing never blocks the queue nor keeps a stale copy on screen', () => {
+    beforeEach(() => { resetStoreState(); });
+
+    test('Florin 2026-10-08 ("updates reset scanned items"): the stuck change is given up, the next one is saved, the server version is shown', async () => {
+        const stale = { id: 'stuck', databaseId: 'db-t', properties: { title: 'Brico', amount: '' }, dirtyBase: { title: 'Brico' }, blocks: [], updatedAt: '2026-10-08T08:00:00.000Z' };
+        const next = { id: 'next', databaseId: 'db-t', properties: { title: 'Hubo', amount: 9 }, dirtyBase: { title: 'Hubo' }, blocks: [], updatedAt: '2026-10-08T08:00:00.000Z' };
+        useDatabaseStore.setState({
+            databases: [{ id: 'db-t', name: 'Tickets', pages: [stale, next] as any[] } as any],
+            loadedDatabaseIds: ['db-t'],
+            syncQueue: [{ pageId: 'stuck', databaseId: 'db-t', retryCount: 5 }, { pageId: 'next', databaseId: 'db-t', retryCount: 0 }],
+        });
+        const saved: string[] = [];
+        setMockSaveGlobalPage(async (page: any) => { saved.push(page.id); return { success: true, updatedAt: '2026-10-08T09:00:00.000Z' }; });
+        // the server holds the scanned values
+        setMockGetDatabasePages(async () => [
+            { id: 'stuck', databaseId: 'db-t', properties: { title: 'Brico', amount: 12.5, category: 'cat-tools' }, blocks: [], updatedAt: '2026-10-08T08:30:00.000Z' },
+            { id: 'next', databaseId: 'db-t', properties: { title: 'Hubo', amount: 9 }, blocks: [], updatedAt: '2026-10-08T09:00:00.000Z' },
+        ]);
+
+        await useDatabaseStore.getState()._processSyncQueue();
+        await new Promise(r => setTimeout(r, 20));   // the server re-read
+
+        assert.deepEqual(saved, ['next'], 'the change behind the stuck one reached the server');
+        assert.equal(useDatabaseStore.getState().syncQueue.length, 0, 'nothing stays queued forever');
+        const shown = useDatabaseStore.getState().getDatabase('db-t')?.pages.find(p => p.id === 'stuck');
+        assert.equal(shown?.properties.amount, 12.5, 'the server version is shown, not the stale local copy');
+    });
+});

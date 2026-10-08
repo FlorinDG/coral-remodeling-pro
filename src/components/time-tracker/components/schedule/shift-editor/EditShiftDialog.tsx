@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Loader2,
   Trash2,
@@ -50,10 +50,11 @@ import { hrList } from '@/lib/hr-api';
 import { shiftMoment, localDateKey } from '@/lib/kernel/shift-time';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useLocale, useTranslations } from 'next-intl';
 
 import { ShiftLockBanner } from './components/ShiftLockBanner';
 import { shiftStatus, isWritableShiftStatus, SHIFT_STATUS_OPTIONS, type ShiftStatus } from '@/lib/kernel/shift-status';
-import { SHIFT_STATUS_LABEL, SHIFT_STATUS_PILL } from '../shift-status-ui';
+import { SHIFT_STATUS_LABEL, SHIFT_STATUS_PILL, getShiftStatusLabel } from '../shift-status-ui';
 import { ShiftTasksTab } from './components/ShiftTasksTab';
 import { ShiftAttachmentsTab } from './components/ShiftAttachmentsTab';
 import {
@@ -122,6 +123,18 @@ export function EditShiftDialog({
   canManage = true,
   leaveConflict = null,
 }: EditShiftDialogProps) {
+  const t = useTranslations('Hr.shifts.edit');
+  const tShifts = useTranslations('Hr.shifts');
+  const locale = useLocale();
+
+  const dayLabels = useMemo(() => {
+    const formatter = new Intl.DateTimeFormat(locale, { weekday: 'short' });
+    return [0, 1, 2, 3, 4, 5, 6].map(day => {
+      const d = new Date(Date.UTC(2026, 0, 4 + day, 12, 0, 0));
+      return formatter.format(d);
+    });
+  }, [locale]);
+
   const [loading, setLoading] = useState(false);
   const [userId, setUserId] = useState('');
   const [projectId, setProjectId] = useState('');
@@ -220,7 +233,7 @@ export function EditShiftDialog({
     const validation = validateShiftForm(formInput);
     if (!validation.valid) {
       const firstError = Object.values(validation.errors)[0];
-      toast.error(firstError || 'Controleer het formulier op fouten');
+      toast.error(firstError || t('formErrors'));
       return;
     }
 
@@ -256,7 +269,7 @@ export function EditShiftDialog({
       }
 
       toast.success(
-        isConvertingToRecurring ? 'Dienst omgezet naar herhalend' : 'Dienst bijgewerkt'
+        isConvertingToRecurring ? t('convertedSuccess') : t('updatedSuccess')
       );
       onOpenChange(false);
     } catch (err: unknown) {
@@ -270,9 +283,9 @@ export function EditShiftDialog({
           locked: true,
           reason: 'work_order_signed',
         });
-        toast.error('Deze dienst is ondertekend en kan niet meer worden gewijzigd');
+        toast.error(t('signedCannotModify'));
       } else {
-        toast.error('Kan dienst niet bijwerken');
+        toast.error(t('updateFailed'));
       }
     } finally {
       setLoading(false);
@@ -285,7 +298,7 @@ export function EditShiftDialog({
     setLoading(true);
     try {
       await onDeleteShift(shift.id, editScope);
-      toast.success('Dienst verwijderd');
+      toast.success(t('deletedSuccess'));
       onOpenChange(false);
     } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : String(err || '');
@@ -298,9 +311,9 @@ export function EditShiftDialog({
           locked: true,
           reason: 'work_order_signed',
         });
-        toast.error('Ondertekende diensten kunnen niet worden verwijderd');
+        toast.error(t('signedCannotDelete'));
       } else {
-        toast.error('Kan dienst niet verwijderen');
+        toast.error(t('deleteFailed'));
       }
     } finally {
       setLoading(false);
@@ -316,7 +329,7 @@ export function EditShiftDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Dienst bewerken</DialogTitle>
+          <DialogTitle>{t('title')}</DialogTitle>
         </DialogHeader>
 
         {/* Lock Banner when signed */}
@@ -324,10 +337,10 @@ export function EditShiftDialog({
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full mt-2">
           <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="details">Details</TabsTrigger>
+            <TabsTrigger value="details">{tShifts('create.tabDetails')}</TabsTrigger>
             <TabsTrigger value="tasks" className="flex items-center gap-1">
               <ListTodo className="h-4 w-4" />
-              Taken
+              {tShifts('create.tabTasks')}
               {taskCount > 0 && (
                 <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
                   {taskCount}
@@ -336,7 +349,7 @@ export function EditShiftDialog({
             </TabsTrigger>
             <TabsTrigger value="attachments" className="flex items-center gap-1">
               <Paperclip className="h-4 w-4" />
-              Bestanden
+              {tShifts('create.tabAttachments')}
               {attachmentCount > 0 && (
                 <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
                   {attachmentCount}
@@ -348,7 +361,10 @@ export function EditShiftDialog({
           <TabsContent value="details" className="h-[min(648px,70vh)] overflow-y-auto pr-1">
             {leaveConflict && (
               <div role="alert" className="mb-4 rounded-lg border border-red-300 bg-red-50 dark:bg-red-950/30 dark:border-red-800 px-3 py-2 text-sm text-red-800 dark:text-red-200">
-                ⚠ Conflict: deze medewerker heeft verlof op deze dag — {leaveConflict.requestType}{leaveConflict.pending ? ' (aangevraagd)' : ''}.
+                {t('conflict', {
+                  type: leaveConflict.requestType,
+                  pending: leaveConflict.pending ? t('pendingSuffix') : '',
+                })}
               </div>
             )}
             {/* WO-4b / C7: WerkbonCard at top of details tab */}
@@ -356,32 +372,32 @@ export function EditShiftDialog({
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <Label>Medewerker</Label>
+                <Label>{t('worker')}</Label>
                 <SearchableSelect
                   options={workers.map(w => ({ value: w.id, label: w.name }))}
                   value={userId}
                   onChange={setUserId}
-                  placeholder="Selecteer medewerker"
+                  placeholder={t('selectWorker')}
                   disabled={isInputDisabled}
                 />
               </div>
 
               <div>
-                <Label>Project</Label>
+                <Label>{t('project')}</Label>
                 <SearchableSelect
                   options={[
-                    { value: '', label: '— Geen project —' },
+                    { value: '', label: t('noProject') },
                     ...projects.map(p => ({ value: p.id, label: p.name })),
                   ]}
                   value={projectId || ''}
                   onChange={setProjectId}
-                  placeholder="Selecteer project (optioneel)"
+                  placeholder={t('selectProject')}
                   disabled={isInputDisabled}
                 />
               </div>
 
               <div className="flex flex-col gap-2">
-                <Label>Datum</Label>
+                <Label>{t('date')}</Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
@@ -393,7 +409,7 @@ export function EditShiftDialog({
                       )}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {shiftDate ? formatCalendarDay(shiftDate) : 'Selecteer datum'}
+                      {shiftDate ? formatCalendarDay(shiftDate) : t('selectDate')}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
@@ -410,7 +426,7 @@ export function EditShiftDialog({
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="editShiftStart">Starttijd</Label>
+                  <Label htmlFor="editShiftStart">{t('startTime')}</Label>
                   <Input
                     id="editShiftStart"
                     type="time"
@@ -420,7 +436,7 @@ export function EditShiftDialog({
                   />
                 </div>
                 <div>
-                  <Label htmlFor="editShiftEnd">Eindtijd</Label>
+                  <Label htmlFor="editShiftEnd">{t('endTime')}</Label>
                   <Input
                     id="editShiftEnd"
                     type="time"
@@ -432,20 +448,20 @@ export function EditShiftDialog({
               </div>
 
               <div>
-                <Label>Rol</Label>
+                <Label>{t('role')}</Label>
                 <Select
                   value={role || 'none'}
                   onValueChange={v => setRole(v === 'none' ? '' : v)}
                   disabled={isInputDisabled}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecteer rol (optioneel)" />
+                    <SelectValue placeholder={t('selectRole')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">Geen rol</SelectItem>
+                    <SelectItem value="none">{t('noRole')}</SelectItem>
                     {ROLE_OPTIONS.map(r => (
                       <SelectItem key={r} value={r}>
-                        {r}
+                        {tShifts.has(`roles.${r.toLowerCase()}`) ? tShifts(`roles.${r.toLowerCase()}`) : r}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -453,7 +469,7 @@ export function EditShiftDialog({
               </div>
 
               <div>
-                <Label>Status</Label>
+                <Label>{t('status')}</Label>
                 <Select
                   value={status}
                   onValueChange={v => setStatus(v as ShiftStatus)}
@@ -465,7 +481,7 @@ export function EditShiftDialog({
                   <SelectContent>
                     {SHIFT_STATUS_OPTIONS.map(s => (
                       <SelectItem key={s} value={s} disabled={!isWritableShiftStatus(s)}>
-                        {SHIFT_STATUS_LABEL[s]}
+                        {getShiftStatusLabel(s, (k) => tShifts(k))}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -474,13 +490,13 @@ export function EditShiftDialog({
 
               <div>
                 <Label htmlFor="editNotes">
-                  Omschrijving — afgedrukt op de getekende werkbon van de klant
+                  {t('description')}
                 </Label>
                 <Textarea
                   id="editNotes"
                   value={notes}
                   onChange={e => setNotes(e.target.value)}
-                  placeholder="Wat er moet gebeuren — u kunt het verzoek van de klant citeren"
+                  placeholder={t('descriptionPlaceholder')}
                   rows={2}
                   disabled={isInputDisabled}
                 />
@@ -488,13 +504,13 @@ export function EditShiftDialog({
 
               <div>
                 <Label htmlFor="siteAddressEdit">
-                  Uitvoeringsadres (indien niet het projectadres)
+                  {t('executionAddress')}
                 </Label>
                 <Input
                   id="siteAddressEdit"
                   value={siteAddress}
                   onChange={e => setSiteAddress(e.target.value)}
-                  placeholder="Laat leeg om het projectadres te gebruiken"
+                  placeholder={t('executionAddressPlaceholder')}
                   disabled={isInputDisabled}
                 />
               </div>
@@ -506,7 +522,7 @@ export function EditShiftDialog({
                   onChange={e => setMaterialsEnabled(e.target.checked)}
                   disabled={isInputDisabled}
                 />
-                Ploeg registreert gebruikte materialen op deze dienst
+                {t('materialsTracking')}
               </label>
 
               {/* Make Recurring Section */}
@@ -519,7 +535,7 @@ export function EditShiftDialog({
                     onClick={() => setIsConvertingToRecurring(true)}
                     className="w-full"
                   >
-                    <Repeat className="h-4 w-4 mr-2" /> Maak herhalend
+                    <Repeat className="h-4 w-4 mr-2" /> {t('makeRecurring')}
                   </Button>
                 </div>
               )}
@@ -535,10 +551,10 @@ export function EditShiftDialog({
                   >
                     <X className="h-4 w-4" />
                   </Button>
-                  <Label className="text-base font-semibold">Maak herhalend</Label>
+                  <Label className="text-base font-semibold">{t('makeRecurring')}</Label>
 
                   <div>
-                    <Label>Herhaal voor (weken)</Label>
+                    <Label>{t('repeatWeeks')}</Label>
                     <Input
                       type="number"
                       min={1}
@@ -550,11 +566,11 @@ export function EditShiftDialog({
                   </div>
 
                   <div>
-                    <Label>Dagen van de week</Label>
+                    <Label>{tShifts('create.daysOfWeek')}</Label>
                     <div className="flex flex-wrap gap-2 mt-2">
-                      {['Zo', 'Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za'].map((d, i) => (
+                      {dayLabels.map((d, i) => (
                         <Badge
-                          key={d}
+                          key={i}
                           variant={selectedDays.includes(i) ? 'default' : 'outline'}
                           className="cursor-pointer px-3 py-1 text-sm select-none"
                           onClick={() =>
@@ -569,7 +585,7 @@ export function EditShiftDialog({
                     </div>
                   </div>
                   <div className="text-sm text-muted-foreground italic">
-                    Genereert {selectedDays.length * recurringWeeks} extra diensten.
+                    {t('generatesExtra', { count: selectedDays.length * recurringWeeks })}
                   </div>
                 </div>
               )}
@@ -593,7 +609,7 @@ export function EditShiftDialog({
                     variant="outline"
                     onClick={() => onOpenChange(false)}
                   >
-                    Sluiten
+                    {t('close')}
                   </Button>
                 ) : (
                   <>
@@ -604,21 +620,19 @@ export function EditShiftDialog({
                         size="sm"
                         onClick={() => {
                           if (
-                            window.confirm(
-                              'Dienst verwijderen?\nDeze actie kan niet ongedaan worden gemaakt.'
-                            )
+                            window.confirm(t('deleteConfirm'))
                           ) {
                             handleDelete();
                           }
                         }}
                       >
                         <Trash2 className="h-4 w-4 mr-1" />
-                        Verwijderen
+                        {t('delete')}
                       </Button>
                     )}
                     <Button type="submit" disabled={loading || !canManage}>
                       {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                      Opslaan
+                      {t('save')}
                     </Button>
                   </>
                 )}

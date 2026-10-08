@@ -64,16 +64,29 @@ function referencedKeys(file: string): string[] {
     try { src = readFileSync(file, 'utf8'); } catch { return []; }
     if (!/useTranslations|getTranslations/.test(src)) return [];
 
-    const namespaces = [...src.matchAll(/(?:useTranslations|getTranslations)\(\s*['"]([^'"]+)['"]\s*\)/g)]
-        .map(m => m[1]);
-    if (namespaces.length === 0) return [];
+    const bindings = [...src.matchAll(/(?:const|let|var)\s+([A-Za-z0-9_$]+)\s*=\s*(?:await\s+)?(?:useTranslations|getTranslations)\(\s*['"]([^'"]+)['"]\s*\)/g)]
+        .map(m => ({ varName: m[1], ns: m[2] }));
 
-    // t('key') / t("key") — skip template literals and dynamic keys entirely.
-    const calls = [...src.matchAll(/\bt\(\s*['"]([A-Za-z0-9_.\-]+)['"]/g)].map(m => m[1]);
+    if (bindings.length === 0) {
+        const namespaces = [...src.matchAll(/(?:useTranslations|getTranslations)\(\s*['"]([^'"]+)['"]\s*\)/g)]
+            .map(m => m[1]);
+        if (namespaces.length === 0) return [];
+        const calls = [...src.matchAll(/\bt\(\s*['"]([A-Za-z0-9_.\-]+)['"]/g)].map(m => m[1]);
+        const out: string[] = [];
+        for (const key of calls) {
+            for (const ns of namespaces) out.push(`${ns}.${key}`);
+        }
+        return out;
+    }
 
     const out: string[] = [];
-    for (const key of calls) {
-        for (const ns of namespaces) out.push(`${ns}.${key}`);
+    for (const { varName, ns } of bindings) {
+        const escaped = varName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const re = new RegExp(`\\b${escaped}\\(\\s*['"]([A-Za-z0-9_.\\-]+)['"]`, 'g');
+        const calls = [...src.matchAll(re)].map(m => m[1]);
+        for (const key of calls) {
+            out.push(`${ns}.${key}`);
+        }
     }
     return out;
 }
@@ -142,6 +155,43 @@ describe('i18n — every key referenced in source exists', () => {
             [],
             `${report.length} translation key(s) are referenced in code but exist in no locale file. ` +
             `They will render as raw variable names on screen.`,
+        );
+    });
+});
+
+describe('i18n — Hr.* throw proof guard', () => {
+    test('dropping an Hr.* key triggers failure in key parity check', () => {
+        const enData = loadLocale('en');
+        const tamperedEn = JSON.parse(JSON.stringify(enData)) as Record<string, any>;
+        assert.ok(tamperedEn.Hr?.dashboard, 'Hr.dashboard should exist in en');
+        delete tamperedEn.Hr.dashboard.title;
+
+        const ref = new Set(leafKeys(tamperedEn));
+        const nlKeys = new Set(leafKeys(loadLocale('nl')));
+        const missing = [...nlKeys].filter(k => !ref.has(k));
+        assert.ok(
+            missing.includes('Hr.dashboard.title'),
+            'Parity check must detect when an Hr key is missing from a locale'
+        );
+    });
+
+    test('dropping an Hr.* key triggers failure in source reference check', () => {
+        const ref = new Set(leafKeys(loadLocale(REFERENCE_LOCALE)));
+        // Simulate dropping an Hr key that is referenced in source (Hr.dashboard.title)
+        ref.delete('Hr.dashboard.title');
+
+        const files = walk(SRC);
+        const missingKeys: string[] = [];
+        for (const f of files) {
+            for (const key of referencedKeys(f)) {
+                if (!ref.has(key) && key === 'Hr.dashboard.title') {
+                    missingKeys.push(key);
+                }
+            }
+        }
+        assert.ok(
+            missingKeys.length > 0,
+            'Missing Hr.dashboard.title referenced in source must trigger failure'
         );
     });
 });

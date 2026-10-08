@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import SearchableSelect from '@/components/ui/SearchableSelect';
 import ModuleTabs from "@/components/admin/ModuleTabs";
 import { hrTabs } from "@/config/tabs";
@@ -12,6 +12,7 @@ import {
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
+import { useTranslations, useLocale } from 'next-intl';
 
 interface Employee {
     id: string;
@@ -49,28 +50,36 @@ function saveProfile(empId: string, data: Partial<EmployeeProfile>) {
     } catch { /* empty */ }
 }
 
-// Map display roles → system roles
-const ROLE_OPTIONS = [
-    { label: 'Employee', value: 'TENANT_ENTERPRISE_EMPLOYEE' },
-    { label: 'Workforce', value: 'TENANT_ENTERPRISE_WORKFORCE' },
-    { label: 'Manager', value: 'TENANT_ENTERPRISE_MANAGER' },
-    { label: 'Project Manager', value: 'PROJECT_MANAGER' },
-    { label: 'Foreman', value: 'TEAMLEAD' },
-    { label: 'HR Officer', value: 'HR_OFFICER' },
-    { label: 'Bookkeeping', value: 'BOOKKEEPING' },
-    { label: 'Offertes', value: 'OFFERTES' },
-    { label: 'Admin', value: 'APP_MANAGER' },
-] as const;
+const ROLE_KEYS: Record<string, string> = {
+    'TENANT_ENTERPRISE_EMPLOYEE': 'employee',
+    'TENANT_ENTERPRISE_WORKFORCE': 'workforce',
+    'TENANT_ENTERPRISE_MANAGER': 'manager',
+    'PROJECT_MANAGER': 'projectManager',
+    'TEAMLEAD': 'foreman',
+    'HR_OFFICER': 'hrOfficer',
+    'BOOKKEEPING': 'bookkeeping',
+    'OFFERTES': 'offertes',
+    'APP_MANAGER': 'admin',
+};
 
-// Reverse map for display
-const ROLE_LABEL_MAP: Record<string, string> = Object.fromEntries(
-    ROLE_OPTIONS.map(r => [r.value, r.label])
-);
-function getRoleLabel(systemRole: string) {
-    return ROLE_LABEL_MAP[systemRole] || systemRole;
-}
-const DEPARTMENTS = ["Operations", "Construction", "Design", "Administration", "Finance", "HR", "Sales", "Marketing"];
-const EMPLOYMENT_TYPES = ["Full-time", "Part-time", "Contractor", "Intern", "Temporary"];
+const DEPT_KEYS: Record<string, string> = {
+    'Operations': 'operations',
+    'Construction': 'construction',
+    'Design': 'design',
+    'Administration': 'administration',
+    'Finance': 'finance',
+    'HR': 'hr',
+    'Sales': 'sales',
+    'Marketing': 'marketing',
+};
+
+const EMP_TYPE_KEYS: Record<string, string> = {
+    'Full-time': 'fullTime',
+    'Part-time': 'partTime',
+    'Contractor': 'contractor',
+    'Intern': 'intern',
+    'Temporary': 'temporary',
+};
 
 const emptyForm = {
     firstName: "", lastName: "", email: "", phone: "", role: "TENANT_ENTERPRISE_EMPLOYEE", status: "ACTIVE",
@@ -124,6 +133,8 @@ function getGradient(id: string) {
 
 // ── Main Component ───────────────────────────────────────────────────
 export default function EmployeesPage() {
+    const t = useTranslations('Hr.employees');
+    const locale = useLocale();
     const [employees, setEmployees] = useState<Employee[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
@@ -136,6 +147,27 @@ export default function EmployeesPage() {
     const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
     const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
     const [statusFilter, setStatusFilter] = useState<string>('ALL');
+
+    const getRoleLabel = useCallback((systemRole: string) => {
+        const k = ROLE_KEYS[systemRole];
+        if (k && t.has(`roles.${k}`)) return t(`roles.${k}`);
+        return systemRole;
+    }, [t]);
+
+    const roleOptions = useMemo(() => Object.entries(ROLE_KEYS).map(([val, k]) => ({
+        value: val,
+        label: t.has(`roles.${k}`) ? t(`roles.${k}`) : val
+    })), [t]);
+
+    const departmentOptions = useMemo(() => Object.entries(DEPT_KEYS).map(([val, k]) => ({
+        value: val,
+        label: t.has(`departments.${k}`) ? t(`departments.${k}`) : val
+    })), [t]);
+
+    const employmentTypeOptions = useMemo(() => Object.entries(EMP_TYPE_KEYS).map(([val, k]) => ({
+        value: val,
+        label: t.has(`employmentTypes.${k}`) ? t(`employmentTypes.${k}`) : val
+    })), [t]);
 
     const fetchEmployees = useCallback(async () => {
         try {
@@ -164,7 +196,7 @@ export default function EmployeesPage() {
     };
 
     const handleSave = async () => {
-        if (!form.firstName || !form.lastName || !form.email || !form.role) { setError("Fill in all required fields."); return; }
+        if (!form.firstName || !form.lastName || !form.email || !form.role) { setError(t('requiredFieldsError')); return; }
         setSaving(true); setError("");
         try {
             const url = editing ? `/api/tenant/employees/${editing.id}` : "/api/tenant/employees";
@@ -207,7 +239,7 @@ export default function EmployeesPage() {
     };
 
     const handleDelete = async (id: string) => {
-        if (!confirm("Delete this employee? This action cannot be undone.")) return;
+        if (!confirm(t('confirmDelete'))) return;
         setDeleting(id);
         try {
             await fetch(`/api/tenant/employees/${id}`, { method: "DELETE" });
@@ -228,7 +260,7 @@ export default function EmployeesPage() {
             <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowDialog(false)} />
             <div className="relative bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto border border-neutral-200 dark:border-white/10">
                 <div className="flex items-center justify-between p-6 border-b border-neutral-200 dark:border-white/10">
-                    <h2 className="text-lg font-bold text-neutral-900 dark:text-white">{editing ? "Edit Employee" : "Add Employee"}</h2>
+                    <h2 className="text-lg font-bold text-neutral-900 dark:text-white">{editing ? t("editEmployee") : t("addEmployee")}</h2>
                     <button onClick={() => setShowDialog(false)} className="p-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-white/10"><X className="w-5 h-5 text-neutral-500" /></button>
                 </div>
                 <div className="p-6 space-y-4">
@@ -236,41 +268,41 @@ export default function EmployeesPage() {
 
                     {/* Personal Info Section */}
                     <div>
-                        <p className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-3">Personal Information</p>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-3">{t("personalInfo")}</p>
                         <div className="grid grid-cols-2 gap-4">
-                            <Field label="First Name *" value={form.firstName} onChange={v => setForm(f => ({ ...f, firstName: v }))} />
-                            <Field label="Last Name *" value={form.lastName} onChange={v => setForm(f => ({ ...f, lastName: v }))} />
+                            <Field label={t("firstName")} value={form.firstName} onChange={v => setForm(f => ({ ...f, firstName: v }))} />
+                            <Field label={t("lastName")} value={form.lastName} onChange={v => setForm(f => ({ ...f, lastName: v }))} />
                         </div>
                         <div className="grid grid-cols-2 gap-4 mt-4">
-                            <Field label="Email *" type="email" value={form.email} onChange={v => setForm(f => ({ ...f, email: v }))} />
-                            <Field label="Phone" type="tel" value={form.phone} onChange={v => setForm(f => ({ ...f, phone: v }))} />
+                            <Field label={t("email")} type="email" value={form.email} onChange={v => setForm(f => ({ ...f, email: v }))} />
+                            <Field label={t("phone")} type="tel" value={form.phone} onChange={v => setForm(f => ({ ...f, phone: v }))} />
                         </div>
                     </div>
 
                     {/* Employment Section */}
                     <div className="pt-4 border-t border-neutral-200 dark:border-white/10">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-3">Employment</p>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-3">{t("employment")}</p>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1.5 block">Role *</label>
+                                <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1.5 block">{t("role")}</label>
                                 <SearchableSelect
-                                    options={ROLE_OPTIONS.map(r => ({ value: r.value, label: r.label }))}
+                                    options={roleOptions}
                                     value={form.role}
                                     onChange={v => setForm(f => ({ ...f, role: v }))}
-                                    placeholder="Select role..."
+                                    placeholder={t("selectRole")}
                                 />
                             </div>
                             <div>
-                                <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1.5 block">Status</label>
+                                <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1.5 block">{t("status")}</label>
                                 <SearchableSelect
                                     options={[
-                                        { value: 'ACTIVE', label: 'Active' },
-                                        { value: 'INACTIVE', label: 'Inactive' },
-                                        { value: 'ON_LEAVE', label: 'On Leave' },
+                                        { value: 'ACTIVE', label: t('active') },
+                                        { value: 'INACTIVE', label: t('inactive') },
+                                        { value: 'ON_LEAVE', label: t('onLeave') },
                                     ]}
                                     value={form.status}
                                     onChange={v => setForm(f => ({ ...f, status: v }))}
-                                    placeholder="Select status..."
+                                    placeholder={t("selectStatus")}
                                 />
                                 <div className="flex items-center space-x-2 mt-2.5">
                                     <input
@@ -281,15 +313,15 @@ export default function EmployeesPage() {
                                         className="h-4 w-4 rounded border-neutral-300 text-[var(--brand-color,#d35400)] focus:ring-[var(--brand-color,#d35400)]"
                                     />
                                     <label htmlFor="schedule" className="text-xs font-bold text-neutral-600 dark:text-neutral-400 cursor-pointer">
-                                        Show in Scheduler
+                                        {t("showInScheduler")}
                                     </label>
                                 </div>
                             </div>
                         </div>
                         <div className="grid grid-cols-2 gap-4 mt-4">
-                            <Field label="Hourly Cost (€)" type="number" value={form.hourlyCost} onChange={v => setForm(f => ({ ...f, hourlyCost: v }))} placeholder="0.00" />
+                            <Field label={t("hourlyCost")} type="number" value={form.hourlyCost} onChange={v => setForm(f => ({ ...f, hourlyCost: v }))} placeholder="0.00" />
                             <div>
-                                <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1.5 block">Hire Date</label>
+                                <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1.5 block">{t("hireDate")}</label>
                                 <Popover>
                                     <PopoverTrigger asChild>
                                         <button
@@ -299,7 +331,7 @@ export default function EmployeesPage() {
                                             }`}
                                         >
                                             <CalendarIcon className="w-4 h-4 text-neutral-400 shrink-0" />
-                                            {form.hireDate ? format(new Date(form.hireDate), 'dd/MM/yyyy') : 'Select date...'}
+                                            {form.hireDate ? format(new Date(form.hireDate), 'dd/MM/yyyy') : t("selectDate")}
                                         </button>
                                     </PopoverTrigger>
                                     <PopoverContent className="w-auto p-0 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl shadow-xl" align="start">
@@ -314,49 +346,47 @@ export default function EmployeesPage() {
                         </div>
                         <div className="grid grid-cols-2 gap-4 mt-4">
                             <div>
-                                <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1.5 block">Department</label>
+                                <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1.5 block">{t("department")}</label>
                                 <SearchableSelect
-                                    options={DEPARTMENTS.map(d => ({ value: d, label: d }))}
+                                    options={departmentOptions}
                                     value={form.department}
                                     onChange={v => setForm(f => ({ ...f, department: v }))}
-                                    placeholder="Select department..."
+                                    placeholder={t("selectDepartment")}
                                 />
                             </div>
                             <div>
-                                <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1.5 block">Employment Type</label>
+                                <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1.5 block">{t("employmentType")}</label>
                                 <SearchableSelect
-                                    options={EMPLOYMENT_TYPES.map(t => ({ value: t, label: t }))}
+                                    options={employmentTypeOptions}
                                     value={form.employmentType}
                                     onChange={v => setForm(f => ({ ...f, employmentType: v }))}
-                                    placeholder="Select type..."
+                                    placeholder={t("selectType")}
                                 />
                             </div>
                         </div>
                         <div className="mt-4">
-                            <Field label="Address" value={form.address} onChange={v => setForm(f => ({ ...f, address: v }))} placeholder="Street, City, ZIP" />
+                            <Field label={t("address")} value={form.address} onChange={v => setForm(f => ({ ...f, address: v }))} placeholder={t("addressPlaceholder")} />
                         </div>
                     </div>
 
-
-
                     {/* Notes */}
                     <div className="pt-4 border-t border-neutral-200 dark:border-white/10">
-                        <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1.5 block">Notes</label>
+                        <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1.5 block">{t("notes")}</label>
                         <textarea
                             value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-                            rows={3} placeholder="Additional notes..."
+                            rows={3} placeholder={t("notesPlaceholder")}
                             className="w-full px-3 py-2.5 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm font-medium text-neutral-900 dark:text-white outline-none focus:ring-2 focus:ring-[var(--brand-color,#d35400)]/30 resize-none"
                         />
                     </div>
                 </div>
                 <div className="flex items-center justify-end gap-3 p-6 border-t border-neutral-200 dark:border-white/10">
-                    <button onClick={() => setShowDialog(false)} className="px-4 py-2.5 rounded-xl text-sm font-bold text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/5 transition-colors">Cancel</button>
+                    <button onClick={() => setShowDialog(false)} className="px-4 py-2.5 rounded-xl text-sm font-bold text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/5 transition-colors">{t("cancel")}</button>
                     <button onClick={handleSave} disabled={saving}
                         className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white shadow-sm hover:opacity-90 transition-colors disabled:opacity-50"
                         style={{ backgroundColor: "var(--brand-color, #d35400)" }}
                     >
                         {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-                        {editing ? "Save Changes" : "Add Employee"}
+                        {editing ? t("saveChanges") : t("addEmployee")}
                     </button>
                 </div>
             </div>
@@ -379,7 +409,7 @@ export default function EmployeesPage() {
                             onClick={() => setSelectedEmployee(null)}
                             className="flex items-center gap-2 text-white/80 hover:text-white text-sm font-medium transition-colors mb-4"
                         >
-                            <ArrowLeft className="w-4 h-4" /> Back to Directory
+                            <ArrowLeft className="w-4 h-4" /> {t("backToDirectory")}
                         </button>
                         <div className="absolute -bottom-12 left-6 flex items-end gap-4">
                             <div className="w-24 h-24 rounded-2xl bg-white dark:bg-neutral-900 border-4 border-white dark:border-neutral-900 shadow-xl flex items-center justify-center">
@@ -401,16 +431,16 @@ export default function EmployeesPage() {
                                     <span className="text-sm font-medium text-neutral-500">{getRoleLabel(emp.role)}</span>
                                     <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${statusCfg.bg} ${statusCfg.text} ${statusCfg.border}`}>
                                         <span className={`w-1.5 h-1.5 rounded-full ${statusCfg.dot}`} />
-                                        {emp.status}
+                                        {emp.status === 'ACTIVE' ? t('active') : emp.status === 'ON_LEAVE' ? t('onLeave') : t('inactive')}
                                     </span>
                                 </div>
                             </div>
                             <div className="flex items-center gap-2">
                                 <button onClick={() => openEdit(emp)} className="flex items-center gap-2 px-4 py-2 rounded-lg border border-neutral-200 dark:border-white/10 text-sm font-bold hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors">
-                                    <Pencil className="w-3.5 h-3.5" /> Edit
+                                    <Pencil className="w-3.5 h-3.5" /> {t("edit")}
                                 </button>
                                 <button onClick={() => handleDelete(emp.id)} className="flex items-center gap-2 px-4 py-2 rounded-lg border border-red-200 dark:border-red-500/20 text-red-600 text-sm font-bold hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors">
-                                    <Trash2 className="w-3.5 h-3.5" /> Delete
+                                    <Trash2 className="w-3.5 h-3.5" /> {t("delete")}
                                 </button>
                             </div>
                         </div>
@@ -420,38 +450,38 @@ export default function EmployeesPage() {
                             {/* Contact Card */}
                             <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl p-5">
                                 <h3 className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-4 flex items-center gap-2">
-                                    <Mail className="w-3.5 h-3.5" /> Contact Information
+                                    <Mail className="w-3.5 h-3.5" /> {t("contactInfo")}
                                 </h3>
                                 <div className="space-y-3">
-                                    <DetailRow icon={<Mail className="w-4 h-4" />} label="Email" value={emp.email} />
-                                    <DetailRow icon={<Phone className="w-4 h-4" />} label="Phone" value={emp.phone || '—'} />
-                                    <DetailRow icon={<MapPin className="w-4 h-4" />} label="Address" value={loadProfile(emp.id).address || 'Not set'} />
+                                    <DetailRow icon={<Mail className="w-4 h-4" />} label={t("email")} value={emp.email} />
+                                    <DetailRow icon={<Phone className="w-4 h-4" />} label={t("phone")} value={emp.phone || '—'} />
+                                    <DetailRow icon={<MapPin className="w-4 h-4" />} label={t("address")} value={loadProfile(emp.id).address || t("notSet")} />
                                 </div>
                             </div>
 
                             {/* Employment Card */}
                             <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl p-5">
                                 <h3 className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-4 flex items-center gap-2">
-                                    <Briefcase className="w-3.5 h-3.5" /> Employment Details
+                                    <Briefcase className="w-3.5 h-3.5" /> {t("employmentDetails")}
                                 </h3>
                                 <div className="space-y-3">
-                                    <DetailRow icon={<Briefcase className="w-4 h-4" />} label="Role" value={getRoleLabel(emp.role)} />
-                                    <DetailRow icon={<Building2 className="w-4 h-4" />} label="Department" value={loadProfile(emp.id).department || 'Not set'} />
-                                    <DetailRow icon={<CalendarIcon className="w-4 h-4" />} label="Hire Date" value={emp.hireDate ? new Date(emp.hireDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'} />
-                                    {tenure && <DetailRow icon={<Clock className="w-4 h-4" />} label="Tenure" value={tenure} />}
-                                    <DetailRow icon={<Clock className="w-4 h-4" />} label="Show in Scheduler" value={emp.schedule ? "Yes" : "No"} />
+                                    <DetailRow icon={<Briefcase className="w-4 h-4" />} label={t("role")} value={getRoleLabel(emp.role)} />
+                                    <DetailRow icon={<Building2 className="w-4 h-4" />} label={t("department")} value={loadProfile(emp.id).department ? (DEPT_KEYS[loadProfile(emp.id).department!] && t.has(`departments.${DEPT_KEYS[loadProfile(emp.id).department!]}`) ? t(`departments.${DEPT_KEYS[loadProfile(emp.id).department!]}`) : loadProfile(emp.id).department!) : t("notSet")} />
+                                    <DetailRow icon={<CalendarIcon className="w-4 h-4" />} label={t("hireDate")} value={emp.hireDate ? new Date(emp.hireDate).toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' }) : '—'} />
+                                    {tenure && <DetailRow icon={<Clock className="w-4 h-4" />} label={t("tenure")} value={tenure} />}
+                                    <DetailRow icon={<Clock className="w-4 h-4" />} label={t("showInScheduler")} value={emp.schedule ? t("yes") : t("no")} />
                                 </div>
                             </div>
 
                             {/* Compensation Card */}
                             <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl p-5">
                                 <h3 className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-4 flex items-center gap-2">
-                                    <Euro className="w-3.5 h-3.5" /> Compensation
+                                    <Euro className="w-3.5 h-3.5" /> {t("compensation")}
                                 </h3>
                                 <div className="space-y-3">
-                                    <DetailRow icon={<Euro className="w-4 h-4" />} label="Hourly Rate" value={emp.hourlyCost != null ? `€${emp.hourlyCost.toFixed(2)}/h` : '—'} />
-                                    <DetailRow icon={<FileText className="w-4 h-4" />} label="Contract" value={loadProfile(emp.id).employmentType || 'Full-time'} />
-                                    <DetailRow icon={<Shield className="w-4 h-4" />} label="Benefits" value="Standard Package" />
+                                    <DetailRow icon={<Euro className="w-4 h-4" />} label={t("hourlyRate")} value={emp.hourlyCost != null ? `€${emp.hourlyCost.toFixed(2)}/h` : '—'} />
+                                    <DetailRow icon={<FileText className="w-4 h-4" />} label={t("contract")} value={loadProfile(emp.id).employmentType ? (EMP_TYPE_KEYS[loadProfile(emp.id).employmentType!] && t.has(`employmentTypes.${EMP_TYPE_KEYS[loadProfile(emp.id).employmentType!]}`) ? t(`employmentTypes.${EMP_TYPE_KEYS[loadProfile(emp.id).employmentType!]}`) : loadProfile(emp.id).employmentType!) : t("employmentTypes.fullTime")} />
+                                    <DetailRow icon={<Shield className="w-4 h-4" />} label={t("benefits")} value={t("standardPackage")} />
                                 </div>
                             </div>
                         </div>
@@ -462,7 +492,7 @@ export default function EmployeesPage() {
                             {/* Certifications */}
                             <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl p-5">
                                 <h3 className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-4 flex items-center gap-2">
-                                    <GraduationCap className="w-3.5 h-3.5" /> Certifications & Skills
+                                    <GraduationCap className="w-3.5 h-3.5" /> {t("certifications")}
                                 </h3>
                                 <div className="flex flex-wrap gap-2">
                                     {['VCA Basic', 'First Aid'].map(cert => (
@@ -471,7 +501,7 @@ export default function EmployeesPage() {
                                         </span>
                                     ))}
                                     <button className="px-2.5 py-1 rounded-lg border border-dashed border-neutral-300 dark:border-white/20 text-xs font-semibold text-neutral-400 hover:text-neutral-600 hover:border-neutral-400 transition-colors">
-                                        + Add
+                                        {t("addCertification")}
                                     </button>
                                 </div>
                             </div>
@@ -479,24 +509,24 @@ export default function EmployeesPage() {
                             {/* Quick Stats */}
                             <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl p-5">
                                 <h3 className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-4 flex items-center gap-2">
-                                    <Award className="w-3.5 h-3.5" /> Quick Stats
+                                    <Award className="w-3.5 h-3.5" /> {t("quickStats")}
                                 </h3>
                                 <div className="grid grid-cols-2 gap-3">
                                     <div className="bg-neutral-50 dark:bg-white/5 rounded-lg p-3 text-center">
                                         <p className="text-xl font-black text-neutral-900 dark:text-white">0h</p>
-                                        <p className="text-[9px] font-bold uppercase tracking-wider text-neutral-400 mt-0.5">This Week</p>
+                                        <p className="text-[9px] font-bold uppercase tracking-wider text-neutral-400 mt-0.5">{t("thisWeek")}</p>
                                     </div>
                                     <div className="bg-neutral-50 dark:bg-white/5 rounded-lg p-3 text-center">
                                         <p className="text-xl font-black text-neutral-900 dark:text-white">0</p>
-                                        <p className="text-[9px] font-bold uppercase tracking-wider text-neutral-400 mt-0.5">Leave Days</p>
+                                        <p className="text-[9px] font-bold uppercase tracking-wider text-neutral-400 mt-0.5">{t("leaveDays")}</p>
                                     </div>
                                     <div className="bg-neutral-50 dark:bg-white/5 rounded-lg p-3 text-center">
                                         <p className="text-xl font-black text-neutral-900 dark:text-white">0</p>
-                                        <p className="text-[9px] font-bold uppercase tracking-wider text-neutral-400 mt-0.5">Projects</p>
+                                        <p className="text-[9px] font-bold uppercase tracking-wider text-neutral-400 mt-0.5">{t("projects")}</p>
                                     </div>
                                     <div className="bg-neutral-50 dark:bg-white/5 rounded-lg p-3 text-center">
                                         <p className="text-xl font-black text-neutral-900 dark:text-white">0</p>
-                                        <p className="text-[9px] font-bold uppercase tracking-wider text-neutral-400 mt-0.5">Tasks</p>
+                                        <p className="text-[9px] font-bold uppercase tracking-wider text-neutral-400 mt-0.5">{t("tasks")}</p>
                                     </div>
                                 </div>
                             </div>
@@ -516,11 +546,11 @@ export default function EmployeesPage() {
                 {/* Header */}
                 <div className="flex items-center justify-between mb-6">
                     <div>
-                        <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">Employee Directory</h1>
-                        <p className="text-neutral-500 font-medium text-sm mt-1">Manage personnel, roles, and internal billing rates.</p>
+                        <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">{t("title")}</h1>
+                        <p className="text-neutral-500 font-medium text-sm mt-1">{t("subtitle")}</p>
                     </div>
                     <button onClick={openAdd} className="flex items-center gap-2 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:opacity-90 transition-colors" style={{ backgroundColor: "var(--brand-color, #d35400)" }}>
-                        <Plus className="w-4 h-4" /> Add Employee
+                        <Plus className="w-4 h-4" /> {t("addEmployee")}
                     </button>
                 </div>
 
@@ -528,10 +558,10 @@ export default function EmployeesPage() {
                 {employees.length > 0 && (
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
                         {[
-                            { label: 'Total', value: employees.length, color: 'text-neutral-900 dark:text-white' },
-                            { label: 'Active', value: employees.filter(e => e.status === 'ACTIVE').length, color: 'text-emerald-600' },
-                            { label: 'On Leave', value: employees.filter(e => e.status === 'ON_LEAVE').length, color: 'text-amber-600' },
-                            { label: 'Inactive', value: employees.filter(e => e.status === 'INACTIVE').length, color: 'text-neutral-400' },
+                            { label: t("total"), value: employees.length, color: 'text-neutral-900 dark:text-white' },
+                            { label: t("active"), value: employees.filter(e => e.status === 'ACTIVE').length, color: 'text-emerald-600' },
+                            { label: t("onLeave"), value: employees.filter(e => e.status === 'ON_LEAVE').length, color: 'text-amber-600' },
+                            { label: t("inactive"), value: employees.filter(e => e.status === 'INACTIVE').length, color: 'text-neutral-400' },
                         ].map(s => (
                             <div key={s.label} className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-3 text-center">
                                 <p className={`text-2xl font-black ${s.color}`}>{s.value}</p>
@@ -546,12 +576,12 @@ export default function EmployeesPage() {
                     <div className="flex items-center gap-3 mb-4">
                         <div className="relative flex-1 max-w-sm">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-                            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search employees..."
+                            <input value={search} onChange={e => setSearch(e.target.value)} placeholder={t("searchPlaceholder")}
                                 className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm font-medium text-neutral-900 dark:text-white outline-none focus:ring-2 focus:ring-[var(--brand-color,#d35400)]/30"
                             />
                         </div>
                         <div className="flex items-center gap-1 bg-neutral-100 dark:bg-white/5 rounded-lg p-0.5">
-                            {['ALL', 'ACTIVE', 'ON_LEAVE', 'INACTIVE'].map(s => (
+                            {(['ALL', 'ACTIVE', 'ON_LEAVE', 'INACTIVE'] as const).map(s => (
                                 <button
                                     key={s}
                                     onClick={() => setStatusFilter(s)}
@@ -561,7 +591,7 @@ export default function EmployeesPage() {
                                             : 'text-neutral-500 hover:text-neutral-700'
                                     }`}
                                 >
-                                    {s === 'ON_LEAVE' ? 'Leave' : s === 'ALL' ? 'All' : s.charAt(0) + s.slice(1).toLowerCase()}
+                                    {s === 'ALL' ? t('filterAll') : s === 'ACTIVE' ? t('filterActive') : s === 'ON_LEAVE' ? t('filterLeave') : t('filterInactive')}
                                 </button>
                             ))}
                         </div>
@@ -575,8 +605,8 @@ export default function EmployeesPage() {
                     ) : filtered.length === 0 ? (
                         <div className="p-12 flex flex-col items-center justify-center text-center">
                             <div className="w-16 h-16 bg-neutral-100 dark:bg-white/5 rounded-full flex items-center justify-center mb-4"><Users className="w-8 h-8 text-neutral-400" /></div>
-                            <h3 className="text-lg font-bold text-neutral-900 dark:text-white">{search ? "No matches" : "No Employees Found"}</h3>
-                            <p className="text-neutral-500 text-sm mt-2 max-w-sm">{search ? "Try a different search term." : "Get started by adding your first team member."}</p>
+                            <h3 className="text-lg font-bold text-neutral-900 dark:text-white">{search ? t("noMatches") : t("noEmployees")}</h3>
+                            <p className="text-neutral-500 text-sm mt-2 max-w-sm">{search ? t("noMatchesHint") : t("noEmployeesHint")}</p>
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-0.5 p-0.5">
@@ -597,7 +627,7 @@ export default function EmployeesPage() {
                                             </div>
                                             <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border ${statusCfg.bg} ${statusCfg.text} ${statusCfg.border}`}>
                                                 <span className={`w-1.5 h-1.5 rounded-full ${statusCfg.dot}`} />
-                                                {emp.status === 'ON_LEAVE' ? 'Leave' : emp.status.charAt(0) + emp.status.slice(1).toLowerCase()}
+                                                {emp.status === 'ACTIVE' ? t('active') : emp.status === 'ON_LEAVE' ? t('filterLeave') : t('inactive')}
                                             </span>
                                         </div>
 
@@ -626,7 +656,7 @@ export default function EmployeesPage() {
 
                                         {/* Hover action hint */}
                                         <div className="mt-3 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">View Profile</span>
+                                            <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">{t("viewProfile")}</span>
                                             <ChevronRight className="w-3.5 h-3.5 text-neutral-300" />
                                         </div>
                                     </div>

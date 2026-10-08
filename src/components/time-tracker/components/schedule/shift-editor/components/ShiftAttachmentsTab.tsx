@@ -54,6 +54,8 @@ function getFileIcon(fileType: string) {
   return FileText;
 }
 
+import { useTranslations } from 'next-intl';
+
 export function ShiftAttachmentsTab({
   shiftId,
   projectId,
@@ -61,6 +63,7 @@ export function ShiftAttachmentsTab({
   isLocked = false,
   onCountChange,
 }: ShiftAttachmentsTabProps) {
+  const t = useTranslations('Hr.shifts.attachments');
   const [attachments, setAttachments] = useState<ShiftAttachmentItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
@@ -229,7 +232,7 @@ export function ShiftAttachmentsTab({
               ) : (
                 <Upload className="h-4 w-4 mr-1.5" />
               )}
-              Bestand uploaden
+              {t('uploadButton')}
             </Button>
           </div>
 
@@ -238,13 +241,13 @@ export function ShiftAttachmentsTab({
               <PopoverTrigger asChild>
                 <Button variant="outline" size="sm" className="h-9">
                   <FolderOpen className="h-4 w-4 mr-1.5" />
-                  Uit project
+                  {t('fromProject')}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-80 p-3" align="start">
                 <div className="space-y-2">
                   <h4 className="font-semibold text-xs uppercase tracking-wider text-neutral-500">
-                    Projectbestanden
+                    {t('projectFiles')}
                   </h4>
                   <ScrollArea className="h-48">
                     <div className="space-y-1">
@@ -263,7 +266,7 @@ export function ShiftAttachmentsTab({
                             <span className="truncate flex-1 font-medium">{pa.file_name}</span>
                             {alreadyAdded && (
                               <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                                Toegevoegd
+                                {t('added')}
                               </Badge>
                             )}
                           </button>
@@ -286,7 +289,7 @@ export function ShiftAttachmentsTab({
       ) : ordinaryAttachments.length === 0 ? (
         <div className="text-center py-8 text-neutral-500">
           <Paperclip className="h-8 w-8 mx-auto mb-2 opacity-40" />
-          <p className="text-sm">Geen bestanden gekoppeld aan deze dienst</p>
+          <p className="text-sm">{t('noFiles')}</p>
         </div>
       ) : (
         <div className="space-y-2">

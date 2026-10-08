@@ -23,7 +23,8 @@ import { ScheduledShift, NOTION_COLORS } from '@/components/time-tracker/hooks/u
 import { cn } from '@/lib/utils';
 import { shiftStatus, isWritableShiftStatus, SHIFT_STATUS_OPTIONS } from '@/lib/kernel/shift-status';
 import { shiftMoment, zonedParts } from '@/lib/kernel/shift-time';
-import { SHIFT_STATUS_LABEL, SHIFT_STATUS_PILL } from './shift-status-ui';
+import { SHIFT_STATUS_PILL, getShiftStatusLabel } from './shift-status-ui';
+import { useLocale, useTranslations } from 'next-intl';
 
 interface ScheduleTableProps {
   shifts: ScheduledShift[];
@@ -39,12 +40,15 @@ function getNotionColor(colorName: string) {
   return NOTION_COLORS.find(c => c.name === colorName) || NOTION_COLORS[6];
 }
 
-/** 'YYYY-MM-DD' → 'do 8 okt.' — built from parts at local noon (no UTC parse of a date string). */
-function formatDate(dateStr: string) {
-  return shiftMoment(dateStr, '12:00').toLocaleDateString('nl-BE', { weekday: 'short', month: 'short', day: 'numeric' });
+/** 'YYYY-MM-DD' → formatted short day — built from parts at local noon (no UTC parse of a date string). */
+function formatDate(dateStr: string, locale: string) {
+  return shiftMoment(dateStr, '12:00').toLocaleDateString(locale, { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
 export function ScheduleTable({ shifts, onDelete, onStatusChange, onShiftClick, canManage, conflictIds }: ScheduleTableProps) {
+  const t = useTranslations('Hr.scheduler');
+  const tShifts = useTranslations('Hr.shifts');
+  const locale = useLocale();
   const [filter, setFilter] = useState<'all' | 'upcoming' | 'past'>('all');
   
   const today = zonedParts(new Date()).date;   // the business day — never toISOString() (UTC)
@@ -60,15 +64,15 @@ export function ScheduleTable({ shifts, onDelete, onStatusChange, onShiftClick, 
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle>All Scheduled Shifts</CardTitle>
+          <CardTitle>{t('allScheduledShifts')}</CardTitle>
           <Select value={filter} onValueChange={(v) => setFilter(v as typeof filter)}>
             <SelectTrigger className="w-32">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All</SelectItem>
-              <SelectItem value="upcoming">Upcoming</SelectItem>
-              <SelectItem value="past">Past</SelectItem>
+              <SelectItem value="all">{t('filterAll')}</SelectItem>
+              <SelectItem value="upcoming">{t('filterUpcoming')}</SelectItem>
+              <SelectItem value="past">{t('filterPast')}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -78,21 +82,21 @@ export function ScheduleTable({ shifts, onDelete, onStatusChange, onShiftClick, 
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Time</TableHead>
-                <TableHead>Employee</TableHead>
-                <TableHead>Project</TableHead>
-                <TableHead>Location</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Status</TableHead>
-                {canManage && <TableHead className="w-20">Actions</TableHead>}
+                <TableHead>{t('colDate')}</TableHead>
+                <TableHead>{t('colTime')}</TableHead>
+                <TableHead>{t('colEmployee')}</TableHead>
+                <TableHead>{t('colProject')}</TableHead>
+                <TableHead>{t('colLocation')}</TableHead>
+                <TableHead>{t('colRole')}</TableHead>
+                <TableHead>{t('colStatus')}</TableHead>
+                {canManage && <TableHead className="w-20">{t('colActions')}</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredShifts.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={canManage ? 8 : 7} className="text-center text-muted-foreground py-8">
-                    No shifts found
+                    {t('noShiftsFound')}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -108,7 +112,7 @@ export function ScheduleTable({ shifts, onDelete, onStatusChange, onShiftClick, 
                       onClick={() => onShiftClick?.(shift)}
                     >
                       <TableCell className="font-medium whitespace-nowrap">
-                        {formatDate(shift.shiftDate || '')}
+                        {formatDate(shift.shiftDate || '', locale)}
                       </TableCell>
                       <TableCell className="whitespace-nowrap">
                         {formatTime(shift.shiftStart || '00:00')} - {formatTime(shift.shiftEnd || '00:00')}
@@ -135,7 +139,7 @@ export function ScheduleTable({ shifts, onDelete, onStatusChange, onShiftClick, 
                         {shift.project?.address || '—'}
                       </TableCell>
                       <TableCell>
-                        {shift.role || '—'}
+                        {shift.role ? (tShifts.has(`roles.${shift.role}`) ? tShifts(`roles.${shift.role}`) : shift.role) : '—'}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
@@ -150,17 +154,17 @@ export function ScheduleTable({ shifts, onDelete, onStatusChange, onShiftClick, 
                             <SelectContent>
                               {SHIFT_STATUS_OPTIONS.map(s => (
                                 <SelectItem key={s} value={s} disabled={!isWritableShiftStatus(s)}>
-                                  {SHIFT_STATUS_LABEL[s]}
+                                  {getShiftStatusLabel(s, (k) => tShifts(k))}
                                 </SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
                         ) : (
                           <span className={cn("px-2 py-0.5 rounded-full text-xs", SHIFT_STATUS_PILL[status])}>
-                            {SHIFT_STATUS_LABEL[status]}
+                            {getShiftStatusLabel(status, (k) => tShifts(k))}
                           </span>
                         )}
-                        {conflict && <span className="text-[10px] font-bold text-red-600" title="Deze medewerker heeft verlof op deze dag">⚠ Verlof</span>}
+                        {conflict && <span className="text-[10px] font-bold text-red-600" title={t('leaveConflictTitle')}>{t('leaveBadge')}</span>}
                         </div>
                       </TableCell>
                       {canManage && (

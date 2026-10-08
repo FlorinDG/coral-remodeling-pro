@@ -7,7 +7,7 @@ import { useMemo } from "react";
 import { useTabStore } from "@/store/useTabStore";
 import { useTenant } from "@/context/TenantContext";
 import { useTranslations } from 'next-intl';
-import { getFinancialTabs, getSettingsTabs, getFilteredRelationsTabs } from "@/config/tabs";
+import { getFinancialTabs, getSettingsTabs, getFilteredRelationsTabs, getHrTabs } from "@/config/tabs";
 
 import { useSession } from "next-auth/react";
 
@@ -28,6 +28,7 @@ export default function ModuleTabs({ tabs, groupId, planType }: ModuleTabsProps)
     const { tabOrders } = useTabStore();
     const { activeModules } = useTenant();
     const t = useTranslations('Admin');
+    const tHr = useTranslations('Hr');
     const { data: session } = useSession();
 
     // Auto-resolve localized tabs for known groups
@@ -37,8 +38,9 @@ export default function ModuleTabs({ tabs, groupId, planType }: ModuleTabsProps)
         if (groupId === 'financials') return getFinancialTabs(tFn, tHasFn);
         if (groupId === 'settings') return getSettingsTabs(tFn, tHasFn);
         if (groupId === 'relations') return getFilteredRelationsTabs(planType || 'FREE', tFn, tHasFn);
+        if (groupId === 'hr') return getHrTabs((key: string) => tHr(key), (key: string) => tHr.has(key));
         return tabs;
-    }, [tabs, groupId, t, planType]);
+    }, [tabs, groupId, t, tHr, planType]);
 
     const allowedTabs = useMemo(() => {
         if (session?.user?.role === 'SUPERADMIN') return resolvedTabs;

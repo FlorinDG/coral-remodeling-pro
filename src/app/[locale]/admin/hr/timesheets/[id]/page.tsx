@@ -8,17 +8,19 @@ import { useParams } from 'next/navigation';
 import { Loader2, ArrowLeft, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from '@/i18n/routing';
+import { useTranslations } from 'next-intl';
 import { useWerkbon, WerkbonDocument, WERKBON_PRINT_CSS } from '@/components/time-tracker/components/werkbon/WerkbonDocument';
 
 export default function WerkbonDetailPage() {
     const params = useParams();
+    const t = useTranslations('Hr.werkbon');
     const { data, loading } = useWerkbon(params.id as string);
 
     if (loading) {
         return (
             <div className="flex flex-col items-center justify-center h-screen bg-neutral-100 dark:bg-black">
                 <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
-                <p className="text-sm text-neutral-500 mt-4">Werkbon genereren...</p>
+                <p className="text-sm text-neutral-500 mt-4">{t('generating')}</p>
             </div>
         );
     }
@@ -26,9 +28,9 @@ export default function WerkbonDetailPage() {
     if (!data) {
         return (
             <div className="flex flex-col items-center justify-center h-screen">
-                <p>Werkbon niet gevonden.</p>
+                <p>{t('notFound')}</p>
                 <Link href="/admin/hr/timesheets">
-                    <Button variant="link">Terug naar overzicht</Button>
+                    <Button variant="link">{t('backToOverview')}</Button>
                 </Link>
             </div>
         );
@@ -40,11 +42,11 @@ export default function WerkbonDetailPage() {
             <div className="w-full max-w-[210mm] mb-6 flex items-center justify-between no-print">
                 <Link href="/admin/hr/timesheets">
                     <Button variant="ghost" size="sm" className="gap-2">
-                        <ArrowLeft className="w-4 h-4" /> Terug
+                        <ArrowLeft className="w-4 h-4" /> {t('back')}
                     </Button>
                 </Link>
                 <Button variant="outline" size="sm" className="gap-2" onClick={() => window.print()}>
-                    <Printer className="w-4 h-4" /> Print / PDF
+                    <Printer className="w-4 h-4" /> {t('printPdf')}
                 </Button>
             </div>
             <WerkbonDocument data={data} />

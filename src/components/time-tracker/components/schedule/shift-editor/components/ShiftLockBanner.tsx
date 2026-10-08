@@ -12,12 +12,16 @@ function formatBrussels(isoTs: string | undefined): string | undefined {
   return `${p.date.slice(8, 10)}/${p.date.slice(5, 7)}/${p.date.slice(0, 4)} ${p.time}`;
 }
 
+import { useTranslations } from 'next-intl';
+
 export function ShiftLockBanner({ lock }: ShiftLockBannerProps) {
+  const t = useTranslations('Hr.shifts.lock');
   if (!lock.locked) return null;
 
-  const signer = lock.signedBy || 'klant';
-  const signedNumber = lock.signedNumber ? `Werkbon ${lock.signedNumber}` : 'Werkbon';
+  const signer = lock.signedBy || t('defaultClient');
+  const signedNumber = lock.signedNumber ? `${t('defaultWorkOrder')} ${lock.signedNumber}` : t('defaultWorkOrder');
   const signedAtFormatted = formatBrussels(lock.signedAt);
+  const atText = signedAtFormatted ? t('at', { date: signedAtFormatted }) : '';
 
   return (
     <div className="mx-6 mt-4 p-4 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 text-amber-900 dark:text-amber-200 flex items-start gap-3 shadow-sm">
@@ -26,11 +30,10 @@ export function ShiftLockBanner({ lock }: ShiftLockBannerProps) {
       </div>
       <div className="space-y-1">
         <h4 className="text-sm font-bold tracking-tight">
-          Werkbon ondertekend door klant · Wijzigingen vergrendeld
+          {t('title')}
         </h4>
         <p className="text-xs text-amber-800/90 dark:text-amber-300/80 leading-relaxed">
-          Ondertekend door <strong>{signer}</strong>
-          {signedAtFormatted ? ` op ${signedAtFormatted}` : ''} ({signedNumber}). Deze dienst kan niet meer worden gewijzigd of verwijderd.
+          {t('description', { signer, at: atText, number: signedNumber })}
         </p>
       </div>
     </div>

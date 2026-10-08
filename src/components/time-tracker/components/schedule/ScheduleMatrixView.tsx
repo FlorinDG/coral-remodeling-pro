@@ -9,7 +9,8 @@ import { toast } from 'sonner';
 import { formatTime } from '@/lib/format/date';
 import { shiftStatus } from '@/lib/kernel/shift-status';
 import { absenceOn, type Absence } from '@/lib/kernel/absence';
-import { SHIFT_STATUS_DOT, SHIFT_STATUS_LABEL } from './shift-status-ui';
+import { SHIFT_STATUS_DOT, getShiftStatusLabel } from './shift-status-ui';
+import { useLocale, useTranslations } from 'next-intl';
 
 interface ScheduleMatrixViewProps {
   shifts: ScheduledShift[];
@@ -61,6 +62,9 @@ export function ScheduleMatrixView({
   absences = [],
   conflictIds,
 }: ScheduleMatrixViewProps) {
+  const t = useTranslations('Hr.scheduler');
+  const tShifts = useTranslations('Hr.shifts');
+  const locale = useLocale();
   const [draggedShiftId, setDraggedShiftId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<{ userId: string; date: string } | null>(null);
   const [copying, setCopying] = useState(false);
@@ -185,9 +189,9 @@ export function ScheduleMatrixView({
   }
 
   const formatDateHeader = (date: Date) => {
-    const day = date.toLocaleDateString('en-US', { weekday: 'short' });
+    const day = date.toLocaleDateString(locale, { weekday: 'short' });
     const num = date.getDate();
-    const month = date.toLocaleDateString('en-US', { month: 'short' });
+    const month = date.toLocaleDateString(locale, { month: 'short' });
     return { day, num, month };
   };
 
@@ -263,7 +267,7 @@ export function ScheduleMatrixView({
       <CardHeader className="print:pb-2">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
-            <CardTitle className="text-lg">Schedule Matrix</CardTitle>
+            <CardTitle className="text-lg">{t('matrix')}</CardTitle>
             {canManage && (
               <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded print:hidden">
                 Drag shifts to reschedule
@@ -276,7 +280,7 @@ export function ScheduleMatrixView({
               <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
               <input
                 type="text"
-                placeholder="Search employee..."
+                placeholder={t('searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-8 pr-3 py-1.5 text-xs bg-muted border border-input rounded-md outline-none focus:ring-1 focus:ring-primary w-40 text-foreground"
@@ -293,7 +297,7 @@ export function ScheduleMatrixView({
                 disabled={copying}
               >
                 <Copy className="h-3.5 w-3.5 mr-1" />
-                {copying ? 'Copying...' : 'Copy Prev Week'}
+                {copying ? t('copying') : t('copyWeek')}
               </Button>
             )}
 
@@ -305,7 +309,7 @@ export function ScheduleMatrixView({
               onClick={handlePrint}
             >
               <Printer className="h-3.5 w-3.5 mr-1" />
-              Print
+              {t('print')}
             </Button>
 
             {/* Week count toggle */}
@@ -316,7 +320,7 @@ export function ScheduleMatrixView({
                 className="rounded-none h-8 text-xs"
                 onClick={() => onWeekCountChange(1)}
               >
-                1 Week
+                {t('oneWeek')}
               </Button>
               <Button
                 variant={weekCount === 2 ? 'secondary' : 'ghost'}
@@ -324,7 +328,7 @@ export function ScheduleMatrixView({
                 className="rounded-none h-8 text-xs"
                 onClick={() => onWeekCountChange(2)}
               >
-                2 Weeks
+                {t('twoWeeks')}
               </Button>
             </div>
 
@@ -334,7 +338,7 @@ export function ScheduleMatrixView({
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               <div className="text-sm font-semibold px-2 min-w-[200px] text-center">
-                {weekStart.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} – {weekEndDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                {weekStart.toLocaleDateString(locale, { day: 'numeric', month: 'short' })} – {weekEndDate.toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' })}
               </div>
               <Button variant="outline" size="icon" className="h-8 w-8 print:hidden" onClick={onNextWeek}>
                 <ChevronRight className="h-4 w-4" />
@@ -347,13 +351,13 @@ export function ScheduleMatrixView({
         <div className="flex items-center gap-6 mt-2 px-1 text-xs text-muted-foreground">
           <div className="flex items-center gap-1.5">
             <Clock className="h-3.5 w-3.5" />
-            <span className="font-semibold text-foreground">{grandTotals.hours.toFixed(1)}</span> hrs total
+            <span className="font-semibold text-foreground">{grandTotals.hours.toFixed(1)}</span> {t('hrsTotal')}
           </div>
           <div>
-            <span className="font-semibold text-foreground">€{grandTotals.cost.toFixed(0)}</span> estimated cost
+            <span className="font-semibold text-foreground">€{grandTotals.cost.toFixed(0)}</span> {t('estimatedCost')}
           </div>
           <div>
-            <span className="font-semibold text-foreground">{filteredWorkers.length}</span> employees
+            <span className="font-semibold text-foreground">{filteredWorkers.length}</span> {t('employeesCount')}
           </div>
         </div>
       </CardHeader>
@@ -367,8 +371,8 @@ export function ScheduleMatrixView({
                   style={{ width: '185px', minWidth: '185px' }}
                 >
                   <div className="flex items-center justify-between">
-                    <span>Employee</span>
-                    <span className="text-[10px] font-black text-neutral-400">HRS</span>
+                    <span>{t('colEmployee')}</span>
+                    <span className="text-[10px] font-black text-neutral-400">{t('hrsHeader')}</span>
                   </div>
                 </th>
                 {dates.map((date, i) => {
@@ -410,7 +414,7 @@ export function ScheduleMatrixView({
                   style={{ width: '185px', minWidth: '185px' }}
                 >
                   <div className="flex items-center justify-between">
-                    <span>Daily Total</span>
+                    <span>{t('dailyTotal')}</span>
                   </div>
                 </td>
                 {dates.map((date, i) => {
@@ -438,7 +442,7 @@ export function ScheduleMatrixView({
                 <tr>
                   <td colSpan={daysCount + 1} className="p-8 text-center text-neutral-500 border-b border-neutral-200 dark:border-white/10">
                     <div className="space-y-2">
-                      <p className="text-sm font-bold">No employees found matching the search criteria</p>
+                      <p className="text-sm font-bold">{t('noEmployeesMatchSearch')}</p>
                     </div>
                   </td>
                 </tr>
@@ -493,8 +497,8 @@ export function ScheduleMatrixView({
                               {/* LEAVE-1: the absence — a day off, not a shift (no hours, no times, no editor). */}
                               {off && (
                                 <div className="text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-md text-purple-700 dark:text-purple-300 bg-purple-100/80 dark:bg-purple-900/30"
-                                     title={off.status === 'pending' ? 'Verlof aangevraagd' : 'Verlof'}>
-                                  🌴 {off.requestType || 'Verlof'}{off.status === 'pending' ? ' · aangevraagd' : ''}
+                                     title={off.status === 'pending' ? `${off.requestType || 'Leave'}${t('pendingSuffix')}` : (off.requestType || 'Leave')}>
+                                  🌴 {off.requestType || 'Leave'}{off.status === 'pending' ? t('pendingSuffix') : ''}
                                 </div>
                               )}
                               {dayShifts.map(shift => {
@@ -526,7 +530,7 @@ export function ScheduleMatrixView({
                                         : "bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-white/10",
                                       conflict && "ring-2 ring-red-500 ring-inset"
                                     )}
-                                    title={conflict ? 'Conflict: deze medewerker heeft verlof op deze dag' : undefined}
+                                    title={conflict ? t('leaveConflictTitle') : undefined}
                                     style={projectColor ? {
                                       borderLeftColor: projectColor,
                                       borderLeftWidth: '3px'
@@ -546,16 +550,16 @@ export function ScheduleMatrixView({
                                               {/* The title in FULL, wrapped — never cut (Florin 2026-10-04: "someone who doesn't
                                                   recognise it from the first two words has no idea what it's about"). */}
                                               <div className="flex items-start gap-1.5 mb-0.5">
-                                                <div className={cn("h-1.5 w-1.5 rounded-full flex-shrink-0 mt-[5px]", SHIFT_STATUS_DOT[status])} title={SHIFT_STATUS_LABEL[status]} />
+                                                <div className={cn("h-1.5 w-1.5 rounded-full flex-shrink-0 mt-[5px]", SHIFT_STATUS_DOT[status])} title={getShiftStatusLabel(status, (k) => tShifts(k))} />
                                                 <span className="font-bold leading-tight break-words min-w-0 text-neutral-900 dark:text-white" title={title}>
                                                   {title}
                                                 </span>
                                               </div>
                                               {conflict && (
-                                                <div className="text-[10px] font-bold text-red-600 dark:text-red-400 mb-0.5">⚠ Conflict met verlof</div>
+                                                <div className="text-[10px] font-bold text-red-600 dark:text-red-400 mb-0.5">{t('leaveBadge')}</div>
                                               )}
                                               {status === 'late' && (
-                                                <div className="text-[10px] font-bold text-red-600 dark:text-red-400 mb-0.5">{SHIFT_STATUS_LABEL.late}</div>
+                                                <div className="text-[10px] font-bold text-red-600 dark:text-red-400 mb-0.5">{getShiftStatusLabel('late', (k) => tShifts(k))}</div>
                                               )}
                                               {showTimeSecondary ? (
                                                 <div className="flex justify-between items-center mb-1">

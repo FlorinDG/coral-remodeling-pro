@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import SearchableSelect from '@/components/ui/SearchableSelect';
 import { CustomDatePicker } from '@/components/ui/CustomDatePicker';
 import { TimeSelect } from '@/components/ui/TimeSelect';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { localDateKey } from '@/lib/kernel/shift-time';
 
 interface Employee {
@@ -28,6 +28,7 @@ interface Props {
 
 export function ManualEntryModal({ open, onOpenChange, onSuccess }: Props) {
     const locale = useLocale();
+    const t = useTranslations('Hr.timesheets.manualEntry');
     const [loading, setLoading] = useState(false);
     const [employees, setEmployees] = useState<Employee[]>([]);
     const [projects, setProjects] = useState<any[]>([]);
@@ -99,14 +100,14 @@ export function ManualEntryModal({ open, onOpenChange, onSuccess }: Props) {
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                    <DialogTitle>Handmatige Invoer</DialogTitle>
+                    <DialogTitle>{t('title')}</DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4 py-4">
                     <div className="space-y-2">
-                        <Label>Medewerker</Label>
+                        <Label>{t('worker')}</Label>
                         <Select value={userId} onValueChange={setUserId}>
                             <SelectTrigger>
-                                <SelectValue placeholder="Selecteer een medewerker" />
+                                <SelectValue placeholder={t('selectWorker')} />
                             </SelectTrigger>
                             <SelectContent>
                                 {employees.filter(emp => emp.userId).map(emp => (
@@ -116,7 +117,7 @@ export function ManualEntryModal({ open, onOpenChange, onSuccess }: Props) {
                                 ))}
                                 {employees.some(emp => !emp.userId) && (
                                     <div className="px-2 py-1.5 text-[10px] text-amber-600 dark:text-amber-400">
-                                        ⚠ {employees.filter(emp => !emp.userId).length} medewerker(s) zonder gekoppeld account
+                                        {t('unlinkedAccountsWarning', { count: employees.filter(emp => !emp.userId).length })}
                                     </div>
                                 )}
                             </SelectContent>
@@ -124,57 +125,57 @@ export function ManualEntryModal({ open, onOpenChange, onSuccess }: Props) {
                     </div>
 
                     <div className="space-y-2">
-                        <Label>Project (Optioneel)</Label>
+                        <Label>{t('projectOptional')}</Label>
                         {/* HR-TS-8: searchable — the same erp-projects list as the filter bar */}
                         <SearchableSelect
                             value={projectId || 'none'}
                             onChange={setProjectId}
-                            placeholder="Selecteer een project"
-                            searchPlaceholder="Zoek project…"
-                            options={[{ value: 'none', label: '— Geen project —' }, ...projects.map(p => ({ value: p.id, label: p.name }))]}
+                            placeholder={t('selectProject')}
+                            searchPlaceholder={t('searchProject')}
+                            options={[{ value: 'none', label: t('noProject') }, ...projects.map(p => ({ value: p.id, label: p.name }))]}
                         />
                     </div>
                     
                     <div className="space-y-2">
-                        <Label>Datum</Label>
+                        <Label>{t('date')}</Label>
                         {/* Belgian, Monday-first — a native date input follows the browser's region */}
                         <CustomDatePicker value={date} onChange={setDate} locale={locale} clearable={false} triggerClassName="w-full" />
                     </div>
                     
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <Label>Starttijd</Label>
-                            <TimeSelect value={startTime} onChange={setStartTime} minuteStep={5} ariaLabel="Starttijd" />
+                            <Label>{t('startTime')}</Label>
+                            <TimeSelect value={startTime} onChange={setStartTime} minuteStep={5} ariaLabel={t('startTime')} />
                         </div>
                         <div className="space-y-2">
-                            <Label>Eindtijd</Label>
-                            <TimeSelect value={endTime} onChange={setEndTime} minuteStep={5} ariaLabel="Eindtijd" />
+                            <Label>{t('endTime')}</Label>
+                            <TimeSelect value={endTime} onChange={setEndTime} minuteStep={5} ariaLabel={t('endTime')} />
                         </div>
                     </div>
                     
                     <div className="space-y-2">
-                        <Label>Omschrijving</Label>
+                        <Label>{t('description')}</Label>
                         <Textarea 
-                            placeholder="Beschrijf de uitgevoerde werkzaamheden..." 
+                            placeholder={t('descriptionPlaceholder')} 
                             value={description} 
                             onChange={e => setDescription(e.target.value)} 
                         />
                     </div>
 
                     <div className="space-y-2">
-                        <Label>Notities (Optioneel)</Label>
+                        <Label>{t('notesOptional')}</Label>
                         <Textarea 
-                            placeholder="Bijv. telefonisch doorgegeven vanaf de werf" 
+                            placeholder={t('notesPlaceholder')} 
                             value={notes} 
                             onChange={e => setNotes(e.target.value)} 
                         />
                     </div>
                     
                     <DialogFooter>
-                        <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Annuleren</Button>
+                        <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{t('cancel')}</Button>
                         <Button type="submit" disabled={loading || !userId || !date}>
                             {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                            Opslaan
+                            {t('save')}
                         </Button>
                     </DialogFooter>
                 </form>

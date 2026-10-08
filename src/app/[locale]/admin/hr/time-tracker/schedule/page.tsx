@@ -3,10 +3,12 @@ import { useEffect, useState } from "react";
 import { ScheduleManagement } from "@/components/time-tracker/components/admin/ScheduleManagement";
 import ModuleTabs from "@/components/admin/ModuleTabs";
 import { hrTabs } from "@/config/tabs";
+import { useTranslations } from "next-intl";
 import { usePageTitle } from "@/hooks/usePageTitle";
 
 export default function Page() {
-    usePageTitle('Workforce Scheduler');
+    const t = useTranslations("Hr.scheduler");
+    usePageTitle(t('pageTitle'));
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
@@ -27,9 +29,9 @@ export default function Page() {
                 </div>
                 <div className="md:hidden flex flex-1 flex-col items-center pt-20 p-6 text-center">
                     <div className="bg-neutral-100 dark:bg-white/5 rounded-2xl p-6 max-w-sm">
-                        <h3 className="text-lg font-bold mb-2">Desktop Only</h3>
+                        <h3 className="text-lg font-bold mb-2">{t('desktopOnlyTitle')}</h3>
                         <p className="text-sm text-muted-foreground">
-                            The Workforce Scheduler authoring UI is only available on desktop devices. To view your own upcoming shifts on mobile, please use the regular WorkHub schedule.
+                            {t('desktopOnlyDesc')}
                         </p>
                     </div>
                 </div>

@@ -58,6 +58,7 @@ import { toast } from 'sonner';
 import { describeError } from '@/lib/describe-error';
 
 import { leaveConflicts, type Absence } from '@/lib/kernel/absence';
+import { useLocale, useTranslations } from 'next-intl';
 import {
   validateShiftForm,
   buildCreateShiftPayloads,
@@ -157,6 +158,19 @@ export function CreateShiftForm({
       onClose();
     }
   };
+
+  const t = useTranslations('Hr.shifts.create');
+  const tShifts = useTranslations('Hr.shifts');
+  const tLeave = useTranslations('Hr.leave');
+  const locale = useLocale();
+
+  const dayLabels = useMemo(() => {
+    const formatter = new Intl.DateTimeFormat(locale, { weekday: 'short' });
+    return [0, 1, 2, 3, 4, 5, 6].map(day => {
+      const d = new Date(Date.UTC(2026, 0, 4 + day, 12, 0, 0));
+      return formatter.format(d);
+    });
+  }, [locale]);
 
   const [loading, setLoading] = useState(false);
   const [templates, setTemplates] = useState<ShiftTemplate[]>([]);
@@ -308,9 +322,9 @@ export function CreateShiftForm({
       await hrDeleteEntity('shift-templates', templateId);
       setTemplates(prev => prev.filter(t => t.id !== templateId));
       if (selectedTemplateId === templateId) setSelectedTemplateId('');
-      toast.success('Sjabloon verwijderd');
+      toast.success(t('templateDeleted'));
     } catch {
-      toast.error('Kan sjabloon niet verwijderen');
+      toast.error(t('failedToDeleteTemplate'));
     }
   };
 
@@ -462,7 +476,7 @@ export function CreateShiftForm({
     const validation = validateShiftForm(formInput);
     if (!validation.valid) {
       const firstError = Object.values(validation.errors)[0];
-      toast.error(firstError || 'Controleer het formulier op fouten');
+      toast.error(firstError || t('formErrors'));
       return;
     }
 
@@ -481,7 +495,7 @@ export function CreateShiftForm({
           });
           await fetchTemplates();
         } catch {
-          toast.error('Kan sjabloon niet opslaan');
+          toast.error(t('failedToSaveTemplate'));
         }
       }
 
@@ -493,7 +507,7 @@ export function CreateShiftForm({
           const failed = r && typeof r === 'object' && 'error' in r ? (r as { error: unknown }).error : null;
           if (failed) throw failed;
         }
-        toast.success(requests.length === 1 ? 'Verlof ingepland' : `${requests.length} verlofperiodes ingepland`);
+        toast.success(requests.length === 1 ? t('leaveSuccessSingle') : t('leaveSuccessMultiple', { count: requests.length }));
         resetForm();
         setOpen(false);
         return;
@@ -516,14 +530,14 @@ export function CreateShiftForm({
 
       toast.success(
         payloads.length === 1
-          ? 'Dienst succesvol ingepland'
-          : `${payloads.length} diensten succesvol ingepland`
+          ? t('successSingle')
+          : t('successMultiple', { count: payloads.length })
       );
 
       resetForm();
       setOpen(false);
     } catch (err) {
-      toast.error(`Kan niet inplannen — ${describeError(err)}`);
+      toast.error(t('failedToSchedule', { error: describeError(err) }));
     } finally {
       setLoading(false);
     }
@@ -537,14 +551,14 @@ export function CreateShiftForm({
   const dialogContent = (
     <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto">
       <DialogHeader>
-        <DialogTitle>Dienst inplannen</DialogTitle>
+        <DialogTitle>{t('title')}</DialogTitle>
       </DialogHeader>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="details">Details</TabsTrigger>
+          <TabsTrigger value="details">{t('tabDetails')}</TabsTrigger>
           <TabsTrigger value="tasks" className="flex items-center gap-1">
-            Taken
+            {t('tabTasks')}
             {selectedTasks.length > 0 && (
               <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
                 {selectedTasks.length}
@@ -552,7 +566,7 @@ export function CreateShiftForm({
             )}
           </TabsTrigger>
           <TabsTrigger value="attachments" className="flex items-center gap-1">
-            Bestanden
+            {t('tabAttachments')}
             {pendingAttachments.length > 0 && (
               <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
                 {pendingAttachments.length}
@@ -572,7 +586,7 @@ export function CreateShiftForm({
                 className="flex-1 text-xs"
                 onClick={() => setScheduleType('single')}
               >
-                Enkelvoudig
+                {t('typeSingle')}
               </Button>
               <Button
                 type="button"
@@ -581,7 +595,7 @@ export function CreateShiftForm({
                 className="flex-1 text-xs"
                 onClick={() => setScheduleType('recurring')}
               >
-                <Repeat className="h-3.5 w-3.5 mr-1" /> Herhalend
+                <Repeat className="h-3.5 w-3.5 mr-1" /> {t('typeRecurring')}
               </Button>
               <Button
                 type="button"
@@ -590,18 +604,18 @@ export function CreateShiftForm({
                 className="flex-1 text-xs"
                 onClick={() => setScheduleType('leave')}
               >
-                Verlof / Afwezigheid
+                {t('typeLeave')}
               </Button>
             </div>
 
             {/* Template Selector (Single/Recurring) */}
             {scheduleType !== 'leave' && templates.length > 0 && (
               <div>
-                <Label>Sjabloon toepassen</Label>
+                <Label>{t('applyTemplate')}</Label>
                 <div className="flex gap-2">
                   <Select value={selectedTemplateId} onValueChange={applyTemplate}>
                     <SelectTrigger className="flex-1">
-                      <SelectValue placeholder="Kies een sjabloon..." />
+                      <SelectValue placeholder={t('chooseTemplate')} />
                     </SelectTrigger>
                     <SelectContent>
                       {templates.map(tpl => (
@@ -630,7 +644,7 @@ export function CreateShiftForm({
 
             {/* Employee Selection (Multi-select) */}
             <div>
-              <Label>Medewerker(s) *</Label>
+              <Label>{t('workersLabel')}</Label>
               <Popover open={employeePopoverOpen} onOpenChange={setEmployeePopoverOpen}>
                 <PopoverTrigger asChild>
                   <Button
@@ -639,7 +653,7 @@ export function CreateShiftForm({
                     className="w-full justify-start font-normal min-h-10 h-auto py-2"
                   >
                     {selectedWorkers.length === 0 ? (
-                      <span className="text-muted-foreground">Selecteer medewerker(s)...</span>
+                      <span className="text-muted-foreground">{t('selectWorkers')}</span>
                     ) : (
                       <div className="flex flex-wrap gap-1">
                         {selectedWorkers.map(w => (
@@ -678,7 +692,7 @@ export function CreateShiftForm({
                           }`}
                         >
                           <span>{w.name}</span>
-                          {isSelected && <Badge variant="outline" className="text-xs">Geselecteerd</Badge>}
+                          {isSelected && <Badge variant="outline" className="text-xs">{t('selected')}</Badge>}
                         </button>
                       );
                     })}
@@ -691,15 +705,15 @@ export function CreateShiftForm({
             {scheduleType !== 'leave' && (
               <div>
                 {/* The scheduler plans work on projects; it never creates them (Florin 2026-10-08). */}
-                <Label className="block mb-1">Project</Label>
+                <Label className="block mb-1">{t('projectLabel')}</Label>
                 <SearchableSelect
                   options={[
-                    { value: '', label: '— Geen project —' },
+                    { value: '', label: t('noProject') },
                     ...projects.map(p => ({ value: p.id, label: p.name })),
                   ]}
                   value={projectId}
                   onChange={setProjectId}
-                  placeholder="Selecteer project (optioneel)"
+                  placeholder={t('selectProject')}
                 />
               </div>
             )}
@@ -707,15 +721,15 @@ export function CreateShiftForm({
             {/* Order Giver Picker (when no project is chosen) */}
             {scheduleType !== 'leave' && !projectId && clients.length > 0 && (
               <div>
-                <Label>Opdrachtgever (Klant)</Label>
+                <Label>{t('orderGiver')}</Label>
                 <SearchableSelect
                   options={[
-                    { value: '', label: '— Geen specifieke klant —' },
+                    { value: '', label: t('noClient') },
                     ...clients.map(c => ({ value: c.id, label: c.name })),
                   ]}
                   value={contactPageId}
                   onChange={setContactPageId}
-                  placeholder="Selecteer klant (optioneel)"
+                  placeholder={t('selectClient')}
                 />
               </div>
             )}
@@ -723,18 +737,18 @@ export function CreateShiftForm({
             {/* Leave Reason (Leave schedule) */}
             {scheduleType === 'leave' && (
               <div>
-                <Label>Reden voor verlof *</Label>
+                <Label>{t('leaveReason')}</Label>
                 <Select value={leaveReason} onValueChange={setLeaveReason}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Vakantie">Vakantie (Betaald)</SelectItem>
-                    <SelectItem value="Ziekte">Ziekte / Doktersbezoek</SelectItem>
-                    <SelectItem value="Onbetaald verlof">Onbetaald verlof</SelectItem>
-                    <SelectItem value="Klein verlet">Klein verlet / Omstandigheidsverlof</SelectItem>
-                    <SelectItem value="Opleiding">Opleiding</SelectItem>
-                    <SelectItem value="Overig">Overig</SelectItem>
+                    <SelectItem value="Vakantie">{tLeave('types.vacation')}</SelectItem>
+                    <SelectItem value="Ziekte">{tLeave('types.sick')}</SelectItem>
+                    <SelectItem value="Onbetaald verlof">{tLeave('types.unpaid')}</SelectItem>
+                    <SelectItem value="Klein verlet">{tLeave('types.circumstantial')}</SelectItem>
+                    <SelectItem value="Opleiding">{tLeave('types.training')}</SelectItem>
+                    <SelectItem value="Overig">{tLeave('types.other')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -743,7 +757,7 @@ export function CreateShiftForm({
             {/* Date Selection */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label>{scheduleType === 'leave' ? 'Startdatum *' : 'Datum *'}</Label>
+                <Label>{scheduleType === 'leave' ? t('startDate') : t('date')}</Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
@@ -754,7 +768,7 @@ export function CreateShiftForm({
                       )}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {shiftDate ? formatCalendarDay(shiftDate) : 'Selecteer datum'}
+                      {shiftDate ? formatCalendarDay(shiftDate) : t('selectDate')}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
@@ -770,7 +784,7 @@ export function CreateShiftForm({
 
               {scheduleType === 'leave' && (
                 <div>
-                  <Label>Einddatum *</Label>
+                  <Label>{t('endDate')}</Label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
@@ -783,7 +797,7 @@ export function CreateShiftForm({
                         <CalendarIcon className="mr-2 h-4 w-4" />
                         {shiftEndDate
                           ? formatCalendarDay(shiftEndDate)
-                          : 'Selecteer einddatum'}
+                          : t('selectDate')}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
@@ -807,16 +821,16 @@ export function CreateShiftForm({
                   checked={includeWeekends}
                   onChange={e => setIncludeWeekends(e.target.checked)}
                 />
-                Inclusief weekenddagen
+                {t('includeWeekends')}
               </label>
             )}
 
             {/* Recurring Settings */}
             {scheduleType === 'recurring' && (
               <div className="space-y-3 p-4 border rounded-xl bg-muted/40">
-                <Label className="font-semibold text-sm">Herhalingspatroon</Label>
+                <Label className="font-semibold text-sm">{t('repeatEvery')}</Label>
                 <div>
-                  <Label>Aantal weken (1-52)</Label>
+                  <Label>{t('repeatWeeks')}</Label>
                   <Input
                     type="number"
                     min={1}
@@ -827,11 +841,11 @@ export function CreateShiftForm({
                   />
                 </div>
                 <div>
-                  <Label>Dagen van de week *</Label>
+                  <Label>{t('daysOfWeek')}</Label>
                   <div className="flex flex-wrap gap-2 mt-1">
-                    {DAY_LABELS.map((d, i) => (
+                    {dayLabels.map((d, i) => (
                       <Badge
-                        key={d}
+                        key={i}
                         variant={selectedDays.includes(i) ? 'default' : 'outline'}
                         className="cursor-pointer px-3 py-1 text-sm select-none"
                         onClick={() => toggleDay(i)}
@@ -848,7 +862,7 @@ export function CreateShiftForm({
             {scheduleType !== 'leave' && (
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="createShiftStart">Starttijd</Label>
+                  <Label htmlFor="createShiftStart">{t('startTime')}</Label>
                   <Input
                     id="createShiftStart"
                     type="time"
@@ -857,7 +871,7 @@ export function CreateShiftForm({
                   />
                 </div>
                 <div>
-                  <Label htmlFor="createShiftEnd">Eindtijd</Label>
+                  <Label htmlFor="createShiftEnd">{t('endTime')}</Label>
                   <Input
                     id="createShiftEnd"
                     type="time"
@@ -871,16 +885,16 @@ export function CreateShiftForm({
             {/* Role (Single/Recurring) */}
             {scheduleType !== 'leave' && (
               <div>
-                <Label>Rol</Label>
+                <Label>{t('roleLabel')}</Label>
                 <Select value={role || 'none'} onValueChange={v => setRole(v === 'none' ? '' : v)}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecteer rol (optioneel)" />
+                    <SelectValue placeholder={t('selectRole')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">Geen specifieke rol</SelectItem>
+                    <SelectItem value="none">{t('noRole')}</SelectItem>
                     {ROLE_OPTIONS.map(r => (
                       <SelectItem key={r} value={r}>
-                        {r}
+                        {tShifts.has(`roles.${r.toLowerCase()}`) ? tShifts(`roles.${r.toLowerCase()}`) : r}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -892,13 +906,13 @@ export function CreateShiftForm({
             {scheduleType !== 'leave' && (
               <div>
                 <Label htmlFor="createShiftNotes">
-                  Omschrijving — afgedrukt op de getekende werkbon van de klant
+                  {t('notesLabel')}
                 </Label>
                 <Textarea
                   id="createShiftNotes"
                   value={notes}
                   onChange={e => setNotes(e.target.value)}
-                  placeholder="Wat er moet gebeuren — u kunt het verzoek van de klant citeren"
+                  placeholder={t('notesPlaceholder')}
                   rows={2}
                 />
               </div>
@@ -908,13 +922,13 @@ export function CreateShiftForm({
             {scheduleType !== 'leave' && (
               <div>
                 <Label htmlFor="createShiftAddress">
-                  Uitvoeringsadres (indien niet het projectadres)
+                  {t('addressLabel')}
                 </Label>
                 <Input
                   id="createShiftAddress"
                   value={siteAddress}
                   onChange={e => setSiteAddress(e.target.value)}
-                  placeholder="Laat leeg om het projectadres te gebruiken"
+                  placeholder={t('addressPlaceholder')}
                 />
               </div>
             )}
@@ -927,7 +941,7 @@ export function CreateShiftForm({
                   checked={materialsEnabled}
                   onChange={e => setMaterialsEnabled(e.target.checked)}
                 />
-                Ploeg registreert gebruikte materialen op deze dienst
+                {t('materialsLabel')}
               </label>
             )}
 
@@ -941,11 +955,11 @@ export function CreateShiftForm({
                     onChange={e => setSaveAsTemplate(e.target.checked)}
                   />
                   <Save className="h-4 w-4 text-muted-foreground" />
-                  Opslaan als sjabloon voor toekomstig gebruik
+                  {t('saveAsTemplate')}
                 </label>
                 {saveAsTemplate && (
                   <Input
-                    placeholder="Sjabloonnaam..."
+                    placeholder={t('templateNamePlaceholder')}
                     value={templateName}
                     onChange={e => setTemplateName(e.target.value)}
                     className="mt-2 text-xs"
@@ -956,7 +970,7 @@ export function CreateShiftForm({
 
             {conflicts.length > 0 && (
               <div role="alert" className="rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800 px-3 py-2 text-sm text-amber-900 dark:text-amber-200">
-                <p className="font-semibold">Conflict met verlof</p>
+                <p className="font-semibold">{t('leaveConflictTitle')}</p>
                 <ul className="mt-1 space-y-0.5">
                   {conflicts.map(c => (
                     <li key={c.shiftId}>
@@ -968,11 +982,11 @@ export function CreateShiftForm({
             )}
             <div className="flex justify-end gap-2 pt-4 border-t">
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-                Annuleren
+                {t('cancel')}
               </Button>
               <Button type="submit" disabled={loading}>
                 {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                Dienst inplannen
+                {t('submitShift')}
               </Button>
             </div>
           </form>
@@ -983,7 +997,7 @@ export function CreateShiftForm({
           {!projectId ? (
             <div className="text-center py-8 text-muted-foreground">
               <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">Selecteer eerst een project om taken te koppelen</p>
+              <p className="text-sm">{tShifts('tasks.selectProject')}</p>
             </div>
           ) : (
             <>
@@ -992,16 +1006,16 @@ export function CreateShiftForm({
                   <PopoverTrigger asChild>
                     <Button variant="outline" size="sm">
                       <Plus className="h-4 w-4 mr-1" />
-                      Bestaande projecttaak toevoegen
+                      {tShifts('tasks.addExisting')}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-80 p-3" align="start">
                     <h4 className="font-semibold text-xs uppercase tracking-wider text-muted-foreground mb-2">
-                      Beschikbare projecttaken
+                      {tShifts('tasks.projectTasks')}
                     </h4>
                     <div className="space-y-1 max-h-48 overflow-y-auto">
                       {projectTasks.length === 0 ? (
-                        <p className="text-xs text-muted-foreground">Geen projecttaken gevonden</p>
+                        <p className="text-xs text-muted-foreground">{tShifts('tasks.noTasks')}</p>
                       ) : (
                         projectTasks.map(t => (
                           <button
@@ -1025,7 +1039,7 @@ export function CreateShiftForm({
 
                 <div className="flex gap-2">
                   <Input
-                    placeholder="Snel nieuwe taak aanmaken..."
+                    placeholder={tShifts('tasks.taskPlaceholder')}
                     value={quickTaskTitle}
                     onChange={e => setQuickTaskTitle(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleQuickCreateTask())}
@@ -1045,7 +1059,7 @@ export function CreateShiftForm({
 
               {selectedTasks.length === 0 ? (
                 <div className="text-center py-6 text-muted-foreground">
-                  <p className="text-sm">Geen taken geselecteerd om te koppelen</p>
+                  <p className="text-sm">{tShifts('tasks.noAssignedTasks')}</p>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -1084,7 +1098,7 @@ export function CreateShiftForm({
               />
               <Button type="button" variant="outline" size="sm">
                 <Upload className="h-4 w-4 mr-1.5" />
-                Bestand uploaden
+                {tShifts('attachments.uploadButton')}
               </Button>
             </div>
 
@@ -1093,12 +1107,12 @@ export function CreateShiftForm({
                 <PopoverTrigger asChild>
                   <Button variant="outline" size="sm">
                     <FolderOpen className="h-4 w-4 mr-1.5" />
-                    Uit project
+                    {tShifts('attachments.fromProject')}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-80 p-3" align="start">
                   <h4 className="font-semibold text-xs uppercase tracking-wider text-muted-foreground mb-2">
-                    Projectbestanden
+                    {tShifts('attachments.projectFiles')}
                   </h4>
                   <div className="space-y-1 max-h-48 overflow-y-auto">
                     {projectAttachments.map(pa => (
@@ -1120,7 +1134,7 @@ export function CreateShiftForm({
           {pendingAttachments.length === 0 ? (
             <div className="text-center py-6 text-muted-foreground">
               <Paperclip className="h-8 w-8 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">Geen bijlagen in de wachtrij om te uploaden</p>
+              <p className="text-sm">{tShifts('attachments.noFiles')}</p>
             </div>
           ) : (
             <div className="space-y-2">
@@ -1163,7 +1177,7 @@ export function CreateShiftForm({
             <DialogTrigger asChild>
               <Button size="sm">
                 <Plus className="h-4 w-4 mr-1" />
-                Dienst inplannen
+                {t('title')}
               </Button>
             </DialogTrigger>
             {dialogContent}

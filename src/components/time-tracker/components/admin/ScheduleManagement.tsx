@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/select';
 import { hrList } from '@/lib/hr-api';
 import { WorkerOption } from '@/components/time-tracker/types/timesheet';
+import { useTranslations } from 'next-intl';
 
 type ViewMode = 'table' | 'matrix';
 
@@ -32,6 +33,7 @@ function getMonday(date: Date): Date {
 }
 
 export function ScheduleManagement() {
+  const t = useTranslations('Hr.scheduler');
   const { shifts, projects, absences, loading, createShift, createLeave, updateShift, updateShiftStatus, deleteShift, canManage } = useScheduledShifts();
   // LEAVE-1 (Florin 2026-10-08): a shift planned on a day its worker is off is a conflict — flagged everywhere it shows.
   const conflicts = useMemo(() => leaveConflicts(shifts, absences), [shifts, absences]);
@@ -39,7 +41,7 @@ export function ScheduleManagement() {
   const [workers, setWorkers] = useState<WorkerOption[]>([
     {
       id: 'unassigned',
-      name: 'Unassigned Shifts',
+      name: t('unassignedShifts'),
       hourlyRate: 0,
     }
   ]);
@@ -79,7 +81,7 @@ export function ScheduleManagement() {
 
         const unassignedWorker = {
           id: 'unassigned',
-          name: 'Unassigned Shifts',
+          name: t('unassignedShifts'),
           hourlyRate: 0,
         };
 
@@ -90,23 +92,23 @@ export function ScheduleManagement() {
     };
 
     fetchWorkers();
-  }, []);
+  }, [t]);
 
   // SCH-8: the scope reaches the server; the count makes a silent no-op impossible.
   const handleDelete = async (shiftId: string, scope?: EditScope) => {
     const res = await deleteShift(shiftId, scope);
-    if (res.error) { toast.error(`Failed to delete shift — ${describeError(res.error)}`); throw res.error; }
+    if (res.error) { toast.error(t('failedToDelete', { error: describeError(res.error) })); throw res.error; }
     toast.success(res.deleted > 1 || res.kept
-      ? `${res.deleted} shift(s) deleted${res.kept ? ` · ${res.kept} kept (hours already recorded)` : ''}`
-      : 'Shift deleted');
+      ? t('shiftsDeleted', { deleted: res.deleted, kept: res.kept ? t('keptHoursLogged', { kept: res.kept }) : '' })
+      : t('shiftDeleted'));
   };
 
   const handleStatusChange = async (shiftId: string, status: string) => {
     try {
       await updateShiftStatus(shiftId, status);
-      toast.success('Status updated');
+      toast.success(t('statusUpdated'));
     } catch {
-      toast.error('Failed to update status');
+      toast.error(t('failedToUpdateStatus'));
     }
   };
 
@@ -129,9 +131,9 @@ export function ScheduleManagement() {
   const handleShiftMove = async (shiftId: string, newUserId: string, newDate: string) => {
     try {
       await updateShift(shiftId, { userId: newUserId, shiftDate: newDate });
-      toast.success('Shift rescheduled');
+      toast.success(t('shiftRescheduled'));
     } catch {
-      toast.error('Failed to reschedule shift');
+      toast.error(t('failedToReschedule'));
     }
   };
 
@@ -144,7 +146,7 @@ export function ScheduleManagement() {
     const res = await updateShift(shiftId, updates, scope);
     if (res.error) throw res.error;   // EditShiftDialog shows the failure
     const n = (res.data as { seriesUpdated?: number } | null)?.seriesUpdated;
-    if (n && n > 1) toast.success(`${n} shifts updated`);
+    if (n && n > 1) toast.success(t('shiftsUpdated', { count: n }));
   };
 
   const handleAddShift = (userId: string, date: string) => {
@@ -174,7 +176,7 @@ export function ScheduleManagement() {
     });
 
     if (sourceShifts.length === 0) {
-      toast.error('No shifts found in the previous week to copy');
+      toast.error(t('noShiftsInPrevWeek'));
       return;
     }
 
@@ -207,7 +209,7 @@ export function ScheduleManagement() {
       created++;
     }
 
-    toast.success(`Copied ${created} shift(s) from previous week`);
+    toast.success(t('copiedFromPrevWeek', { count: created }));
   };
 
 
@@ -239,7 +241,7 @@ export function ScheduleManagement() {
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">View:</span>
+          <span className="text-sm text-muted-foreground">{t('view')}</span>
           <Select value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)}>
             <SelectTrigger className="w-[140px]">
               <SelectValue />
@@ -248,13 +250,13 @@ export function ScheduleManagement() {
               <SelectItem value="table">
                 <div className="flex items-center gap-2">
                   <LayoutList className="h-4 w-4" />
-                  <span>Table</span>
+                  <span>{t('table')}</span>
                 </div>
               </SelectItem>
               <SelectItem value="matrix">
                 <div className="flex items-center gap-2">
                   <LayoutGrid className="h-4 w-4" />
-                  <span>Matrix</span>
+                  <span>{t('matrix')}</span>
                 </div>
               </SelectItem>
             </SelectContent>

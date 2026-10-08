@@ -4,13 +4,27 @@
  */
 import type { ShiftStatus } from '@/lib/kernel/shift-status';
 
-export const SHIFT_STATUS_LABEL: Record<ShiftStatus, string> = {
-    scheduled: 'Gepland',
-    late: 'Te laat',
-    'in-progress': 'Bezig',
-    completed: 'Voltooid',
-    cancelled: 'Geannuleerd',
+export const SHIFT_STATUS_KEY_MAP: Record<ShiftStatus, string> = {
+    scheduled: 'scheduled',
+    late: 'late',
+    'in-progress': 'inProgress',
+    completed: 'completed',
+    cancelled: 'cancelled',
 };
+
+export const SHIFT_STATUS_LABEL: Record<ShiftStatus, string> = {
+    scheduled: 'Scheduled',
+    late: 'Late',
+    'in-progress': 'In Progress',
+    completed: 'Completed',
+    cancelled: 'Cancelled',
+};
+
+export function getShiftStatusLabel(status: ShiftStatus, t?: (k: string) => string): string {
+    const k = SHIFT_STATUS_KEY_MAP[status];
+    if (t) return t(`status.${k}`);
+    return SHIFT_STATUS_LABEL[status] || status;
+}
 
 /** Pill colours (select trigger, badge). */
 export const SHIFT_STATUS_PILL: Record<ShiftStatus, string> = {

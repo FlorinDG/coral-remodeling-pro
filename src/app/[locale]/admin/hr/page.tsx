@@ -10,6 +10,7 @@ import {
     CheckCircle2, XCircle, AlertCircle
 } from "lucide-react";
 import { Link } from "@/i18n/routing";
+import { getTranslations } from 'next-intl/server';
 
 // ── Types ─────────────────────────────────────────────────────────
 interface KPI {
@@ -155,7 +156,17 @@ function KPICard({ kpi }: { kpi: KPI }) {
 }
 
 // ── Headcount Bar ─────────────────────────────────────────────────
-function HeadcountBar({ active, onLeave, inactive }: { active: number; onLeave: number; inactive: number }) {
+function HeadcountBar({
+    active,
+    onLeave,
+    inactive,
+    labels,
+}: {
+    active: number;
+    onLeave: number;
+    inactive: number;
+    labels: { title: string; active: string; onLeave: string; inactive: string };
+}) {
     const total = active + onLeave + inactive;
     if (total === 0) return null;
 
@@ -165,7 +176,7 @@ function HeadcountBar({ active, onLeave, inactive }: { active: number; onLeave: 
 
     return (
         <div className="bg-card border border-border rounded-xl p-5">
-            <h3 className="text-sm font-bold text-foreground mb-3 uppercase tracking-wider">Headcount by Status</h3>
+            <h3 className="text-sm font-bold text-foreground mb-3 uppercase tracking-wider">{labels.title}</h3>
             <div className="w-full h-3 rounded-full overflow-hidden flex bg-neutral-100 dark:bg-neutral-800">
                 {pctActive > 0 && (
                     <div className="bg-emerald-500 h-full transition-all duration-500" style={{ width: `${pctActive}%` }} />
@@ -180,15 +191,15 @@ function HeadcountBar({ active, onLeave, inactive }: { active: number; onLeave: 
             <div className="flex gap-6 mt-3 text-xs font-medium">
                 <span className="flex items-center gap-1.5">
                     <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                    Active ({active})
+                    {labels.active}
                 </span>
                 <span className="flex items-center gap-1.5">
                     <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
-                    On Leave ({onLeave})
+                    {labels.onLeave}
                 </span>
                 <span className="flex items-center gap-1.5">
                     <span className="w-2.5 h-2.5 rounded-full bg-neutral-400" />
-                    Inactive ({inactive})
+                    {labels.inactive}
                 </span>
             </div>
         </div>
@@ -230,6 +241,8 @@ export default async function HRPage() {
     const user = session?.user;
     if (!user?.tenantId) redirect("/login");
 
+    const t = await getTranslations('Hr.dashboard');
+
     let data;
     try {
         data = await getHRData(user.tenantId);
@@ -246,36 +259,36 @@ export default async function HRPage() {
     // Build KPI cards
     const kpis: KPI[] = [
         {
-            label: 'Active Employees',
+            label: t('activeEmployees'),
             value: data.activeEmployees,
             icon: <Users className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />,
             color: 'emerald',
             bgColor: 'bg-emerald-500/10',
-            sub: `${data.totalEmployees} total headcount`,
+            sub: t('totalHeadcount', { count: data.totalEmployees }),
         },
         {
-            label: 'Hours This Week',
+            label: t('hoursThisWeek'),
             value: data.hoursThisWeek > 0 ? `${data.hoursThisWeek}h` : '0h',
             icon: <Clock className="w-5 h-5 text-blue-600 dark:text-blue-400" />,
             color: 'blue',
             bgColor: 'bg-blue-500/10',
-            sub: 'Logged clock entries',
+            sub: t('loggedClockEntries'),
         },
         {
-            label: 'Pending Leave',
+            label: t('pendingLeave'),
             value: data.pendingLeave,
             icon: <CalendarOff className="w-5 h-5 text-amber-600 dark:text-amber-400" />,
             color: 'amber',
             bgColor: 'bg-amber-500/10',
-            sub: `${data.approvedLeave} approved`,
+            sub: t('approvedCount', { count: data.approvedLeave }),
         },
         {
-            label: 'Shifts This Week',
+            label: t('shiftsThisWeek'),
             value: data.shiftsThisWeek,
             icon: <CalendarClock className="w-5 h-5 text-violet-600 dark:text-violet-400" />,
             color: 'violet',
             bgColor: 'bg-violet-500/10',
-            sub: 'Scheduled across team',
+            sub: t('scheduledAcrossTeam'),
         },
     ];
 
@@ -286,7 +299,7 @@ export default async function HRPage() {
         events.push({
             id: c.id,
             type: 'clock',
-            description: c.clockOutTime ? `Employee clocked out` : `Employee clocked in`,
+            description: c.clockOutTime ? t('clockedOut') : t('clockedIn'),
             time: new Date(c.clockInTime).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }),
             icon: <Clock className="w-4 h-4 text-blue-600" />,
             color: 'bg-blue-100 dark:bg-blue-900/30',
@@ -303,7 +316,7 @@ export default async function HRPage() {
         events.push({
             id: lr.id,
             type: 'leave',
-            description: `Leave request (${lr.requestType || 'PTO'}) — ${lr.status}`,
+            description: t('leaveRequest', { type: lr.requestType || 'PTO', status: lr.status }),
             time: new Date(lr.createdAt).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }),
             icon: statusIcon,
             color: lr.status === 'approved' ? 'bg-emerald-100 dark:bg-emerald-900/30' : lr.status === 'denied' ? 'bg-red-100 dark:bg-red-900/30' : 'bg-amber-100 dark:bg-amber-900/30',
@@ -314,7 +327,7 @@ export default async function HRPage() {
         events.push({
             id: hire.id,
             type: 'hire',
-            description: `${hire.name || 'New Employee'} added as ${hire.role}`,
+            description: t('employeeAdded', { name: hire.name || 'New Employee', role: hire.role }),
             time: new Date(hire.createdAt).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }),
             icon: <UserPlus className="w-4 h-4 text-emerald-600" />,
             color: 'bg-emerald-100 dark:bg-emerald-900/30',
@@ -332,8 +345,8 @@ export default async function HRPage() {
                 {/* Page Header */}
                 <div className="flex items-center justify-between mb-8">
                     <div>
-                        <h1 className="text-2xl font-bold text-foreground tracking-tight">Human Resources</h1>
-                        <p className="text-muted-foreground text-sm font-medium mt-1">Team overview, attendance tracking, and workforce management.</p>
+                        <h1 className="text-2xl font-bold text-foreground tracking-tight">{t('title')}</h1>
+                        <p className="text-muted-foreground text-sm font-medium mt-1">{t('subtitle')}</p>
                     </div>
                 </div>
 
@@ -350,6 +363,12 @@ export default async function HRPage() {
                         active={data.activeEmployees}
                         onLeave={data.onLeaveEmployees}
                         inactive={data.inactiveEmployees}
+                        labels={{
+                            title: t('headcountByStatus'),
+                            active: t('active', { count: data.activeEmployees }),
+                            onLeave: t('onLeave', { count: data.onLeaveEmployees }),
+                            inactive: t('inactive', { count: data.inactiveEmployees }),
+                        }}
                     />
                 </div>
 
@@ -357,30 +376,30 @@ export default async function HRPage() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Quick Actions */}
                     <div className="lg:col-span-1">
-                        <h3 className="text-sm font-bold text-foreground mb-3 uppercase tracking-wider">Quick Actions</h3>
+                        <h3 className="text-sm font-bold text-foreground mb-3 uppercase tracking-wider">{t('quickActions')}</h3>
                         <div className="flex flex-col gap-3">
                             <QuickAction
                                 href="/admin/hr/employees"
                                 icon={<UserPlus className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />}
-                                label="Manage Employees"
+                                label={t('manageEmployees')}
                                 color="emerald"
                             />
                             <QuickAction
                                 href="/admin/hr/time-tracker/schedule"
                                 icon={<CalendarPlus className="w-4 h-4 text-violet-600 dark:text-violet-400" />}
-                                label="Workforce Scheduler"
+                                label={t('workforceScheduler')}
                                 color="violet"
                             />
                             <QuickAction
                                 href="/admin/hr/leave"
                                 icon={<ClipboardCheck className="w-4 h-4 text-amber-600 dark:text-amber-400" />}
-                                label="Review Leave Requests"
+                                label={t('reviewLeaveRequests')}
                                 color="amber"
                             />
                             <QuickAction
                                 href="/admin/hr/time-tracker"
                                 icon={<Clock className="w-4 h-4 text-blue-600 dark:text-blue-400" />}
-                                label="Work Hub"
+                                label={t('workHub')}
                                 color="blue"
                             />
                         </div>
@@ -388,15 +407,15 @@ export default async function HRPage() {
 
                     {/* Activity Feed */}
                     <div className="lg:col-span-2">
-                        <h3 className="text-sm font-bold text-foreground mb-3 uppercase tracking-wider">Recent Activity</h3>
+                        <h3 className="text-sm font-bold text-foreground mb-3 uppercase tracking-wider">{t('recentActivity')}</h3>
                         <div className="bg-card border border-border rounded-xl p-4">
                             {topEvents.length === 0 ? (
                                 <div className="py-8 text-center">
                                     <div className="w-12 h-12 bg-neutral-100 dark:bg-white/5 rounded-full flex items-center justify-center mx-auto mb-3">
                                         <Clock className="w-6 h-6 text-neutral-400" />
                                     </div>
-                                    <p className="text-sm font-medium text-foreground">No Recent Activity</p>
-                                    <p className="text-xs text-muted-foreground mt-1">Activity will appear here as your team clocks in, requests leave, or gets scheduled.</p>
+                                    <p className="text-sm font-medium text-foreground">{t('noRecentActivity')}</p>
+                                    <p className="text-xs text-muted-foreground mt-1">{t('noRecentActivityHint')}</p>
                                 </div>
                             ) : (
                                 <div className="divide-y divide-border">

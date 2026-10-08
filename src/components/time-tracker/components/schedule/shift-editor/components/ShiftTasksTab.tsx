@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 
 interface ShiftTasksTabProps {
   shiftId: string | null;
@@ -26,6 +27,7 @@ export function ShiftTasksTab({
   isLocked = false,
   onCountChange,
 }: ShiftTasksTabProps) {
+  const t = useTranslations('Hr.shifts.tasks');
   const { tasks: projectTasks, loading: tasksLoading, createTask } = useTasks(projectId || null);
   const {
     shiftTasks,
@@ -52,9 +54,9 @@ export function ShiftTasksTab({
     try {
       await assignTask(taskId, projectTasks.find(t => t.id === taskId));
       setTaskPopoverOpen(false);
-      toast.success('Taak toegewezen aan dienst');
+      toast.success(t('assignedSuccess'));
     } catch {
-      toast.error('Kan taak niet toewijzen');
+      toast.error(t('assignedFailed'));
     }
   };
 
@@ -70,12 +72,12 @@ export function ShiftTasksTab({
       if (result?.data?.id) {
         await assignTask(result.data.id, result.data);
         setNewTaskTitle('');
-        toast.success('Taak aangemaakt en gekoppeld');
+        toast.success(t('createdSuccess'));
       } else {
-        toast.error(result?.error || 'Kan taak niet aanmaken');
+        toast.error(result?.error || t('createdFailed'));
       }
     } catch {
-      toast.error('Kan taak niet aanmaken');
+      toast.error(t('createdFailed'));
     } finally {
       setCreatingTask(false);
     }
@@ -85,18 +87,18 @@ export function ShiftTasksTab({
     if (isLocked) return;
     try {
       await removeTask(shiftTaskId);
-      toast.success('Taak verwijderd van dienst');
+      toast.success(t('removedSuccess'));
     } catch {
-      toast.error('Kan taak niet verwijderen');
+      toast.error(t('removedFailed'));
     }
   };
 
   const handleCompleteTask = async (shiftTaskId: string) => {
     try {
       await completeShiftTask(shiftTaskId);
-      toast.success('Taak gemarkeerd als voltooid');
+      toast.success(t('completedSuccess'));
     } catch {
-      toast.error('Kan taak niet voltooien');
+      toast.error(t('completedFailed'));
     }
   };
 
@@ -104,7 +106,7 @@ export function ShiftTasksTab({
     return (
       <div className="text-center py-8 text-neutral-500">
         <ListTodo className="h-8 w-8 mx-auto mb-2 opacity-50" />
-        <p className="text-sm">Selecteer een project om taken te beheren</p>
+        <p className="text-sm">{t('selectProject')}</p>
       </div>
     );
   }
@@ -119,20 +121,20 @@ export function ShiftTasksTab({
               <PopoverTrigger asChild>
                 <Button variant="outline" size="sm" className="h-9">
                   <Plus className="h-4 w-4 mr-1.5" />
-                  Bestaande taak toevoegen
+                  {t('addExisting')}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-80 p-3" align="start">
                 <div className="space-y-3">
                   <h4 className="font-semibold text-xs uppercase tracking-wider text-neutral-500">
-                    Projecttaken
+                    {t('projectTasks')}
                   </h4>
                   {tasksLoading ? (
                     <div className="flex items-center justify-center py-4">
                       <Loader2 className="h-5 w-5 animate-spin text-neutral-400" />
                     </div>
                   ) : availableTasks.length === 0 ? (
-                    <p className="text-xs text-neutral-500 py-2">Geen beschikbare taken</p>
+                    <p className="text-xs text-neutral-500 py-2">{t('noTasks')}</p>
                   ) : (
                     <ScrollArea className="h-48">
                       <div className="space-y-1">
@@ -165,11 +167,11 @@ export function ShiftTasksTab({
 
           <div className="space-y-1.5">
             <Label className="text-xs font-bold text-neutral-500 uppercase tracking-wider block">
-              Snel nieuwe taak aanmaken
+              {t('quickCreate')}
             </Label>
             <div className="flex gap-2">
               <Input
-                placeholder="Taakbeschrijving..."
+                placeholder={t('taskPlaceholder')}
                 value={newTaskTitle}
                 onChange={(e) => setNewTaskTitle(e.target.value)}
                 onKeyDown={(e) => {
@@ -207,7 +209,7 @@ export function ShiftTasksTab({
       ) : shiftTasks.length === 0 ? (
         <div className="text-center py-8 text-neutral-500">
           <ListTodo className="h-8 w-8 mx-auto mb-2 opacity-40" />
-          <p className="text-sm">Geen taken toegewezen aan deze dienst</p>
+          <p className="text-sm">{t('noAssignedTasks')}</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -224,7 +226,7 @@ export function ShiftTasksTab({
                     shiftTask.status === 'completed' ? 'line-through text-neutral-400' : ''
                   }`}
                 >
-                  {shiftTask.task?.title || 'Onbekende taak'}
+                  {shiftTask.task?.title || t('unknownTask')}
                 </p>
                 <div className="flex items-center gap-2 mt-1">
                   {shiftTask.task?.priority && shiftTask.task.priority !== 'normal' && (
@@ -237,7 +239,7 @@ export function ShiftTasksTab({
                   )}
                   {shiftTask.status === 'completed' && (
                     <Badge variant="outline" className="text-[10px] text-emerald-600 dark:text-emerald-400 border-emerald-500/30">
-                      Voltooid
+                      {t('completed')}
                     </Badge>
                   )}
                 </div>
@@ -250,7 +252,7 @@ export function ShiftTasksTab({
                     size="icon"
                     className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/20"
                     onClick={() => handleCompleteTask(shiftTask.id)}
-                    title="Markeer als voltooid"
+                    title={t('markCompleted')}
                   >
                     <Check className="h-4 w-4" />
                   </Button>
@@ -261,7 +263,7 @@ export function ShiftTasksTab({
                     size="icon"
                     className="h-8 w-8 text-neutral-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"
                     onClick={() => handleRemoveTask(shiftTask.id)}
-                    title="Verwijder van dienst"
+                    title={t('removeFromShift')}
                   >
                     <Trash className="h-4 w-4" />
                   </Button>

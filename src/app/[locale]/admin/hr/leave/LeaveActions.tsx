@@ -4,10 +4,12 @@ import { useState } from "react";
 import { CheckCircle2, XCircle, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { useTranslations } from 'next-intl';
 import { describeError } from "@/lib/describe-error";
 
 export default function LeaveActions({ requestId }: { requestId: string }) {
     const router = useRouter();
+    const t = useTranslations('Hr.leave');
     const [loading, setLoading] = useState<'approve' | 'deny' | null>(null);
 
     const handleAction = async (action: 'approve' | 'deny') => {
@@ -25,11 +27,11 @@ export default function LeaveActions({ requestId }: { requestId: string }) {
                 throw new Error(err.error || `Failed to ${action} request`);
             }
 
-            toast.success(`Leave request ${status}`);
+            toast.success(action === 'approve' ? t('approvedToast') : t('deniedToast'));
             router.refresh(); // Re-fetch server data
         } catch (err: any) {
             console.error('[LeaveActions] Action failed:', err);
-            toast.error(`Failed to ${action} request — ${describeError(err)}`);
+            toast.error(t('actionFailed', { action: t(action), error: describeError(err) }));
         } finally {
             setLoading(null);
         }
@@ -43,7 +45,7 @@ export default function LeaveActions({ requestId }: { requestId: string }) {
                 className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-500/30 rounded-lg hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors disabled:opacity-50"
             >
                 {loading === 'approve' ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" />}
-                Approve
+                {t('approve')}
             </button>
             <button
                 onClick={() => handleAction('deny')}
@@ -51,7 +53,7 @@ export default function LeaveActions({ requestId }: { requestId: string }) {
                 className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors disabled:opacity-50"
             >
                 {loading === 'deny' ? <Loader2 className="w-3 h-3 animate-spin" /> : <XCircle className="w-3 h-3" />}
-                Deny
+                {t('deny')}
             </button>
         </div>
     );

@@ -6,6 +6,22 @@ export const hrTabs = [
     { label: 'EMPLOYEES', href: '/admin/hr/employees', id: 'employees' }
 ];
 
+const HR_TAB_KEYS: Record<string, string> = {
+    'hr-dashboard': 'dashboard',
+    'scheduler': 'scheduler',
+    'timesheets': 'timesheets',
+    'leave': 'leave',
+    'employees': 'employees',
+};
+
+export function getHrTabs(t?: (key: string) => string, tHas?: (key: string) => boolean) {
+    if (!t || !tHas) return hrTabs;
+    return hrTabs.map(tab => {
+        const key = `tabs.${HR_TAB_KEYS[tab.id]}`;
+        return { ...tab, label: tHas(key) ? t(key).toUpperCase() : tab.label };
+    });
+}
+
 export const relationsTabs: { label: string; href: string; id: string; }[] = [];
 
 export function getFilteredRelationsTabs(planType: string, t?: (key: string) => string, tHas?: (key: string) => boolean) {

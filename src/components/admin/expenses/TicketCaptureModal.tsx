@@ -740,7 +740,7 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                                                     return { value: name, label: name };
                                                 });
                                                 if (form.merchant && !opts.some(o => o.value === form.merchant)) {
-                                                    opts.unshift({ value: form.merchant, label: `${form.merchant} (Scanned)` });
+                                                    opts.unshift({ value: form.merchant, label: form.merchant });   // the name as read — no '(Scanned)' tag (Florin 2026-10-08)
                                                 }
                                                 return opts;
                                             })()}

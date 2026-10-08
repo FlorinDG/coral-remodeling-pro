@@ -753,3 +753,22 @@ describe('SYNC-STUCK-1 · a change that keeps failing never blocks the queue nor
         assert.equal(shown?.properties.amount, 12.5, 'the server version is shown, not the stale local copy');
     });
 });
+
+describe('SYNC-BLIND-1 · a one-field edit keeps its snapshot; a confirmed page carries its server version', () => {
+    beforeEach(() => { resetStoreState(); });
+
+    test('updatePageProperty keeps the before-snapshot (it was computed and thrown away)', () => {
+        useDatabaseStore.setState({ databases: [{ id: 'db-s', name: 'T', properties: [], pages: [{ id: 'p', databaseId: 'db-s', properties: { amount: 5, notes: '' }, blocks: [], updatedAt: '2026-10-08T08:00:00.000Z' }] as any[] } as any] });
+        useDatabaseStore.getState().updatePageProperty('db-s', 'p', 'notes', 'x');
+        const page = useDatabaseStore.getState().getDatabase('db-s')?.pages[0] as any;
+        assert.deepEqual(page.dirtyBase, { amount: 5, notes: '' });
+    });
+
+    test('addConfirmedPage records the server version, and a newer server copy replaces a clean older one', () => {
+        useDatabaseStore.setState({ databases: [{ id: 'db-s', name: 'T', pages: [{ id: 'p', databaseId: 'db-s', properties: { amount: 0 }, blocks: [], updatedAt: '2026-10-05T12:00:00.000Z' }] as any[] } as any] });
+        useDatabaseStore.getState().addConfirmedPage({ id: 'p', databaseId: 'db-s', properties: { amount: 36.7 }, blocks: [], updatedAt: '2026-10-08T21:35:23.868Z' } as any);
+        const page = useDatabaseStore.getState().getDatabase('db-s')?.pages[0] as any;
+        assert.equal(page.properties.amount, 36.7);
+        assert.equal(page.baseUpdatedAt, '2026-10-08T21:35:23.868Z');
+    });
+});

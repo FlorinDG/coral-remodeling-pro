@@ -112,6 +112,9 @@ export function applyRecordIntent(server: ServerRow, intent: RecordIntent, ctx: 
 
 // ── The store's page → an intent (one conversion for every adapter: saveGlobalPage, saveGlobalPagesBatch) ──
 
+/** The base version of a browser page that does not know which server version it was read from (never equal to one). */
+export const UNKNOWN_BASE = 'unknown-base';
+
 export interface StorePageLike {
     id: string; databaseId: string;
     properties?: Props; dirtyBase?: Props | null; baseUpdatedAt?: string | null;
@@ -131,7 +134,9 @@ export function intentFromPage(page: StorePageLike): RecordIntent {
         pageId: page.id,
         fields: keys ? Object.fromEntries(keys.map(k => [k, props[k]])) : (page.dirtyBaseBlocks ? {} : props),
         base: keys && base ? Object.fromEntries(keys.filter(k => k in base).map(k => [k, base[k]])) : undefined,
-        baseUpdatedAt: page.baseUpdatedAt ?? null,
+        // SYNC-BLIND-1: a browser page that does not know which server version it was read from is NEVER written blind —
+        // UNKNOWN_BASE makes the door treat it as stale: per field, a value the server changed since is not overwritten.
+        baseUpdatedAt: page.baseUpdatedAt ?? UNKNOWN_BASE,
         blocks: page.dirtyBaseBlocks ? page.blocks : undefined,
         baseBlocksVersion: page.dirtyBaseBlocks ? (page.blocksVersion ?? null) : null,
     };

@@ -90,3 +90,23 @@ test('an exported invoice: a NAMED system lifecycle writer may mark it paid / ov
     const sneak = applyRecordIntent(exported, { pageId: 'p', fields: { status: 'opt-paid', title: 'F-2' } }, { ...ctx, lifecycle: { reason: 'x' } });
     assert.deepEqual(!sneak.ok && 'blockedFields' in sneak.refusal && sneak.refusal.blockedFields, ['title']);
 });
+
+// SYNC-BLIND-1 (Florin 2026-10-08: scanned tickets "lost vat category and price")
+test('a browser copy that does not know its server version is never written blind — newer server values survive', () => {
+    const tctx = { dbProperties: [{ id: 'title', type: 'text' }, { id: 'amount', type: 'number' }, { id: 'category', type: 'select' }, { id: 'notes', type: 'text' }] };
+    const server = { properties: { title: 'Castellino', amount: 36.7, category: 'cat-restaurant', notes: '' }, blocks: [], blocksVersion: 1, updatedAt: 'T9' };
+    // the stale copy (from before the reading) edits ONE field, with no snapshot and no version — the old adapter sent everything
+    const stale = intentFromPage({ id: 'p', databaseId: 'd', properties: { title: 'Castellino', amount: 0, category: '', notes: 'x' } });
+    const r = applyRecordIntent(server, stale, tctx);
+    assert.equal(r.ok, false, 'refused as stale — not written over the reading');
+});
+
+test('with its snapshot kept, the same edit sends only the changed field and lands on the current row', () => {
+    const tctx = { dbProperties: [{ id: 'title', type: 'text' }, { id: 'amount', type: 'number' }, { id: 'category', type: 'select' }, { id: 'notes', type: 'text' }] };
+    const server = { properties: { title: 'Castellino', amount: 36.7, category: 'cat-restaurant', notes: '' }, blocks: [], blocksVersion: 1, updatedAt: 'T9' };
+    const edit = intentFromPage({ id: 'p', databaseId: 'd', properties: { title: 'Castellino', amount: 0, category: '', notes: 'x' }, dirtyBase: { title: 'Castellino', amount: 0, category: '', notes: '' } });
+    assert.deepEqual(Object.keys(edit.fields), ['notes']);
+    const r = applyRecordIntent(server, edit, tctx);
+    assert.equal(r.ok, true);
+    if (r.ok) assert.deepEqual(r.properties, { title: 'Castellino', amount: 36.7, category: 'cat-restaurant', notes: 'x' });
+});

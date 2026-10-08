@@ -1483,11 +1483,19 @@ export const useDatabaseStore = create<DatabaseState>()(
                         databases: state.databases.map(db => {
                             if (db.id !== page.databaseId) return db;
                             // Avoid duplicates if the page somehow already exists
-                            const exists = db.pages.some((p: Page) => p.id === page.id);
-                            if (exists) return db;
+                            // SYNC-BLIND-1: a server-confirmed page carries the server's version (its OCC base) — without it the
+                            // next edit could not be checked for staleness. A copy already here is replaced by the newer
+                            // server version unless it holds unsynced local edits.
+                            const confirmed: Page = { ...page, baseUpdatedAt: page.updatedAt };
+                            const existing = db.pages.find((p: Page) => p.id === page.id);
+                            if (existing) {
+                                if (existing.dirtyBase || existing.dirtyBaseBlocks) return db;
+                                if (existing.updatedAt && page.updatedAt && new Date(existing.updatedAt) > new Date(page.updatedAt)) return db;
+                                return { ...db, pages: db.pages.map((p: Page) => p.id === page.id ? confirmed : p), updatedAt: new Date().toISOString() };
+                            }
                             return {
                                 ...db,
-                                pages: [...db.pages, page],
+                                pages: [...db.pages, confirmed],
                                 updatedAt: new Date().toISOString()
                             };
                         }),
@@ -1894,6 +1902,10 @@ export const useDatabaseStore = create<DatabaseState>()(
                                 return {
                                     ...page,
                                     properties: newProps,
+                                    // SYNC-BLIND-1 (Florin 2026-10-08: tickets "lost vat category and price"): the snapshot was
+                                    // computed and THROWN AWAY (since OCC-2) — every one-field edit sent the record's whole browser
+                                    // copy; a stale copy wrote all its old values back. Kept: only the changed field travels.
+                                    dirtyBase,
                                     updatedAt: now
                                 };
                             }),

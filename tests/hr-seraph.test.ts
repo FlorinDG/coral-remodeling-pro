@@ -135,8 +135,8 @@ describe('HR-SERAPH-1 · Exact Query Shape Pins & Throw Proofs (B5)', () => {
         );
     });
 
-    // 8. B1 mismatch throw in team-scoping.ts (activated in Step 7 migration)
-    test('8 · team-scoping.ts B1 — tenantId mismatch between param and session throws TenantMismatchError', { skip: 'team-scoping.ts migrates in Step 7' }, async () => {
+    // 8. B1 mismatch throw in team-scoping.ts
+    test('8 · team-scoping.ts B1 — tenantId mismatch between param and session throws TenantMismatchError', async () => {
         const mockAuth = async () => ({
             user: { id: 'u1', tenantId: T_SESSION }
         } as any);

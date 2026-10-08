@@ -6,6 +6,8 @@ import { redirect } from "next/navigation";
 import { CalendarOff, CheckCircle2, XCircle, Clock, AlertCircle } from "lucide-react";
 import { getTranslations } from 'next-intl/server';
 import LeaveActions from "./LeaveActions";
+import { formatCalendarDay } from '@/components/time-tracker/components/schedule/shift-editor/model';
+import { zonedParts } from '@/lib/kernel/shift-time';
 
 // ── Server Data ───────────────────────────────────────────────────
 async function getLeaveData(db: TenantScopedClient, tenantId: string) {
@@ -76,21 +78,13 @@ function StatusBadge({ status, label }: { status: string; label: string }) {
     );
 }
 
-function formatDate(dateStr: string) {
-    try {
-        const d = new Date(dateStr);
-        return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-    } catch {
-        return dateStr;
-    }
-}
-
 // ── Main Page ─────────────────────────────────────────────────────
-export default async function LeavePage() {
+export default async function LeavePage({ params }: { params?: Promise<{ locale: string }> }) {
     const session = await auth();
     const user = session?.user;
     if (!user?.tenantId) redirect("/login");
 
+    const { locale = 'nl' } = (await params) || {};
     const db = await scopeFromSession();
     const t = await getTranslations('Hr.leave');
 
@@ -179,7 +173,7 @@ export default async function LeavePage() {
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <span className="text-sm text-foreground font-medium">
-                                                        {formatDate(req.startDate)} — {formatDate(req.endDate)}
+                                                        {formatCalendarDay(req.startDate.slice(0, 10), locale)} — {formatCalendarDay(req.endDate.slice(0, 10), locale)}
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4">
@@ -187,7 +181,7 @@ export default async function LeavePage() {
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <span className="text-xs text-muted-foreground font-medium">
-                                                        {new Date(req.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                                                        {formatCalendarDay(zonedParts(req.createdAt).date, locale)}
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4 text-right">

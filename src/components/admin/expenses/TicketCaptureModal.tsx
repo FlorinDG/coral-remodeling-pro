@@ -73,9 +73,15 @@ export default function TicketCaptureModal({ onClose: closeModal, targetDatabase
     // Florin 2026-10-08: photo after photo ("Scan another") on the phone, and Te valideren showed them only after a
     // refresh. Each camera trip sends the browser to the background and back; a page load racing the saves can leave the
     // list without them. When the session closes after a save, the list is re-read from the server — it equals the server.
+    const router = useRouter();
     const savedSomething = useRef(false);
     const onClose = () => {
-        if (savedSomething.current) void useDatabaseStore.getState().reloadDatabasePages(resolveDbId(targetDatabaseId)).catch(() => {});
+        if (savedSomething.current) {
+            void useDatabaseStore.getState().reloadDatabasePages(resolveDbId(targetDatabaseId)).catch(() => {});
+            // MOBILE-REACT-2: the screen under the camera may be SERVER-rendered (the mobile home: counts, scans used,
+            // totals) — built once on load, it showed the old figures until a refresh. Rebuild it after a save.
+            router.refresh();
+        }
         closeModal();
     };
     // EDIT-1: the option lists are the TARGET database's own (schema) — a ticket gets the ticket categories / payment
@@ -95,7 +101,6 @@ export default function TicketCaptureModal({ onClose: closeModal, targetDatabase
     const suppliers = useDatabaseStore(s => s.databases.find(db => isTenantDatabase(db.id, 'db-suppliers'))?.pages ?? NO_PAGES);
 
     const [animationDone, setAnimationDone] = useState(false);
-    const router = useRouter();
 
     React.useEffect(() => {
         const timer = setTimeout(() => {

@@ -28,3 +28,10 @@ test('bulk approve: the complete ones are approved, the others are named with wh
     ]);
     assert.deepEqual(plan, { approve: ['a'], refused: [{ id: 'b', missing: ['title', 'date', 'amount'] }] });
 });
+
+test('DUP-1: a complete record flagged as a possible duplicate is not approved until a person resolves the flag', () => {
+    const complete = { title: 'Brico', date: '2026-10-02', amount: 12.5, reviewStatus: 'Na te kijken' };
+    assert.equal(approveRefusal('tickets', complete), null);
+    assert.deepEqual(approveRefusal('tickets', { ...complete, duplicateOf: ['other'] }), ['duplicateOf']);
+    assert.equal(approveRefusal('tickets', { ...complete, duplicateOf: [] }), null);
+});

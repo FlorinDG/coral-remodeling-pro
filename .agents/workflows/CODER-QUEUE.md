@@ -28,8 +28,8 @@ busy / disabled + reason)**, then M4 = CRM & Projects. Report `.agents/reports/D
 
 ## 3 · `R2-1-B` — the remaining direct record writes onto the one door — ✅ M3 ACCEPTED · 🟩 GO M4 (stop after M4)
 **Binding for M4** (plan § PLANNER REVIEW — M3 note + these):
-1. `scan/route.ts`: `checkDuplicateExpense` gets the SCOPED client (`db` from `scopeFromSession`), no `platformDb() as never`
-   — closes the open item of the Planner's tenant audit (2026-10-07).
+1. ~~`scan/route.ts`: `checkDuplicateExpense` gets the SCOPED client~~ — DONE by the Planner 2026-10-08 (DUP-1:
+   `lib/expense-dedup.ts` replaced by `lib/records/duplicates` + `lib/data/duplicates` on the scoped client). Skip.
 2. `api/financials/export/route.ts` changed TODAY (VALIDATE-1 `unvalidated`, MAR-1 `ledgerAccountOf` in both row builders):
    work on current HEAD; move ONLY the `accountantExportedAt` stamp write onto `saveRecord` — the selection, the rows
    and the ledger column stay as they are (tests/accountant-export.test.ts must stay green unchanged).

@@ -135,11 +135,6 @@ export default function AiDocumentImportModal({ onClose, targetDatabaseId = 'db-
 
                 const scanRes = await fetch('/api/scan', { method: 'POST', body: scanFd });
                 const scanData = await scanRes.json();
-                if (scanRes.status === 409 && scanData?.code === 'DUPLICATE_DETECTED') {
-                    await toReview('Mogelijk duplicaat');
-                    setJobs(prev => prev.map(j => j.id === job.id ? { ...j, status: 'done', verdict: 'Na te kijken — mogelijk duplicaat' } : j));
-                    continue;
-                }
                 if (!scanRes.ok || !scanData.success) {
                     await toReview(`Lezen mislukt: ${scanData?.error || scanRes.status}`);
                     setJobs(prev => prev.map(j => j.id === job.id ? { ...j, status: 'done', verdict: 'Na te kijken — lezen mislukt' } : j));
@@ -148,7 +143,9 @@ export default function AiDocumentImportModal({ onClose, targetDatabaseId = 'db-
                 if (scanData.page) latest = scanData.page;
 
                 const reviewStatus = scanData.page?.properties?.reviewStatus;
-                const verdictText = reviewStatus === 'Klaar' ? 'Klaar om goed te keuren' : 'Na te kijken';
+                // DUP-1: a possible duplicate is saved and flagged — said here, decided in Te valideren
+                const verdictText = scanData.dedupResult && scanData.dedupResult.status !== 'none' ? 'Na te kijken — mogelijk duplicaat'
+                    : reviewStatus === 'Klaar' ? 'Klaar om goed te keuren' : 'Na te kijken';
                 setJobs(prev => prev.map(j => j.id === job.id ? { ...j, status: 'done', verdict: verdictText } : j));
             } catch (err: any) {
                 await toReview(`Import onderbroken: ${err?.message || 'fout'}`).catch(() => {});

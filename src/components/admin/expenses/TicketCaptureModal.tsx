@@ -488,8 +488,8 @@ export default function TicketCaptureModal({ onClose: closeModal, targetDatabase
     };
 
     const isLoading = step === 'capture' && !scanError && lastFileRef.current !== null;
-    const isStrictDuplicate = scanResult?.isDuplicate === true;
-    const isPossibleMatch = scanResult?.dedupResult?.status === 'possible';
+    // DUP-1: the scan saves and flags — 'duplicate' (the same) or 'possible' (worth a look); never refused
+    const isPossibleMatch = scanResult?.dedupResult?.status === 'duplicate' || scanResult?.dedupResult?.status === 'possible';
 
     // ── Render ────────────────────────────────────────────────────────────────
     return (
@@ -681,27 +681,17 @@ export default function TicketCaptureModal({ onClose: closeModal, targetDatabase
                         {step === 'review' && (
                             <div className="space-y-6">
 
-                                {isStrictDuplicate && (
-                                    <div className="flex items-start gap-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/50 rounded-xl px-4 py-3 animate-in fade-in slide-in-from-top-4">
-                                        <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
-                                        <div>
-                                            <p className="text-sm font-semibold text-red-800 dark:text-red-300">Exact Duplicate Detected</p>
-                                            <p className="text-xs text-red-700 dark:text-red-400/80 mt-0.5">
-                                                This document exactly matches an existing record ({scanResult.dedupResult?.matchedFields?.join(', ')}). 
-                                                It was <strong>not saved</strong> to prevent duplication.
-                                            </p>
-                                        </div>
-                                    </div>
-                                )}
-
+                                {/* DUP-1: a possible duplicate is SAVED and flagged — a person decides in Te valideren */}
                                 {isPossibleMatch && (
                                     <div className="flex items-start gap-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-900/50 rounded-xl px-4 py-3">
                                         <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
                                         <div>
-                                            <p className="text-sm font-semibold text-amber-800 dark:text-amber-500">Possible Duplicate</p>
+                                            <p className="text-sm font-semibold text-amber-800 dark:text-amber-500">
+                                                {scanResult?.dedupResult?.status === 'duplicate' ? 'Dit document bestaat al' : 'Mogelijk duplicaat'}
+                                            </p>
                                             <p className="text-xs text-amber-700 dark:text-amber-400/80 mt-0.5">
-                                                This document shares fields with an existing record ({scanResult.dedupResult?.matchedFields?.join(', ')}). 
-                                                Review carefully before saving.
+                                                Zelfde {scanResult?.dedupResult?.matchedFields?.join(', ')} als een bestaand document. Het is opgeslagen
+                                                en gemarkeerd — in Te valideren kies je: behouden of verwijderen.
                                             </p>
                                         </div>
                                     </div>
@@ -1068,21 +1058,12 @@ export default function TicketCaptureModal({ onClose: closeModal, targetDatabase
                                     >
                                         Reset
                                     </button>
-                                    {isStrictDuplicate ? (
-                                        <button
-                                            onClick={handleSave}
-                                            className="flex-1 py-2.5 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-all shadow-sm shadow-red-500/20"
-                                        >
-                                            Not a duplicate, save anyway
-                                        </button>
-                                    ) : (
-                                        <button
-                                            onClick={handleSave}
-                                            className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 text-white text-sm font-semibold hover:from-orange-600 hover:to-amber-600 transition-all shadow-sm shadow-orange-500/20"
-                                        >
-                                            {scanResult ? 'Confirm & Save' : 'Save'}
-                                        </button>
-                                    )}
+                                    <button
+                                        onClick={handleSave}
+                                        className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 text-white text-sm font-semibold hover:from-orange-600 hover:to-amber-600 transition-all shadow-sm shadow-orange-500/20"
+                                    >
+                                        {scanResult ? 'Confirm & Save' : 'Save'}
+                                    </button>
                                 </div>
                             </div>
                         )}

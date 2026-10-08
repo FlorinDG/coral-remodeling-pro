@@ -13,7 +13,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import SelectDropdown from '@/components/admin/database/components/SelectDropdown';
 import { EXPENSE_CATEGORIES, COST_TYPES } from '@/lib/kernel/expense-taxonomy';
 import { READABLE_ACCEPT } from '@/lib/records/readable-document';   // SCAN-2: iOS converts HEIC to JPEG itself
-import { purchaseView, purchaseWrite, editorShows, editorLabel, needsValidation } from '@/lib/records/purchase-document';
+import { purchaseView, purchaseWrite, editorShows, editorLabel, needsValidation, readingSummary } from '@/lib/records/purchase-document';
 import { prepareUpload } from '@/lib/files/prepare-upload';
 import { formatEuro } from '@/lib/records/grid-cell';
 import { lineNet } from '@/lib/records/purchase-lines';
@@ -23,9 +23,11 @@ import { RelationCell } from '@/components/admin/database/v2/cells';
 import { useOpenLinkedRecord } from '@/components/admin/database/hooks/useOpenLinkedRecord';
 import { MAX_UPLOAD_BYTES, tooLargeMessage } from '@/lib/files/upload-size';
 import { isValidated, approveRefusal, REVIEW_APPROVED } from '@/lib/records/validation';
+import { hasDuplicateFlag, clearDuplicateFlag } from '@/lib/records/duplicates';
 
 /** The approval check's field ids, as the person reads them. */
 const APPROVE_FIELD_LABEL: Record<string, string> = {
+    duplicateOf: 'duplicaat afhandelen',
     title: 'handelaar', date: 'datum', amount: 'bedrag', supplier: 'leverancier', invoiceDate: 'factuurdatum',
     totalIncVat: 'totaal', totalVat: 'btw klopt niet',
 };
@@ -603,6 +605,48 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
 
                     {/* Left Body */}
                     <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                        {/* DUP-1 · a possible duplicate — a person decides (Florin 2026-10-08: "this one is manual") */}
+                        {rawPage && hasDuplicateFlag(rawPage.properties) && (() => {
+                            const ids = (Array.isArray(rawPage.properties.duplicateOf) ? rawPage.properties.duplicateOf : []).map(String);
+                            const dbPages = useDatabaseStore.getState().getDatabase(expensesDbId)?.pages || [];
+                            return (
+                                <div role="alert" className="rounded-xl border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800 p-4 space-y-3">
+                                    <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">{String(rawPage.properties.reviewReason || 'Mogelijk duplicaat')}</p>
+                                    <ul className="space-y-1.5">
+                                        {ids.map(id => {
+                                            const other = dbPages.find(p => p.id === id);
+                                            return (
+                                                <li key={id} className="flex items-center justify-between gap-3 text-sm">
+                                                    <span className="text-neutral-700 dark:text-neutral-300 truncate">
+                                                        {other ? (readingSummary(role, other.properties) || String(other.properties.title || id)) : 'Dat document bestaat niet meer'}
+                                                    </span>
+                                                    {other && (
+                                                        <button type="button" onClick={() => openLinked(expensesDbId, id)}
+                                                                className="shrink-0 text-xs font-semibold text-amber-800 dark:text-amber-300 underline">Openen</button>
+                                                    )}
+                                                </li>
+                                            );
+                                        })}
+                                    </ul>
+                                    <div className="flex flex-wrap gap-2 pt-1">
+                                        <button type="button"
+                                                onClick={() => { for (const [k, v] of Object.entries(clearDuplicateFlag(rawPage.properties))) writeField(k, v); }}
+                                                className="px-3 py-2 rounded-lg text-sm font-semibold bg-white dark:bg-white/10 border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200 hover:bg-amber-100">
+                                            Geen duplicaat — behouden
+                                        </button>
+                                        <button type="button"
+                                                onClick={() => {
+                                                    if (!window.confirm('Dit document verwijderen? Het andere blijft.')) return;
+                                                    useDatabaseStore.getState().deletePage(expensesDbId, pageId);
+                                                    onClose();
+                                                }}
+                                                className="px-3 py-2 rounded-lg text-sm font-semibold text-white bg-red-600 hover:bg-red-700">
+                                            Dit document verwijderen
+                                        </button>
+                                    </div>
+                                </div>
+                            );
+                        })()}
                         {loadingPeppol && (
                             <div className="flex items-center justify-center py-8">
                                 <Loader2 className="w-6 h-6 text-orange-500 animate-spin" />

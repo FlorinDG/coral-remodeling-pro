@@ -16,7 +16,7 @@ const TICKET_FROM_VIEW: Readonly<Record<string, string>> = { supplierName: 'titl
 /** The ticket's own fields the editor may write (kernel db-tickets + the review fields). */
 const TICKET_FIELDS: ReadonlySet<string> = new Set([
     'date', 'amount', 'category', 'currency', 'paymentMethod', 'notes', 'project', 'receiptUrl', 'costType',
-    'vatDeductiblePct', 'reviewStatus', 'reviewReason',
+    'vatDeductiblePct', 'reviewStatus', 'reviewReason', 'duplicateOf',
 ]);
 
 /** The databases whose records ARE purchase documents — they open in the one purchase editor (EDIT-1), never in the

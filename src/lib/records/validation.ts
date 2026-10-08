@@ -10,6 +10,7 @@
  *   to validate: a scan / import with any other review status ("In verwerking", "Na te kijken", "Klaar", "Mislukt")
  * Approving requires the essentials (approveRefusal) — the door refuses an incomplete approval.
  */
+import { hasDuplicateFlag, DUPLICATE_FIELD } from './duplicates';
 type Props = Record<string, unknown>;
 
 export const REVIEW_PROCESSING = 'In verwerking';
@@ -24,6 +25,7 @@ export function isValidated(props: Props | null | undefined): boolean {
     const s = p.reviewStatus;
     return s === undefined || s === null || s === '' || s === REVIEW_APPROVED;
 }
+
 
 const filled = (v: unknown) => !(v === undefined || v === null || v === '' || (Array.isArray(v) && v.length === 0));
 const amount = (v: unknown) => (typeof v === 'number' ? v : typeof v === 'string' && v.trim() ? Number(v.replace(',', '.')) : NaN);
@@ -48,6 +50,8 @@ export function approveRefusal(role: string | null | undefined, props: Props | n
         if (!Number.isFinite(inc) || inc === 0) out.push('totalIncVat');
         else if (Number.isFinite(ex) && Number.isFinite(vat) && Math.abs(ex + vat - inc) >= 0.05) out.push('totalVat');
     }
+    // DUP-1: a possible duplicate waits for a person — keep it (clear the flag) or delete it, then approve
+    if ((role === 'tickets' || role === 'expenses') && hasDuplicateFlag(p)) out.push(DUPLICATE_FIELD);
     return out.length ? out : null;
 }
 

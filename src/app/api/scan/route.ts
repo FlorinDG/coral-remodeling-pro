@@ -11,7 +11,8 @@ import { isEmptyReading, ticketFields } from '@/lib/records/scan-reading';
 import { buildScanUpdateIntent, buildScanCreateData } from '@/lib/records/peppol-scan-intents';
 import { v4 as uuidv4 } from 'uuid';
 import { type SystemDatabaseRole, SYSTEM_DATABASES, BASE_TO_KEY } from '@/lib/kernel/system-databases';
-import { checkDuplicateExpense } from '@/lib/expense-dedup';
+import { findPurchaseDuplicates } from '@/lib/data/duplicates';
+import { duplicateFlag } from '@/lib/records/duplicates';
 import { describeError } from '@/lib/describe-error';
 
 export const runtime = 'nodejs';
@@ -299,7 +300,6 @@ export async function POST(req: Request) {
         const formData = await req.formData();
         const file = formData.get('file') as File;
         let targetDb = formData.get('targetDb') as string || 'db-tickets';
-        const overrideDuplicate = formData.get('overrideDuplicate') === 'true';
         const existingPageId = formData.get('pageId') as string | null;
 
         if (!file && !existingPageId) {
@@ -457,32 +457,6 @@ export async function POST(req: Request) {
             }, { status: 422 });
         }
 
-        // ── Deduplication Check ───────────────────────────────────────────────
-        const extractedForDedup = {
-            isInvoice,
-            date: isInvoice ? extracted.issueDate : extracted.date,
-            documentNumber: isInvoice ? extracted.invoiceNumber : undefined,
-            supplierName: isInvoice ? extracted.supplierName : extracted.merchant,
-            supplierVat: isInvoice ? extracted.supplierVat : undefined,
-            amount: isInvoice ? extracted.totalIncVat : extracted.totalAmount,
-        };
-
-        const dedupResult = await checkDuplicateExpense(platformDb() as never, tenantId, targetDb, extractedForDedup);
-
-        if (dedupResult.status === 'duplicate' && !overrideDuplicate) {
-            // It's a strict duplicate. We must block saving and return early.
-            // We'll consume the quota since we did perform OCR.
-            const finalQuota = await checkAndIncrementQuota(tenantId, true);
-            return NextResponse.json({
-                error: 'Duplicate document detected',
-                code: 'DUPLICATE_DETECTED',
-                isDuplicate: true,
-                dedupResult,
-                extracted, // so the UI can still show the extracted data if the user wants to override
-                remaining: finalQuota.remaining
-            }, { status: 409 });
-        }
-
         // ── Ensure parent DB exists ───────────────────────────────────────────
         const existingDb = await db.globalDatabase.findFirst({
             where: { id: targetDb },
@@ -569,6 +543,18 @@ export async function POST(req: Request) {
                 source: 'src-scan',
                 ...ticketFields(extracted),
             };
+        }
+
+        // ── DUP-1 · duplicates: FLAGGED, never refused (Florin 2026-10-08: "duplicate scanning / warning / handling —
+        // this one is manual"). The record is saved; a possible duplicate carries `duplicateOf` + the reason and waits
+        // in "Te valideren" for a person (keep / delete); approval is refused while the flag stands.
+        let dedupResult: { status: 'duplicate' | 'possible' | 'none'; matchedId?: string; matchedFields?: string[] } = { status: 'none' };
+        if (role === 'tickets' || role === 'expenses') {
+            const matches = await findPurchaseDuplicates(db, targetDb, role, { id: existingPageId || undefined, properties });
+            if (matches.length) {
+                properties = { ...properties, ...duplicateFlag(matches) };
+                dedupResult = { status: matches[0].strength, matchedId: matches[0].id, matchedFields: matches[0].fields };
+            }
         }
 
         // ── Save or Update via saveRecord ─────────────────────────────────────

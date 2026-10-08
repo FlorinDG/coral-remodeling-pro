@@ -199,6 +199,8 @@ export function canonicalSchemas(resolveDbId: (base: string) => string): Record<
     ]}},
     { id: 'betreft',     name: 'Omschrijving',      type: 'text' },
     ...SCAN_REVIEW_FIELDS,
+    // DUP-1: the records this one may duplicate — set by the scan, cleared by a person (lib/records/duplicates)
+    { id: 'duplicateOf', name: 'Mogelijk duplicaat van', type: 'relation', config: { relationDatabaseId: resolveDbId('db-expenses'), relationDisplayPropertyId: 'title' } },
     { id: 'ocrConfidence', name: 'OCR Betrouwbaarheid', type: 'percent' },
     { id: 'status',      name: 'Status', type: 'select', config: { options: [
       { id: 'opt-draft',    name: 'Concept',    color: 'gray'   },
@@ -305,6 +307,7 @@ export function canonicalSchemas(resolveDbId: (base: string) => string): Record<
     { id: 'vatDeductiblePct', name: 'BTW Aftrekbaarheid (%)', type: 'number' },
     { id: 'accountantExportedAt', name: 'Verzonden naar boekhouder', type: 'checkbox' },
     ...SCAN_REVIEW_FIELDS,
+    { id: 'duplicateOf', name: 'Mogelijk duplicaat van', type: 'relation', config: { relationDatabaseId: resolveDbId('db-tickets'), relationDisplayPropertyId: 'title' } },
   ],
   'db-crm': [
     { id: 'title',                                     name: 'Name',              type: 'text' },

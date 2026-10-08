@@ -1,4 +1,4 @@
-import prisma from "@/lib/prisma";
+import { scopeFromSession, type TenantScopedClient } from "@/lib/data/scope";
 import ModuleTabs from "@/components/admin/ModuleTabs";
 import { hrTabs } from "@/config/tabs";
 import { auth } from "@/auth";
@@ -49,7 +49,7 @@ const HR_EMPLOYEE_ROLES = [
     'OFFERTES',
 ];
 
-async function getHRData(tenantId: string) {
+async function getHRData(db: TenantScopedClient, tenantId: string) {
     const now = new Date();
     const startOfWeek = new Date(now);
     const day = startOfWeek.getDay();
@@ -76,27 +76,27 @@ async function getHRData(tenantId: string) {
     ] = await Promise.all([
         // Count from User table (unified source of truth — matches /api/tenant/employees)
         // Null employeeStatus = ACTIVE (legacy users created before field existed)
-        prisma.user.count({ where: { tenantId, role: { in: HR_EMPLOYEE_ROLES }, OR: [{ employeeStatus: 'ACTIVE' }, { employeeStatus: null }] } }),
-        prisma.user.count({ where: { tenantId, role: { in: HR_EMPLOYEE_ROLES }, employeeStatus: 'ON_LEAVE' } }),
-        prisma.user.count({ where: { tenantId, role: { in: HR_EMPLOYEE_ROLES }, employeeStatus: 'INACTIVE' } }),
-        prisma.timeOffRequest.count({ where: { tenantId, status: 'pending' } }),
-        prisma.timeOffRequest.count({ where: { tenantId, status: 'approved' } }),
-        prisma.scheduledShift.count({
+        db.user.count({ where: { tenantId, role: { in: HR_EMPLOYEE_ROLES }, OR: [{ employeeStatus: 'ACTIVE' }, { employeeStatus: null }] } }),
+        db.user.count({ where: { tenantId, role: { in: HR_EMPLOYEE_ROLES }, employeeStatus: 'ON_LEAVE' } }),
+        db.user.count({ where: { tenantId, role: { in: HR_EMPLOYEE_ROLES }, employeeStatus: 'INACTIVE' } }),
+        db.timeOffRequest.count({ where: { tenantId, status: 'pending' } }),
+        db.timeOffRequest.count({ where: { tenantId, status: 'approved' } }),
+        db.scheduledShift.count({
             where: { tenantId, shiftDate: { gte: weekStartStr, lte: weekEndStr } }
         }),
-        prisma.clockEntry.findMany({
+        db.clockEntry.findMany({
             where: { tenantId },
             orderBy: { clockInTime: 'desc' },
             take: 5,
             select: { id: true, userId: true, clockInTime: true, clockOutTime: true },
         }),
-        prisma.timeOffRequest.findMany({
+        db.timeOffRequest.findMany({
             where: { tenantId },
             orderBy: { createdAt: 'desc' },
             take: 5,
             select: { id: true, userId: true, status: true, startDate: true, endDate: true, createdAt: true, requestType: true },
         }),
-        prisma.user.findMany({
+        db.user.findMany({
             where: { tenantId, role: { in: HR_EMPLOYEE_ROLES } },
             orderBy: { createdAt: 'desc' },
             take: 3,
@@ -105,7 +105,7 @@ async function getHRData(tenantId: string) {
     ]);
 
     // Calculate hours this week from clock entries
-    const weekClocks = await prisma.clockEntry.findMany({
+    const weekClocks = await db.clockEntry.findMany({
         where: {
             tenantId,
             clockInTime: { gte: startOfWeek, lte: endOfWeek },
@@ -241,11 +241,12 @@ export default async function HRPage() {
     const user = session?.user;
     if (!user?.tenantId) redirect("/login");
 
+    const db = await scopeFromSession();
     const t = await getTranslations('Hr.dashboard');
 
     let data;
     try {
-        data = await getHRData(user.tenantId);
+        data = await getHRData(db, user.tenantId);
     } catch (err) {
         console.error("[HR Dashboard] Data fetch error:", err);
         // Graceful fallback — show empty state rather than crash (PD Rule 5)

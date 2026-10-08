@@ -284,35 +284,6 @@ export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRec
                     <div className="flex items-end pr-2 min-w-0 overflow-x-auto no-scrollbar">{renderTabs}</div>
                 </div>
             )}
-            {/* Selection bar — toolbar items are managed by DatabaseHeader (C9) */}
-            {selected.size > 0 && (
-                <div className="flex items-center gap-2 px-2 py-1.5 border-b border-neutral-200 dark:border-white/10">
-                    <span className="text-xs text-neutral-500">{selected.size} geselecteerd</span>
-                    {access.delete && preventDelete !== true && (
-                        <button type="button" onClick={deleteSelected} className="inline-flex items-center gap-1 text-xs text-red-600 hover:underline"><Trash2 className="w-3.5 h-3.5" /> Verwijderen</button>
-                    )}
-                    <button type="button" onClick={() => setSelected(new Set())} className="text-xs text-neutral-500 hover:underline">Wissen</button>
-                    {/* VALIDATE-1 · "Te valideren": approve the selected records whose essentials are there — one field each;
-                        the others stay, named with what they lack (the door refuses an incomplete approval anyway) */}
-                    {access.edit && validationScreen === 'to-validate' && (
-                        <button type="button" className="inline-flex items-center gap-1 text-xs text-emerald-600 hover:underline"
-                                onClick={() => {
-                                    const plan = approvalPlan(database.logicalKey, rows.filter(r => selected.has(r.id)));
-                                    const names = (ids: string[]) => ids.map(f => database.properties.find(p => p.id === f)?.name || f).join(', ');
-                                    if (!plan.approve.length) {
-                                        toast.message(`Niets goed te keuren — ${plan.refused.length} record(s) missen nog: ${names([...new Set(plan.refused.flatMap(r => r.missing))])}`);
-                                        return;
-                                    }
-                                    const rest = plan.refused.length ? `\n${plan.refused.length} blijven staan (onvolledig).` : '';
-                                    if (!window.confirm(`${plan.approve.length} record(s) goedkeuren?${rest}`)) return;
-                                    for (const id of plan.approve) updatePageProperty(database.id, id, 'reviewStatus', REVIEW_APPROVED);
-                                    setSelected(new Set(plan.refused.map(r => r.id)));
-                                }}>
-                            <CheckCircle2 className="w-3.5 h-3.5" /> Goedkeuren
-                        </button>
-                    )}
-                </div>
-            )}
             <div ref={scrollRef} className="flex-1 min-h-0 overflow-auto outline-none" tabIndex={0}
                  onCopy={e => {
                      if (editing) return;
@@ -443,16 +414,52 @@ export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRec
                     </div>
                 </div>
             </div>
-            {!hideFooterNew && access.create && (
-                <button type="button"
-                        onClick={() => {
-                            const page = createPage(database.id, hardFilter ? { [hardFilter.propertyId]: hardFilter.value } : {});
-                            const title = database.properties.find(p => p.id === 'title');
-                            if (page && title) setEditing({ pageId: page.id, propId: 'title', text: '' });
-                        }}
-                        className="flex items-center gap-1.5 px-3 py-2 text-xs text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200 border-t border-neutral-200 dark:border-white/10">
-                    <Plus className="w-3.5 h-3.5" /> Nieuw
-                </button>
+            {/* The footer: "+ Nieuw" and, while rows are selected, their actions — at the BOTTOM, so a selection never
+                inserts a bar above the rows and shifts the grid under the pointer (Florin 2026-10-08: wrong clicks). */}
+            {((!hideFooterNew && access.create) || selected.size > 0) && (
+                <div className="flex items-center justify-between gap-3 min-h-[36px] px-2 border-t border-neutral-200 dark:border-white/10">
+                    <div className="flex items-center">
+                        {!hideFooterNew && access.create && (
+                            <button type="button"
+                                onClick={() => {
+                                    const page = createPage(database.id, hardFilter ? { [hardFilter.propertyId]: hardFilter.value } : {});
+                                    const title = database.properties.find(p => p.id === 'title');
+                                    if (page && title) setEditing({ pageId: page.id, propId: 'title', text: '' });
+                                }}
+                                className="flex items-center gap-1.5 px-1 py-1 text-xs text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200">
+                                <Plus className="w-3.5 h-3.5" /> Nieuw
+                            </button>
+                        )}
+                    </div>
+                    {selected.size > 0 && (
+                        <div className="flex items-center gap-3">
+                            <span className="text-xs text-neutral-500">{selected.size} geselecteerd</span>
+                            {access.delete && preventDelete !== true && (
+                                <button type="button" onClick={deleteSelected} className="inline-flex items-center gap-1 text-xs text-red-600 hover:underline"><Trash2 className="w-3.5 h-3.5" /> Verwijderen</button>
+                            )}
+                            <button type="button" onClick={() => setSelected(new Set())} className="text-xs text-neutral-500 hover:underline">Wissen</button>
+                            {/* VALIDATE-1 · "Te valideren": approve the selected records whose essentials are there — one field each;
+                                the others stay, named with what they lack (the door refuses an incomplete approval anyway) */}
+                            {access.edit && validationScreen === 'to-validate' && (
+                                <button type="button" className="inline-flex items-center gap-1 text-xs text-emerald-600 hover:underline"
+                                        onClick={() => {
+                                            const plan = approvalPlan(database.logicalKey, rows.filter(r => selected.has(r.id)));
+                                            const names = (ids: string[]) => ids.map(f => database.properties.find(p => p.id === f)?.name || f).join(', ');
+                                            if (!plan.approve.length) {
+                                                toast.message(`Niets goed te keuren — ${plan.refused.length} record(s) missen nog: ${names([...new Set(plan.refused.flatMap(r => r.missing))])}`);
+                                                return;
+                                            }
+                                            const rest = plan.refused.length ? `\n${plan.refused.length} blijven staan (onvolledig).` : '';
+                                            if (!window.confirm(`${plan.approve.length} record(s) goedkeuren?${rest}`)) return;
+                                            for (const id of plan.approve) updatePageProperty(database.id, id, 'reviewStatus', REVIEW_APPROVED);
+                                            setSelected(new Set(plan.refused.map(r => r.id)));
+                                        }}>
+                                    <CheckCircle2 className="w-3.5 h-3.5" /> Goedkeuren
+                                </button>
+                            )}
+                        </div>
+                    )}
+                </div>
             )}
         </div>
     );

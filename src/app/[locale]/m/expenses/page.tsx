@@ -3,7 +3,8 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTenant } from '@/context/TenantContext';
-import { useDatabaseStore } from '@/components/admin/database/store';
+import { useDatabaseStore, usePagesOf } from '@/components/admin/database/store';
+import { zonedParts } from '@/lib/kernel/shift-time';
 import { Camera, Wallet, Plus, Calendar, Receipt, Building2, AlertCircle, Inbox } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import dynamic from 'next/dynamic';
@@ -31,7 +32,6 @@ const CATEGORY_ICONS: Record<string, string> = {
     'cat-other': '📦',
 };
 
-const FALLBACK_PAGES: Page[] = [];
 
 type PeppolInvoice = {
     id: string;
@@ -45,7 +45,6 @@ type PeppolInvoice = {
 export default function MobileExpensesPage() {
     const t = useTranslations('Mobile');
     const { resolveDbId, tenant } = useTenant();
-    const getDatabase = useDatabaseStore(s => s.getDatabase);
     const ticketsDbId = resolveDbId('db-tickets');
 
     const [activeTab, setActiveTab] = useState<'scans' | 'peppol'>('scans');
@@ -56,8 +55,9 @@ export default function MobileExpensesPage() {
     const [peppolLoading, setPeppolLoading] = useState(false);
     const [activePageId, setActivePageId] = useState<string | null>(null);
 
-    const db = getDatabase(ticketsDbId);
-    const rawPages = db?.pages || FALLBACK_PAGES;
+    // MOBILE-REACT-1 (Florin 2026-10-08: a saved receipt "did not show in the ui"): `getDatabase` was selected as a FUNCTION
+    // and called in render — the screen never subscribed to the data. usePagesOf subscribes AND asks for the pages.
+    const { pages: rawPages } = usePagesOf(ticketsDbId);
 
     useEffect(() => {
         if (tenant) {
@@ -104,7 +104,7 @@ export default function MobileExpensesPage() {
         return {
             id: p.id,
             merchant: String(props['title'] || 'Unnamed Expense'),
-            date: String(props['date'] || new Date(p.createdAt).toISOString().split('T')[0]),
+            date: String(props['date'] || zonedParts(p.createdAt).date),   // the business day, never UTC
             amount: Number(props['amount'] ?? 0),
             category: String(props['category'] || 'cat-other'),
         };

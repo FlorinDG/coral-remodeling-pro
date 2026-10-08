@@ -4,19 +4,17 @@
 
 import React, { useState } from 'react';
 import { useTenant } from '@/context/TenantContext';
-import { useDatabaseStore } from '@/components/admin/database/store';
+import { useDatabaseStore, usePagesOf } from '@/components/admin/database/store';
 import { Users, Plus, Building2, Phone, Mail, Search } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import CreateClientModal from '@/components/admin/invoices/CreateClientModal';
 import PageModal from '@/components/admin/database/components/PageModal';
 import { Page } from '@/components/admin/database/types';
 
-const FALLBACK_PAGES: Page[] = [];
 
 export default function MobileClientsPage() {
     const t = useTranslations('Mobile');
     const { resolveDbId } = useTenant();
-    const getDatabase = useDatabaseStore(s => s.getDatabase);
     const createPage = useDatabaseStore(s => s.createPage);
     const clientsDbId = resolveDbId('db-clients');
 
@@ -24,8 +22,9 @@ export default function MobileClientsPage() {
     const [searchQuery, setSearchQuery] = useState('');
     const [activePageId, setActivePageId] = useState<string | null>(null);
 
-    const db = getDatabase(clientsDbId);
-    const rawPages = db?.pages || FALLBACK_PAGES;
+    // MOBILE-REACT-1 (Florin 2026-10-08: a saved receipt "did not show in the ui"): `getDatabase` was selected as a FUNCTION
+    // and called in render — the screen never subscribed to the data. usePagesOf subscribes AND asks for the pages.
+    const { pages: rawPages } = usePagesOf(clientsDbId);
 
     const clients = rawPages.map(p => {
         const props = p.properties as Record<string, any>;

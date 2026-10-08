@@ -3,7 +3,7 @@
 import React, { useState, useCallback } from 'react';
 import { useRouter } from "@/i18n/routing";
 import { useTenant } from '@/context/TenantContext';
-import { useDatabaseStore } from '@/components/admin/database/store';
+import { useDatabaseStore, usePagesOf } from '@/components/admin/database/store';
 import { createPrismaInvoice } from '@/app/actions/create-invoice';
 import { getNextDocumentNumber } from '@/app/actions/next-document-number';
 import { createPageServerFirst } from '@/app/actions/pages';
@@ -24,21 +24,20 @@ interface LineItem {
     vatRate: number;
 }
 
-const FALLBACK_PAGES: Page[] = [];
 
 export default function MobileCreateInvoicePage() {
     const t = useTranslations('Mobile');
     const router = useRouter();
     const { resolveDbId, tenant } = useTenant();
-    const getDatabase = useDatabaseStore(s => s.getDatabase);
     const addConfirmedPage = useDatabaseStore(s => s.addConfirmedPage);
     const createPage = useDatabaseStore(s => s.createPage);
 
     const invoicesDbId = resolveDbId('db-invoices');
     const clientsDbId = resolveDbId('db-clients');
 
-    const clientsDb = getDatabase(clientsDbId);
-    const clientPages = clientsDb?.pages || FALLBACK_PAGES;
+    // MOBILE-REACT-1 (Florin 2026-10-08: a saved receipt "did not show in the ui"): `getDatabase` was selected as a FUNCTION
+    // and called in render — the screen never subscribed to the data. usePagesOf subscribes AND asks for the pages.
+    const { pages: clientPages } = usePagesOf(clientsDbId);
     const clientOptions = clientPages.map(p => ({
         value: p.id,
         label: String((p.properties as Record<string, unknown>)?.title || 'Unnamed'),

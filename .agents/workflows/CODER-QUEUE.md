@@ -1,5 +1,28 @@
 # CORAL — CODER QUEUE
-**Current as of 2026-10-09 (evening).** 👉 **NEXT, in this order:** **REVIEW-FIX-1** (`coder-directive-review-fix-1.md`) → **LOC-NEW-1** → **BOUNDARY-1** (plan first, STOP) → **GRID-REPLACE-5 M5** (package — Florin pushes). Done today: LOC-GRID-1, DB-HEADER-1 M4, EMP-PROFILE-1 (correction pending), GRID-SURFACE-1 + R2-1-B M4 (Planner reviewing). This file is always the live queue — superseded items are removed, not renamed.
+**Current as of 2026-10-09 (evening).** The order and the states are the STATUS table below — nothing else. Done today: LOC-GRID-1, DB-HEADER-1 M4, EMP-PROFILE-1, GRID-SURFACE-1, R2-1-B M4 (all ACCEPTED; their corrections = REVIEW-FIX-1). This file is always the live queue — superseded items are removed, not renamed.
+
+<!-- STATUS — the Planner is the only writer. The coder reads it from origin/develop (coder-cron-protocol.md). -->
+## ⚙️ STATUS
+
+```
+UNATTENDED: OFF
+```
+
+| # | Item | State | Directive / where | Note |
+|---|---|---|---|---|
+| 1 | `REVIEW-FIX-1` | **GO** | `coder-directive-review-fix-1.md` | corrections A (EMP-PROFILE-1) · B (R2-1-B M4) · C (GRID-SURFACE-1) |
+| 2 | `LOC-NEW-1` | **GO · parallel-ok** | this file § 10 | strings only — no overlap with #1 |
+| 3 | `BOUNDARY-1` | **GO · plan only** | this file § 11 | census + plan, then STOP for review — no build before ACCEPTED |
+| 4 | `GRID-REPLACE-5 M5` | **GO** | this file § GRID-REPLACE-5 | package change → commit on develop alone, STOP; Florin pushes |
+| 5 | `DB-HEADER-1 M5` | QUEUED | `.agents/plans/DB-HEADER-1.md` | waits for the Planner's GO |
+
+**States:** `QUEUED` (not yet) → `GO` (take it) → *done* (your report `.agents/reports/<ITEM>.md` exists; nothing else
+marks it) → `ACCEPTED` (Planner reviewed). Corrections from a review are always a NEW row with its own ID and directive,
+placed before the next item. `parallel-ok` = may be taken while the previous item awaits review. **The coder's runs:
+`coder-cron-protocol.md` + `.agents/tools/coder-cron-gate.sh`.**
+
+---
+
 🛑 **The filename never carries a date.** `PLANNER-HANDOVER.md` §7 points here permanently.
 
 **Work top to bottom. Each item is a separate commit set. Report after each.**

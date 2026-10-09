@@ -133,3 +133,21 @@ export function documentTotals(
         documentDiscount: documentDiscountOf(p),
     });
 }
+
+/**
+ * The discount on the total as a percentage of the lines before it (Florin 2026-10-09: "Discount on total —
+ * [percentage]"): the percentage that was set, or a fixed amount's share of the lines. Null: no discount.
+ */
+export function documentDiscountPercent(totals: InvoiceTotals, d: Discount | null | undefined): number | null {
+    const x = discountOf(d);
+    if (!x || totals.documentDiscount <= 0) return null;
+    if (x.kind === 'pct') return x.value;
+    const before = totals.subtotal + totals.documentDiscount;
+    return before > 0 ? Math.round((totals.documentDiscount / before) * 10000) / 100 : null;
+}
+
+/** A percentage as the document's language writes it (10,5 % in nl/fr — 10.5% in en). */
+export function formatPercent(n: number, lang?: string): string {
+    const locale = lang === 'en' ? 'en-GB' : lang === 'fr' ? 'fr-BE' : 'nl-BE';
+    return `${new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(n)}%`;
+}

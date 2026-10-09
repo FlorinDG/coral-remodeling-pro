@@ -7,7 +7,7 @@ import { renderRichText } from '@/components/admin/shared/pdfRichText';
 import { getTemplateStyles, TemplateId, lighten, withAlpha } from '@/components/admin/shared/templateStyles';
 import { t } from '@/lib/document-i18n';
 import { canAccess } from '@/lib/feature-flags';
-import { calculateInvoiceTotals, documentRateOf } from '@/lib/invoice-totals';
+import { calculateInvoiceTotals, documentRateOf, documentDiscountPercent, formatPercent } from '@/lib/invoice-totals';
 import { generateOGM } from '@/lib/ogm';
 import { blockValue, discountOf, lineRate, type Discount } from '@/lib/records/document-lines';
 
@@ -277,6 +277,7 @@ export const InvoicePDFTemplate = ({
     }, [blocks, vatIncluded, vatRegime, databaseStoreState, documentDiscount]);
     // DOC-LINES-1: the discount on the total, shown above the subtotal; a line's own discount, under its description.
     const totalDiscount = blocks && blocks.length > 0 ? totals.documentDiscount : 0;
+    const discountPct = totalDiscount > 0 ? documentDiscountPercent(totals, documentDiscount) : null;
     // DOC-LINES-2: a document with mixed rates states each line's rate (EN 16931: every line has one)
     const mixedRates = totals.vatBreakdown.length > 1;
     const documentRate = vatRegime === 'medecontractant' ? 0 : documentRateOf(vatRegime);
@@ -489,7 +490,7 @@ export const InvoicePDFTemplate = ({
                                             <Text style={{ fontSize: 12, fontWeight: 'bold' }}>€ {(finalSubtotal + totalDiscount).toFixed(2)}</Text>
                                         </View>
                                         <View style={{ flexDirection: 'row', width: 240, justifyContent: 'space-between', paddingVertical: 2 }}>
-                                            <Text style={{ fontSize: 10, color: '#333333', textTransform: 'uppercase', letterSpacing: 0.5, fontWeight: 'bold' }}>{t('discount_on_total', lang)}:</Text>
+                                            <Text style={{ fontSize: 10, color: '#333333', textTransform: 'uppercase', letterSpacing: 0.5, fontWeight: 'bold' }}>{t('discount_on_total', lang)}{discountPct !== null ? ` — ${formatPercent(discountPct, lang)}` : ''}:</Text>
                                             <Text style={{ fontSize: 12, fontWeight: 'bold' }}>− € {totalDiscount.toFixed(2)}</Text>
                                         </View>
                                         </>)}
@@ -771,7 +772,7 @@ export const InvoicePDFTemplate = ({
                                 <Text style={{ ...s.summaryValue, fontSize: 12, fontWeight: 'bold' }}>€ {(finalSubtotal + totalDiscount).toFixed(2)}</Text>
                             </View>
                             <View style={{ ...s.summaryRow, paddingVertical: 2 }}>
-                                <Text style={{ ...s.summaryLabel, fontSize: 10, color: '#333333', fontWeight: 'bold' }}>{t('discount_on_total', lang)}:</Text>
+                                <Text style={{ ...s.summaryLabel, fontSize: 10, color: '#333333', fontWeight: 'bold' }}>{t('discount_on_total', lang)}{discountPct !== null ? ` — ${formatPercent(discountPct, lang)}` : ''}:</Text>
                                 <Text style={{ ...s.summaryValue, fontSize: 12, fontWeight: 'bold' }}>− € {totalDiscount.toFixed(2)}</Text>
                             </View>
                             </>)}

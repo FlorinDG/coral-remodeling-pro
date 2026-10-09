@@ -1,5 +1,5 @@
 # CORAL — CODER QUEUE
-**Current as of 2026-10-08.** Order: GRID-REPLACE-5 §7 → LOC-GRID-1 → DB-HEADER-1 M4 → R2-1-B M4 → **HR MVP close:** ✅ DEAD-HR-1 → ✅ LOC-HR-1 → ✅ HR-SERAPH-1 → EMP-PROFILE-1 → GRID-SURFACE-1 → **LOC-NEW-1** → **BOUNDARY-1**. This file is always the live queue — superseded items are removed, not renamed.
+**Current as of 2026-10-09 (evening).** 👉 **NEXT, in this order:** **EMP-PROFILE-1b** (correction, below) → **LOC-NEW-1** → **BOUNDARY-1** (plan first, STOP) → **GRID-REPLACE-5 M5** (package — Florin pushes). Done today: LOC-GRID-1, DB-HEADER-1 M4, EMP-PROFILE-1 (correction pending), GRID-SURFACE-1 + R2-1-B M4 (Planner reviewing). This file is always the live queue — superseded items are removed, not renamed.
 🛑 **The filename never carries a date.** `PLANNER-HANDOVER.md` §7 points here permanently.
 
 **Work top to bottom. Each item is a separate commit set. Report after each.**
@@ -129,6 +129,22 @@ scoped) reads/writes them; the page drops `loadProfile`/`saveProfile`. Existing 
 (re-entered by hand — Florin: root to leaf). 🛑 A `prisma/` change: commit on develop, push develop, STOP —
 **Florin runs the migration and pushes the range himself.**
 
+### 👉 8b · `EMP-PROFILE-1b` — the correction (Planner review 2026-10-09) — DO FIRST
+EMP-PROFILE-1's schema, migration (applied by Florin) and API are right; the browser storage is gone. **But its tests
+test a COPY** (`coder-report-protocol.md` §3a): `validateCalendarBirthDate` and `mapEmployeeResponse` are DEFINED IN
+the test file, and **neither API route validates `birthDate`** — the API stores any string. A throw proof against a
+copy proves nothing.
+1. **The calendar-date rule goes to the kernel** (time is kernel): `isCalendarDay(v)` in `src/lib/kernel/shift-time.ts`
+   — a string `YYYY-MM-DD` that is a real day (no 2026-02-30), nothing else. Reuse it where a `YMD` regex is copied
+   today only if trivially the same (`lib/records/business-period.ts`) — otherwise list it in the report, don't touch.
+2. **The response shape goes to core**: `employeeResponse(user, employee)` in `src/lib/records/employee-profile.ts`
+   (pure) — used by BOTH `api/tenant/employees/route.ts` and `[employeeId]/route.ts` (today each builds it).
+3. **Both routes refuse** an invalid `birthDate` with 400 `{ error: 'INVALID_BIRTH_DATE' }`; empty / null clears it.
+4. **The tests import the real code**: delete the copies from `tests/employee-profile.test.ts`; throw proofs break
+   `isCalendarDay` / `employeeResponse` themselves (show the failing output, restore).
+🛑 Touch only: `lib/kernel/shift-time.ts` (add only), `lib/records/employee-profile.ts` (new), the two routes, the test.
+No schema change. Report `.agents/reports/EMP-PROFILE-1b.md`, push develop, STOP.
+
 ### 9 · `GRID-SURFACE-1` — the scheduler's table view in the ONE grid (Florin 2026-10-08: "wrong table" → our grid)
 Plan first, STOP. Split `v2/NotionGridV2.tsx` into a presentational surface (columns, rows, cell renderers, sort,
 column resize — no store) and the store-bound grid that uses it (behaviour of every database screen unchanged). Then
@@ -142,7 +158,11 @@ expenses/quotes/page.tsx`, the duplicate banner and the Naar-offertes / verdict 
 `TicketCaptureModal.tsx`, `AiDocumentImportModal.tsx` (DUP-1 / QUOTE-IN-1 parts only), the store's toasts in
 `components/admin/database/store.ts` (SYNC-STUCK-1 "kon niet bewaard worden"), `components/ui/DecimalInput.tsx` (none —
 check), `lib/records/purchase-document.ts` labels (QUOTE_LABEL / TICKET_LABEL → keys read by the editor; the rule keeps
-returning keys, the screen translates). → `Admin.*` keys in en/nl/fr/ro. 🛑 Do NOT touch `lib/records/**` logic, the
+returning keys, the screen translates).
+**Added 2026-10-09 (DOC-LINES / MOBILE-PERF screens):** `components/admin/shared/LineVatRateSelect.tsx` ("(doc)",
+"verlegd", aria-label), `shared/VatBreakdownRows.tsx` ("BTW … op"), `shared/DocumentDiscountRows.tsx` ("Korting op
+regels", "Korting op totaal"), `shared/ClientDiscountInput.tsx` (aria-labels), the "BTW" / "Korting" column labels in both
+`FinancialRowRenderer.tsx` (the new columns only). Number formatting stays `lib/format/number`. → `Admin.*` keys in en/nl/fr/ro. 🛑 Do NOT touch `lib/records/**` logic, the
 store's sync logic, `lib/data/**`, the scan route. Strings only; `tests/i18n.test.ts` guard with a throw proof.
 Report `.agents/reports/LOC-NEW-1.md`, push develop, STOP.
 

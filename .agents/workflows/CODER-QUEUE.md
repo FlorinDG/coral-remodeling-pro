@@ -1,5 +1,5 @@
 # CORAL — CODER QUEUE
-**Current as of 2026-10-09 (evening).** 👉 **NEXT, in this order:** **EMP-PROFILE-1b** (correction, below) → **8c review leftovers** → **LOC-NEW-1** → **BOUNDARY-1** (plan first, STOP) → **GRID-REPLACE-5 M5** (package — Florin pushes). Done today: LOC-GRID-1, DB-HEADER-1 M4, EMP-PROFILE-1 (correction pending), GRID-SURFACE-1 + R2-1-B M4 (Planner reviewing). This file is always the live queue — superseded items are removed, not renamed.
+**Current as of 2026-10-09 (evening).** 👉 **NEXT, in this order:** **REVIEW-FIX-1** (`coder-directive-review-fix-1.md`) → **LOC-NEW-1** → **BOUNDARY-1** (plan first, STOP) → **GRID-REPLACE-5 M5** (package — Florin pushes). Done today: LOC-GRID-1, DB-HEADER-1 M4, EMP-PROFILE-1 (correction pending), GRID-SURFACE-1 + R2-1-B M4 (Planner reviewing). This file is always the live queue — superseded items are removed, not renamed.
 🛑 **The filename never carries a date.** `PLANNER-HANDOVER.md` §7 points here permanently.
 
 **Work top to bottom. Each item is a separate commit set. Report after each.**
@@ -129,31 +129,14 @@ scoped) reads/writes them; the page drops `loadProfile`/`saveProfile`. Existing 
 (re-entered by hand — Florin: root to leaf). 🛑 A `prisma/` change: commit on develop, push develop, STOP —
 **Florin runs the migration and pushes the range himself.**
 
-### 👉 8b · `EMP-PROFILE-1b` — the correction (Planner review 2026-10-09) — DO FIRST
-EMP-PROFILE-1's schema, migration (applied by Florin) and API are right; the browser storage is gone. **But its tests
-test a COPY** (`coder-report-protocol.md` §3a): `validateCalendarBirthDate` and `mapEmployeeResponse` are DEFINED IN
-the test file, and **neither API route validates `birthDate`** — the API stores any string. A throw proof against a
-copy proves nothing.
-1. **The calendar-date rule goes to the kernel** (time is kernel): `isCalendarDay(v)` in `src/lib/kernel/shift-time.ts`
-   — a string `YYYY-MM-DD` that is a real day (no 2026-02-30), nothing else. Reuse it where a `YMD` regex is copied
-   today only if trivially the same (`lib/records/business-period.ts`) — otherwise list it in the report, don't touch.
-2. **The response shape goes to core**: `employeeResponse(user, employee)` in `src/lib/records/employee-profile.ts`
-   (pure) — used by BOTH `api/tenant/employees/route.ts` and `[employeeId]/route.ts` (today each builds it).
-3. **Both routes refuse** an invalid `birthDate` with 400 `{ error: 'INVALID_BIRTH_DATE' }`; empty / null clears it.
-4. **The tests import the real code**: delete the copies from `tests/employee-profile.test.ts`; throw proofs break
-   `isCalendarDay` / `employeeResponse` themselves (show the failing output, restore).
-🛑 Touch only: `lib/kernel/shift-time.ts` (add only), `lib/records/employee-profile.ts` (new), the two routes, the test.
-No schema change. Report `.agents/reports/EMP-PROFILE-1b.md`, push develop, STOP.
-
-### 8c · Review leftovers (Planner 2026-10-09) — after EMP-PROFILE-1b, one commit each
-- **R2-1-B M4 ✅ accepted** — corrections: (a) `lib/records/portal-export-intents.ts` imports the type `CreateIfMissing`
-  from `lib/data/records` (core → data: upside down) → move that type into `lib/records/record-intent.ts`, `lib/data`
-  re-imports it; (b) `prop-task-due` is written with `new Date(d).toISOString()` (a UTC day for a calendar date) → a
-  `YYYY-MM-DD` calendar day via the kernel (`isCalendarDay` from 8b / `zonedParts`), never toISOString. 🛑 The export's
-  lost atomicity (the stamp went from one transaction to a loop) is the Planner's (a batch door) — don't touch.
-- **GRID-SURFACE-1 ✅ accepted** — corrections: (a) `formatSchedulerDate` defaults to `'en-US'` (LOC-1 forbids it) →
-  `lib/format/date` (resolveLocale / formatDate family); (b) the project colour palette is now in THREE places
-  (`schedule-grid-model.ts`, `ScheduleMatrixView.tsx`, `hooks/useScheduledShifts.ts`) → ONE home, the others import it.
+### 👉 8b · `REVIEW-FIX-1` — the corrections from the review of 2026-10-09 — DO FIRST
+📄 **`coder-directive-review-fix-1.md`** has everything: what is wrong (file:line), why (the rule), exactly what to do,
+the files each step may touch, the tests and throw proofs.
+- **A** EMP-PROFILE-1: `isCalendarDay` in the kernel; the profile shape + input check in core; both routes refuse a
+  bad birth date; the tests import the real code (today they test a copy).
+- **B** R2-1-B M4: core stops importing from `lib/data` (4 files); portal due dates are a calendar day, not `toISOString()`.
+- **C** GRID-SURFACE-1: dates via `lib/format/date` (no `'en-US'`); one project colour list and one resolver.
+One commit per step, report `.agents/reports/REVIEW-FIX-1.md`, push, STOP.
 
 ### 9 · `GRID-SURFACE-1` — the scheduler's table view in the ONE grid (Florin 2026-10-08: "wrong table" → our grid)
 Plan first, STOP. Split `v2/NotionGridV2.tsx` into a presentational surface (columns, rows, cell renderers, sort,

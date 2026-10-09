@@ -1,5 +1,5 @@
 # CORAL — CODER QUEUE
-**Current as of 2026-10-08.** Order: GRID-REPLACE-5 §7 → LOC-GRID-1 → DB-HEADER-1 M4 → R2-1-B M4 → **HR MVP close:** DEAD-HR-1 → LOC-HR-1 → HR-SERAPH-1 → EMP-PROFILE-1 → GRID-SURFACE-1. This file is always the live queue — superseded items are removed, not renamed.
+**Current as of 2026-10-08.** Order: GRID-REPLACE-5 §7 → LOC-GRID-1 → DB-HEADER-1 M4 → R2-1-B M4 → **HR MVP close:** ✅ DEAD-HR-1 → ✅ LOC-HR-1 → ✅ HR-SERAPH-1 → EMP-PROFILE-1 → GRID-SURFACE-1 → **LOC-NEW-1**. This file is always the live queue — superseded items are removed, not renamed.
 🛑 **The filename never carries a date.** `PLANNER-HANDOVER.md` §7 points here permanently.
 
 **Work top to bottom. Each item is a separate commit set. Report after each.**
@@ -125,6 +125,16 @@ column resize — no store) and the store-bound grid that uses it (behaviour of 
 `schedule/ScheduleTable.tsx` renders shifts through the surface: Datum · Tijd · Medewerker · Project · Adres · Rol ·
 Status (the kernel status select as today, `in-progress` shown never chosen) · conflict mark; rows = the weeks the
 matrix shows. After LOC-GRID-1 (same files). Throw-proof tests on the shift → row mapping.
+
+### 10 · `LOC-NEW-1` — the screens of 2026-10-08/09 speak the user's language (strings only)
+Hard-coded Dutch today: `components/admin/expenses/PurchaseLineSearch.tsx` (line search), `app/[locale]/admin/financials/
+expenses/quotes/page.tsx`, the duplicate banner and the Naar-offertes / verdict texts in `PurchaseInvoiceEngine.tsx`,
+`TicketCaptureModal.tsx`, `AiDocumentImportModal.tsx` (DUP-1 / QUOTE-IN-1 parts only), the store's toasts in
+`components/admin/database/store.ts` (SYNC-STUCK-1 "kon niet bewaard worden"), `components/ui/DecimalInput.tsx` (none —
+check), `lib/records/purchase-document.ts` labels (QUOTE_LABEL / TICKET_LABEL → keys read by the editor; the rule keeps
+returning keys, the screen translates). → `Admin.*` keys in en/nl/fr/ro. 🛑 Do NOT touch `lib/records/**` logic, the
+store's sync logic, `lib/data/**`, the scan route. Strings only; `tests/i18n.test.ts` guard with a throw proof.
+Report `.agents/reports/LOC-NEW-1.md`, push develop, STOP.
 
 ## THEN, in order
 `TD-4` tail *(5 grandfathered files)* · `KERN-8` · `R1-2`/`R1-3` → `R1-4`+`R1-5` · `ENT-1…24` · `WB-A…E` *(the werkbon — phasing awaits Florin)*.

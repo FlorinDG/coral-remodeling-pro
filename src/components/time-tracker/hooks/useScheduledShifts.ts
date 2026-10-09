@@ -21,6 +21,21 @@ export const NOTION_COLORS = [
   { name: 'rose',    value: '#e11d48', bg: '#ffe4e6' },
 ];
 
+export interface NotionColorEntry {
+  name: string;
+  value: string;
+  bg: string;
+}
+
+export function projectColorOf(nameOrHex?: string | null): NotionColorEntry {
+  if (!nameOrHex) return NOTION_COLORS[6];
+  if (nameOrHex.startsWith('#')) {
+    return { name: 'custom', value: nameOrHex, bg: `${nameOrHex}20` };
+  }
+  const found = NOTION_COLORS.find(c => c.name === nameOrHex);
+  return found || NOTION_COLORS[6];
+}
+
 export interface Project {
   id: string;
   name: string;

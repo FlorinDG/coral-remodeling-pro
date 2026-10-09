@@ -3,7 +3,7 @@ import { useMemo, useState, DragEvent } from 'react';
 import { ChevronLeft, ChevronRight, GripVertical, Plus, Copy, Printer, Clock, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ScheduledShift, NOTION_COLORS } from '@/components/time-tracker/hooks/useScheduledShifts';
+import { ScheduledShift, NOTION_COLORS, projectColorOf } from '@/components/time-tracker/hooks/useScheduledShifts';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { formatTime } from '@/lib/format/date';
@@ -40,10 +40,7 @@ function calculateShiftHours(shiftStart: string, shiftEnd: string): number {
 }
 
 function getNotionColor(colorInput: string): string {
-  if (colorInput.startsWith('#')) return colorInput;
-  const found = NOTION_COLORS.find(c => c.name === colorInput);
-  if (found) return found.value;
-  return NOTION_COLORS[6]?.value || '#14b8a6';
+  return projectColorOf(colorInput).value;
 }
 
 export function ScheduleMatrixView({

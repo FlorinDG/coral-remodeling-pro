@@ -14,7 +14,7 @@ UNATTENDED: ON until 2026-10-10 07:33
 | 2 | `LOC-NEW-1` | **GO · parallel-ok** | this file § 10 | strings only — no overlap with #1 |
 | 3 | `BOUNDARY-1` | **GO · plan only** | this file § 11 | census + plan, then STOP for review — no build before ACCEPTED |
 | 4 | `GRID-REPLACE-5 M5` | **GO** | this file § GRID-REPLACE-5 | package change → commit on develop alone, STOP; Florin pushes |
-| 5 | `DB-HEADER-1 M5` | QUEUED | `.agents/plans/DB-HEADER-1.md` | waits for the Planner's GO |
+| 5 | `DB-HEADER-1 M5` | **GO** | `.agents/plans/DB-HEADER-1.md` § M5 + `coder-directive-db-header-1.md` | GO 2026-10-10 01:0x: articles, bestek, contacts, suppliers, quotations; `isBestekReadOnly` into the pure rule (the entitlement stays pd.md's: PRO read-only). **Fold in M4's two leftovers** (§ 2 below: the projects "All" tab i18n; the type options read from the kernel schema). Stop after M5 — report `.agents/reports/DB-HEADER-1-M5.md`. |
 
 **States:** `QUEUED` (not yet) → `GO` (take it) → *done* (your report `.agents/reports/<ITEM>.md` exists; nothing else
 marks it) → `ACCEPTED` (Planner reviewed). Corrections from a review are always a NEW row with its own ID and directive,

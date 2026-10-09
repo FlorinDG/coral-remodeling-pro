@@ -5,7 +5,7 @@
  * for rendering inside DataGridSurface.
  */
 import { shiftMoment } from '@/lib/kernel/shift-time';
-import { formatTime } from '@/lib/format/date';
+import { formatTime, formatWeekdayDayMonth } from '@/lib/format/date';
 import { shiftStatus, type ShiftStatus } from '@/lib/kernel/shift-status';
 import type { ScheduledShift } from '@/components/time-tracker/hooks/useScheduledShifts';
 
@@ -51,13 +51,9 @@ export function getNotionProjectColor(colorName?: string | null) {
     return NOTION_COLORS.find(c => c.name === colorName) || NOTION_COLORS[6];
 }
 
-export function formatSchedulerDate(dateStr: string, locale = 'en-US'): string {
+export function formatSchedulerDate(dateStr: string, locale?: string | null): string {
     if (!dateStr) return '—';
-    return shiftMoment(dateStr, '12:00').toLocaleDateString(locale, {
-        weekday: 'short',
-        month: 'short',
-        day: 'numeric',
-    });
+    return formatWeekdayDayMonth(dateStr, locale);
 }
 
 export function formatSchedulerTimeRange(start?: string | null, end?: string | null): string {
@@ -75,7 +71,7 @@ export function mapShiftToGridRow(
     if (!shift || !shift.id) {
         throw new Error('Invalid shift: missing shift or shift.id');
     }
-    const locale = options?.locale || 'en-US';
+    const locale = options?.locale;
     const tShifts = options?.tShifts;
     const conflictIds = options?.conflictIds;
 

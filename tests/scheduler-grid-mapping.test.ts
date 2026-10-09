@@ -87,10 +87,19 @@ test('GRID-SURFACE-1: conflictIds correctly marks shift with conflict badge flag
     assert.equal(rowWithoutConflict.isConflict, false);
 });
 
-test('GRID-SURFACE-1: date and time formatters preserve calendar parts without timezone offset shift', () => {
-    const formatted = formatSchedulerDate('2026-10-09', 'en-US');
-    assert.match(formatted, /Oct 9|Fri/);
+test('GRID-SURFACE-1 C1: date formatters route through lib/format/date with no en-US order', () => {
+    // Dutch format: Friday short is 'vr'
+    const nlFormatted = formatSchedulerDate('2026-10-09', 'nl');
+    assert.match(nlFormatted, /^vr/i);
+    assert.match(nlFormatted, /9/);
 
+    // English format: en-GB resolves day-first, never en-US month-first 'Oct 9'
+    const enFormatted = formatSchedulerDate('2026-10-09', 'en');
+    assert.match(enFormatted, /^Fri/);
+    assert.match(enFormatted, /9/);
+    assert.equal(enFormatted.includes('Oct 9'), false, 'Must not format in en-US month-first order');
+
+    // Time ranges
     const timeRange = formatSchedulerTimeRange('07:15', '15:45');
     assert.equal(timeRange, '07:15 - 15:45');
 

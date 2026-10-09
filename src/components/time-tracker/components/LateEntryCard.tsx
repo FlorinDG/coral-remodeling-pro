@@ -21,7 +21,8 @@ import {
 } from '@/components/ui/collapsible';
 import { useAuth } from '@/components/time-tracker/contexts/AuthContext';
 import { useUserRoles } from '@/components/time-tracker/hooks/useUserRoles';
-import { useScheduledShifts, NOTION_COLORS } from '@/components/time-tracker/hooks/useScheduledShifts';
+import { useScheduledShifts } from '@/components/time-tracker/hooks/useScheduledShifts';
+import { projectColorOf } from '@/lib/records/project-color';
 import { useApprovalRequests } from '@/components/time-tracker/hooks/useApprovalRequests';
 import { useGeolocation } from '@/components/time-tracker/hooks/useGeolocation';
 import { useTasks, Task } from '@/components/time-tracker/hooks/useTasks';
@@ -35,7 +36,7 @@ import { format, parseISO, isAfter, startOfDay } from 'date-fns';
 import { validateFile, validateFiles, getSafeFileType, generateSafeFilePath, ALLOWED_EXTENSIONS } from '@/components/time-tracker/lib/fileValidation';
 
 function getNotionColor(colorName: string) {
-  return NOTION_COLORS.find(c => c.name === colorName) || NOTION_COLORS[6];
+  return projectColorOf(colorName);
 }
 
 /** `shiftId` + `shiftDate`: hours added from inside a shift (WO-1 Hours tab) — the date is the

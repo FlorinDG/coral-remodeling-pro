@@ -22,7 +22,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useAuth } from '@/components/time-tracker/contexts/AuthContext';
-import { useScheduledShifts, NOTION_COLORS } from '@/components/time-tracker/hooks/useScheduledShifts';
+import { useScheduledShifts } from '@/components/time-tracker/hooks/useScheduledShifts';
+import { projectColorOf } from '@/lib/records/project-color';
 import { useApprovalRequests } from '@/components/time-tracker/hooks/useApprovalRequests';
 import { useGeolocation } from '@/components/time-tracker/hooks/useGeolocation';
 import { hrCreate } from '@/lib/hr-api';
@@ -35,7 +36,7 @@ interface LateEntryFormProps {
 }
 
 function getNotionColor(colorName: string) {
-  return NOTION_COLORS.find(c => c.name === colorName) || NOTION_COLORS[6];
+  return projectColorOf(colorName);
 }
 
 export function LateEntryForm({ open, onClose }: LateEntryFormProps) {

@@ -7,11 +7,8 @@
 import { shiftMoment } from '@/lib/kernel/shift-time';
 import { formatTime, formatWeekdayDayMonth } from '@/lib/format/date';
 import { shiftStatus, type ShiftStatus } from '@/lib/kernel/shift-status';
-import {
-    NOTION_COLORS,
-    projectColorOf,
-    type ScheduledShift,
-} from '@/components/time-tracker/hooks/useScheduledShifts';
+import { projectColorOf } from '@/lib/records/project-color';
+import type { ScheduledShift } from '@/components/time-tracker/hooks/useScheduledShifts';
 
 export interface SchedulerGridRow {
     id: string;

@@ -195,3 +195,16 @@ test('GRID-SURFACE-1 THROW PROOF 3: Column definitions census check', () => {
         }
     }, /Required scheduler column omitted: time/);
 });
+
+test('REVIEW-FIX-1 C2 · ONE project palette (core lib/records/project-color) — no other file declares it', async () => {
+    const { readdirSync, readFileSync, statSync } = await import('node:fs');
+    const { join } = await import('node:path');
+    const root = new URL('../src/', import.meta.url).pathname;
+    const walk = (d: string): string[] => readdirSync(d).flatMap(n => { const p = join(d, n); return statSync(p).isDirectory() ? walk(p) : /\.tsx?$/.test(n) ? [p] : []; });
+    const declaring = walk(root).filter(p => /name:\s*'teal',\s*value:/.test(readFileSync(p, 'utf8'))).map(p => p.slice(root.length));
+    assert.deepEqual(declaring, ['lib/records/project-color.ts']);
+    const { projectColorOf } = await import('../src/lib/records/project-color.ts');
+    assert.equal(projectColorOf('violet').value, '#8b5cf6');
+    assert.deepEqual(projectColorOf('#123456'), { name: 'custom', value: '#123456', bg: '#12345620' });
+    assert.equal(projectColorOf('nope').name, 'teal');
+});

@@ -15,6 +15,7 @@ import {
     Type, Upload, Pencil, Download, Clock, ChevronDown, ChevronUp, Sparkles
 } from 'lucide-react';
 import { documentDiscountOf } from '@/lib/records/document-lines';
+import { sanitizeRichText } from '@/lib/records/rich-text';   // EDITOR-1 E3: the customer sees only the allowlist
 
 const SignatureCanvas = dynamic(() => import('react-signature-canvas'), { ssr: false });
 
@@ -96,7 +97,7 @@ function QuoteLineItems({ blocks, lang, brandColor }: { blocks: Block[]; lang: s
                             className={`py-3 font-bold ${depth === 0 ? 'text-base' : 'text-sm'} ${currentInactive ? 'text-neutral-400 line-through' : 'text-neutral-600'}`}
                             style={{ paddingLeft: `${depth * 20 + 16}px` }}
                         >
-                            <span dangerouslySetInnerHTML={{ __html: block.content || t('portal_section', lang) }} />
+                            <span dangerouslySetInnerHTML={{ __html: sanitizeRichText(block.content) || t('portal_section', lang) }} />
                             {block.isOptional && (
                                 <span className="ml-2 text-xs font-normal text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">
                                     {t('portal_optional', lang)}
@@ -118,7 +119,7 @@ function QuoteLineItems({ blocks, lang, brandColor }: { blocks: Block[]; lang: s
         return (
             <tr key={block.id} className={`border-t border-neutral-100 hover:bg-neutral-50/50 transition-colors ${currentInactive ? 'opacity-50 bg-neutral-50/10' : ''}`}>
                 <td className={`py-2.5 text-sm ${currentInactive ? 'text-neutral-400 line-through' : 'text-neutral-700'}`} style={{ paddingLeft: `${depth * 20 + 16}px` }}>
-                    <span dangerouslySetInnerHTML={{ __html: block.content || '—' }} />
+                    <span dangerouslySetInnerHTML={{ __html: sanitizeRichText(block.content) || '—' }} />
                     {block.isOptional && (
                         <span className="ml-2 text-[10px] font-normal text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">
                             {t('portal_optional', lang)}

@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import FinancialRowRenderer from './FinancialRowRenderer';
 import { Draggable, Droppable } from '@hello-pangea/dnd';
 import { useDatabaseStore } from '@/components/admin/database/store';
+import { blockValue } from '@/lib/records/document-lines';
 
 interface InvoiceRowProps {
     block: Block;
@@ -64,28 +65,8 @@ export default function InvoiceRow({ block, index, onUpdate, onDelete, onDuplica
     };
 
     // Recursive calculation for nested Phase (Post/Section) totals + Subcomponents
-    const calculateBlockTotal = (b: Block): number => {
-        if (b.isOptional) return 0; // Phase 10: Globally drop any optional value
-
-        // Non-financial types — never contribute to totals
-        if (b.type === 'text' || b.type === 'image' || b.type === 'divider' || b.type === 'space' || b.type === 'page-break') return 0;
-
-        // Strict Containers (No quantity multiplier)
-        if (b.type === 'post' || b.type === 'section' || b.type === 'subsection') {
-            return (b.children || []).reduce((sum, child) => sum + calculateBlockTotal(child), 0);
-        }
-
-        // Base Items (Multiply by Quantity)
-        let unitTotal = 0;
-        if (b.children && b.children.length > 0) {
-            // Aggregate all subcomponents to form the new base price
-            unitTotal = b.children.reduce((sum, child) => sum + calculateBlockTotal(child), 0);
-        } else {
-            unitTotal = b.unitPrice || b.verkoopPrice || 0;
-        }
-
-        return unitTotal * (b.quantity || 1);
-    };
+    // DOC-LINES-1: the ONE line rule (customer discount, variants, subcomponents, optional)
+    const calculateBlockTotal = (b: Block): number => blockValue(b);
 
     // Handlers for recursively nested children updates (preventing root pollution)
     const handleChildUpdate = (childId: string, updates: Partial<Block>) => {

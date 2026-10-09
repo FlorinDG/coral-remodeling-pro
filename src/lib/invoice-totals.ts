@@ -1,5 +1,9 @@
-import { lineVariantDelta } from '@/lib/records/variant-price';
-import type { Block } from '@/components/admin/database/types';
+/**
+ * The document's totals — ONE rule for every quote / invoice / proforma / credit note screen, PDF and send. The line
+ * values come from lib/records/document-lines (DOC-LINES-1: customer discount per line), the discount on the total is
+ * applied before VAT and split over the VAT rates.
+ */
+import { chargedLines, splitDocumentDiscount, discountOf, type DocLine, type Discount } from '@/lib/records/document-lines';
 
 export interface VatBreakdownItem {
     rate: number;
@@ -9,11 +13,20 @@ export interface VatBreakdownItem {
 }
 
 export interface InvoiceTotals {
+    /** The base for VAT: the lines' net values, minus the discount on the total. */
     subtotal: number;
     vatBreakdown: VatBreakdownItem[];
     totalVAT: number;
     totalInclVAT: number;
     hasMedecontractant: boolean;
+    /** The lines' gross values (before any customer discount). */
+    linesGross: number;
+    /** The customer discounts on the lines, together. */
+    lineDiscounts: number;
+    /** The lines' net values (after their discounts) — before the discount on the total. */
+    linesNet: number;
+    /** The discount on the total (before VAT). */
+    documentDiscount: number;
 }
 
 interface CalculateTotalsOptions {
@@ -21,84 +34,48 @@ interface CalculateTotalsOptions {
     vatRegime?: string;
     vatIncluded?: boolean;
     databaseStoreState?: any;
+    /** DOC-LINES-1: the discount on the total (from the document's clientDiscount property). */
+    documentDiscount?: Discount | null;
 }
 
 export function calculateInvoiceTotals(
-    blocks: Block[],
+    blocks: DocLine[],
     options: CalculateTotalsOptions = {}
 ): InvoiceTotals {
-    const { vatRegime = '21', vatIncluded = false, databaseStoreState } = options;
+    const { vatRegime = '21', vatIncluded = false } = options;
+    const effectiveRate = vatRegime === 'medecontractant' ? 0 : parseFloat(vatRegime || '21');
+    const isMedecontractant = vatRegime === 'medecontractant';
+    const lines = chargedLines(blocks);
+    const linesGross = lines.reduce((s, l) => s + l.gross, 0);
+    const lineDiscounts = lines.reduce((s, l) => s + l.discount, 0);
+    const linesNet = lines.reduce((s, l) => s + l.net, 0);
 
-    let subtotal = 0;
-    const vatMap = new Map<number, { base: number; isMedecontractant: boolean }>();
+    // Base per VAT rate (one document rate today); prices entered incl. VAT are brought back to their base.
+    const baseByRate = new Map<number, number>();
+    if (lines.length) baseByRate.set(effectiveRate, vatIncluded ? linesNet / (1 + effectiveRate / 100) : linesNet);
+    const split = splitDocumentDiscount(baseByRate, discountOf(options.documentDiscount));
 
-    // VARIANT-1: the surcharge frozen on the line — never looked up (lib/records/variant-price)
-    const getVariantDeltas = (b: Block): number => lineVariantDelta(b);
-
-    const accumulate = (nodes: Block[], multiplier = 1) => {
-        (nodes || []).forEach(b => {
-            if (b.isOptional) return;
-
-            const currentQty = (b.type === 'line' || b.type === 'article' || b.type === 'bestek' || b.type === 'post')
-                ? (b.quantity || 1)
-                : 1;
-            const nextMultiplier = multiplier * currentQty;
-
-            if (b.children && b.children.length > 0) {
-                accumulate(b.children, nextMultiplier);
-                return;
-            }
-
-            if (b.type === 'line' || b.type === 'article' || b.type === 'bestek') {
-                const price = (b.unitPrice !== undefined ? b.unitPrice : b.verkoopPrice) ?? 0;
-                const vDeltas = getVariantDeltas(b);
-                const lineGross = (price + vDeltas) * nextMultiplier;
-
-                const effectiveRate = vatRegime === 'medecontractant' ? 0 : parseFloat(vatRegime || '21');
-
-                const base = vatIncluded ? (lineGross / (1 + effectiveRate / 100)) : lineGross;
-                subtotal += base;
-
-                const existing = vatMap.get(effectiveRate) || { base: 0, isMedecontractant: false };
-                existing.base += base;
-                if (vatRegime === 'medecontractant') {
-                    existing.isMedecontractant = true;
-                }
-                vatMap.set(effectiveRate, existing);
-            }
-        });
-    };
-
-    accumulate(blocks, 1);
-
-    // Round subtotal to 2 decimals
-    const roundedSubtotal = Math.round(subtotal * 100) / 100;
-
-    // Build breakdown with rounded VAT per rate-group
-    const vatBreakdown: VatBreakdownItem[] = Array.from(vatMap.entries())
+    const vatBreakdown: VatBreakdownItem[] = [...baseByRate.entries()]
         .sort((a, b) => b[0] - a[0])
-        .map(([rate, data]) => {
-            const roundedBase = Math.round(data.base * 100) / 100;
-            // Round VAT per rate-group to the cent
+        .map(([rate, base]) => {
+            const roundedBase = Math.round((base - (split.byRate.get(rate) || 0)) * 100) / 100;
             const roundedVat = Math.round(roundedBase * (rate / 100) * 100) / 100;
-            return {
-                rate,
-                base: roundedBase,
-                vat: roundedVat,
-                isMedecontractant: data.isMedecontractant,
-            };
+            return { rate, base: roundedBase, vat: roundedVat, isMedecontractant };
         });
 
-    const totalVAT = vatBreakdown.reduce((sum, v) => sum + v.vat, 0);
-    const roundedTotalVAT = Math.round(totalVAT * 100) / 100;
+    const roundedSubtotal = Math.round(vatBreakdown.reduce((s, v) => s + v.base, 0) * 100) / 100;
+    const roundedTotalVAT = Math.round(vatBreakdown.reduce((s, v) => s + v.vat, 0) * 100) / 100;
     const totalInclVAT = Math.round((roundedSubtotal + roundedTotalVAT) * 100) / 100;
-    const hasMedecontractant = vatBreakdown.some(v => v.isMedecontractant);
 
     return {
         subtotal: roundedSubtotal,
         vatBreakdown,
         totalVAT: roundedTotalVAT,
         totalInclVAT,
-        hasMedecontractant,
+        hasMedecontractant: vatBreakdown.some(v => v.isMedecontractant),
+        linesGross: Math.round(linesGross * 100) / 100,
+        lineDiscounts: Math.round(lineDiscounts * 100) / 100,
+        linesNet: Math.round(linesNet * 100) / 100,
+        documentDiscount: split.total,
     };
 }

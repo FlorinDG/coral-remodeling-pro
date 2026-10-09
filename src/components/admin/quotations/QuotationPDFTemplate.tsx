@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { DEFAULT_AREA } from '@/lib/documents/stationery-area';
-import { lineVariantDelta } from '@/lib/records/variant-price';
 import React, { useMemo } from 'react';
 import { Document, Page, Text, View, Image, Svg, Polygon, Rect } from '@react-pdf/renderer';
 import { Block } from '@/components/admin/database/types';
@@ -9,6 +8,7 @@ import { getTemplateStyles, TemplateId, lighten, withAlpha } from '@/components/
 import { t } from '@/lib/document-i18n';
 import { canAccess } from '@/lib/feature-flags';
 import { calculateInvoiceTotals } from '@/lib/invoice-totals';
+import { blockValue } from '@/lib/records/document-lines';
 
 function formatBelgianVat(vat?: string) {
     if (!vat) return '';
@@ -127,26 +127,9 @@ export const QuotationPDFTemplate = ({
             const cleanContent = stripHtml(block.content);
             
             // Helper to calculate total including nested children and variants
-            const getBlockTotalRecursive = (b: Block): number => {
-                if (b.isOptional) return 0;
-                if (b.children && b.children.length > 0) {
-                    const childrenSum = b.children.reduce((sum, child) => sum + getBlockTotalRecursive(child), 0);
-                    return childrenSum * (b.quantity || 1);
-                }
-                
-                const vDeltas = lineVariantDelta(b);   // VARIANT-1: frozen on the line
-                return ((b.verkoopPrice || 0) + vDeltas) * (b.quantity || 1);
-            };
+            const getBlockTotalRecursive = (b: Block): number => blockValue(b);   // DOC-LINES-1
 
-            const getBlockTotalRecursiveVisual = (b: Block): number => {
-                if (b.children && b.children.length > 0) {
-                    const childrenSum = b.children.reduce((sum, child) => sum + getBlockTotalRecursiveVisual(child), 0);
-                    return childrenSum * (b.quantity || 1);
-                }
-                
-                const vDeltas = lineVariantDelta(b);   // VARIANT-1: frozen on the line
-                return ((b.verkoopPrice || 0) + vDeltas) * (b.quantity || 1);
-            };
+            const getBlockTotalRecursiveVisual = (b: Block): number => blockValue(b, { includeOptional: true });
 
             const blockTotal = currentInactive ? getBlockTotalRecursiveVisual(block) : getBlockTotalRecursive(block);
             const hasChildren = block.children && block.children.length > 0;

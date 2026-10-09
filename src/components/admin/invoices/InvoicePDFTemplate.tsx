@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { DEFAULT_AREA } from '@/lib/documents/stationery-area';
-import { lineVariantDelta } from '@/lib/records/variant-price';
 import React, { useMemo } from 'react';
 import { Document, Page, Text, View, Image, Svg, Polygon, Rect } from '@react-pdf/renderer';
 import { Block } from '@/components/admin/database/types';
@@ -10,6 +9,7 @@ import { t } from '@/lib/document-i18n';
 import { canAccess } from '@/lib/feature-flags';
 import { calculateInvoiceTotals } from '@/lib/invoice-totals';
 import { generateOGM } from '@/lib/ogm';
+import { blockValue } from '@/lib/records/document-lines';
 
 /**
  * Resolve the document type label. Credit notes (CN- prefix) get
@@ -176,16 +176,7 @@ export const InvoicePDFTemplate = ({
         return html.replace(/<[^>]*>?/gm, '').trim();
     };
 
-    const getBlockTotalRecursive = (b: Block): number => {
-        if (b.isOptional) return 0;
-        if (b.children && b.children.length > 0) {
-            const childrenSum = b.children.reduce((sum, child) => sum + getBlockTotalRecursive(child), 0);
-            return childrenSum * (b.quantity || 1);
-        }
-        
-        const vDeltas = lineVariantDelta(b);   // VARIANT-1: frozen on the line
-        return ((b.unitPrice || b.verkoopPrice || 0) + vDeltas) * (b.quantity || 1);
-    };
+    const getBlockTotalRecursive = (b: Block): number => blockValue(b);   // DOC-LINES-1: the ONE line rule
 
     // ── Recursive block renderer ────────────────────────────────────────────
     const renderBlocks = (nodes: Block[], depth = 0): React.ReactNode[] => {

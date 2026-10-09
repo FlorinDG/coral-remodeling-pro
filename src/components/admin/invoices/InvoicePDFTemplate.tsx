@@ -8,7 +8,7 @@ import { getTemplateStyles, TemplateId, lighten, withAlpha } from '@/components/
 import { t } from '@/lib/document-i18n';
 import { canAccess } from '@/lib/feature-flags';
 import { calculateInvoiceTotals, documentDiscountPercent } from '@/lib/invoice-totals';
-import { documentRateOf } from '@/lib/records/vat-regime';
+import { DEFAULT_VAT_REGIME, documentRateOf } from '@/lib/records/vat-regime';
 import { formatPercent } from '@/lib/format/number';
 import { generateOGM } from '@/lib/ogm';
 import { blockValue, discountOf, lineRate, type Discount } from '@/lib/records/document-lines';
@@ -122,7 +122,7 @@ export const InvoicePDFTemplate = ({
     blocks, invoiceTitle, betreft, clientInfo, projectId, grandTotalExcl, grandTotalIncl, vatAmount,
     databaseStoreState, tenantProfile, templateId = 't1', language = 'nl',
     invoiceDate, deliveryDate, dueDate, docType,
-    vatIncluded = false, vatRegime = '21', documentDiscount = null,
+    vatIncluded = false, vatRegime = DEFAULT_VAT_REGIME, documentDiscount = null,
     structuredComm,
     showSubcomponents = false,
     hidePrices = false,

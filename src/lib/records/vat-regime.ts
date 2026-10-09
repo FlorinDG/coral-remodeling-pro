@@ -9,11 +9,13 @@
 export const VAT_RATES = [21, 12, 6, 0] as const;
 export type VatRate = typeof VAT_RATES[number];
 
-export const REVERSE_CHARGE = 'medecontractant';
+export const REVERSE_CHARGE = 'medecontractant' as const;
+/** A document's regime: one of the rates (as text) or reverse charge. */
+export type SalesVatRegime = `${VatRate}` | typeof REVERSE_CHARGE;
 /** The regimes a document can choose, in display order. */
-export const SALES_VAT_REGIMES: readonly string[] = [...VAT_RATES.map(String), REVERSE_CHARGE];
+export const SALES_VAT_REGIMES: readonly SalesVatRegime[] = [...VAT_RATES.map(r => `${r}` as `${VatRate}`), REVERSE_CHARGE];
 /** A document without a regime is at the standard rate. */
-export const DEFAULT_VAT_REGIME = '21';
+export const DEFAULT_VAT_REGIME: SalesVatRegime = '21';
 
 export function isReverseCharge(regime: string | null | undefined): boolean {
     return regime === REVERSE_CHARGE;

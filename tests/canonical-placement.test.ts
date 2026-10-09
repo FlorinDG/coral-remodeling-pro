@@ -61,3 +61,15 @@ test('a line is built ONE way (newDocumentLine) — its rate stored only when se
 test('formatting lives in lib/format — the totals rule formats nothing', () => {
     assert.doesNotMatch(read(join(SRC, 'lib/invoice-totals.ts')), /Intl\.NumberFormat|export function format/);
 });
+
+test('the VAT regime is named in core — no screen compares to \'medecontractant\' or falls back to \'21\' itself', () => {
+    // PENDING EDITOR-1 (PR #2 touches these files): remove from this list once it is merged — the list may only shrink.
+    const PENDING = new Set([
+        'components/admin/invoices/InvoiceRow.tsx', 'components/admin/quotations/QuotationRow.tsx',
+        'components/admin/invoices/FinancialRowRenderer.tsx', 'components/admin/quotations/FinancialRowRenderer.tsx',
+    ]);
+    const LITERAL = /[!=]==\s*'medecontractant'|\|\|\s*'21'\b|\?\?\s*'21'\b|vatRegime\s*=\s*'21'|type\s+VatRegime\s*=/;
+    const offenders = ALL.filter(p => !p.endsWith('lib/records/vat-regime.ts') && !PENDING.has(rel(p)) && LITERAL.test(read(p))).map(rel);
+    assert.deepEqual(offenders, []);
+    assert.ok(PENDING.size <= 4);
+});

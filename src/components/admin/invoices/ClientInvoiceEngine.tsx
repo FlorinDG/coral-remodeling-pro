@@ -45,6 +45,7 @@ import SelectDropdown from '@/components/admin/database/components/SelectDropdow
 import { useTranslations } from 'next-intl';
 import { useUserPreferences } from '@/hooks/useUserPreferences';
 import { documentDiscountOf, documentDiscountProps } from '@/lib/records/document-lines';
+import { DEFAULT_VAT_REGIME } from '@/lib/records/vat-regime';
 
 const FALLBACK_PAGES: Page[] = [];
 
@@ -428,7 +429,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
     const projectId = Array.isArray(rawProject) ? (rawProject[0] || '') : (rawProject as string) || '';
     const betreft = (invoice.properties?.['betreft'] as string) || '';
     const vatIncluded = !!invoice.properties?.['vatIncluded'];
-    const vatRegime = (invoice.properties?.['vatRegime'] as string) || '21';
+    const vatRegime = (invoice.properties?.['vatRegime'] as string) || DEFAULT_VAT_REGIME;
     const invoiceStatus = (invoice.properties?.['status'] as string) || 'opt-draft';
     const isDraft = invoiceStatus === 'opt-draft';
     const isLocked = Boolean(invoice.properties?.['isLocked'] || false);

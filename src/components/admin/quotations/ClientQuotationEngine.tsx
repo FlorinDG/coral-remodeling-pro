@@ -43,6 +43,7 @@ import { reviseQuotation } from '@/lib/data/quote-revision';
 import { describeError } from '@/lib/describe-error';
 import { isFromModal } from '@/lib/dom/page-shortcut';
 import { documentDiscountOf, documentDiscountProps } from '@/lib/records/document-lines';
+import { DEFAULT_VAT_REGIME } from '@/lib/records/vat-regime';
 
 const FALLBACK_PAGES: Page[] = [];
 
@@ -334,7 +335,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
     const isLocked = isQuoteLocked(quotation.properties as Record<string, unknown>);
     const quotationDate = (quotation.properties?.['date'] as string) || '';
     const vatIncluded = !!quotation.properties?.['vatIncluded'];
-    const vatRegime = (quotation.properties?.['vatRegime'] as string) || '21';
+    const vatRegime = (quotation.properties?.['vatRegime'] as string) || DEFAULT_VAT_REGIME;
 
     const handleUpdateBlock = (blockId: string, updates: Partial<Block>) => {
         const updateRecursive = (nodes: Block[]): Block[] => {

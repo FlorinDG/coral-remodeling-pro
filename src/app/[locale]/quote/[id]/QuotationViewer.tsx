@@ -15,6 +15,7 @@ import {
     Type, Upload, Pencil, Download, Clock, ChevronDown, ChevronUp, Sparkles
 } from 'lucide-react';
 import { documentDiscountOf } from '@/lib/records/document-lines';
+import { DEFAULT_VAT_REGIME } from '@/lib/records/vat-regime';
 import { sanitizeRichText } from '@/lib/records/rich-text';   // EDITOR-1 E3: the customer sees only the allowlist
 
 const SignatureCanvas = dynamic(() => import('react-signature-canvas'), { ssr: false });
@@ -429,7 +430,7 @@ export default function QuotationViewer({ quoteId, properties, blocks, tenant, l
                                                 templateId={(tenant?.documentTemplate as TemplateId) || 't1'}
                                                 language={lang}
                                                 showSubcomponents={false}
-                                                vatRegime={properties?.vatRegime || '21'}
+                                                vatRegime={properties?.vatRegime || DEFAULT_VAT_REGIME}
                                                 documentDiscount={documentDiscountOf(properties as Record<string, unknown>)}
                                             />
                                         );

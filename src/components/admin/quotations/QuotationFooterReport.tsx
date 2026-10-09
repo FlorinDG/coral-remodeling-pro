@@ -5,7 +5,7 @@ import { Block } from '@/components/admin/database/types';
 import { t as ti18n } from '@/lib/document-i18n';
 import { calculateInvoiceTotals } from '@/lib/invoice-totals';
 import VatBreakdownRows from '@/components/admin/shared/VatBreakdownRows';
-import { SALES_VAT_REGIMES } from '@/lib/records/vat-regime';
+import { SALES_VAT_REGIMES, isReverseCharge, type SalesVatRegime } from '@/lib/records/vat-regime';
 import { chargedLines, type Discount } from '@/lib/records/document-lines';
 import DocumentDiscountRows from '@/components/admin/shared/DocumentDiscountRows';
 
@@ -25,7 +25,6 @@ interface QuotationFooterReportProps {
     isLocked?: boolean;
 }
 
-type VatRegime = '21' | '12' | '6' | '0' | 'medecontractant';
 
 export default function QuotationFooterReport({
     blocks,
@@ -41,7 +40,7 @@ export default function QuotationFooterReport({
     onDocumentDiscountChange,
     isLocked = false,
 }: QuotationFooterReportProps) {
-    const vatRegime = vatRegimeProp as VatRegime;
+    const vatRegime = vatRegimeProp as SalesVatRegime;
 
     // ── Totals: the ONE rule (lib/invoice-totals) — VAT one document choice at the end (Florin 2026-10-09: "vat per
     // line is a no go. ONLY at the end"), line discounts and the discount on the total included (DOC-LINES-1).
@@ -94,7 +93,7 @@ export default function QuotationFooterReport({
 
     const totalVAT = totals.totalVAT;
     const totalInclVAT = totals.totalInclVAT;
-    const showMedecontractant = vatRegime === 'medecontractant';
+    const showMedecontractant = isReverseCharge(vatRegime);
     const grandProfit = grandVerkoop - grandKost;
 
     const formatCurrency = (val: number) => {

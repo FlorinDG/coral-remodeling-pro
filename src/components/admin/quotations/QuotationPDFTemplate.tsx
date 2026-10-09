@@ -8,7 +8,7 @@ import { getTemplateStyles, TemplateId, lighten, withAlpha } from '@/components/
 import { t } from '@/lib/document-i18n';
 import { canAccess } from '@/lib/feature-flags';
 import { calculateInvoiceTotals, documentDiscountPercent } from '@/lib/invoice-totals';
-import { documentRateOf } from '@/lib/records/vat-regime';
+import { DEFAULT_VAT_REGIME, documentRateOf, isReverseCharge } from '@/lib/records/vat-regime';
 import { formatPercent } from '@/lib/format/number';
 import { blockValue, discountOf, lineRate, type Discount } from '@/lib/records/document-lines';
 
@@ -68,7 +68,7 @@ export const QuotationPDFTemplate = ({
     databaseStoreState, tenantProfile, templateId = 't1', language = 'nl',
     showSubcomponents = false,
     vatIncluded = false,
-    vatRegime = '21',
+    vatRegime = DEFAULT_VAT_REGIME,
     documentDiscount = null,
     billingRule,
     paymentTerms,
@@ -254,7 +254,7 @@ export const QuotationPDFTemplate = ({
     const vatRows = blocks && blocks.length > 0 && vatBreakdown.length > 0
         ? vatBreakdown.map(v => ({ rate: v.rate, vat: v.vat }))
         : [{ rate: documentRateOf(vatRegime), vat: taxAmount }];
-    const vatLabel = (rate: number) => `${t('vat', lang)} (${vatRegime === 'medecontractant' ? (lang === 'fr' ? 'Autoliquidation' : lang === 'en' ? 'Reverse charge' : 'Verlegd') : `${rate}%`}):`;
+    const vatLabel = (rate: number) => `${t('vat', lang)} (${isReverseCharge(vatRegime) ? (lang === 'fr' ? 'Autoliquidation' : lang === 'en' ? 'Reverse charge' : 'Verlegd') : `${rate}%`}):`;
 
     const renderVatRows = (boxWidth: number) => vatRows.map(v => (
         <View key={v.rate} style={{ flexDirection: 'row', width: boxWidth, justifyContent: 'space-between' }}>
@@ -366,7 +366,7 @@ export const QuotationPDFTemplate = ({
                         {/* Legal texts — above totals */}
                         <View wrap={false}>
                             {/* Medecontractant Legal Notice */}
-                            {(vatRegime === 'medecontractant') && (
+                            {isReverseCharge(vatRegime) && (
                                 <View style={{ marginTop: 24, padding: 10, backgroundColor: '#fafafa', borderLeft: `3px solid ${accent}`, borderRadius: 4 }}>
                                     <Text style={{ fontSize: 8, color: '#555555', fontStyle: 'italic', lineHeight: 1.4 }}>
                                         {t('footer_medecontractant_legal', lang)}
@@ -573,7 +573,7 @@ export const QuotationPDFTemplate = ({
 
                 <View wrap={false}>
                     {/* Medecontractant Legal Notice */}
-                    {(vatRegime === 'medecontractant') && (
+                    {isReverseCharge(vatRegime) && (
                         <View style={{ marginTop: 24, marginHorizontal: isT1 || isT4 ? 32 : 8, padding: 10, backgroundColor: '#fafafa', borderLeft: `3px solid ${accent}`, borderRadius: 4 }}>
                             <Text style={{ fontSize: 8, color: '#555555', fontStyle: 'italic', lineHeight: 1.4 }}>
                                 {t('footer_medecontractant_legal', lang)}

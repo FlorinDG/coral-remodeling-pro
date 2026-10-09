@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { t } from '@/lib/document-i18n';
 import { calculateInvoiceTotals } from '@/lib/invoice-totals';
 import VatBreakdownRows from '@/components/admin/shared/VatBreakdownRows';
-import { SALES_VAT_REGIMES } from '@/lib/records/vat-regime';
+import { SALES_VAT_REGIMES, isReverseCharge, type SalesVatRegime } from '@/lib/records/vat-regime';
 import DocumentDiscountRows from '@/components/admin/shared/DocumentDiscountRows';
 import type { Discount } from '@/lib/records/document-lines';
 
@@ -39,7 +39,6 @@ interface InvoiceFooterReportProps {
     onDocumentDiscountChange?: (d: Discount | null) => void;
 }
 
-type VatRegime = '21' | '12' | '6' | '0' | 'medecontractant';
 
 export default function InvoiceFooterReport({
     blocks,
@@ -63,7 +62,7 @@ export default function InvoiceFooterReport({
     onDocumentDiscountChange,
 }: InvoiceFooterReportProps) {
     const router = useRouter();
-    const vatRegime = vatRegimeProp as VatRegime;
+    const vatRegime = vatRegimeProp as SalesVatRegime;
 
     const totals = useMemo(() => {
         return calculateInvoiceTotals(blocks || [], { vatIncluded, vatRegime, documentDiscount });
@@ -91,7 +90,7 @@ export default function InvoiceFooterReport({
         return count;
     }, [blocks]);
 
-    const showMedecontractant = vatRegime === 'medecontractant';
+    const showMedecontractant = isReverseCharge(vatRegime);
 
     const formatCurrency = (val: number) => {
         return new Intl.NumberFormat('nl-BE', {

@@ -1,5 +1,5 @@
 # CORAL — CODER QUEUE
-**Current as of 2026-10-08.** Order: GRID-REPLACE-5 §7 → LOC-GRID-1 → DB-HEADER-1 M4 → R2-1-B M4 → **HR MVP close:** ✅ DEAD-HR-1 → ✅ LOC-HR-1 → ✅ HR-SERAPH-1 → EMP-PROFILE-1 → GRID-SURFACE-1 → **LOC-NEW-1**. This file is always the live queue — superseded items are removed, not renamed.
+**Current as of 2026-10-08.** Order: GRID-REPLACE-5 §7 → LOC-GRID-1 → DB-HEADER-1 M4 → R2-1-B M4 → **HR MVP close:** ✅ DEAD-HR-1 → ✅ LOC-HR-1 → ✅ HR-SERAPH-1 → EMP-PROFILE-1 → GRID-SURFACE-1 → **LOC-NEW-1** → **BOUNDARY-1**. This file is always the live queue — superseded items are removed, not renamed.
 🛑 **The filename never carries a date.** `PLANNER-HANDOVER.md` §7 points here permanently.
 
 **Work top to bottom. Each item is a separate commit set. Report after each.**
@@ -135,6 +135,21 @@ check), `lib/records/purchase-document.ts` labels (QUOTE_LABEL / TICKET_LABEL �
 returning keys, the screen translates). → `Admin.*` keys in en/nl/fr/ro. 🛑 Do NOT touch `lib/records/**` logic, the
 store's sync logic, `lib/data/**`, the scan route. Strings only; `tests/i18n.test.ts` guard with a throw proof.
 Report `.agents/reports/LOC-NEW-1.md`, push develop, STOP.
+
+### 11 · `BOUNDARY-1` — the layers enforced by the build (Florin 2026-10-09: "yes, he can")
+Four checks, each failing the build, each with a throw proof, each its own commit; existing offenders listed in a
+RATCHET (may only shrink — same pattern as tests/seraph-gate.test.ts), never fixed inside this item:
+1. **Import direction** (eslint `no-restricted-imports` per path): `src/lib/kernel/**` imports only `src/lib/kernel/**`;
+   `src/lib/records/**` imports only kernel + records (+ type-only imports allowed nowhere else either). Neither imports
+   `components/`, `app/`, `lib/data/`.
+2. **Server code never imports `components/`**: `src/app/**/route.ts`, `src/app/actions/**`, `src/lib/data/**` and every
+   server component page (`page.tsx` without `"use client"`) — a pure helper lives in `lib/`.
+3. **Route files export only HTTP handlers** (test): `src/app/**/route.ts(x)` exports ⊆ {GET, POST, PUT, PATCH, DELETE,
+   HEAD, OPTIONS, runtime, dynamic, revalidate, maxDuration, fetchCache, preferredRegion}.
+4. **Role comparisons only in `lib/`** (ratchet test): occurrences of `role === '` / `role !== '` / `logicalKey === '` in
+   `src/components/**` and `src/app/**` — today's count frozen per file; a new one fails ("name the rule in lib/").
+🛑 Touch ONLY eslint.config.mjs and tests/. Plan first (the census numbers per check), STOP for review, then build.
+Report `.agents/reports/BOUNDARY-1.md`.
 
 ## THEN, in order
 `TD-4` tail *(5 grandfathered files)* · `KERN-8` · `R1-2`/`R1-3` → `R1-4`+`R1-5` · `ENT-1…24` · `WB-A…E` *(the werkbon — phasing awaits Florin)*.

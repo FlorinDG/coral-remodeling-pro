@@ -30,6 +30,11 @@ const AiDocumentImportModal = dynamic(
     { ssr: false }
 );
 
+const PurchaseLineSearch = dynamic(
+    () => import('@/components/admin/expenses/PurchaseLineSearch'),
+    { ssr: false }
+);
+
 export default function SupplierQuotesPage() {
     const t = useTranslations('Admin');
     usePageTitle(t('nav.financialTabs.supplierQuotes'));
@@ -37,9 +42,13 @@ export default function SupplierQuotesPage() {
     const searchParams = useSearchParams();
     const [openId, setOpenId] = useState<string | null>(searchParams.get('open'));
     const [showImport, setShowImport] = useState(false);
+    // LINE-SEARCH-1: the line search, and a found line's document (a quote OR a purchase invoice) in the editor
+    const [showLineSearch, setShowLineSearch] = useState(false);
+    const [lineDoc, setLineDoc] = useState<{ id: string; databaseId: string } | null>(null);
 
     const handleAction = useCallback((actionId: string) => {
         if (actionId === 'scan-invoice') setShowImport(true);
+        else if (actionId === 'search-lines') setShowLineSearch(true);
     }, []);
 
     return (
@@ -55,6 +64,12 @@ export default function SupplierQuotesPage() {
             </div>
             {openId && (
                 <PurchaseInvoiceEngine pageId={openId} databaseId={resolveDbId('db-purchase-quotes')} onClose={() => setOpenId(null)} />
+            )}
+            {showLineSearch && (
+                <PurchaseLineSearch onClose={() => setShowLineSearch(false)} onOpenDocument={(databaseId, id) => setLineDoc({ id, databaseId })} />
+            )}
+            {lineDoc && (
+                <PurchaseInvoiceEngine pageId={lineDoc.id} databaseId={lineDoc.databaseId} onClose={() => setLineDoc(null)} />
             )}
             {showImport && (
                 <AiDocumentImportModal targetDatabaseId="db-purchase-quotes" onClose={() => setShowImport(false)} />

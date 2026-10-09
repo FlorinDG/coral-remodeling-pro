@@ -518,6 +518,9 @@ export function canonicalSchemas(resolveDbId: (base: string) => string): Record<
       { id: 'opt-verwarming',   name: 'Verwarming',   color: 'red'     },
     ]}},
     { id: 'prop-art-supplier',  name: 'Leverancier',       type: 'relation', config: { relationDatabaseId: resolveDbId('db-suppliers'), relationDisplayPropertyId: 'title' } },
+    // LINE-SEARCH-1: the supplier's own article code (matches a purchase line to its article) and the prices seen over time
+    { id: 'prop-art-supplier-code', name: 'Artikelcode leverancier', type: 'text' },
+    { id: 'prop-art-price-history', name: 'Prijshistoriek', type: 'text' },
     { id: 'prop-art-bruto',     name: 'BruttoKost',        type: 'currency' },
     { id: 'prop-art-remise',    name: 'Discount',          type: 'percent' },
     { id: 'prop-art-netto',     name: 'NettoKost',         type: 'formula', config: { formulaExpression: 'round(if(empty(Discount), BruttoKost, BruttoKost * (1 - Discount / 100)), 2)' } },

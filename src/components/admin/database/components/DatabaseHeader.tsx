@@ -22,6 +22,7 @@ import {
     RefreshCw,
     Check,
     GanttChartSquare,
+    Search,
 } from 'lucide-react';
 import type { Database, DatabaseView } from '../types';
 import type { SystemDatabaseRole } from '@/lib/kernel/system-databases';
@@ -205,6 +206,7 @@ export default function DatabaseHeader({
             case 'plus': return <Plus className="w-3.5 h-3.5" />;
             case 'check': return <Check className="w-3.5 h-3.5" />;
             case 'refresh': return <RefreshCw className="w-3.5 h-3.5" />;
+            case 'search': return <Search className="w-3.5 h-3.5" />;
             default: return null;
         }
     };

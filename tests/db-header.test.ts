@@ -124,7 +124,7 @@ test('computeDatabaseHeader: purchase invoices declares scan and peppol-sync —
         access: FULL_ACCESS,
     });
 
-    assert.equal(res.actions.length, 2);
+    assert.equal(res.actions.length, 3);
     assert.equal(res.actions[0].id, 'scan-invoice');
     assert.equal(res.actions[0].labelKey, 'Admin.nav.pages.scanUpload');
     assert.equal(res.actions[0].variant, 'primary');
@@ -132,6 +132,10 @@ test('computeDatabaseHeader: purchase invoices declares scan and peppol-sync —
     assert.equal(res.actions[1].id, 'peppol-sync');
     assert.equal(res.actions[1].labelKey, 'Admin.nav.pages.syncPeppolInbox');
     assert.equal(res.actions[1].variant, 'badge');
+
+    // LINE-SEARCH-1: search the lines of purchase invoices and supplier quotes
+    assert.equal(res.actions[2].id, 'search-lines');
+    assert.equal(res.actions[2].labelKey, 'Admin.dbHeader.searchLines');
 
     for (const act of res.actions) {
         const tr = getTranslation(act.labelKey);
@@ -471,4 +475,11 @@ test('a purchase document comes WITH its document: no CSV import on purchase inv
         assert.equal(computeDatabaseHeader({ role, databaseName: 'x', access: FULL_ACCESS } as DatabaseHeaderContext).toolbar.showImportCsv, false, role);
     }
     assert.equal(computeDatabaseHeader({ role: 'clients', databaseName: 'Klanten', access: FULL_ACCESS } as DatabaseHeaderContext).toolbar.showImportCsv, true);
+});
+
+test('LINE-SEARCH-1 / QUOTE-IN-1: supplier quotes — scan and the line search, no CSV import', () => {
+    const res = computeDatabaseHeader({ role: 'purchase-quotes', databaseName: 'Offertes leveranciers', access: FULL_ACCESS });
+    assert.deepEqual(res.actions.map(a => a.id), ['scan-invoice', 'search-lines']);
+    assert.equal(res.toolbar.showImportCsv, false);
+    for (const act of res.actions) assert.ok(getTranslation(act.labelKey), `${act.labelKey} must resolve in nl.json`);
 });

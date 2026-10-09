@@ -30,6 +30,11 @@ const AiDocumentImportModal = dynamic(
     { ssr: false }
 );
 
+const PurchaseLineSearch = dynamic(
+    () => import('@/components/admin/expenses/PurchaseLineSearch'),
+    { ssr: false }
+);
+
 export default function ExpensesInvoicesPage() {
     usePageTitle('Purchase Invoices');
     const t = useTranslations('Admin');
@@ -42,6 +47,9 @@ export default function ExpensesInvoicesPage() {
     const openParam = searchParams.get("open");
     const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(openParam);
     const [showScanUpload, setShowScanUpload] = useState(false);
+    // LINE-SEARCH-1: the line search, and a found line's document (an invoice OR a supplier quote) in the editor
+    const [showLineSearch, setShowLineSearch] = useState(false);
+    const [lineDoc, setLineDoc] = useState<{ id: string; databaseId: string } | null>(null);
     const [quotaWarning, setQuotaWarning] = useState<{
         overQuota: boolean; current: number; limit: number; plan: string;
     } | null>(null);
@@ -122,6 +130,8 @@ export default function ExpensesInvoicesPage() {
             setShowScanUpload(true);
         } else if (actionId === 'peppol-sync') {
             handleSyncPeppol();
+        } else if (actionId === 'search-lines') {
+            setShowLineSearch(true);
         }
     }, [handleSyncPeppol]);
 
@@ -199,6 +209,13 @@ export default function ExpensesInvoicesPage() {
                     pageId={selectedInvoiceId}
                     onClose={() => setSelectedInvoiceId(null)}
                 />
+            )}
+
+            {showLineSearch && (
+                <PurchaseLineSearch onClose={() => setShowLineSearch(false)} onOpenDocument={(databaseId, id) => setLineDoc({ id, databaseId })} />
+            )}
+            {lineDoc && (
+                <PurchaseInvoiceEngine pageId={lineDoc.id} databaseId={lineDoc.databaseId} onClose={() => setLineDoc(null)} />
             )}
 
             {/* Scan / Upload invoice modal */}

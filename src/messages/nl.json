@@ -256,6 +256,7 @@
   },
   "Admin": {
     "dbHeader": {
+      "searchLines": "Zoeken in regels",
       "sortAdded": "Toegevoegd",
       "sortEdited": "Laatst gewijzigd",
       "newProforma": "Nieuwe proforma",

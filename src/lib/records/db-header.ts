@@ -36,12 +36,13 @@ export type ActionId =
     | 'bulk-upload-tickets'
     | 'scan-invoice'
     | 'peppol-sync'
-    | 'new-proforma';
+    | 'new-proforma'
+    | 'search-lines';
 
 export interface ActionItem {
     id: ActionId;
     labelKey: string;
-    icon: 'camera' | 'files' | 'plus' | 'check' | 'alert' | 'refresh';
+    icon: 'camera' | 'files' | 'plus' | 'check' | 'alert' | 'refresh' | 'search';
     variant: 'primary' | 'secondary' | 'outline' | 'badge';
     badgeContent?: string;
 }
@@ -137,11 +138,16 @@ export function computeDatabaseHeader(ctx: DatabaseHeaderContext): DatabaseHeade
     } else if (ctx.role === 'expenses' && (!ctx.surfaceKey || ctx.surfaceKey === 'docType=opt-invoice')) {
         actions.push(
             { id: 'scan-invoice', labelKey: 'Admin.nav.pages.scanUpload', icon: 'camera', variant: 'primary' },
-            { id: 'peppol-sync', labelKey: 'Admin.nav.pages.syncPeppolInbox', icon: 'refresh', variant: 'badge' }
+            { id: 'peppol-sync', labelKey: 'Admin.nav.pages.syncPeppolInbox', icon: 'refresh', variant: 'badge' },
+            // LINE-SEARCH-1: find a material in the lines of purchase invoices and supplier quotes
+            { id: 'search-lines', labelKey: 'Admin.dbHeader.searchLines', icon: 'search', variant: 'secondary' }
         );
     } else if (ctx.role === 'purchase-quotes') {
         // QUOTE-IN-1: a supplier quote comes in WITH its document — scanned / imported, like a purchase invoice (no Peppol)
-        actions.push({ id: 'scan-invoice', labelKey: 'Admin.nav.pages.scanUpload', icon: 'camera', variant: 'primary' });
+        actions.push(
+            { id: 'scan-invoice', labelKey: 'Admin.nav.pages.scanUpload', icon: 'camera', variant: 'primary' },
+            { id: 'search-lines', labelKey: 'Admin.dbHeader.searchLines', icon: 'search', variant: 'secondary' },
+        );
     }
 
     // 5. Toolbar Configuration

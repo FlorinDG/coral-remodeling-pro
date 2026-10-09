@@ -256,6 +256,7 @@
   },
   "Admin": {
     "dbHeader": {
+      "searchLines": "Caută în rânduri",
       "sortAdded": "Data adăugării",
       "sortEdited": "Ultima modificare",
       "newProforma": "Proformă nouă",

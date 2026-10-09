@@ -9,6 +9,7 @@
  */
 
 import type { RecordIntent, CreateIfMissing } from './record-intent';
+import { normaliseDateValue } from './date-cell';
 
 export interface AccountantExportActor {
     identifier: string;
@@ -105,7 +106,7 @@ export function buildPortalTaskCreateData(
     const properties: Record<string, unknown> = {
         title: input.title,
         'prop-task-status': 'opt-todo',
-        'prop-task-due': input.dueDate ? new Date(input.dueDate).toISOString() : '',
+        'prop-task-due': input.dueDate ? normaliseDateValue(String(input.dueDate)) : '',
         'prop-task-file-url': input.fileUrl || '',
         'prop-task-portal': [input.portalId],
         'prop-task-priority': 'opt-p4',
@@ -145,7 +146,7 @@ export function buildPortalTaskUpdateIntent(
     const fields: Record<string, unknown> = {};
     if (input.title !== undefined) fields['title'] = input.title;
     if (input.status !== undefined) fields['prop-task-status'] = input.status === 'DONE' ? 'opt-done' : 'opt-todo';
-    if (input.dueDate !== undefined) fields['prop-task-due'] = input.dueDate ? new Date(input.dueDate).toISOString() : '';
+    if (input.dueDate !== undefined) fields['prop-task-due'] = input.dueDate ? normaliseDateValue(String(input.dueDate)) : '';
     if (input.fileUrl !== undefined) fields['prop-task-file-url'] = input.fileUrl || '';
 
     return {

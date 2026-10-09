@@ -257,3 +257,43 @@ test('REVIEW-FIX-1 B1: no file under src/lib/records/ imports from lib/data', ()
     }
     assert.deepEqual(violating, [], `Files in src/lib/records importing from lib/data: ${violating.join(', ')}`);
 });
+
+test('REVIEW-FIX-1 B2: a due date is normalised to Brussels calendar day YYYY-MM-DD', () => {
+    // Plain calendar day remains unchanged
+    const plain = buildPortalTaskCreateData({
+        pageId: 'task-1',
+        databaseId: 'db-tasks',
+        portalId: 'portal-1',
+        title: 'Task 1',
+        dueDate: '2026-10-10',
+    });
+    assert.equal(plain.intent.fields?.['prop-task-due'], '2026-10-10');
+
+    // ISO instant near midnight UTC resolves to Brussels business day (Oct 10, not Oct 9)
+    const iso = buildPortalTaskCreateData({
+        pageId: 'task-2',
+        databaseId: 'db-tasks',
+        portalId: 'portal-1',
+        title: 'Task 2',
+        dueDate: '2026-10-09T23:30:00.000Z',
+    });
+    assert.equal(iso.intent.fields?.['prop-task-due'], '2026-10-10');
+
+    // Empty stays empty
+    const empty = buildPortalTaskCreateData({
+        pageId: 'task-3',
+        databaseId: 'db-tasks',
+        portalId: 'portal-1',
+        title: 'Task 3',
+        dueDate: '',
+    });
+    assert.equal(empty.intent.fields?.['prop-task-due'], '');
+
+    // Same behavior on task update
+    const updateIso = buildPortalTaskUpdateIntent({
+        pageId: 'task-2',
+        dueDate: '2026-10-09T23:30:00.000Z',
+    });
+    assert.equal(updateIso.intent.fields?.['prop-task-due'], '2026-10-10');
+});
+

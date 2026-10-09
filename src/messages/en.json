@@ -255,6 +255,14 @@
     "yourProject": "Your Project"
   },
   "Admin": {
+    "editor": {
+      "toolbar": "Formatting",
+      "bold": "Bold",
+      "italic": "Italic",
+      "underline": "Underline",
+      "bulletList": "Bulleted list",
+      "orderedList": "Numbered list"
+    },
     "dbHeader": {
       "searchLines": "Search lines",
       "sortAdded": "Date added",

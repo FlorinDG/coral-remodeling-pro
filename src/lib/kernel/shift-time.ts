@@ -164,3 +164,13 @@ export function entrySpan(clockIn: Date | string, clockOut: Date | string, timeZ
     const a = zonedParts(clockIn, timeZone); const b = zonedParts(clockOut, timeZone);
     return { date: a.date, start: a.time, end: b.date === a.date ? b.time : '24:00' };
 }
+
+/** A calendar day 'YYYY-MM-DD' that exists (no 2026-02-30). Anything else, including an ISO timestamp, is not one. */
+export function isCalendarDay(v: unknown): v is string {
+    if (typeof v !== 'string') return false;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return false;
+    const [y, m, d] = v.split('-').map(Number);
+    if (m < 1 || m > 12) return false;
+    if (d < 1 || d > dim(y, m)) return false;
+    return true;
+}

@@ -87,6 +87,9 @@
 <tr><td><b>WEBSITES and EMAIL</b> <i>(3 Oct)</i></td><td class="ok">Finish the features first, then decide what is grantable. Ideally they become nice-to-haves that sweeten an upgrade. The PRO happy path: website (lead-capture form) → lead in the pipeline ⇄ mail → quote → project → portal. We tease and squeeze, never past ethics.</td></tr>
 <tr><td><b>Release</b></td><td class="ok">Every green commit goes to <code>main</code>. Florin pushes any range with a migration or a package change.</td></tr>
 <tr><td><b>The coder</b></td><td class="ok">Plan first, Florin approves milestones, and every test needs a throw proof. Bending a directive is not progress.</td></tr>
+<tr><td><b>Sales VAT</b> <i>(9 Oct, DOC-LINES-2)</i></td><td class="ok">Every line carries a VAT rate (Peppol BR-CO-04). By default it is the document's regime; a rate set by hand is <code>vatRateOverride</code>, and the legacy line <code>vatRate</code> is never read. Mixed rates are allowed. Each line is rounded, then added; each line's VAT is rounded, then added per rate. Reverse charge applies to the whole document. One list of rates: <code>lib/records/vat-regime</code>.</td></tr>
+<tr><td><b>Customer discounts</b> <i>(9 Oct, DOC-LINES-1)</i></td><td class="ok">On the line and on the total, each a percentage or a fixed amount, the same on quotes, invoices, proformas and credit notes. The discount on the total comes before VAT, shown as "Korting op totaal — n%", and goes to Peppol as an allowance per rate (not <code>total_discount</code>).</td></tr>
+<tr><td><b>The text editor</b> <i>(9 Oct, EDITOR-1)</i></td><td class="ok">TipTap is the one rich-text primitive, inside our blocks (not BlockNote: that would be a second block model). It complies with the ERP's rules: one allowlist in core, enforced at the record door and on every render; it never persists by itself; no cloud extensions.</td></tr>
 <tr><td><b>WorkHub: repair or rebuild</b></td><td class="ok">Extract the plumbing (<span class="ok">done</span>), <b>rebuild the shift editor</b> (TD-0, 3 Oct: the debt left sits in its two files), repair the rest.</td></tr>
 </table>
 
@@ -95,6 +98,10 @@
 <tr><th>Decision</th><th>Blocks</th></tr>
 <tr><td>Should the <b>variant fix</b> go in with WO-LIB-1? Today a variant surcharge counts as 0 in the totals.</td><td>WO-LIB-1 · VARIANT-1</td></tr>
 <tr><td>Late entries since June that landed 2 h late: correct them, or leave them?</td><td>Hours history</td></tr>
+<tr><td><b>Bank reconciliation</b>: start with a CODA file upload or a PSD2 bank feed (Ponto / Isabel)? Which banks?</td><td>BANK-REC-1</td></tr>
+<tr><td><b>Architect's meetstaat</b>: which formats do the architects send (xlsx / PDF / XML)?</td><td>CONSTRUCT-1A</td></tr>
+<tr><td><b>BIM</b>: which IFC version, and start with viewing only or the quantity takeoff right away?</td><td>CONSTRUCT-1B</td></tr>
+<tr><td><b>Mobile office</b>: the journal's plan and roles; the site visit as its own database or as a CRM activity.</td><td>MOBILE-1 (M1-J, M1-S)</td></tr>
 <tr><td><code>TIER_DEFAULTS</code>: PRO's module set beyond the library. <i>Defined as we go; raised in conversation, not forced now.</i></td><td>All of entitlement</td></tr>
 </table>
 

@@ -7,7 +7,9 @@ import { renderRichText } from '@/components/admin/shared/pdfRichText';
 import { getTemplateStyles, TemplateId, lighten, withAlpha } from '@/components/admin/shared/templateStyles';
 import { t } from '@/lib/document-i18n';
 import { canAccess } from '@/lib/feature-flags';
-import { calculateInvoiceTotals, documentRateOf, documentDiscountPercent, formatPercent } from '@/lib/invoice-totals';
+import { calculateInvoiceTotals, documentDiscountPercent } from '@/lib/invoice-totals';
+import { documentRateOf } from '@/lib/records/vat-regime';
+import { formatPercent } from '@/lib/format/number';
 import { blockValue, discountOf, lineRate, type Discount } from '@/lib/records/document-lines';
 
 function formatBelgianVat(vat?: string) {
@@ -231,7 +233,7 @@ export const QuotationPDFTemplate = ({
     const discountPct = totalDiscount > 0 ? documentDiscountPercent(totals, documentDiscount) : null;
     // DOC-LINES-2: a document with mixed rates states each line's rate (EN 16931: every line has one)
     const mixedRates = totals.vatBreakdown.length > 1;
-    const documentRate = vatRegime === 'medecontractant' ? 0 : documentRateOf(vatRegime);
+    const documentRate = documentRateOf(vatRegime);
     const lineDiscountNote = (b: Block) => {
         const d = discountOf(b.clientDiscount);
         const parts = [
@@ -251,7 +253,7 @@ export const QuotationPDFTemplate = ({
     // DOC-LINES-2: one VAT row per rate (mixed rates); a document without lines keeps its stored VAT
     const vatRows = blocks && blocks.length > 0 && vatBreakdown.length > 0
         ? vatBreakdown.map(v => ({ rate: v.rate, vat: v.vat }))
-        : [{ rate: vatRegime === 'medecontractant' ? 0 : documentRateOf(vatRegime), vat: taxAmount }];
+        : [{ rate: documentRateOf(vatRegime), vat: taxAmount }];
     const vatLabel = (rate: number) => `${t('vat', lang)} (${vatRegime === 'medecontractant' ? (lang === 'fr' ? 'Autoliquidation' : lang === 'en' ? 'Reverse charge' : 'Verlegd') : `${rate}%`}):`;
 
     const renderVatRows = (boxWidth: number) => vatRows.map(v => (

@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { type Discount, type DocLine } from '@/lib/records/document-lines';
 import { calculateInvoiceTotals, type InvoiceTotals } from '@/lib/invoice-totals';
+import { isReverseCharge, REVERSE_CHARGE, DEFAULT_VAT_REGIME } from '@/lib/records/vat-regime';
 
 export interface InvoiceLinePayload {
     description: string;
@@ -111,8 +112,8 @@ export interface PeppolFigures {
  * whole document at 0 (AE). Optional lines are not charged.
  */
 export function peppolFigures(blocks: InvoiceBlock[], opts: { vatRegime?: string; vatIncluded?: boolean; documentDiscount?: Discount | null } = {}): PeppolFigures {
-    const totals = calculateInvoiceTotals(blocks || [], { vatRegime: opts.vatRegime || '21', vatIncluded: !!opts.vatIncluded, documentDiscount: opts.documentDiscount });
-    const isReverseCharge = opts.vatRegime === 'medecontractant';
+    const totals = calculateInvoiceTotals(blocks || [], { vatRegime: opts.vatRegime || DEFAULT_VAT_REGIME, vatIncluded: !!opts.vatIncluded, documentDiscount: opts.documentDiscount });
+    const reverseCharge = isReverseCharge(opts.vatRegime);
     const items: InvoiceLinePayload[] = [];
     for (const l of totals.lines) {
         const block = l.block as InvoiceBlock;
@@ -125,13 +126,13 @@ export function peppolFigures(blocks: InvoiceBlock[], opts: { vatRegime?: string
             amount: l.base,
             tax: l.vat,
             tax_rate: l.rate.toFixed(2),
-            isReverseCharge,
+            isReverseCharge: reverseCharge,
         });
     }
     const allowances: DocumentAllowance[] = totals.discountByRate.map(({ rate, amount }) => ({
         amount,
         tax_rate: rate.toFixed(2),
-        tax_code: isReverseCharge ? 'AE' : rate === 0 ? 'Z' : 'S',
+        tax_code: reverseCharge ? 'AE' : rate === 0 ? 'Z' : 'S',
         reason: 'Korting',
         reason_code: '95',
     }));
@@ -220,7 +221,7 @@ export function buildPeppolPayload(params: BuildPayloadParams) {
         payment_term: 'Net 30 days',
     };
 
-    if (params.vatRegime === 'medecontractant') {
+    if (params.vatRegime === REVERSE_CHARGE) {
         invoicePayload.tax_code = 'AE';
         invoicePayload.vatex = 'VATEX-EU-AE';
         invoicePayload.vatex_note = 'Reverse charge - Art. 196 EU VAT Directive';

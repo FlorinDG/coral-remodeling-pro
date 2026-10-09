@@ -4,7 +4,7 @@ import CrewStoreCleanup from "@/components/workhub/CrewStoreCleanup";
 import { WorkHubProviders } from "@/components/workhub/WorkHubProviders";
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
-import { provisionLockedDatabases } from "@/lib/provisionTenantDbs";
+import { bindSystemDatabases } from "@/lib/data/tenant-databases";
 import { redirect } from "next/navigation";
 import { isWorkforceRole } from "@/lib/roles";
 
@@ -100,7 +100,7 @@ export default async function WorkHubLayout({ children }: { children: React.Reac
         // reads the ERP store), and holding them let a crafted request aim at an ERP database.
         if (!crew) {
             try {
-                lockedDbIds = await provisionLockedDatabases(tenantId, prisma);
+                lockedDbIds = (await bindSystemDatabases())?.lockedDbIds ?? ((tenant?.lockedDbIds as Record<string, string> | null) || {});
             } catch (provErr) {
                 console.error('[workhub layout] Provisioning failed:', provErr);
                 lockedDbIds = (tenant?.lockedDbIds as Record<string, string> | null) || {};

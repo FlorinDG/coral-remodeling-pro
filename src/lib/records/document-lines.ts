@@ -16,6 +16,7 @@
  * document's (mixed rates: "yes").
  */
 import { lineVariantDelta } from './variant-price';
+import { documentRateOf } from './vat-regime';
 
 export type DiscountKind = 'pct' | 'amount';
 /** A customer discount: a percentage of the value, or a fixed amount (in the document's currency). */
@@ -184,4 +185,29 @@ export function documentDiscountOf(props: Record<string, unknown> | null | undef
 export function documentDiscountProps(d: Discount | null): Record<string, unknown> {
     const x = discountOf(d);
     return { clientDiscountKind: x ? x.kind : null, clientDiscountValue: x ? x.value : null };
+}
+
+/**
+ * A new priced line in the editor's shape — the ONE way a screen or a job writes a line (the desktop editor, the
+ * mobile quick invoice, timesheet invoicing): its values ON the block, where the editor, the totals, the PDF and the
+ * send read them. Its VAT rate is the document's; a rate is stored on the line only when it was set by hand to a
+ * different one (Florin 2026-10-09: "manually edited if the case presents itself").
+ */
+export function newDocumentLine(
+    input: { id: string; content: string; quantity: number; unitPrice: number; unit?: string; rate?: number | null },
+    documentRegime: string,
+) {
+    const own = input.rate;
+    return {
+        id: input.id,
+        type: 'line' as const,
+        content: input.content,
+        quantity: input.quantity,
+        unit: input.unit ?? 'stk',
+        unitPrice: input.unitPrice,
+        verkoopPrice: input.unitPrice,
+        isOptional: false,
+        children: [] as DocLine[],
+        ...(typeof own === 'number' && own !== documentRateOf(documentRegime) ? { vatRateOverride: own } : {}),
+    };
 }

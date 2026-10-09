@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { t } from '@/lib/document-i18n';
 import { calculateInvoiceTotals } from '@/lib/invoice-totals';
 import VatBreakdownRows from '@/components/admin/shared/VatBreakdownRows';
+import { SALES_VAT_REGIMES } from '@/lib/records/vat-regime';
 import DocumentDiscountRows from '@/components/admin/shared/DocumentDiscountRows';
 import type { Discount } from '@/lib/records/document-lines';
 
@@ -245,11 +246,7 @@ export default function InvoiceFooterReport({
                                         color: 'var(--brand-color, #d35400)',
                                     }}
                                 >
-                                    <option value="21">21% — Standaard</option>
-                                    <option value="12">12% — Sociaal woning</option>
-                                    <option value="6">6% — Renovatie (&gt;10j)</option>
-                                    <option value="0">0% — Vrijgesteld</option>
-                                    <option value="medecontractant">Medecontractant (verlegde BTW)</option>
+                                    {SALES_VAT_REGIMES.map(r => <option key={r} value={r}>{t(`footer_vat_${r}`, language)}</option>)}
                                 </select>
                                 <span className="text-[13px] font-semibold text-neutral-600 dark:text-neutral-300 tabular-nums shrink-0">{formatCurrency(totalVAT)}</span>
                             </div>

@@ -1,23 +1,19 @@
+import { Suspense } from "react";
 import AuthProvider from "@/components/AuthProvider";
-import { reconcileSystemSchemas } from '@/lib/data/system-schema-reconcile';
-import { getGlobalDatabases, getGlobalDatabaseSchemas, getGlobalPageIndex } from "@/app/actions/global-databases";
-import { IS_LAZY_DATA_ENABLED } from "@/lib/feature-flags";
-import GlobalDatabaseSyncer from "@/components/admin/database/GlobalDatabaseSyncer";
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
-import { provisionLockedDatabases } from "@/lib/provisionTenantDbs";
 import MobileShell from "@/components/mobile/MobileShell";
 import { MobileScopeProvider } from "@/components/mobile/MobileScopeContext";
+import DatabaseBootstrap from "@/components/admin/database/DatabaseBootstrap";
 
 export default async function MobileLayout({ children }: { children: React.ReactNode }) {
+    const t0 = performance.now();
     let activeModules: string[]             = ['INVOICING'];
     let planType: string                    = 'FREE';
     let lockedDbIds: Record<string, string> = {};
     let fullTenant: any                     = null;
     let tenantId: string | null             = null;
     let userId: string | null               = null;
-    let databases: Awaited<ReturnType<typeof getGlobalDatabases>> = [];
-    let pageIndex: Awaited<ReturnType<typeof getGlobalPageIndex>> = [];
 
     try {
         const session = await auth();
@@ -86,14 +82,9 @@ export default async function MobileLayout({ children }: { children: React.React
                 if (tenant.activeModules) activeModules = tenant.activeModules;
                 if (tenant.planType)      planType      = tenant.planType;
 
-                try {
-                    lockedDbIds = await provisionLockedDatabases(tenantId, prisma);
-                    // KERN-SCHEMA-1: canonical fields for every system database, before the schemas load below.
-                    await reconcileSystemSchemas(tenantId, prisma, lockedDbIds, { planType, activeModules });
-                } catch (provErr) {
-                    console.error('[m/layout] Provisioning failed:', provErr);
-                    lockedDbIds = (tenant.lockedDbIds as Record<string, string> | null) || {};
-                }
+                // MOBILE-PERF-1: the shell takes the tenant's stored bindings; provisioning + the schema reconcile run in
+                // DatabaseBootstrap, streamed behind the shell (they repair a binding only in the rare unhealthy case).
+                lockedDbIds = (tenant.lockedDbIds as Record<string, string> | null) || {};
 
                 fullTenant = JSON.parse(JSON.stringify(tenant));
             }
@@ -101,22 +92,18 @@ export default async function MobileLayout({ children }: { children: React.React
             console.error(`[m/layout] Tenant read failed:`, e);
         }
 
-        try {
-            databases = IS_LAZY_DATA_ENABLED ? await getGlobalDatabaseSchemas() : await getGlobalDatabases();
-        } catch (e) {
-            console.error('[m/layout] database fetch failed:', e);
-        }
-
-        try {
-            pageIndex = await getGlobalPageIndex();
-        } catch (e) {
-            console.error('[m/layout] getGlobalPageIndex() failed:', e);
-        }
     }
+
+    console.info(`[m/layout] shell ready in ${Math.round(performance.now() - t0)}ms (tenant=${tenantId})`);
 
     return (
         <AuthProvider>
-            <GlobalDatabaseSyncer databases={databases} pageIndex={pageIndex} tenantId={tenantId} userId={userId} />
+            {/* MOBILE-PERF-1: the shell renders at once; the data streams in behind it (was: a white screen until all loaded) */}
+            {tenantId && (
+                <Suspense fallback={null}>
+                    <DatabaseBootstrap tenantId={tenantId} userId={userId} prepare={{ planType, activeModules }} label="m" />
+                </Suspense>
+            )}
             <MobileScopeProvider>
                 <MobileShell activeModules={activeModules} planType={planType} lockedDbIds={lockedDbIds} tenant={fullTenant}>
                     {children}

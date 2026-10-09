@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
+import { VAT_RATES } from '@/lib/records/vat-regime';
 import { isTenantDatabase } from '@/lib/relations/resolve';
 import React, { useState, useRef, useCallback } from 'react';
 import { zonedParts } from '@/lib/kernel/shift-time';
@@ -960,10 +961,7 @@ export default function TicketCaptureModal({ onClose: closeModal, targetDatabase
                                                                     }}
                                                                     className="w-full px-2.5 py-2 text-sm bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-lg focus:ring-2 focus:ring-orange-400/50 appearance-none"
                                                                 >
-                                                                    <option value="21">21%</option>
-                                                                    <option value="6">6%</option>
-                                                                    <option value="12">12%</option>
-                                                                    <option value="0">0%</option>
+                                                                    {VAT_RATES.map(r => <option key={r} value={String(r)}>{r}%</option>)}
                                                                 </select>
                                                             </div>
                                                         </div>

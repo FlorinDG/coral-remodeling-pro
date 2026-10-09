@@ -5,7 +5,8 @@
  */
 import React from 'react';
 import ClientDiscountInput from './ClientDiscountInput';
-import { documentDiscountPercent, formatPercent, type InvoiceTotals } from '@/lib/invoice-totals';
+import { documentDiscountPercent, type InvoiceTotals } from '@/lib/invoice-totals';
+import { formatPercent } from '@/lib/format/number';
 import type { Discount } from '@/lib/records/document-lines';
 
 interface Props {

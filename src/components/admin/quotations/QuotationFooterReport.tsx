@@ -5,6 +5,7 @@ import { Block } from '@/components/admin/database/types';
 import { t as ti18n } from '@/lib/document-i18n';
 import { calculateInvoiceTotals } from '@/lib/invoice-totals';
 import VatBreakdownRows from '@/components/admin/shared/VatBreakdownRows';
+import { SALES_VAT_REGIMES } from '@/lib/records/vat-regime';
 import { chargedLines, type Discount } from '@/lib/records/document-lines';
 import DocumentDiscountRows from '@/components/admin/shared/DocumentDiscountRows';
 
@@ -197,11 +198,7 @@ export default function QuotationFooterReport({
                                         color: 'var(--brand-color, #d35400)',
                                     }}
                                 >
-                                    <option value="21">{ti18n('footer_vat_21', language)}</option>
-                                    <option value="12">{ti18n('footer_vat_12', language)}</option>
-                                    <option value="6">{ti18n('footer_vat_6', language)}</option>
-                                    <option value="0">{ti18n('footer_vat_0', language)}</option>
-                                    <option value="medecontractant">{ti18n('footer_vat_medecontractant', language)}</option>
+                                    {SALES_VAT_REGIMES.map(r => <option key={r} value={r}>{ti18n(`footer_vat_${r}`, language)}</option>)}
                                 </select>
                                 <span className="text-[13px] font-semibold text-neutral-600 dark:text-neutral-300 tabular-nums shrink-0 text-right min-w-[120px]">{formatCurrency(totalVAT)}</span>
                             </div>

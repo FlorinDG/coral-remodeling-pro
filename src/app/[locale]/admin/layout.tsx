@@ -1,12 +1,10 @@
 import AdminLayout from "@/components/AdminLayout";
-import { reconcileSystemSchemas } from '@/lib/data/system-schema-reconcile';
 import AuthProvider from "@/components/AuthProvider";
-import { getGlobalDatabases, getGlobalDatabaseSchemas, getGlobalPageIndex } from "@/app/actions/global-databases";
-import { IS_LAZY_DATA_ENABLED } from "@/lib/feature-flags";
-import GlobalDatabaseSyncer from "@/components/admin/database/GlobalDatabaseSyncer";
+import { Suspense } from "react";
+import DatabaseBootstrap from "@/components/admin/database/DatabaseBootstrap";
+import { prepareTenantDatabases } from "@/lib/data/tenant-databases";
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
-import { provisionLockedDatabases } from "@/lib/provisionTenantDbs";
 import { cookies } from "next/headers";
 import { PLATFORM_ADMIN_ROLES } from "@/lib/roles";
 
@@ -61,8 +59,6 @@ export default async function Layout({ children }: { children: React.ReactNode }
     }
 
     // ── 3. Tenant DB read — INDEPENDENT of database fetch ───────────────────
-    let databases: Awaited<ReturnType<typeof getGlobalDatabases>> = [];
-    let pageIndex: Awaited<ReturnType<typeof getGlobalPageIndex>> = [];
 
     if (tenantId) {
         // 3a. Tenant profile — critical path
@@ -127,9 +123,9 @@ export default async function Layout({ children }: { children: React.ReactNode }
                 if (tenant.trialEndsAt)        trialEndsAt        = tenant.trialEndsAt.toISOString();
 
                 try {
-                    lockedDbIds = await provisionLockedDatabases(tenantId, prisma);
-                    // KERN-SCHEMA-1: canonical fields for every system database, before the schemas load below.
-                    await reconcileSystemSchemas(tenantId, prisma, lockedDbIds, { planType, activeModules });
+                    // KERN-SCHEMA-1: bindings checked + canonical fields, before the schemas load (DatabaseBootstrap)
+                    const prepared = await prepareTenantDatabases({ planType, activeModules });
+                    lockedDbIds = prepared?.lockedDbIds ?? ((tenant.lockedDbIds as Record<string, string> | null) || {});
                 } catch (provErr) {
                     console.error(`[admin/layout] Provisioning failed for ${tenantId}:`, provErr);
                     lockedDbIds = (tenant.lockedDbIds as Record<string, string> | null) || {};
@@ -147,27 +143,18 @@ export default async function Layout({ children }: { children: React.ReactNode }
             console.error(`[layout] Tenant read FAILED for ${tenantId}:`, e);
         }
 
-        // 3b. Global databases — schemas only under MEM-3 lazy loading flag
-        try {
-            databases = IS_LAZY_DATA_ENABLED ? await getGlobalDatabaseSchemas() : await getGlobalDatabases();
-            console.log(`[layout] Databases: ${databases.length} loaded (lazy=${IS_LAZY_DATA_ENABLED}), ${databases.reduce((n, d) => n + d.pages.length, 0)} total pages`);
-        } catch (e) {
-            console.error('[layout] database fetch FAILED:', e);
-        }
-
-        try {
-            pageIndex = await getGlobalPageIndex();
-            console.log(`[layout] Page index: ${pageIndex.length} entries loaded`);
-        } catch (e) {
-            console.error('[layout] getGlobalPageIndex() FAILED:', e);
-        }
+        // 3b. The store's data streams in under <Suspense> (DatabaseBootstrap — MOBILE-PERF-1)
     } else {
         console.warn('[layout] No tenantId — skipping all DB reads');
     }
 
     return (
         <AuthProvider>
-            <GlobalDatabaseSyncer databases={databases} pageIndex={pageIndex} tenantId={tenantId} userId={session?.user?.id} />
+            {tenantId && (
+                <Suspense fallback={null}>
+                    <DatabaseBootstrap tenantId={tenantId} userId={session?.user?.id} label="admin" />
+                </Suspense>
+            )}
             <AdminLayout
                 activeModules={activeModules}
                 planType={planType}

@@ -5,8 +5,7 @@
  * The rule that uses it: lib/invoice-totals (each line's VAT rounded, then added per rate).
  */
 import React from 'react';
-
-const RATES = [21, 12, 6, 0] as const;
+import { VAT_RATES, DEFAULT_VAT_REGIME, isReverseCharge } from '@/lib/records/vat-regime';
 
 interface Props {
     value: number | null | undefined;
@@ -17,8 +16,8 @@ interface Props {
     className?: string;
 }
 
-export default function LineVatRateSelect({ value, vatRegime = '21', onChange, readOnly, className = '' }: Props) {
-    if (vatRegime === 'medecontractant') return <span className={`text-sm text-neutral-400 ${className}`}>verlegd</span>;
+export default function LineVatRateSelect({ value, vatRegime = DEFAULT_VAT_REGIME, onChange, readOnly, className = '' }: Props) {
+    if (isReverseCharge(vatRegime)) return <span className={`text-sm text-neutral-400 ${className}`}>verlegd</span>;
     const own = typeof value === 'number' && Number.isFinite(value) ? value : null;
     return (
         <select
@@ -29,7 +28,7 @@ export default function LineVatRateSelect({ value, vatRegime = '21', onChange, r
             className={`bg-transparent border-none text-sm text-right focus:outline-none focus:ring-0 cursor-pointer disabled:cursor-default ${own === null ? 'text-neutral-400' : 'text-black dark:text-white font-medium'} ${className}`}
         >
             <option value="">{vatRegime}% (doc)</option>
-            {RATES.map(r => <option key={r} value={String(r)}>{r}%</option>)}
+            {VAT_RATES.map(r => <option key={r} value={String(r)}>{r}%</option>)}
         </select>
     );
 }

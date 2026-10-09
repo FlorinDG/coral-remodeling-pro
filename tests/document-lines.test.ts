@@ -114,7 +114,8 @@ test('DOC-LINES-2 · the mobile quick invoice writes the editor\'s line shape an
 });
 
 test('"Discount on total — [percentage]": the % set, or a fixed amount\'s share of the lines', async () => {
-    const { documentDiscountPercent, formatPercent } = await import('../src/lib/invoice-totals.ts');
+    const { documentDiscountPercent } = await import('../src/lib/invoice-totals.ts');
+    const { formatPercent } = await import('../src/lib/format/number.ts');
     const blocks = [line({ verkoopPrice: 400 })] as never;
     const pct = { kind: 'pct' as const, value: 12.5 };
     assert.equal(documentDiscountPercent(calculateInvoiceTotals(blocks, { documentDiscount: pct }), pct), 12.5);

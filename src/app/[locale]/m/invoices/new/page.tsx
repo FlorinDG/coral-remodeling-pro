@@ -16,9 +16,11 @@ import { Link } from '@/i18n/routing';
 import { Page, Block } from '@/components/admin/database/types';
 import { calculateInvoiceTotals } from '@/lib/invoice-totals';
 import { zonedParts, addDaysYmd } from '@/lib/kernel/shift-time';
+import { newDocumentLine } from '@/lib/records/document-lines';
+import { DEFAULT_VAT_REGIME, documentRateOf } from '@/lib/records/vat-regime';
 
-/** The document's regime; a line's own rate (the select per line) overrides it — mixed rates (DOC-LINES-2). */
-const DOCUMENT_REGIME = '21';
+/** The quick invoice is at the default regime; a line's rate chosen on the phone is its own (mixed rates). */
+const DOCUMENT_REGIME = DEFAULT_VAT_REGIME;
 import DecimalInput from '@/components/ui/DecimalInput';
 
 interface LineItem {
@@ -53,7 +55,7 @@ export default function MobileCreateInvoicePage() {
     const [invoiceDate, setInvoiceDate] = useState(() => zonedParts(new Date()).date);
     const [dueDate, setDueDate] = useState(() => addDaysYmd(zonedParts(new Date()).date, 30));
     const [lines, setLines] = useState<LineItem[]>([
-        { id: '1', description: '', quantity: 1, unitPrice: 0, vatRate: 21 },
+        { id: '1', description: '', quantity: 1, unitPrice: 0, vatRate: documentRateOf(DOCUMENT_REGIME) },
     ]);
     const [showNewClientModal, setShowNewClientModal] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
@@ -64,7 +66,7 @@ export default function MobileCreateInvoicePage() {
             description: '',
             quantity: 1,
             unitPrice: 0,
-            vatRate: 21,
+            vatRate: documentRateOf(DOCUMENT_REGIME),
         }]);
     };
 
@@ -82,19 +84,7 @@ export default function MobileCreateInvoicePage() {
     // block.properties, so the invoice opened on desktop with empty €0 lines.
     const lineBlocks = lines
         .filter(l => l.description.trim())
-        .map((l, i) => ({
-            id: `block-${l.id}-${i}`,
-            type: 'line' as const,
-            content: l.description,
-            quantity: l.quantity,
-            unit: 'stk',
-            unitPrice: l.unitPrice,
-            verkoopPrice: l.unitPrice,
-            // the line's own rate only when it differs from the document's — else it follows the regime if that changes
-            ...(l.vatRate !== Number(DOCUMENT_REGIME) ? { vatRateOverride: l.vatRate } : {}),
-            isOptional: false,
-            children: [],
-        }));
+        .map((l, i) => newDocumentLine({ id: `block-${l.id}-${i}`, content: l.description, quantity: l.quantity, unitPrice: l.unitPrice, rate: l.vatRate }, DOCUMENT_REGIME));
     const totals = calculateInvoiceTotals(lineBlocks, { vatRegime: DOCUMENT_REGIME });
     const subtotal = totals.subtotal;
     const totalVat = totals.totalVAT;

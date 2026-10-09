@@ -19,6 +19,7 @@ import { getNextDocumentNumber } from '@/app/actions/next-document-number';
 import { createPrismaInvoice } from '@/app/actions/create-invoice';
 import { computeWorkedDuration, minutesToDecimalHours, formatHoursMinutes } from '@/lib/computeWorkedDuration';
 import { calculateInvoiceTotals } from '@/lib/invoice-totals';
+import { newDocumentLine } from '@/lib/records/document-lines';
 import { zonedParts } from '@/lib/kernel/shift-time';
 import type { Block, Page } from '@/components/admin/database/types';
 
@@ -192,18 +193,13 @@ export async function invoiceSelectedHours(entryIds: string[]):
         minutes: computeWorkedDuration(e.clockInTime, e.clockOutTime, e.noBreak).totalMinutes,
     })), uid => nameOf.get(uid) || '—');
     const dm = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}`;
-    const blocks: Block[] = perDay.map(l => ({
+    const blocks: Block[] = perDay.map(l => newDocumentLine({
         id: crypto.randomUUID(),
-        type: 'line',
         content: `${LABOUR[lang]} — ${l.name} — ${dm(l.date)} (${formatHoursMinutes(l.minutes)})`,
         quantity: minutesToDecimalHours(l.minutes),   // the same conversion as screen + export
         unit: 'u',
         unitPrice: 0,
-        verkoopPrice: 0,
-        // no vatRate: the line takes the document's regime (DOC-LINES-2 — a line's own rate is only a deliberate one)
-        isOptional: false,
-        children: [],
-    } as Block));
+    }, vat) as Block);   // no rate of its own: the line takes the document's regime
     const totals = calculateInvoiceTotals(blocks, { vatRegime: vat });
 
     const num = await getNextDocumentNumber('invoice');

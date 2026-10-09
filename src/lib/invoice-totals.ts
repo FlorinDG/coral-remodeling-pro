@@ -5,11 +5,7 @@
  */
 import { chargedLines, splitDocumentDiscount, discountOf, documentDiscountOf, roundCents, type DocLine, type Discount } from '@/lib/records/document-lines';
 
-/** The document's rate from its regime ('21', '6', …); reverse charge is handled by the caller. */
-export function documentRateOf(vatRegime: string | null | undefined): number {
-    const r = parseFloat(vatRegime || '21');
-    return Number.isFinite(r) ? r : 21;
-}
+import { documentRateOf, isReverseCharge, DEFAULT_VAT_REGIME } from '@/lib/records/vat-regime';
 
 export interface VatBreakdownItem {
     rate: number;
@@ -62,9 +58,9 @@ export function calculateInvoiceTotals(
     blocks: DocLine[],
     options: CalculateTotalsOptions = {}
 ): InvoiceTotals {
-    const { vatRegime = '21', vatIncluded = false } = options;
-    const isMedecontractant = vatRegime === 'medecontractant';
-    const documentRate = isMedecontractant ? 0 : documentRateOf(vatRegime);
+    const { vatRegime = DEFAULT_VAT_REGIME, vatIncluded = false } = options;
+    const isMedecontractant = isReverseCharge(vatRegime);
+    const documentRate = documentRateOf(vatRegime);
     const lines = chargedLines(blocks, { documentRate });
     const linesGross = lines.reduce((s, l) => s + l.gross, 0);
     const lineDiscounts = lines.reduce((s, l) => s + l.discount, 0);
@@ -129,7 +125,7 @@ export function documentTotals(
     const p = props || {};
     return calculateInvoiceTotals(blocks || [], {
         vatIncluded: !!p.vatIncluded,
-        vatRegime: (p.vatRegime as string) || '21',
+        vatRegime: (p.vatRegime as string) || DEFAULT_VAT_REGIME,
         documentDiscount: documentDiscountOf(p),
     });
 }
@@ -146,8 +142,3 @@ export function documentDiscountPercent(totals: InvoiceTotals, d: Discount | nul
     return before > 0 ? Math.round((totals.documentDiscount / before) * 10000) / 100 : null;
 }
 
-/** A percentage as the document's language writes it (10,5 % in nl/fr — 10.5% in en). */
-export function formatPercent(n: number, lang?: string): string {
-    const locale = lang === 'en' ? 'en-GB' : lang === 'fr' ? 'fr-BE' : 'nl-BE';
-    return `${new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(n)}%`;
-}

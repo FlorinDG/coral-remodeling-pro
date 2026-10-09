@@ -78,7 +78,7 @@ The card editor's text block and the quote's free text need ONE rich-text primit
 
 **Recommendation: TipTap as the one rich-text primitive** (`components/editor/RichText.tsx`) — quote/invoice text,
 line descriptions, journal, record bodies — closing VRIJETEKST-EDITOR-RESET at the root (commit on idle, never per
-keystroke). `BlockEditor` becomes blocks-of-RichText. **Florin decides.**
+keystroke). `BlockEditor` becomes blocks-of-RichText. ✅ **Decided 2026-10-09: TipTap.**
 
 ### M1-J · Journal (review → canonical)
 1. Fail-closed resolution (remove the `|| GENERAL_DB_ID` fallback) — R1-2.
@@ -116,7 +116,7 @@ Planner: all of M1, M3 actions, M7.
 
 ## 3 · Decisions for Florin
 
-1. **Text editor:** TipTap as the one primitive (recommended) or BlockNote.
+1. ✅ **Text editor — DECIDED 2026-10-09 (Florin: "go for tiptap then"): TipTap**, the one rich-text primitive (quote/invoice text, line descriptions, journal, record bodies). BlockNote is not used: its own block model inside our financial block model would be two block models in one document.
 2. **Site visit:** its own kernel database (recommended) or an activity on CRM / leads.
 3. **Journal:** which plan and roles get it (it is ungated today).
 4. **Order:** M1-D (document model) + M1-E (editor) are the heaviest and gate the card editor; M1-K/R/I gate the shell

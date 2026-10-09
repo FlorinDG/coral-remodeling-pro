@@ -4,6 +4,8 @@ import { nanoid } from "nanoid";
 import { auth } from '@/auth';
 import { scopeFromSession, type TenantScopedClient } from '@/lib/data/scope';
 import { systemDatabaseId } from '@/lib/data/system-databases';
+import { saveRecord } from '@/lib/data/records';
+import { buildPortalProjectCreateData } from '@/lib/records/portal-export-intents';
 
 /** A page in THIS tenant's projects database (the scoped client cannot see another tenant's). */
 async function isOwnProject(db: TenantScopedClient, id: string): Promise<boolean> {
@@ -30,16 +32,20 @@ export async function POST(request: Request) {
 
         if (createProject && projectTitle && !finalLinkedProjectId) {
             if (!projectDbId) return NextResponse.json({ error: 'unbound_system_database: projects' }, { status: 409 });
-            const globalPage = await db.globalPage.create({
-                data: {
-                    databaseId: projectDbId,
-                    properties: { title: projectTitle, clientName, status: 'New', budget: budget || 0 },
-                    createdBy: session?.user?.id || 'system',
-                    lastEditedBy: session?.user?.id || 'system',
-                    assignedTo: []
-                }
+            const pageId = crypto.randomUUID();
+            const { intent, opts } = buildPortalProjectCreateData({
+                pageId,
+                databaseId: projectDbId,
+                projectTitle,
+                clientName,
+                budget,
+                userId: session?.user?.id,
             });
-            finalLinkedProjectId = globalPage.id;
+            const res = await saveRecord(db, intent, opts);
+            if (!res.ok) {
+                return NextResponse.json({ error: `Failed to create project: ${res.refusal.code}` }, { status: 500 });
+            }
+            finalLinkedProjectId = pageId;
         }
 
         const slug = nanoid(10);

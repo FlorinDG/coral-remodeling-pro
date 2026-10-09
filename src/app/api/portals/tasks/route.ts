@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
 import { verifyPortalAccess } from '@/lib/portal-auth';
 import { portalScope, platformDb } from '@/lib/data/scope';
 import { systemDatabaseId } from '@/lib/data/system-databases';
+import { saveRecord } from '@/lib/data/records';
+import { buildPortalTaskCreateData, buildPortalTaskUpdateIntent } from '@/lib/records/portal-export-intents';
 
 export async function POST(request: Request) {
     try {
@@ -25,25 +26,24 @@ export async function POST(request: Request) {
         try { tasksDbId = await systemDatabaseId(authResult.portal.tenantId, 'tasks'); }
         catch { return NextResponse.json({ error: 'unbound_system_database: tasks' }, { status: 409 }); }
 
-        const task = await portalScope(authResult).globalPage.create({
-            data: {
-                databaseId: tasksDbId,
-                createdBy: 'system:portal',
-                lastEditedBy: 'system:portal',
-                properties: {
-                    'title': title,
-                    'prop-task-status': 'opt-todo',
-                    'prop-task-due': dueDate ? new Date(dueDate).toISOString() : '',
-                    'prop-task-file-url': fileUrl || '',
-                    'prop-task-portal': [authResult.portal.id],
-                    'prop-task-priority': 'opt-p4',
-                    'prop-task-tags': []
-                }
-            }
+        const pageId = crypto.randomUUID();
+        const { intent, opts } = buildPortalTaskCreateData({
+            pageId,
+            databaseId: tasksDbId,
+            portalId: authResult.portal.id,
+            title,
+            dueDate,
+            fileUrl,
         });
 
+        const client = portalScope(authResult);
+        const res = await saveRecord(client, intent, opts);
+        if (!res.ok) {
+            return NextResponse.json({ error: `Failed to create task: ${res.refusal.code}` }, { status: 500 });
+        }
+
         const mappedTask = {
-            id: task.id,
+            id: pageId,
             title: title,
             status: 'TODO',
             dueDate: dueDate || null,
@@ -96,29 +96,31 @@ export async function PUT(request: Request) {
             return NextResponse.json({ error: 'Not found' }, { status: 404 });
         }
 
-        const newProperties = {
-            ...props,
-        };
-
-        if (title !== undefined) newProperties['title'] = title;
-        if (status !== undefined) newProperties['prop-task-status'] = status === 'DONE' ? 'opt-done' : 'opt-todo';
-        if (dueDate !== undefined) newProperties['prop-task-due'] = dueDate ? new Date(dueDate).toISOString() : '';
-        if (fileUrl !== undefined) newProperties['prop-task-file-url'] = fileUrl || '';
-
-        const task = await portalScope({ success: true, portal: authorizedPortal }).globalPage.update({
-            where: { id },
-            data: {
-                properties: newProperties,
-                lastEditedBy: 'system:portal'
-            }
+        const client = portalScope({ success: true, portal: authorizedPortal });
+        const { intent, opts } = buildPortalTaskUpdateIntent({
+            pageId: id,
+            title,
+            status,
+            dueDate,
+            fileUrl,
         });
 
+        const res = await saveRecord(client, intent, opts);
+        if (!res.ok) {
+            return NextResponse.json({ error: `Failed to update task: ${res.refusal.code}` }, { status: 403 });
+        }
+
+        const finalTitle = title !== undefined ? title : props['title'];
+        const finalStatus = (status !== undefined ? (status === 'DONE' ? 'opt-done' : 'opt-todo') : props['prop-task-status']) === 'opt-done' ? 'DONE' : 'TODO';
+        const finalDue = dueDate !== undefined ? (dueDate || null) : (props['prop-task-due'] || null);
+        const finalFile = fileUrl !== undefined ? (fileUrl || null) : (props['prop-task-file-url'] || null);
+
         const mappedTask = {
-            id: task.id,
-            title: newProperties['title'],
-            status: newProperties['prop-task-status'] === 'opt-done' ? 'DONE' : 'TODO',
-            dueDate: dueDate || null,
-            fileUrl: fileUrl || null
+            id,
+            title: finalTitle,
+            status: finalStatus,
+            dueDate: finalDue,
+            fileUrl: finalFile,
         };
 
         return NextResponse.json(mappedTask);

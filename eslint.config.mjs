@@ -174,7 +174,6 @@ const eslintConfig = defineConfig([
       "src/app/api/portals/messages/route.ts",
       "src/app/api/portals/route.ts",
       "src/app/api/portals/slug/*slug*/route.ts",
-      "src/app/api/portals/tasks/route.ts",
       "src/app/api/portals/updates/route.ts",
       "src/app/api/storefront-cms/route.ts",
       "src/app/api/stripe/cancel/route.ts",

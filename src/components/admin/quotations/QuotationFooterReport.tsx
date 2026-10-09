@@ -3,6 +3,9 @@
 import React, { useMemo } from 'react';
 import { Block } from '@/components/admin/database/types';
 import { t as ti18n } from '@/lib/document-i18n';
+import { calculateInvoiceTotals } from '@/lib/invoice-totals';
+import { chargedLines, type Discount } from '@/lib/records/document-lines';
+import DocumentDiscountRows from '@/components/admin/shared/DocumentDiscountRows';
 
 interface QuotationFooterReportProps {
     blocks: Block[];
@@ -15,6 +18,10 @@ interface QuotationFooterReportProps {
     onLanguageChange?: (lang: string) => void;
     vatIncluded?: boolean;
     onVatIncludedChange?: (included: boolean) => void;
+    /** DOC-LINES-1: the discount on the total (a percentage or a fixed amount, before VAT). */
+    documentDiscount?: Discount | null;
+    onDocumentDiscountChange?: (d: Discount | null) => void;
+    isLocked?: boolean;
 }
 
 type VatRegime = '21' | '12' | '6' | '0' | 'medecontractant';
@@ -30,67 +37,21 @@ export default function QuotationFooterReport({
     onLanguageChange,
     vatIncluded = false,
     onVatIncludedChange,
+    documentDiscount = null,
+    onDocumentDiscountChange,
+    isLocked = false,
 }: QuotationFooterReportProps) {
     const vatRegime = vatRegimeProp as VatRegime;
 
-    // ── Financial VAT Calculation ──
-    const { subtotal, vatBreakdown, lineCount, hasLineMedecontractant } = useMemo(() => {
-        let subtotal = 0;
-        let lineCount = 0;
-        let hasLineMedecontractant = false;
-        const vatMap = new Map<number, { base: number; vat: number }>();
-
-        const accumulate = (nodes: Block[], multiplier = 1) => {
-            nodes.forEach(b => {
-                if (b.isOptional) return;
-
-                const currentQty = (b.type === 'line' || b.type === 'article' || b.type === 'bestek' || b.type === 'post') 
-                    ? (b.quantity || 1) 
-                    : 1;
-                const nextMultiplier = multiplier * currentQty;
-                
-                if (b.children && b.children.length > 0) {
-                    accumulate(b.children, nextMultiplier);
-                    return;
-                }
-
-                if (b.type === 'line' || b.type === 'article' || b.type === 'bestek') {
-                    const price = b.verkoopPrice || 0;
-                    const lineTotal = price * nextMultiplier;
-                    subtotal += lineTotal;
-                    lineCount++;
-
-                    const lineVatRate = b.vatRate ?? 21;
-
-                    if (b.vatMedecontractant) {
-                        hasLineMedecontractant = true;
-                    }
-
-                    let effectiveRate: number;
-                    if (vatCalcMode === 'lines') {
-                        effectiveRate = b.vatMedecontractant ? 0 : lineVatRate;
-                    } else {
-                        effectiveRate = vatRegime === 'medecontractant' ? 0 : parseFloat(vatRegime);
-                    }
-
-                    const base = vatIncluded ? (lineTotal / (1 + effectiveRate / 100)) : lineTotal;
-                    
-                    const existing = vatMap.get(effectiveRate) || { base: 0, vat: 0 };
-                    existing.base += base;
-                    existing.vat += base * (effectiveRate / 100);
-                    vatMap.set(effectiveRate, existing);
-                }
-            });
-        };
-
-        accumulate(blocks, 1);
-
-        const vatBreakdown = Array.from(vatMap.entries())
-            .sort((a, b) => b[0] - a[0])
-            .map(([rate, data]) => ({ rate, ...data }));
-
-        return { subtotal, vatBreakdown, lineCount, hasLineMedecontractant };
-    }, [blocks, vatCalcMode, vatRegime]);
+    // ── Totals: the ONE rule (lib/invoice-totals) — VAT one document choice at the end (Florin 2026-10-09: "vat per
+    // line is a no go. ONLY at the end"), line discounts and the discount on the total included (DOC-LINES-1).
+    const totals = useMemo(
+        () => calculateInvoiceTotals(blocks || [], { vatIncluded, vatRegime, documentDiscount }),
+        [blocks, vatIncluded, vatRegime, documentDiscount],
+    );
+    const { subtotal, vatBreakdown } = totals;
+    const lineCount = useMemo(() => chargedLines(blocks).length, [blocks]);
+    const hasLineMedecontractant = false;
 
     // ── Profitability Calculation ──
     const { grandKost, grandVerkoop } = useMemo(() => {
@@ -132,9 +93,9 @@ export default function QuotationFooterReport({
         return { grandKost, grandVerkoop };
     }, [blocks]);
 
-    const totalVAT = vatBreakdown.reduce((sum, v) => sum + v.vat, 0);
-    const totalInclVAT = subtotal + totalVAT;
-    const showMedecontractant = vatRegime === 'medecontractant' || (vatCalcMode === 'lines' && hasLineMedecontractant);
+    const totalVAT = totals.totalVAT;
+    const totalInclVAT = totals.totalInclVAT;
+    const showMedecontractant = vatRegime === 'medecontractant';
     const grandProfit = grandVerkoop - grandKost;
 
     const formatCurrency = (val: number) => {
@@ -145,7 +106,7 @@ export default function QuotationFooterReport({
         return `€  ${parts}`;
     };
 
-    const isLinesMode = vatCalcMode === 'lines';
+    const isLinesMode = false;   // VAT at the end only — the per-line display is gone with VAT-DOC-1
 
     return (
         <div className="w-full mt-10 pt-6 border-t border-dashed border-neutral-300 dark:border-neutral-700">
@@ -220,6 +181,7 @@ export default function QuotationFooterReport({
 
                 {/* Column 3: Totals */}
                 <div className="flex flex-col w-full">
+                    <DocumentDiscountRows totals={totals} value={documentDiscount} onChange={onDocumentDiscountChange} readOnly={isLocked} formatCurrency={formatCurrency} />
                     {/* Subtotal */}
                     <div className="flex items-center justify-between px-5 py-3 bg-neutral-50/80 dark:bg-white/[0.02]">
                         <span className="text-[13px] font-medium text-neutral-500 dark:text-neutral-400">{ti18n('footer_subtotal', language)}</span>

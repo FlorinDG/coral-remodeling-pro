@@ -3,7 +3,7 @@
  * values come from lib/records/document-lines (DOC-LINES-1: customer discount per line), the discount on the total is
  * applied before VAT and split over the VAT rates.
  */
-import { chargedLines, splitDocumentDiscount, discountOf, type DocLine, type Discount } from '@/lib/records/document-lines';
+import { chargedLines, splitDocumentDiscount, discountOf, documentDiscountOf, type DocLine, type Discount } from '@/lib/records/document-lines';
 
 export interface VatBreakdownItem {
     rate: number;
@@ -30,6 +30,7 @@ export interface InvoiceTotals {
 }
 
 interface CalculateTotalsOptions {
+    /** @deprecated VAT is ONE document choice applied at the end — never per line (Florin 2026-10-09). Ignored. */
     vatCalcMode?: "total" | "lines";
     vatRegime?: string;
     vatIncluded?: boolean;
@@ -50,7 +51,8 @@ export function calculateInvoiceTotals(
     const lineDiscounts = lines.reduce((s, l) => s + l.discount, 0);
     const linesNet = lines.reduce((s, l) => s + l.net, 0);
 
-    // Base per VAT rate (one document rate today); prices entered incl. VAT are brought back to their base.
+    // VAT is ONE document choice, applied at the end (Florin 2026-10-09: "vat per line is a no go. ONLY at the end").
+    // Prices entered incl. VAT are brought back to their base.
     const baseByRate = new Map<number, number>();
     if (lines.length) baseByRate.set(effectiveRate, vatIncluded ? linesNet / (1 + effectiveRate / 100) : linesNet);
     const split = splitDocumentDiscount(baseByRate, discountOf(options.documentDiscount));
@@ -78,4 +80,20 @@ export function calculateInvoiceTotals(
         linesNet: Math.round(linesNet * 100) / 100,
         documentDiscount: split.total,
     };
+}
+
+/**
+ * DOC-LINES-1 · a document's totals from the document itself — its prices incl./excl. VAT, its VAT regime, its discount
+ * on the total — so no screen, PDF or send forgets one of them. VAT: one document choice, at the end.
+ */
+export function documentTotals(
+    blocks: DocLine[] | null | undefined,
+    props: Record<string, unknown> | null | undefined,
+): InvoiceTotals {
+    const p = props || {};
+    return calculateInvoiceTotals(blocks || [], {
+        vatIncluded: !!p.vatIncluded,
+        vatRegime: (p.vatRegime as string) || '21',
+        documentDiscount: documentDiscountOf(p),
+    });
 }

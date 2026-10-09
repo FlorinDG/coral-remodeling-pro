@@ -55,3 +55,11 @@ test('the discount on the total: before VAT, a percentage or an amount, split ov
     assert.equal(split.total, 10);
     assert.equal([...split.byRate.values()].reduce((a, b) => a + b, 0), 10);   // the cents add up
 });
+
+test('Florin 2026-10-09: VAT ONLY at the end — a line\'s own rate or medecontractant flag never changes the totals', () => {
+    const blocks = [line({ verkoopPrice: 100, vatRate: 21 }), line({ verkoopPrice: 100, vatRate: 6 }), line({ verkoopPrice: 50, vatMedecontractant: true })];
+    for (const vatCalcMode of [undefined, 'lines', 'total'] as const) {
+        const t = calculateInvoiceTotals(blocks as never, { vatCalcMode, vatRegime: '21' });
+        assert.deepEqual(t.vatBreakdown.map(v => [v.rate, v.base, v.vat]), [[21, 250, 52.5]]);
+    }
+});

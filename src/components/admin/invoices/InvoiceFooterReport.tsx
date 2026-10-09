@@ -5,6 +5,8 @@ import { Block } from '@/components/admin/database/types';
 import { useRouter } from 'next/navigation';
 import { t } from '@/lib/document-i18n';
 import { calculateInvoiceTotals } from '@/lib/invoice-totals';
+import DocumentDiscountRows from '@/components/admin/shared/DocumentDiscountRows';
+import type { Discount } from '@/lib/records/document-lines';
 
 interface CreditNoteInfo {
     id: string;
@@ -30,6 +32,9 @@ interface InvoiceFooterReportProps {
     isLocked?: boolean;
     language?: string;
     onLanguageChange?: (lang: string) => void;
+    /** DOC-LINES-1: the discount on the total (a percentage or a fixed amount, before VAT). */
+    documentDiscount?: Discount | null;
+    onDocumentDiscountChange?: (d: Discount | null) => void;
 }
 
 type VatRegime = '21' | '12' | '6' | '0' | 'medecontractant';
@@ -52,13 +57,15 @@ export default function InvoiceFooterReport({
     isLocked = false,
     language = 'nl',
     onLanguageChange,
+    documentDiscount = null,
+    onDocumentDiscountChange,
 }: InvoiceFooterReportProps) {
     const router = useRouter();
     const vatRegime = vatRegimeProp as VatRegime;
 
     const totals = useMemo(() => {
-        return calculateInvoiceTotals(blocks || [], { vatIncluded, vatRegime });
-    }, [blocks, vatIncluded, vatRegime]);
+        return calculateInvoiceTotals(blocks || [], { vatIncluded, vatRegime, documentDiscount });
+    }, [blocks, vatIncluded, vatRegime, documentDiscount]);
 
     const { subtotal, totalVAT, totalInclVAT } = {
         subtotal: totals.subtotal,
@@ -216,6 +223,7 @@ export default function InvoiceFooterReport({
 
                 {/* Column 3: Totals */}
                 <div className="flex flex-col w-full">
+                    <DocumentDiscountRows totals={totals} value={documentDiscount} onChange={onDocumentDiscountChange} readOnly={isLocked} formatCurrency={formatCurrency} />
                     {/* Subtotal */}
                     <div className="flex items-center justify-between px-5 py-3 bg-neutral-50/80 dark:bg-white/[0.02]">
                         <span className="text-[13px] font-medium text-neutral-500 dark:text-neutral-400">Subtotaal excl. BTW</span>

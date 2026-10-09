@@ -83,6 +83,8 @@ export interface Block {
 
     brutoPrice?: number;
     discountPercent?: number;
+    /** DOC-LINES-1: the CUSTOMER discount on this line (discountPercent above is the supplier's, cost side). */
+    clientDiscount?: { kind: 'pct' | 'amount'; value: number } | null;
     costPrice?: number; // Derived: Bruto - Discount
     margePercent?: number;
     verkoopPrice?: number; // Derived: Cost + Marge

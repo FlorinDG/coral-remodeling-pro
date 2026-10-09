@@ -8,6 +8,8 @@ import { useDatabaseStore } from '@/components/admin/database/store';
 import { Database as DatabaseIcon, Check, Search, X } from 'lucide-react';
 import { t } from '@/lib/document-i18n';
 import { parseDecimal, formatDecimal } from '@/lib/decimal-parser';
+import ClientDiscountInput from '@/components/admin/shared/ClientDiscountInput';
+import { lineNet } from '@/lib/records/document-lines';
 
 // ── Labor rate constants ─────────────────────────────────────────────────────
 const LABOR_RATES: Record<string, number> = {
@@ -747,6 +749,12 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                         </div>
                     </div>
 
+                    {/* DOC-LINES-1 · the customer discount on this line — a percentage or a fixed amount */}
+                    <div className="flex flex-row items-center justify-between w-full @[600px]:flex-col @[600px]:gap-0.5 @[600px]:w-[110px] shrink-0 self-start mt-0.5 relative border-b border-neutral-200/60 dark:border-neutral-850 @[600px]:border-b-0 py-1.5 @[600px]:py-0">
+                        <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-left @[600px]:text-right @[600px]:pr-4 cursor-default">Korting</label>
+                        <ClientDiscountInput className="w-28 @[600px]:w-full pr-1" value={block.clientDiscount} onChange={d => onUpdate({ clientDiscount: d })} />
+                    </div>
+
                     {/* 6. Total (TOTAL HT) */}
                     <div className="flex flex-row items-center justify-between w-full @[600px]:flex-col @[600px]:gap-0.5 @[600px]:w-[100px] shrink-0 self-start mt-0.5 relative border-b border-neutral-200/60 dark:border-neutral-850 @[600px]:border-b-0 py-1.5 @[600px]:py-0">
                         <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-left @[600px]:text-right @[600px]:pr-4 cursor-default">
@@ -754,9 +762,8 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                         </label>
                         <div className="w-24 @[600px]:w-full flex justify-end items-center opacity-80 group-focus-within:opacity-100 transition-opacity pr-1 py-0.5">
                             <span className={`font-normal text-lg tracking-tight ${childrenTotal !== undefined ? 'text-orange-600 dark:text-orange-400' : 'text-black dark:text-white tabular-nums'}`}>
-                                {childrenTotal !== undefined
-                                    ? (childrenTotal * (block.quantity || 1)).toFixed(2)
-                                    : (((block.verkoopPrice || 0) + variantDeltas) * (block.quantity || 1)).toFixed(2)}
+                                {/* DOC-LINES-1: the line's value after its customer discount — the one line rule */}
+                                {lineNet(block).toFixed(2)}
                             </span>
                             <span className="ml-1 text-xs text-neutral-400 font-medium font-sans mt-0.5 cursor-default">€</span>
                         </div>

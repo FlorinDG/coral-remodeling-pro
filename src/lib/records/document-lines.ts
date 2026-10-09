@@ -137,3 +137,15 @@ export function blockValue(b: DocLine | null | undefined, opts: { includeOptiona
     if (b.type && PRICED.has(b.type)) return lineNet(b);
     return 0;
 }
+
+/** The document's discount on the total, from its properties (clientDiscountKind + clientDiscountValue). */
+export function documentDiscountOf(props: Record<string, unknown> | null | undefined): Discount | null {
+    const p = props || {};
+    return discountOf({ kind: p.clientDiscountKind, value: p.clientDiscountValue });
+}
+
+/** The properties that store a discount on the total (null clears it). */
+export function documentDiscountProps(d: Discount | null): Record<string, unknown> {
+    const x = discountOf(d);
+    return { clientDiscountKind: x ? x.kind : null, clientDiscountValue: x ? x.value : null };
+}

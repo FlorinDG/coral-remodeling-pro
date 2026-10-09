@@ -29,7 +29,7 @@ import SelectDropdown from '@/components/admin/database/components/SelectDropdow
 import SearchableSelect from '@/components/ui/SearchableSelect';
 import { canAccess } from '@/lib/feature-flags';
 import { t as ti18n } from '@/lib/document-i18n';
-import { calculateInvoiceTotals } from '@/lib/invoice-totals';
+import { calculateInvoiceTotals, documentTotals } from '@/lib/invoice-totals';
 import { createPrismaInvoice } from "@/app/actions/create-invoice";
 import { getNextDocumentNumber } from "@/app/actions/next-document-number";
 
@@ -42,6 +42,7 @@ import { isQuoteLocked } from '@/lib/records/document-lock';
 import { reviseQuotation } from '@/lib/data/quote-revision';
 import { describeError } from '@/lib/describe-error';
 import { isFromModal } from '@/lib/dom/page-shortcut';
+import { documentDiscountOf, documentDiscountProps } from '@/lib/records/document-lines';
 
 const FALLBACK_PAGES: Page[] = [];
 
@@ -276,10 +277,8 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
         if (isQuoteLocked(quotation.properties as Record<string, unknown>)) return;
         const currentBlocks = quotation.blocks || [];
 
-        const vatIncluded = !!quotation.properties?.['vatIncluded'];
-        const vatReg = (quotation.properties?.['vatRegime'] as string) || '21';
-
-        const totals = calculateInvoiceTotals(currentBlocks, { vatIncluded, vatRegime: vatReg });
+        // DOC-LINES-1: the document's own VAT settings (VAT at the end only) and its discount on the total
+        const totals = documentTotals(currentBlocks, quotation.properties as Record<string, unknown>);
         const roundedEx = totals.subtotal;
         const roundedVat = totals.totalVAT;
         const roundedInc = totals.totalInclVAT;
@@ -301,9 +300,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
 
     // Calculate totals using the shared calculator
     const totals = useMemo(() => {
-        const vatIncluded = !!quotation?.properties?.['vatIncluded'];
-        const vatReg = (quotation?.properties?.['vatRegime'] as string) || '21';
-        return calculateInvoiceTotals(blocks || [], { vatIncluded, vatRegime: vatReg });
+        return documentTotals(blocks, quotation?.properties as Record<string, unknown>);
     }, [blocks, quotation]);
 
     const grandTotalExcl = totals.subtotal;
@@ -1271,6 +1268,9 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                             onVatRegimeChange={(regime) => handleUpdateProperty('vatRegime', regime)}
                             language={docLanguage}
                             onLanguageChange={(lang) => handleUpdateProperty('docLanguage', lang)}
+                            documentDiscount={documentDiscountOf(quotation?.properties as Record<string, unknown>)}
+                            onDocumentDiscountChange={d => { for (const [k, v] of Object.entries(documentDiscountProps(d))) handleUpdateProperty(k, v as never); }}
+                            isLocked={isQuoteLocked(quotation?.properties as Record<string, unknown>)}
                         />
 
                         <div className="mt-8">

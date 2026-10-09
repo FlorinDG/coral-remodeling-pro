@@ -25,7 +25,7 @@ import { InvoicePDFTemplate } from './InvoicePDFTemplate';
 import PDFImportModal from './PDFImportModal';
 import { describeError } from '@/lib/describe-error';
 import { QuoteSendModal } from '../quotations/QuoteSendModal';
-import { calculateInvoiceTotals } from '@/lib/invoice-totals';
+import { calculateInvoiceTotals, documentTotals } from '@/lib/invoice-totals';
 import { calculateDueDate } from '@/lib/invoices/due-date';
 import InlineDialog from '@/components/admin/shared/InlineDialog';
 import DbPropertiesPanel from '@/components/admin/database/components/DbPropertiesPanel';
@@ -44,6 +44,7 @@ import { Link } from '@/i18n/routing';
 import SelectDropdown from '@/components/admin/database/components/SelectDropdown';
 import { useTranslations } from 'next-intl';
 import { useUserPreferences } from '@/hooks/useUserPreferences';
+import { documentDiscountOf, documentDiscountProps } from '@/lib/records/document-lines';
 
 const FALLBACK_PAGES: Page[] = [];
 
@@ -315,10 +316,8 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
         if (!invoice || !isHydrated) return;
         const blocks = invoice.blocks || [];
 
-        const vatIncluded = !!invoice.properties?.['vatIncluded'];
-        const vatReg = (invoice.properties?.['vatRegime'] as string) || '21';
-
-        const totals = calculateInvoiceTotals(blocks, { vatIncluded, vatRegime: vatReg });
+        // DOC-LINES-1: the document's own VAT settings and its discount on the total
+        const totals = documentTotals(blocks, invoice.properties as Record<string, unknown>);
         const roundedEx = totals.subtotal;
         const roundedVat = totals.totalVAT;
         const roundedInc = totals.totalInclVAT;
@@ -417,10 +416,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
 
     // Calculate totals using the shared calculator
     const totals = useMemo(() => {
-        const blks = invoice?.blocks || [];
-        const vatIncluded = !!invoice?.properties?.['vatIncluded'];
-        const vatReg = (invoice?.properties?.['vatRegime'] as string) || '21';
-        return calculateInvoiceTotals(blks, { vatIncluded, vatRegime: vatReg });
+        return documentTotals(invoice?.blocks, invoice?.properties as Record<string, unknown>);
     }, [invoice]);
 
     if (!isHydrated) return <div className="flex h-screen items-center justify-center">Loading Engine...</div>;
@@ -1824,6 +1820,8 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                         language={docLanguage}
                         onLanguageChange={(lang) => handleUpdateProperty('docLanguage', lang)}
                         structuredComm={String(invoice?.properties?.["structuredComm"] || "")}
+                        documentDiscount={documentDiscountOf(invoice?.properties as Record<string, unknown>)}
+                        onDocumentDiscountChange={d => { for (const [k, v] of Object.entries(documentDiscountProps(d))) handleUpdateProperty(k, v as never); }}
                     />
 
                     <div className="mt-8">

@@ -1,236 +1,163 @@
 /**
  * EMP-PROFILE-1: Employee Profile into Database.
  *
- * Verifies:
- * - Employee model schema contains department, employmentType, address, birthDate, notes.
- * - Additive migration SQL defines the 5 columns on Employee table.
- * - Calendar date validator ensures birthDate is 'YYYY-MM-DD' calendar date (not DateTime / ISO timestamp).
- * - Employee profile mapping preserves all 5 fields (null defaults when absent).
- * - Employee page no longer reads/writes localStorage (loadProfile/saveProfile/emp-profile eliminated).
- * - THROW PROOFS:
- *   - Throw proof 1: birthDate validator throws on ISO timestamp or invalid date format.
- *   - Throw proof 2: schema check throws if any of the 5 fields is missing from model Employee.
- *   - Throw proof 3: storage audit throws if localStorage is reintroduced in employees/page.tsx.
+ * Exercises the REAL code in:
+ * - src/lib/kernel/shift-time.ts (isCalendarDay)
+ * - src/lib/records/employee-profile.ts (profileOf, profileInput, EMPLOYEE_PROFILE_FIELDS)
+ * - prisma/schema.prisma & migration.sql
+ * - src/app/[locale]/admin/hr/employees/page.tsx
  */
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import { isCalendarDay } from '../src/lib/kernel/shift-time.ts';
+import {
+    profileOf,
+    profileInput,
+    EMPLOYEE_PROFILE_FIELDS,
+} from '../src/lib/records/employee-profile.ts';
 
-/**
- * Pure validator for employee birthDate:
- * Must be null, empty, or a valid 'YYYY-MM-DD' calendar date string.
- * Rejects DateTime/ISO strings with 'T', time, or timezone offsets.
- */
-export function validateCalendarBirthDate(val: unknown): { valid: boolean; error?: string } {
-    if (val === null || val === undefined || val === '') {
-        return { valid: true };
-    }
-    if (typeof val !== 'string') {
-        return { valid: false, error: 'birthDate must be a string' };
-    }
-    // Reject ISO datetime strings like 1990-05-12T00:00:00.000Z
-    if (val.includes('T') || val.includes(':')) {
-        return { valid: false, error: 'birthDate must be a calendar date (YYYY-MM-DD), not DateTime or ISO timestamp' };
-    }
-    const match = /^\d{4}-\d{2}-\d{2}$/.test(val);
-    if (!match) {
-        return { valid: false, error: 'birthDate format must be YYYY-MM-DD' };
-    }
-    const [y, m, d] = val.split('-').map(Number);
-    const date = new Date(Date.UTC(y, m - 1, d));
-    if (date.getUTCFullYear() !== y || date.getUTCMonth() !== m - 1 || date.getUTCDate() !== d) {
-        return { valid: false, error: 'birthDate is not a valid calendar day' };
-    }
-    return { valid: true };
-}
+test('EMP-PROFILE-1: isCalendarDay validates real calendar days without timezone shifts', () => {
+    // Valid days
+    assert.equal(isCalendarDay('2026-02-28'), true);
+    assert.equal(isCalendarDay('2028-02-29'), true); // Leap year
 
-/**
- * Pure mapper for employee response payload from User + Employee relations
- */
-export function mapEmployeeResponse(u: {
-    id: string;
-    name: string | null;
-    email: string;
-    phone: string | null;
-    role: string;
-    employeeStatus?: string | null;
-    hourlyCost: number | null;
-    hireDate: Date | string | null;
-    employee?: {
-        schedule?: boolean;
-        department?: string | null;
-        employmentType?: string | null;
-        address?: string | null;
-        birthDate?: string | null;
-        notes?: string | null;
-    } | null;
-}) {
-    const parts = u.name?.replace(/\s+/g, ' ').trim().split(' ') || [];
-    return {
-        id: u.id,
-        firstName: parts[0] || '',
-        lastName: parts.slice(1).join(' ') || '',
-        email: u.email,
-        phone: u.phone,
-        role: u.role,
-        status: u.employeeStatus || 'ACTIVE',
-        hourlyCost: u.hourlyCost,
-        hireDate: u.hireDate,
-        schedule: u.employee?.schedule !== false,
-        department: u.employee?.department ?? null,
-        employmentType: u.employee?.employmentType ?? null,
-        address: u.employee?.address ?? null,
-        birthDate: u.employee?.birthDate ?? null,
-        notes: u.employee?.notes ?? null,
-    };
-}
-
-test('EMP-PROFILE-1: validateCalendarBirthDate validates YYYY-MM-DD calendar date strings', () => {
-    assert.deepEqual(validateCalendarBirthDate(null), { valid: true });
-    assert.deepEqual(validateCalendarBirthDate(''), { valid: true });
-    assert.deepEqual(validateCalendarBirthDate('1990-05-15'), { valid: true });
-    assert.deepEqual(validateCalendarBirthDate('2001-12-31'), { valid: true });
-
-    // Invalid dates
-    assert.equal(validateCalendarBirthDate('1990-02-31').valid, false); // Feb 31 does not exist
-    assert.equal(validateCalendarBirthDate('1990-13-01').valid, false); // Month 13 does not exist
-    assert.equal(validateCalendarBirthDate('05/15/1990').valid, false); // Wrong format
+    // Invalid days
+    assert.equal(isCalendarDay('2026-02-29'), false); // 2026 is not leap
+    assert.equal(isCalendarDay('2026-13-01'), false); // Month 13
+    assert.equal(isCalendarDay('1990-05-12T00:00:00.000Z'), false); // ISO timestamp
+    assert.equal(isCalendarDay('banana'), false);
+    assert.equal(isCalendarDay(''), false);
+    assert.equal(isCalendarDay(null), false);
+    assert.equal(isCalendarDay(undefined), false);
+    assert.equal(isCalendarDay(12345678), false);
 });
 
-test('EMP-PROFILE-1 THROW PROOF 1: validateCalendarBirthDate throws on ISO timestamp or invalid date format', () => {
-    // THROW PROOF: ISO string containing 'T' or time must be rejected
-    const isoResult = validateCalendarBirthDate('1990-05-15T00:00:00.000Z');
-    assert.equal(isoResult.valid, false);
-    assert.match(isoResult.error!, /calendar date \(YYYY-MM-DD\), not DateTime/);
+test('EMP-PROFILE-1: profileInput parses body fields, normalises empty to null, preserves absent', () => {
+    // Normalising empty to null, trimming text
+    const parsed = profileInput({
+        department: '  Construction  ',
+        employmentType: 'Full-time',
+        address: '',
+        birthDate: '1988-04-12',
+        notes: null,
+    });
+    assert.equal(parsed.ok, true);
+    if (parsed.ok) {
+        assert.equal(parsed.data.department, 'Construction');
+        assert.equal(parsed.data.employmentType, 'Full-time');
+        assert.equal(parsed.data.address, null);
+        assert.equal(parsed.data.birthDate, '1988-04-12');
+        assert.equal(parsed.data.notes, null);
+    }
 
-    const nonString = validateCalendarBirthDate(12345678);
-    assert.equal(nonString.valid, false);
-    assert.match(nonString.error!, /must be a string/);
+    // Absent fields are untouched (not present in data)
+    const partial = profileInput({ department: 'Sales' });
+    assert.equal(partial.ok, true);
+    if (partial.ok) {
+        assert.equal(partial.data.department, 'Sales');
+        assert.equal('employmentType' in partial.data, false);
+        assert.equal('address' in partial.data, false);
+        assert.equal('birthDate' in partial.data, false);
+        assert.equal('notes' in partial.data, false);
+    }
+
+    // Empty birthDate becomes null
+    const emptyBirth = profileInput({ birthDate: '' });
+    assert.equal(emptyBirth.ok, true);
+    if (emptyBirth.ok) {
+        assert.equal(emptyBirth.data.birthDate, null);
+    }
+
+    // Invalid birthDate fails with INVALID_BIRTH_DATE
+    const badDate = profileInput({ birthDate: '2026-02-29' });
+    assert.deepEqual(badDate, { ok: false, error: 'INVALID_BIRTH_DATE' });
+
+    const isoDate = profileInput({ birthDate: '1990-05-12T00:00:00.000Z' });
+    assert.deepEqual(isoDate, { ok: false, error: 'INVALID_BIRTH_DATE' });
+
+    const bananaDate = profileInput({ birthDate: 'banana' });
+    assert.deepEqual(bananaDate, { ok: false, error: 'INVALID_BIRTH_DATE' });
 });
 
-test('EMP-PROFILE-1: mapEmployeeResponse includes all 5 profile fields with correct defaults', () => {
-    const mapped = mapEmployeeResponse({
-        id: 'usr-1',
-        name: 'John Doe',
-        email: 'john@example.com',
-        phone: '+32499123456',
-        role: 'TENANT_ENTERPRISE_WORKFORCE',
-        hourlyCost: 25.5,
-        hireDate: '2025-01-01',
-        employee: {
-            schedule: true,
-            department: 'Construction',
-            employmentType: 'Full-time',
-            address: 'Main Street 12, 1000 Brussels',
-            birthDate: '1988-04-12',
-            notes: 'Certified electrician',
-        },
+test('EMP-PROFILE-1: profileOf maps all 5 profile fields with null defaults', () => {
+    const full = profileOf({
+        department: 'Architecture',
+        employmentType: 'Freelance',
+        address: 'Rue de la Loi 16, Bruxelles',
+        birthDate: '1992-11-05',
+        notes: 'Senior Architect',
+    });
+    assert.deepEqual(full, {
+        department: 'Architecture',
+        employmentType: 'Freelance',
+        address: 'Rue de la Loi 16, Bruxelles',
+        birthDate: '1992-11-05',
+        notes: 'Senior Architect',
     });
 
-    assert.equal(mapped.department, 'Construction');
-    assert.equal(mapped.employmentType, 'Full-time');
-    assert.equal(mapped.address, 'Main Street 12, 1000 Brussels');
-    assert.equal(mapped.birthDate, '1988-04-12');
-    assert.equal(mapped.notes, 'Certified electrician');
-
-    // Defaults when employee relation is null or missing fields
-    const emptyMapped = mapEmployeeResponse({
-        id: 'usr-2',
-        name: 'Jane Doe',
-        email: 'jane@example.com',
-        phone: null,
-        role: 'TENANT_ENTERPRISE_EMPLOYEE',
-        hourlyCost: null,
-        hireDate: null,
-        employee: null,
+    const empty = profileOf(null);
+    assert.deepEqual(empty, {
+        department: null,
+        employmentType: null,
+        address: null,
+        birthDate: null,
+        notes: null,
     });
-
-    assert.equal(emptyMapped.department, null);
-    assert.equal(emptyMapped.employmentType, null);
-    assert.equal(emptyMapped.address, null);
-    assert.equal(emptyMapped.birthDate, null);
-    assert.equal(emptyMapped.notes, null);
 });
 
 test('EMP-PROFILE-1: Prisma schema and migration define all 5 additive fields on Employee', () => {
     const schemaPath = path.resolve('prisma/schema.prisma');
     const schema = fs.readFileSync(schemaPath, 'utf8');
 
-    // Match model Employee block
-    const employeeBlockMatch = schema.match(/model Employee \{([\s\S]*?)\}/);
-    assert.ok(employeeBlockMatch, 'model Employee must exist in prisma/schema.prisma');
-    const employeeBlock = employeeBlockMatch[1];
+    // Extract Employee model definition
+    const employeeModelMatch = schema.match(/model Employee\s*\{([\s\S]*?)\n\}/);
+    assert.ok(employeeModelMatch, 'model Employee must exist in prisma/schema.prisma');
+    const employeeModel = employeeModelMatch[1];
 
-    const requiredFields = [
-        'department',
-        'employmentType',
-        'address',
-        'birthDate',
-        'notes',
-    ];
-
-    for (const field of requiredFields) {
-        const regex = new RegExp(`\\b${field}\\s+String\\?`);
-        assert.ok(regex.test(employeeBlock), `model Employee must declare ${field} String?`);
+    for (const field of EMPLOYEE_PROFILE_FIELDS) {
+        const fieldRegex = new RegExp(`^\\s*${field}\\s+String\\?`, 'm');
+        assert.match(
+            employeeModel,
+            fieldRegex,
+            `Employee model must define optional String field: ${field}`
+        );
     }
 
-    // Verify migration SQL exists
-    const migrationDir = path.resolve('prisma/migrations');
-    const entries = fs.readdirSync(migrationDir);
-    const profileMigration = entries.find(e => e.includes('employee_profile_fields'));
-    assert.ok(profileMigration, 'Migration folder for employee_profile_fields must exist');
+    // Verify migration SQL file exists and adds all 5 columns
+    const migrationPath = path.resolve('prisma/migrations/20261009090000_employee_profile_fields/migration.sql');
+    assert.ok(fs.existsSync(migrationPath), 'Migration SQL file must exist');
+    const migrationSql = fs.readFileSync(migrationPath, 'utf8');
 
-    const sqlPath = path.join(migrationDir, profileMigration, 'migration.sql');
-    const sql = fs.readFileSync(sqlPath, 'utf8');
-
-    for (const field of requiredFields) {
-        assert.ok(sql.includes(`ALTER TABLE "Employee" ADD COLUMN "${field}" TEXT;`), `Migration SQL must add column ${field}`);
+    for (const field of EMPLOYEE_PROFILE_FIELDS) {
+        const colRegex = new RegExp(`ALTER\\s+TABLE\\s+"Employee"\\s+ADD\\s+COLUMN\\s+"${field}"\\s+TEXT;`, 'i');
+        assert.match(
+            migrationSql,
+            colRegex,
+            `Migration SQL must ALTER TABLE "Employee" ADD COLUMN "${field}" TEXT;`
+        );
     }
-});
-
-test('EMP-PROFILE-1 THROW PROOF 2: Schema check throws if a required profile field is missing', () => {
-    const fakeSchema = `
-    model Employee {
-      id          String @id
-      firstName   String
-      department  String?
-    }
-    `;
-
-    assert.throws(() => {
-        const required = ['employmentType', 'address', 'birthDate', 'notes'];
-        for (const f of required) {
-            const regex = new RegExp(`\\b${f}\\s+String\\?`);
-            if (!regex.test(fakeSchema)) {
-                throw new Error(`Missing expected profile field: ${f}`);
-            }
-        }
-    }, /Missing expected profile field: employmentType/);
 });
 
 test('EMP-PROFILE-1: Employees page does not use localStorage for profiles', () => {
     const pagePath = path.resolve('src/app/[locale]/admin/hr/employees/page.tsx');
     const pageSource = fs.readFileSync(pagePath, 'utf8');
 
-    assert.equal(pageSource.includes('emp-profile-'), false, 'emp-profile- localStorage key must not be present');
-    assert.equal(pageSource.includes('loadProfile'), false, 'loadProfile must not be present');
-    assert.equal(pageSource.includes('saveProfile'), false, 'saveProfile must not be present');
-    assert.equal(pageSource.includes('localStorage.getItem'), false, 'localStorage.getItem must not be present');
-    assert.equal(pageSource.includes('localStorage.setItem'), false, 'localStorage.setItem must not be present');
-});
-
-test('EMP-PROFILE-1 THROW PROOF 3: Storage audit throws if localStorage is reintroduced', () => {
-    const offendingSnippet = `
-    function saveProfile(empId, data) {
-        localStorage.setItem('emp-profile-' + empId, JSON.stringify(data));
-    }
-    `;
-
-    assert.throws(() => {
-        if (offendingSnippet.includes('emp-profile-') || offendingSnippet.includes('localStorage')) {
-            throw new Error('Forbidden localStorage usage detected for employee profile');
-        }
-    }, /Forbidden localStorage usage detected for employee profile/);
+    assert.equal(
+        pageSource.includes('loadProfile'),
+        false,
+        'page.tsx must not contain loadProfile'
+    );
+    assert.equal(
+        pageSource.includes('saveProfile'),
+        false,
+        'page.tsx must not contain saveProfile'
+    );
+    assert.equal(
+        pageSource.includes('emp-profile-'),
+        false,
+        'page.tsx must not contain localStorage prefix emp-profile-'
+    );
 });

@@ -200,6 +200,13 @@ export default function ExpensesInvoicesPage() {
                     onOpenRecord={(id) => setSelectedInvoiceId(id)}
                     headerExtra={peppolHeaderExtra}
                     onAction={handleAction}
+                    actionStates={{
+                        'peppol-sync': {
+                            busy: syncing,
+                            disabled: !isPeppolReady || syncing,
+                            disabledReasonKey: !isPeppolReady ? 'nav.pages.peppolNotConfigured' : undefined,
+                        },
+                    }}
                 />
             </div>
 

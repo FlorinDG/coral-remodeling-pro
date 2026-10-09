@@ -33,6 +33,7 @@ import {
     type ScreenTabItem,
     type ActionId,
     type ActionItem,
+    type ActionState,
 } from '@/lib/records/db-header';
 import PropertiesDropdown from './PropertiesDropdown';
 import FilterToolbar from './FilterToolbar';
@@ -66,6 +67,8 @@ export interface DatabaseHeaderProps {
     isUngated?: boolean;
     hasDatabases?: boolean;
     onAction?: (actionId: ActionId) => void;
+    actionStates?: Partial<Record<ActionId, ActionState>> | null;
+    validationScreen?: 'validated' | 'to-validate' | null;
     hardFilter?: { propertyId: string; value: string };
     selectedRowCount?: number;
     sortedPages?: Page[];
@@ -95,6 +98,8 @@ export default function DatabaseHeader({
     isUngated = false,
     hasDatabases = false,
     onAction,
+    actionStates,
+    validationScreen,
     hardFilter,
     selectedRowCount = 0,
     sortedPages,
@@ -121,10 +126,11 @@ export default function DatabaseHeader({
         selectedRowCount,
         totalRowCount: database.pages?.length ?? 0,
         activeViewType: activeView?.type,
-        activeViewId: activeView?.id,
         isLockedSchema,
         isUngated,
         screenTabs,
+        actionStates,
+        validationScreen,
     });
 
     const resolveTranslation = (key: string): string => {
@@ -199,22 +205,23 @@ export default function DatabaseHeader({
         }
     };
 
-    const getActionIcon = (iconName: ActionItem['icon']) => {
+    const getActionIcon = (iconName: ActionItem['icon'], isBusy?: boolean) => {
+        const spinClass = isBusy ? 'animate-spin' : '';
         switch (iconName) {
-            case 'camera': return <Camera className="w-3.5 h-3.5" />;
-            case 'files': return <Files className="w-3.5 h-3.5" />;
-            case 'plus': return <Plus className="w-3.5 h-3.5" />;
-            case 'check': return <Check className="w-3.5 h-3.5" />;
-            case 'refresh': return <RefreshCw className="w-3.5 h-3.5" />;
-            case 'search': return <Search className="w-3.5 h-3.5" />;
+            case 'camera': return <Camera className={`w-3.5 h-3.5 ${spinClass}`} />;
+            case 'files': return <Files className={`w-3.5 h-3.5 ${spinClass}`} />;
+            case 'plus': return <Plus className={`w-3.5 h-3.5 ${spinClass}`} />;
+            case 'check': return <Check className={`w-3.5 h-3.5 ${spinClass}`} />;
+            case 'refresh': return <RefreshCw className={`w-3.5 h-3.5 ${spinClass}`} />;
+            case 'search': return <Search className={`w-3.5 h-3.5 ${spinClass}`} />;
             default: return null;
         }
     };
 
     const wrap = activeView?.wrapText ?? false;
     const isTwoLevel =
-        (headerResult.screenTabs && headerResult.screenTabs.length > 0) ||
-        headerResult.actions.length > 0;
+        Boolean(headerResult.screenTabs && headerResult.screenTabs.length > 0) ||
+        Boolean(onAction && headerResult.actions.length > 0);
 
     // View tabs component
     const renderViewTabsList = () => {
@@ -421,14 +428,22 @@ export default function DatabaseHeader({
                                         ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50'
                                         : 'border border-neutral-300 dark:border-white/10 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-white/5';
 
+                                const isDisabled = Boolean(act.disabled || act.busy);
+                                const disabledClasses = isDisabled ? 'opacity-60 cursor-not-allowed' : '';
+                                const tooltip = act.disabledReasonKey ? resolveTranslation(act.disabledReasonKey) : undefined;
+
                                 return (
                                     <button
                                         key={act.id}
                                         type="button"
-                                        onClick={() => onAction?.(act.id)}
-                                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${variantClasses}`}
+                                        disabled={isDisabled}
+                                        title={tooltip}
+                                        onClick={() => {
+                                            if (!isDisabled) onAction?.(act.id);
+                                        }}
+                                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${variantClasses} ${disabledClasses}`}
                                     >
-                                        {getActionIcon(act.icon)}
+                                        {getActionIcon(act.icon, act.busy)}
                                         <span>{resolveTranslation(act.labelKey)}</span>
                                     </button>
                                 );

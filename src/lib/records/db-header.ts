@@ -21,7 +21,6 @@ import type { SystemDatabaseRole } from '@/lib/kernel/system-databases';
 import { ACCOUNTANT_EXPORT_SOURCES } from '@/lib/kernel/system-databases';
 import { canRunAccountantExport } from '@/lib/roles';
 import type { GridAccess } from '@/lib/records/grid-access';
-import { EXPENSES_INBOX_VIEW } from '@/lib/records/grid-access';
 
 export interface ScreenTabItem {
     id: string;
@@ -39,12 +38,21 @@ export type ActionId =
     | 'new-proforma'
     | 'search-lines';
 
+export interface ActionState {
+    busy?: boolean;
+    disabled?: boolean;
+    disabledReasonKey?: string;
+}
+
 export interface ActionItem {
     id: ActionId;
     labelKey: string;
     icon: 'camera' | 'files' | 'plus' | 'check' | 'alert' | 'refresh' | 'search';
     variant: 'primary' | 'secondary' | 'outline' | 'badge';
     badgeContent?: string;
+    busy?: boolean;
+    disabled?: boolean;
+    disabledReasonKey?: string;
 }
 
 export interface ToolbarItemConfig {
@@ -79,7 +87,10 @@ export interface DatabaseHeaderContext {
     selectedRowCount?: number;
     totalRowCount?: number;
     activeViewType?: 'table' | 'board' | 'gallery' | 'calendar' | 'list' | 'timeline';
-    activeViewId?: string | null;
+    /** Screen-level validation mode ('validated' | 'to-validate' | null). Bulk approve shows on 'to-validate' when rows are selected. */
+    validationScreen?: 'validated' | 'to-validate' | null;
+    /** Optional action state overrides (e.g. busy, disabled, disabledReasonKey) passed by the page. */
+    actionStates?: Partial<Record<ActionId, ActionState>> | null;
     isLockedSchema?: boolean;
     isUngated?: boolean;
     /** Optional screen tabs (e.g. CRM pipelines or Project types) */
@@ -126,17 +137,17 @@ export function computeDatabaseHeader(ctx: DatabaseHeaderContext): DatabaseHeade
     const showViewTabs = true;
 
     // 4. Declared Actions (C4: Parity first — only existing actions)
-    const actions: ActionItem[] = [];
+    const baseActions: ActionItem[] = [];
     if (ctx.role === 'tickets') {
-        actions.push(
+        baseActions.push(
             { id: 'scan-ticket', labelKey: 'Admin.nav.pages.scanUploadTicket', icon: 'camera', variant: 'primary' },
             { id: 'bulk-upload-tickets', labelKey: 'Admin.nav.pages.bulkUploadTickets', icon: 'files', variant: 'secondary' }
         );   // no manual entry (Florin 2026-10-07): a purchase document comes WITH its document — scan, import or Peppol
     } else if (ctx.role === 'invoices' && ctx.surfaceKey === 'docType=opt-proforma') {
         // PROFORMA-2: the one way a proforma is made (numbered PF-YYYY-NNN by the record door)
-        actions.push({ id: 'new-proforma', labelKey: 'Admin.dbHeader.newProforma', icon: 'plus', variant: 'primary' });
+        baseActions.push({ id: 'new-proforma', labelKey: 'Admin.dbHeader.newProforma', icon: 'plus', variant: 'primary' });
     } else if (ctx.role === 'expenses' && (!ctx.surfaceKey || ctx.surfaceKey === 'docType=opt-invoice')) {
-        actions.push(
+        baseActions.push(
             { id: 'scan-invoice', labelKey: 'Admin.nav.pages.scanUpload', icon: 'camera', variant: 'primary' },
             { id: 'peppol-sync', labelKey: 'Admin.nav.pages.syncPeppolInbox', icon: 'refresh', variant: 'badge' },
             // LINE-SEARCH-1: find a material in the lines of purchase invoices and supplier quotes
@@ -144,11 +155,23 @@ export function computeDatabaseHeader(ctx: DatabaseHeaderContext): DatabaseHeade
         );
     } else if (ctx.role === 'purchase-quotes') {
         // QUOTE-IN-1: a supplier quote comes in WITH its document — scanned / imported, like a purchase invoice (no Peppol)
-        actions.push(
+        baseActions.push(
             { id: 'scan-invoice', labelKey: 'Admin.nav.pages.scanUpload', icon: 'camera', variant: 'primary' },
             { id: 'search-lines', labelKey: 'Admin.dbHeader.searchLines', icon: 'search', variant: 'secondary' },
         );
     }
+
+    // C11: Merge page-owned action states (busy, disabled, disabledReasonKey) onto declared actions
+    const actions: ActionItem[] = baseActions.map(act => {
+        const state = ctx.actionStates?.[act.id];
+        if (!state) return act;
+        return {
+            ...act,
+            busy: state.busy ?? act.busy,
+            disabled: state.disabled ?? act.disabled,
+            disabledReasonKey: state.disabledReasonKey ?? act.disabledReasonKey,
+        };
+    });
 
     // 5. Toolbar Configuration
     const isAccountantSource =
@@ -163,11 +186,8 @@ export function computeDatabaseHeader(ctx: DatabaseHeaderContext): DatabaseHeade
     // purchase invoices / tickets (their way in is the scan / the document import / Peppol); other databases keep it
     const showImportCsv = ctx.access.create && !ctx.isLockedSchema && !isPurchaseDocumentRole(ctx.role);
 
-    // R1: Bulk approve for expenses inbox with selected rows
-    const isExpensesInbox =
-        ctx.role === 'expenses' &&
-        ctx.activeViewId === EXPENSES_INBOX_VIEW;
-    const showBulkApprove = isExpensesInbox && selectedCount > 0;
+    // VALIDATE-1: Bulk approve for 'to-validate' screen with selected rows
+    const showBulkApprove = ctx.validationScreen === 'to-validate' && selectedCount > 0;
 
     // R2: Bulk delete gate = access.delete
     const showBulkDelete = ctx.access.delete;

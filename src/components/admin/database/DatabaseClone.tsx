@@ -19,7 +19,7 @@ import { gridAccess } from '@/lib/records/grid-access';
 import { isValidated } from '@/lib/records/validation';
 import { useFilteredPages } from './hooks/useFilteredPages';
 import { sortPages } from '@/lib/records/view-sort';
-import type { ActionId } from '@/lib/records/db-header';
+import type { ActionId, ActionState, ScreenTabItem } from '@/lib/records/db-header';
 
 
 
@@ -46,6 +46,9 @@ const TimelineViewDynamic = dynamic(
 interface DatabaseCloneProps {
   databaseId: string;
   headerExtra?: React.ReactNode;
+  screenTabs?: ScreenTabItem[] | null;
+  onSelectScreenTab?: (tabId: string) => void;
+  actionStates?: Partial<Record<ActionId, ActionState>> | null;
   hideViewTabs?: boolean;
   hideFooterNew?: boolean;
   defaultFilter?: { propertyId: string; value: string };
@@ -58,7 +61,7 @@ interface DatabaseCloneProps {
   validation?: 'validated' | 'to-validate';
 }
 
-export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, hideFooterNew, defaultFilter, onOpenRecord, onAction, validation }: DatabaseCloneProps) {
+export default function DatabaseClone({ databaseId, headerExtra, screenTabs, onSelectScreenTab, actionStates, hideViewTabs, hideFooterNew, defaultFilter, onOpenRecord, onAction, validation }: DatabaseCloneProps) {
   // Resolve the base locked DB name to the tenant-scoped actual ID
   const { activeModules, resolveDbId, isEnterprise } = useTenant();
   const { data: session } = useSession();
@@ -359,6 +362,10 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
         onSetViewType={handleSetViewType}
         onDeleteView={handleDeleteView}
         headerExtra={headerExtra}
+        screenTabs={screenTabs}
+        onSelectScreenTab={onSelectScreenTab}
+        actionStates={actionStates}
+        validationScreen={validation}
         hideViewTabs={hideViewTabs}
         surfaceKey={surface}
         userRole={session?.user?.role as string | undefined}
@@ -371,6 +378,7 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
 
         onAction={onAction}
         hardFilter={defaultFilter}
+        selectedRowCount={selectedRowIds.size}
         sortedPages={sortedPages}
         selectedRowIds={selectedRowIds}
       />

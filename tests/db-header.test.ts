@@ -6,7 +6,7 @@ import {
     computeDatabaseHeader,
     type DatabaseHeaderContext,
 } from '../src/lib/records/db-header.ts';
-import { gridAccess, EXPENSES_INBOX_VIEW } from '../src/lib/records/grid-access.ts';
+import { gridAccess } from '../src/lib/records/grid-access.ts';
 
 const FULL_ACCESS = { edit: true, create: true, delete: true };
 
@@ -253,36 +253,45 @@ test('computeDatabaseHeader: import blocked for locked schema or lack of create 
     assert.equal(resBestek.toolbar.showImportCsv, false);
 });
 
-test('computeDatabaseHeader: bulk approve only enabled for expenses inbox with selected rows (R1)', () => {
-    // Expenses inbox with 3 selected rows -> Bulk approve visible
-    const resInboxSelected = computeDatabaseHeader({
+test('computeDatabaseHeader: bulk approve only enabled for to-validate screen with selected rows (VALIDATE-1)', () => {
+    // to-validate screen with 3 selected rows -> Bulk approve visible
+    const resToValidateSelected = computeDatabaseHeader({
         role: 'expenses',
-        activeViewId: EXPENSES_INBOX_VIEW,
+        validationScreen: 'to-validate',
         selectedRowCount: 3,
         databaseName: 'Expenses',
         access: FULL_ACCESS,
     });
-    assert.equal(resInboxSelected.toolbar.showBulkApprove, true);
+    assert.equal(resToValidateSelected.toolbar.showBulkApprove, true);
 
-    // Expenses inbox with 0 selected rows -> Bulk approve hidden
-    const resInboxZero = computeDatabaseHeader({
+    // to-validate screen with 0 selected rows -> Bulk approve hidden
+    const resToValidateZero = computeDatabaseHeader({
         role: 'expenses',
-        activeViewId: EXPENSES_INBOX_VIEW,
+        validationScreen: 'to-validate',
         selectedRowCount: 0,
         databaseName: 'Expenses',
         access: FULL_ACCESS,
     });
-    assert.equal(resInboxZero.toolbar.showBulkApprove, false);
+    assert.equal(resToValidateZero.toolbar.showBulkApprove, false);
 
-    // Another view id -> Bulk approve hidden
-    const resOtherView = computeDatabaseHeader({
+    // validated screen with 3 selected rows -> Bulk approve hidden
+    const resValidated = computeDatabaseHeader({
         role: 'expenses',
-        activeViewId: 'vw-other',
+        validationScreen: 'validated',
         selectedRowCount: 3,
         databaseName: 'Expenses',
         access: FULL_ACCESS,
     });
-    assert.equal(resOtherView.toolbar.showBulkApprove, false);
+    assert.equal(resValidated.toolbar.showBulkApprove, false);
+
+    // null / default validation screen -> Bulk approve hidden
+    const resNoValidation = computeDatabaseHeader({
+        role: 'expenses',
+        selectedRowCount: 3,
+        databaseName: 'Expenses',
+        access: FULL_ACCESS,
+    });
+    assert.equal(resNoValidation.toolbar.showBulkApprove, false);
 });
 
 test('computeDatabaseHeader: delete shows draftOnlyDelete messageKey for invoices and expenses (R2, R4)', () => {
@@ -482,4 +491,42 @@ test('LINE-SEARCH-1 / QUOTE-IN-1: supplier quotes — scan and the line search, 
     assert.deepEqual(res.actions.map(a => a.id), ['scan-invoice', 'search-lines']);
     assert.equal(res.toolbar.showImportCsv, false);
     for (const act of res.actions) assert.ok(getTranslation(act.labelKey), `${act.labelKey} must resolve in nl.json`);
+});
+
+// ── 7. ACTION STATES (C11) ──────────────────────────────────────────────────
+
+test('computeDatabaseHeader: actionStates overrides busy, disabled and disabledReasonKey (C11)', () => {
+    const resDefault = computeDatabaseHeader({
+        role: 'expenses',
+        surfaceKey: 'docType=opt-invoice',
+        databaseName: 'Expenses',
+        access: FULL_ACCESS,
+    });
+    const peppolDef = resDefault.actions.find(a => a.id === 'peppol-sync');
+    assert.ok(peppolDef);
+    assert.equal(peppolDef.busy, undefined);
+    assert.equal(peppolDef.disabled, undefined);
+    assert.equal(peppolDef.disabledReasonKey, undefined);
+
+    const resOverridden = computeDatabaseHeader({
+        role: 'expenses',
+        surfaceKey: 'docType=opt-invoice',
+        databaseName: 'Expenses',
+        access: FULL_ACCESS,
+        actionStates: {
+            'peppol-sync': {
+                busy: true,
+                disabled: true,
+                disabledReasonKey: 'Admin.nav.pages.peppolNotConfigured',
+            },
+        },
+    });
+    const peppolOver = resOverridden.actions.find(a => a.id === 'peppol-sync');
+    assert.ok(peppolOver);
+    assert.equal(peppolOver.busy, true);
+    assert.equal(peppolOver.disabled, true);
+    assert.equal(peppolOver.disabledReasonKey, 'Admin.nav.pages.peppolNotConfigured');
+    for (const l of LOCALES) {
+        assert.ok(getTranslation(peppolOver.disabledReasonKey, l), `missing ${l}`);
+    }
 });

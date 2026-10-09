@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic';
 import { useState } from 'react';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { useTenant } from '@/context/TenantContext';
+import { useDatabaseStore } from '@/components/admin/database/store';
 import LockedFeature from "@/components/admin/LockedFeature";
 import ModuleTabs from "@/components/admin/ModuleTabs";
 import { salesTabs } from "@/config/tabs";
@@ -15,34 +16,27 @@ const DatabaseCloneDynamic = dynamic(
 
 export default function CRMPage() {
     usePageTitle('CRM Module');
-    const { planType, isPro, isEnterprise } = useTenant();
+    const { planType, isPro, isEnterprise, resolveDbId } = useTenant();
     const [activeDb, setActiveDb] = useState<'db-crm' | 'db-bobex'>('db-crm');
 
     const isMultiPipelineAllowed = isEnterprise || planType === 'FOUNDER' || planType === 'CUSTOM';
     const resolvedDb = isMultiPipelineAllowed ? activeDb : 'db-crm';
 
-    const headerTabs = isMultiPipelineAllowed ? (
-        <div className="flex items-center gap-1">
-            <button
-                onClick={() => setActiveDb('db-crm')}
-                className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeDb === 'db-crm'
-                    ? 'border-neutral-900 dark:border-white text-neutral-900 dark:text-white'
-                    : 'border-transparent text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300'
-                    }`}
-            >
-                Main Pipeline
-            </button>
-            <button
-                onClick={() => setActiveDb('db-bobex')}
-                className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeDb === 'db-bobex'
-                    ? 'border-neutral-900 dark:border-white text-neutral-900 dark:text-white'
-                    : 'border-transparent text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300'
-                    }`}
-            >
-                Bobex Pipeline
-            </button>
-        </div>
-    ) : null;
+    const crmDb = useDatabaseStore(state => state.getDatabase(resolveDbId('db-crm')));
+    const bobexDb = useDatabaseStore(state => state.getDatabase(resolveDbId('db-bobex')));
+
+    const screenTabs = isMultiPipelineAllowed ? [
+        {
+            id: 'db-crm',
+            label: crmDb?.name || 'CRM',
+            active: resolvedDb === 'db-crm',
+        },
+        {
+            id: 'db-bobex',
+            label: bobexDb?.name || 'Bobex',
+            active: resolvedDb === 'db-bobex',
+        },
+    ] : null;
 
     return (
         <div className="flex flex-col w-full h-full">
@@ -58,7 +52,12 @@ export default function CRMPage() {
             ) : (
                 <div className="w-full flex-1 flex flex-col pt-6 pb-6 px-3 md:px-6 min-h-0 bg-neutral-50/50 dark:bg-black/50">
                     <div className="flex-1 w-full min-h-0 bg-white dark:bg-black rounded-2xl shadow-sm border border-neutral-200 dark:border-white/10 relative">
-                        <DatabaseCloneDynamic key={resolvedDb} databaseId={resolvedDb} headerExtra={headerTabs} hideViewTabs />
+                        <DatabaseCloneDynamic
+                            key={resolvedDb}
+                            databaseId={resolvedDb}
+                            screenTabs={screenTabs}
+                            onSelectScreenTab={(id) => setActiveDb(id as 'db-crm' | 'db-bobex')}
+                        />
                     </div>
                 </div>
             )}

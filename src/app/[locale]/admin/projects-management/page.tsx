@@ -6,12 +6,13 @@ import { useTenant } from '@/context/TenantContext';
 import { useLocale } from 'next-intl';
 import ModuleTabs from "@/components/admin/ModuleTabs";
 import { projectsTabs } from "@/config/tabs";
-import { Layers3, Hammer, Briefcase, Rocket } from 'lucide-react';
+import { useDatabaseStore } from '@/components/admin/database/store';
+import type { ScreenTabItem } from '@/lib/records/db-header';
+
 const ProjectDetailView = dynamic(
     () => import('@/components/admin/database/components/ProjectDetailView'),
     { ssr: false }
 );
-
 
 const DatabaseCloneDynamic = dynamic(
     () => import('@/components/admin/database/DatabaseClone'),
@@ -21,56 +22,44 @@ const DatabaseCloneDynamic = dynamic(
     }
 );
 
-type ProjectTypeFilter = 'all' | 'operations' | 'admin' | 'bizdev';
-
-const TYPE_TABS: { id: ProjectTypeFilter; label: string; icon: React.ReactNode; filterValue?: string }[] = [
-    { id: 'all', label: 'All Projects', icon: <Layers3 className="w-4 h-4" /> },
-    { id: 'operations', label: 'Operations', icon: <Hammer className="w-4 h-4" />, filterValue: 'type-operations' },
-    { id: 'admin', label: 'Administration', icon: <Briefcase className="w-4 h-4" />, filterValue: 'type-admin' },
-    { id: 'bizdev', label: 'Business Dev', icon: <Rocket className="w-4 h-4" />, filterValue: 'type-bizdev' },
-];
-
 export default function ProjectManagementPage() {
     const locale = useLocale();
     const { resolveDbId } = useTenant();
-    const [activeType, setActiveType] = useState<ProjectTypeFilter>('all');
+    const [activeType, setActiveType] = useState<string>('all');
     const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
-    const activeTab = TYPE_TABS.find(t => t.id === activeType) || TYPE_TABS[0];
+
+    const resolvedDbId = resolveDbId('db-1');
+    const projectDb = useDatabaseStore(state => state.getDatabase(resolvedDbId));
+    const typeProp = projectDb?.properties.find(p => p.id === 'prop-project-type');
+    const typeOptions = typeProp?.config?.options || [
+        { id: 'type-operations', name: 'Operations' },
+        { id: 'type-admin', name: 'Administration' },
+        { id: 'type-bizdev', name: 'Business Development' },
+    ];
+
+    const screenTabs: ScreenTabItem[] = [
+        { id: 'all', label: 'All', active: activeType === 'all' },
+        ...typeOptions.map(opt => ({
+            id: opt.id,
+            label: opt.name,
+            active: activeType === opt.id,
+            filterValue: opt.id,
+        })),
+    ];
 
     return (
         <div className="flex flex-col w-full h-full">
             <ModuleTabs tabs={projectsTabs} groupId="projects" />
 
             <div className="w-full flex-1 flex flex-col pt-6 pb-6 px-3 md:px-6 min-h-0 bg-neutral-50/50 dark:bg-black/50">
-                {/* Type filter tabs */}
-                <div className="flex items-center gap-1 mb-4 overflow-x-auto no-scrollbar">
-                    {TYPE_TABS.map((tab) => {
-                        const isActive = tab.id === activeType;
-                        return (
-                            <button
-                                key={tab.id}
-                                onClick={() => setActiveType(tab.id)}
-                                className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl transition-all whitespace-nowrap ${
-                                    isActive
-                                        ? 'bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white shadow-sm border border-neutral-200 dark:border-white/10'
-                                        : 'text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 hover:bg-white/50 dark:hover:bg-white/5'
-                                }`}
-                                style={isActive ? { borderBottomColor: 'var(--brand-color, #d35400)', boxShadow: `0 2px 0 0 var(--brand-color, #d35400)` } : {}}
-                            >
-                                {tab.icon}
-                                {tab.label}
-                            </button>
-                        );
-                    })}
-                </div>
-
                 {/* Database grid */}
                 <div className="flex-1 w-full min-h-0 bg-white dark:bg-black rounded-2xl shadow-sm border border-neutral-200 dark:border-white/10 overflow-hidden relative isolate">
                     <DatabaseCloneDynamic
                         key={activeType}
                         databaseId="db-1"
-                        hideViewTabs={false}
-                        defaultFilter={activeTab.filterValue ? { propertyId: 'prop-project-type', value: activeTab.filterValue } : undefined}
+                        screenTabs={screenTabs}
+                        onSelectScreenTab={setActiveType}
+                        defaultFilter={activeType !== 'all' ? { propertyId: 'prop-project-type', value: activeType } : undefined}
                         onOpenRecord={(id) => setSelectedProjectId(id)}
                     />
                 </div>
@@ -78,7 +67,7 @@ export default function ProjectManagementPage() {
 
             {selectedProjectId && (
                 <ProjectDetailView
-                    databaseId={resolveDbId('db-1')}
+                    databaseId={resolvedDbId}
                     pageId={selectedProjectId}
                     locale={locale}
                     onClose={() => setSelectedProjectId(null)}

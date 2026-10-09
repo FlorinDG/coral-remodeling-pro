@@ -117,6 +117,10 @@ are what Florin checks); (4) one file = one commit, each leaves the allowlist an
 that a foreign-tenant id is not returned, with throw proof. STOP after the plan.
 
 ### 8 · `EMP-PROFILE-1` — the employee profile is stored, not kept in the browser
+🔴 **PLANNER 2026-10-09 — CI RED on develop since b3b605c8:** `tests/i18n.test.ts` → `Hr.employees.birthDate` (used in
+`admin/hr/employees/page.tsx`) exists in no locale file. Add it to en/nl/fr/ro in its OWN commit, before anything else.
+The range carries `prisma/schema.prisma`: Florin runs the migration and pushes it to main himself; the Planner reviews
+it first.
 Today department, contract type, address, birth date and notes live in `localStorage` (`emp-profile-<id>`,
 employees/page.tsx): personal data on one browser, invisible to the rest of the tenant, lost on another device.
 Additive migration on `Employee`: `department String?`, `employmentType String?`, `address String?`,

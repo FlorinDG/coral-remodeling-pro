@@ -1,6 +1,6 @@
 # CoralOS — System Mindmap & Execution Roadmap
 
-> Living document. Updated: 2026-04-24.
+> Living document. Updated: 2026-10-09 (planned modules BANK-REC-1, CONSTRUCT-1).
 > Gold rule: `/pd` — Protect What Is Already Built.
 > Maturity: 🟢 Production | 🟡 Functional | 🟠 Scaffolded | 🔴 Placeholder | ⚫ Missing
 
@@ -22,6 +22,58 @@
 > **Rule**: everything financial (our billing + tenant's finances) must be flawless.
 > File manager and client portals are deferred — documents export already works.
 > Enterprise tenants have 2 months free; portals/file manager ship as a wow update.
+
+---
+
+## Planned modules — added by Florin 2026-10-09
+
+> "put in the development plan bank reconciliation with expenses and constructions specific - BIM handling and meetstat
+> from architect". These are planned, not started. Every rule goes in its layer (kernel → core `lib/records` → doors
+> `lib/data`, tenant-scoped) before any screen.
+
+### `BANK-REC-1` — bank reconciliation with expenses (and income) · ⚫
+
+- **In:** the tenant's bank movements.
+  - Option 1: a statement file. **CODA** is the Belgian bank standard; **CAMT.053** is ISO 20022.
+  - Option 2, later: a PSD2 feed through a Belgian aggregator (e.g. Ponto, Isabel).
+- **Match** each movement to what it pays:
+  - purchase invoices and receipts (`expenses`, `tickets`) → `payments-out`;
+  - sales invoices → `payments-in`.
+  - Both payment databases already exist in the kernel.
+- **Match keys, in order:**
+  1. the structured communication (OGM `+++…+++`, already on our invoices);
+  2. IBAN + amount;
+  3. amount + date window + counterparty name.
+- **Placement:** the matching rule is pure, in core (`lib/records/bank-match`). Import and booking go through doors, on
+  the scoped client.
+- **Never auto-books without review:** a proposal, a confirmation, then the payment record. Partial payments,
+  over-payments, one movement for several invoices, and an "unmatched" queue.
+- **Effects:** an invoice's paid / remaining amount follows from its payments, and the accountant export stays
+  consistent.
+- **Open (Florin):** CODA upload first, or a PSD2 feed? Which banks?
+
+### `CONSTRUCT-1` — construction specifics: the architect's meetstaat and BIM · ⚫
+
+**a) The meetstaat (bill of quantities) from the architect → a quote.**
+- **In:** the architect's meetstaat as .xlsx (most common), PDF, sometimes XML. Posts carry the bestek's numbering
+  (e.g. Standaardbestek 250 / CCTB), a description, a unit and a quantity.
+- **Quantity type:** VH (vermoedelijke hoeveelheid, settled on the measured quantity) or FH / forfait.
+- **Out:** a quote in our ONE block model.
+  - Chapters → sections, posts → lines, keeping the architect's post numbers.
+  - Quantities and units from the meetstaat; prices from the library / bestek (`articles`, `bestek`).
+  - Built with `newDocumentLine`, never a second line shape.
+- VH lines stay marked, so the invoice can settle them on measured quantities (vorderingsstaat).
+- **One import door** for spreadsheet, PDF/AI and meetstaat. Today's SpreadsheetImportModal and PDF import fold into
+  it; they are not copied.
+
+**b) BIM.**
+- **In:** IFC (the open BIM standard) through the tenant's file door.
+- **First:** view the model in the browser with an open-source IFC engine (web-ifc / That Open), no cloud service.
+  The tenant's model never leaves its storage.
+- **Then:** a quantity takeoff from the IFC (areas, volumes, counts per element type) feeding the meetstaat / quote,
+  with a link between a model element and its quote line.
+- **Open (Florin):** which formats your architects actually send (xlsx / PDF / XML; IFC version)? BIM depth to
+  start: view only, or the quantity takeoff right away?
 
 ---
 
@@ -110,7 +162,7 @@ mindmap
 | Quotations | 🟢 | Full CRUD, line items, PDF, email, library, PDF import, dedup, portal view | — |
 | Invoices (out) | 🟢 | Full CRUD, line items, PDF, email, Peppol send | Recurring invoices ⚫ |
 | Credit Notes (in) | 🟡 | Page, DB wired | Testing, PDF template |
-| Expense Invoices | 🟡 | Peppol inbox sync, dual-view, parsing | Manual entry, reconciliation ⚫ |
+| Expense Invoices | 🟡 | Peppol inbox sync, dual-view, parsing | Manual entry; bank reconciliation ⚫ → `BANK-REC-1` |
 | Expense Tickets | 🟡 | OCR capture, ticket list | Approval workflow ⚫ |
 | Peppol Send | 🟢 | e-invoice.be API, UBL gen, quota enforcement | — |
 | Peppol Receive | 🟡 | Inbox poll, doc parsing, dedup, counters | Auto-reconciliation ⚫ |
@@ -131,7 +183,7 @@ mindmap
 | Component | Status | Works | Missing |
 |---|---|---|---|
 | Portfolio (CMS) | 🟢 | Public gallery, admin CRUD, images | — |
-| Project Mgmt | 🟡 | DB-backed list, bordereau, POs | Budget tracking ⚫ |
+| Project Mgmt | 🟡 | DB-backed list, bordereau, POs | Budget tracking ⚫ · architect's meetstaat + BIM ⚫ → `CONSTRUCT-1` |
 | Planning/Gantt | 🟠 | Page exists | Gantt component ⚫ |
 | File Manager | 🟡 | Drive OAuth, upload, list, browser UI | Local storage ⚫ |
 

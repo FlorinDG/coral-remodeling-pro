@@ -54,7 +54,12 @@ export async function GET() {
                 employeeStatus: true, image: true,
                 employee: {
                     select: {
-                        schedule: true
+                        schedule: true,
+                        department: true,
+                        employmentType: true,
+                        address: true,
+                        birthDate: true,
+                        notes: true,
                     }
                 }
             },
@@ -75,6 +80,11 @@ export async function GET() {
                 hourlyCost: u.hourlyCost,
                 hireDate: u.hireDate,
                 schedule: u.employee?.schedule !== false,
+                department: u.employee?.department ?? null,
+                employmentType: u.employee?.employmentType ?? null,
+                address: u.employee?.address ?? null,
+                birthDate: u.employee?.birthDate ?? null,
+                notes: u.employee?.notes ?? null,
             };
         });
 
@@ -101,7 +111,10 @@ export async function POST(req: Request) {
         }
 
         const body = await req.json();
-        const { firstName, lastName, email, phone, role, hourlyCost, hireDate, schedule } = body;
+        const {
+            firstName, lastName, email, phone, role, hourlyCost, hireDate, schedule,
+            department, employmentType, address, birthDate, notes
+        } = body;
 
         if (!firstName || !lastName || !email) {
             return NextResponse.json({ error: 'First name, last name, and email are required' }, { status: 400 });
@@ -150,6 +163,11 @@ export async function POST(req: Request) {
                     hourlyCost: hourlyCost ? parseDecimal(hourlyCost) : null,
                     hireDate: hireDate ? new Date(hireDate) : null,
                     schedule: schedule !== undefined ? Boolean(schedule) : true,
+                    department: department ?? null,
+                    employmentType: employmentType ?? null,
+                    address: address ?? null,
+                    birthDate: birthDate ?? null,
+                    notes: notes ?? null,
                     userId: newUser.id,
                 }
             });
@@ -166,6 +184,11 @@ export async function POST(req: Request) {
                     hourlyCost: hourlyCost ? parseDecimal(hourlyCost) : null,
                     hireDate: hireDate ? new Date(hireDate) : null,
                     schedule: schedule !== undefined ? Boolean(schedule) : true,
+                    department: department ?? null,
+                    employmentType: employmentType ?? null,
+                    address: address ?? null,
+                    birthDate: birthDate ?? null,
+                    notes: notes ?? null,
                     userId: newUser.id,
                 }
             });
@@ -182,6 +205,11 @@ export async function POST(req: Request) {
             hourlyCost: newUser.hourlyCost,
             hireDate: newUser.hireDate,
             schedule: schedule !== undefined ? Boolean(schedule) : true,
+            department: department ?? null,
+            employmentType: employmentType ?? null,
+            address: address ?? null,
+            birthDate: birthDate ?? null,
+            notes: notes ?? null,
         };
 
         // Sync seat quantities

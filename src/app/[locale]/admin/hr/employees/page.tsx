@@ -26,29 +26,11 @@ interface Employee {
     hourlyCost: number | null;
     hireDate: string | null;
     schedule: boolean;
-}
-
-// Extended profile fields (stored locally for now, will be API-backed)
-interface EmployeeProfile extends Employee {
-    department?: string;
-    employmentType?: string;
-    address?: string;
-    birthDate?: string;
-    certifications?: string[];
-    notes?: string;
-}
-
-// Local profile storage helper
-function loadProfile(empId: string): Partial<EmployeeProfile> {
-    try {
-        const raw = localStorage.getItem(`emp-profile-${empId}`);
-        return raw ? JSON.parse(raw) : {};
-    } catch { return {}; }
-}
-function saveProfile(empId: string, data: Partial<EmployeeProfile>) {
-    try {
-        localStorage.setItem(`emp-profile-${empId}`, JSON.stringify(data));
-    } catch { /* empty */ }
+    department?: string | null;
+    employmentType?: string | null;
+    address?: string | null;
+    birthDate?: string | null;
+    notes?: string | null;
 }
 
 const ROLE_KEYS: Record<string, string> = {
@@ -183,13 +165,12 @@ export default function EmployeesPage() {
     const openAdd = () => { setEditing(null); setForm(emptyForm); setError(""); setShowDialog(true); };
     const openEdit = (emp: Employee) => {
         setEditing(emp);
-        const profile = loadProfile(emp.id);
         setForm({
             firstName: emp.firstName, lastName: emp.lastName, email: emp.email,
             phone: emp.phone || "", role: emp.role, status: emp.status,
             hourlyCost: emp.hourlyCost?.toString() || "", hireDate: emp.hireDate?.split("T")[0] || "",
-            department: profile.department || "", employmentType: profile.employmentType || "Full-time",
-            address: profile.address || "", birthDate: profile.birthDate || "", notes: profile.notes || "",
+            department: emp.department || "", employmentType: emp.employmentType || "Full-time",
+            address: emp.address || "", birthDate: emp.birthDate || "", notes: emp.notes || "",
             schedule: emp.schedule !== false
         });
         setError("");
@@ -205,18 +186,6 @@ export default function EmployeesPage() {
             const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
             const data = await res.json();
             if (!res.ok) { setError(data.error || "Something went wrong"); setSaving(false); return; }
-
-            // Save extended profile fields locally
-            const empId = editing?.id || data.employee?.id;
-            if (empId) {
-                saveProfile(empId, {
-                    department: form.department,
-                    employmentType: form.employmentType,
-                    address: form.address,
-                    birthDate: form.birthDate,
-                    notes: form.notes,
-                });
-            }
 
             setShowDialog(false);
             await fetchEmployees();
@@ -234,6 +203,11 @@ export default function EmployeesPage() {
                     hourlyCost: parseDecimal(form.hourlyCost),
                     hireDate: form.hireDate || null,
                     schedule: form.schedule,
+                    department: form.department || null,
+                    employmentType: form.employmentType || null,
+                    address: form.address || null,
+                    birthDate: form.birthDate || null,
+                    notes: form.notes || null,
                 });
             }
         } catch { setError("Network error"); } finally { setSaving(false); }
@@ -277,6 +251,9 @@ export default function EmployeesPage() {
                         <div className="grid grid-cols-2 gap-4 mt-4">
                             <Field label={t("email")} type="email" value={form.email} onChange={v => setForm(f => ({ ...f, email: v }))} />
                             <Field label={t("phone")} type="tel" value={form.phone} onChange={v => setForm(f => ({ ...f, phone: v }))} />
+                        </div>
+                        <div className="mt-4">
+                            <Field label={t.has("birthDate") ? t("birthDate") : "Birth date"} type="date" value={form.birthDate} onChange={v => setForm(f => ({ ...f, birthDate: v }))} />
                         </div>
                     </div>
 
@@ -456,7 +433,8 @@ export default function EmployeesPage() {
                                 <div className="space-y-3">
                                     <DetailRow icon={<Mail className="w-4 h-4" />} label={t("email")} value={emp.email} />
                                     <DetailRow icon={<Phone className="w-4 h-4" />} label={t("phone")} value={emp.phone || '—'} />
-                                    <DetailRow icon={<MapPin className="w-4 h-4" />} label={t("address")} value={loadProfile(emp.id).address || t("notSet")} />
+                                    <DetailRow icon={<MapPin className="w-4 h-4" />} label={t("address")} value={emp.address || t("notSet")} />
+                                    {emp.birthDate && <DetailRow icon={<CalendarIcon className="w-4 h-4" />} label={t.has("birthDate") ? t("birthDate") : "Birth date"} value={emp.birthDate} />}
                                 </div>
                             </div>
 
@@ -467,7 +445,7 @@ export default function EmployeesPage() {
                                 </h3>
                                 <div className="space-y-3">
                                     <DetailRow icon={<Briefcase className="w-4 h-4" />} label={t("role")} value={getRoleLabel(emp.role)} />
-                                    <DetailRow icon={<Building2 className="w-4 h-4" />} label={t("department")} value={loadProfile(emp.id).department ? (DEPT_KEYS[loadProfile(emp.id).department!] && t.has(`departments.${DEPT_KEYS[loadProfile(emp.id).department!]}`) ? t(`departments.${DEPT_KEYS[loadProfile(emp.id).department!]}`) : loadProfile(emp.id).department!) : t("notSet")} />
+                                    <DetailRow icon={<Building2 className="w-4 h-4" />} label={t("department")} value={emp.department ? (DEPT_KEYS[emp.department] && t.has(`departments.${DEPT_KEYS[emp.department]}`) ? t(`departments.${DEPT_KEYS[emp.department]}`) : emp.department) : t("notSet")} />
                                     <DetailRow icon={<CalendarIcon className="w-4 h-4" />} label={t("hireDate")} value={emp.hireDate ? new Date(emp.hireDate).toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' }) : '—'} />
                                     {tenure && <DetailRow icon={<Clock className="w-4 h-4" />} label={t("tenure")} value={tenure} />}
                                     <DetailRow icon={<Clock className="w-4 h-4" />} label={t("showInScheduler")} value={emp.schedule ? t("yes") : t("no")} />
@@ -481,9 +459,15 @@ export default function EmployeesPage() {
                                 </h3>
                                 <div className="space-y-3">
                                     <DetailRow icon={<Euro className="w-4 h-4" />} label={t("hourlyRate")} value={emp.hourlyCost != null ? `€${emp.hourlyCost.toFixed(2)}/h` : '—'} />
-                                    <DetailRow icon={<FileText className="w-4 h-4" />} label={t("contract")} value={loadProfile(emp.id).employmentType ? (EMP_TYPE_KEYS[loadProfile(emp.id).employmentType!] && t.has(`employmentTypes.${EMP_TYPE_KEYS[loadProfile(emp.id).employmentType!]}`) ? t(`employmentTypes.${EMP_TYPE_KEYS[loadProfile(emp.id).employmentType!]}`) : loadProfile(emp.id).employmentType!) : t("employmentTypes.fullTime")} />
+                                    <DetailRow icon={<FileText className="w-4 h-4" />} label={t("contract")} value={emp.employmentType ? (EMP_TYPE_KEYS[emp.employmentType] && t.has(`employmentTypes.${EMP_TYPE_KEYS[emp.employmentType]}`) ? t(`employmentTypes.${EMP_TYPE_KEYS[emp.employmentType]}`) : emp.employmentType) : t("employmentTypes.fullTime")} />
                                     <DetailRow icon={<Shield className="w-4 h-4" />} label={t("benefits")} value={t("standardPackage")} />
                                 </div>
+                                {emp.notes && (
+                                    <div className="mt-4 pt-3 border-t border-neutral-100 dark:border-white/5">
+                                        <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 mb-1">{t("notes")}</p>
+                                        <p className="text-xs text-neutral-600 dark:text-neutral-400 whitespace-pre-wrap">{emp.notes}</p>
+                                    </div>
+                                )}
                             </div>
                         </div>
 

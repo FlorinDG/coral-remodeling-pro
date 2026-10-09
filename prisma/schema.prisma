@@ -650,6 +650,11 @@ model Employee {
   hourlyCost  Float?
   hireDate    DateTime?
   schedule    Boolean     @default(true)
+  department  String?
+  employmentType String?
+  address     String?
+  birthDate   String?
+  notes       String?
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
   userId      String?     @unique

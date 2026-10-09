@@ -13,9 +13,9 @@
  * (formulaEngine), comments. Variants: a summary (edited in the record).
  * Rules: lib/records/view-sort.ts, grid-cell.ts, view-scope.ts — shared with the old grid, never copied.
  */
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useReactTable, getCoreRowModel, type ColumnDef, type CellContext, type HeaderContext } from '@tanstack/react-table';
-import { useVirtualizer } from '@tanstack/react-virtual';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
+import type { ColumnDef, CellContext, HeaderContext } from '@tanstack/react-table';
+import DataGridSurface from './DataGridSurface';
 import { Lock, Maximize2, Plus, Trash2, CheckCircle2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
@@ -257,13 +257,7 @@ export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRec
     // eslint-disable-next-line react-hooks/exhaustive-deps
     })), [columns, editing, widthOf, commit, commitValue, openRecord, databaseId, rows, locate, openLinked, database, access.edit, wrap, tAdmin]);
 
-    const table = useReactTable({ data: rows, columns: colDefs, getCoreRowModel: getCoreRowModel(), getRowId: r => r.id });
-    const virtualizer = useVirtualizer({ count: rows.length, getScrollElement: () => scrollRef.current, estimateSize: () => ROW_H, overscan: 12 });
-    useEffect(() => { virtualizer.measure(); }, [wrap, virtualizer]);   // wrap off: drop the measured heights
-    const totalWidth = columns.reduce((w, p) => w + widthOf(p.id), 48);
-
     if (!database) return null;
-    const tableRows = table.getRowModel().rows;
     const allSelected = rows.length > 0 && rows.every(r => selected.has(r.id));
     const toggleRow = (id: string) => setSelected(prev => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; });
     const deleteSelected = () => {
@@ -277,190 +271,156 @@ export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRec
         setSelected(new Set());
     };
 
-    return (
-        <div className="flex flex-col h-full min-h-0 border border-neutral-200 dark:border-white/10 rounded-b-xl overflow-hidden bg-white dark:bg-black">
-            {renderTabs && (
-                <div className="px-3 pt-2.5 border-b border-neutral-200 dark:border-white/10 bg-neutral-50 dark:bg-neutral-900 flex items-end relative z-[60]">
-                    <div className="flex items-end pr-2 min-w-0 overflow-x-auto no-scrollbar">{renderTabs}</div>
-                </div>
-            )}
-            <div ref={scrollRef} className="flex-1 min-h-0 overflow-auto outline-none" tabIndex={0}
-                 onCopy={e => {
-                     if (editing) return;
-                     const titleOf = (id: string) => resolveRelationTitle(id);
-                     let text = '';
-                     if (selected.size > 0) {
-                         text = rows.filter(p => selected.has(p.id))
-                             .map(p => columns.map(c => cellText(c as never, p.properties[c.id], titleOf).replace(/[\t\n]/g, ' ')).join('\t')).join('\n');
-                     } else if (active) {
-                         const p = rows.find(x => x.id === active.pageId), c = columns.find(x => x.id === active.propId);
-                         if (p && c) text = cellText(c as never, p.properties[c.id], titleOf);
-                     }
-                     if (!text) return;
-                     e.preventDefault();
-                     e.clipboardData.setData('text/plain', text);
-                 }}
-                 onPaste={e => {
-                     if (editing || !active || !database) return;
-                     e.preventDefault();
-                     if (!access.edit) { toast.message(tAdmin('grid.readOnlyPaste')); return; }
-                     const block = parseClipboardGrid(e.clipboardData.getData('text/plain'));
-                     const r0 = rows.findIndex(p => p.id === active.pageId), c0 = columns.findIndex(p => p.id === active.propId);
-                     let written = 0;
-                     const skipped: string[] = [];
-                     block.forEach((line, i) => line.forEach((txt, j) => {
-                         const page = rows[r0 + i], prop = columns[c0 + j];
-                         if (!page || !prop) { skipped.push(tAdmin('grid.pasteOutsideGrid')); return; }
-                         if (page.properties.accountantExportedAt === true) { skipped.push(tAdmin('grid.pasteExported')); return; }
-                         const v = pasteValue(prop as never, txt);
-                         if (!v.ok) { skipped.push(`${prop.name}: ${v.reason}`); return; }
-                         if (!cellChanged(page.properties[prop.id], v.value)) return;
-                         updatePageProperty(database.id, page.id, prop.id, v.value as never);   // ONE field per cell
-                         written++;
-                     }));
-                     if (skipped.length) toast.message(tAdmin('grid.pasteSummary', { written, skipped: skipped.length, reasons: Array.from(new Set(skipped)).slice(0, 3).join('; ') }));
-                     else if (written) toast.success(tAdmin('grid.pastedCount', { count: written }));
-                 }}
-                 onKeyDown={e => {
-                     if (editing || !active) return;
-                     const r = rows.findIndex(p => p.id === active.pageId), c = columns.findIndex(p => p.id === active.propId);
-                     const go = (dr: number, dc: number) => {
-                         const nr = Math.max(0, Math.min(rows.length - 1, r + dr)), nc = Math.max(0, Math.min(columns.length - 1, c + dc));
-                         if (rows[nr] && columns[nc]) { setActive({ pageId: rows[nr].id, propId: columns[nc].id }); virtualizer.scrollToIndex(nr); }
-                     };
-                     if (e.key === 'ArrowDown') { e.preventDefault(); go(1, 0); }
-                     else if (e.key === 'ArrowUp') { e.preventDefault(); go(-1, 0); }
-                     else if (e.key === 'ArrowRight' || (e.key === 'Tab' && !e.shiftKey)) { e.preventDefault(); go(0, 1); }
-                     else if (e.key === 'ArrowLeft' || (e.key === 'Tab' && e.shiftKey)) { e.preventDefault(); go(0, -1); }
-                     else if (e.key === 'Escape') setActive(null);
-                     else {
-                         const page = rows[r], prop = columns[c];
-                         if (!page || !prop || !isTextEditable(prop as never)) return;
-                         if (e.key === 'Enter' || e.key === 'F2') { e.preventDefault(); startEdit(page, prop); }
-                         else if (e.key.length === 1 && !e.metaKey && !e.ctrlKey && !e.altKey && access.edit && page.properties.accountantExportedAt !== true) {
-                             e.preventDefault(); setEditing({ pageId: page.id, propId: prop.id, text: e.key });   // typing replaces, like a spreadsheet
-                         }
-                     }
-                 }}>
-                <div style={{ width: totalWidth, minWidth: '100%' }}>
-                    {/* header */}
-                    <div className="sticky top-0 z-10 flex bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-white/10 text-xs font-semibold text-neutral-500">
-                        <div className="w-12 shrink-0 flex items-center justify-center">
-                            <input type="checkbox" aria-label={tAdmin('grid.selectAll')} checked={allSelected} onChange={() => setSelected(allSelected ? new Set() : new Set(rows.map(r => r.id)))} className="w-3.5 h-3.5 accent-orange-500" />
-                        </div>
-                        {table.getHeaderGroups()[0]?.headers.map(h => (
-                            <div key={h.id} style={{ width: widthOf(h.id) }}
-                                 draggable
-                                 onDragStart={e => { if (resizing.current) { e.preventDefault(); return; } setDragCol(h.id); e.dataTransfer.effectAllowed = 'move'; }}
-                                 onDragOver={e => { if (dragCol && dragCol !== h.id) { e.preventDefault(); if (dropCol !== h.id) setDropCol(h.id); } }}
-                                 onDragLeave={() => { if (dropCol === h.id) setDropCol(null); }}
-                                 onDrop={e => { e.preventDefault(); if (dragCol) saveColumns(moveColumn(activeView?.propertiesState, columns.map(c => c.id), dragCol, h.id)); setDragCol(null); setDropCol(null); }}
-                                 onDragEnd={() => { setDragCol(null); setDropCol(null); }}
-                                 className={`relative shrink-0 h-9 px-2 flex items-center border-r border-neutral-200 dark:border-white/5 cursor-grab select-none ${dragCol === h.id ? 'opacity-40' : ''} ${dragCol && dropCol === h.id ? 'bg-orange-50 dark:bg-orange-500/10' : ''}`}>
-                                {/* where the column lands: the side it is inserted on (moveColumn takes the target's place) */}
-                                {dragCol && dropCol === h.id && (
-                                    <span aria-hidden className={`absolute top-0 bottom-0 w-0.5 bg-orange-500 ${columns.findIndex(c => c.id === dragCol) < columns.findIndex(c => c.id === h.id) ? 'right-0' : 'left-0'}`} />
-                                )}
-                                {(h.column.columnDef.header as (c: HeaderContext<Page, unknown>) => React.ReactNode)(h.getContext())}
-                                <div
-                                    title={tAdmin('grid.columnWidth')}
-                                    className="absolute right-0 top-0 h-full w-1.5 cursor-col-resize hover:bg-orange-400/60"
-                                    draggable={false}
-                                    onDragStart={e => e.preventDefault()}
-                                    onPointerDown={e => { e.stopPropagation(); const el = e.currentTarget; resizing.current = true; el.setPointerCapture(e.pointerId); el.dataset.x = String(e.clientX); el.dataset.w = String(widthOf(h.id)); setLiveWidth({ id: h.id, w: widthOf(h.id) }); }}
-                                    onPointerMove={e => { const el = e.currentTarget; if (!el.hasPointerCapture(e.pointerId)) return; setLiveWidth({ id: h.id, w: Math.max(60, Number(el.dataset.w) + e.clientX - Number(el.dataset.x)) }); }}
-                                    onPointerUp={e => { const el = e.currentTarget; resizing.current = false; if (!el.hasPointerCapture(e.pointerId)) return; el.releasePointerCapture(e.pointerId); const w = Number(el.dataset.w) + e.clientX - Number(el.dataset.x); setLiveWidth(null); saveColumns(setColumnWidth(activeView?.propertiesState, h.id, w)); }}
-                                    onPointerCancel={() => { resizing.current = false; setLiveWidth(null); }}
-                                    onDoubleClick={e => { e.stopPropagation(); saveColumns(setColumnWidth(activeView?.propertiesState, h.id, h.id === 'title' ? 260 : 160)); }}
-                                />
-                            </div>
-                        ))}
-                    </div>
-                    {/* rows — only the visible ones are rendered */}
-                    <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
-                        {virtualizer.getVirtualItems().map(v => {
-                            const row = tableRows[v.index];
-                            if (!row) return null;
-                            return (
-                                <div key={row.id} data-page-id={row.id} data-index={v.index} ref={wrap ? virtualizer.measureElement : undefined} className="group absolute left-0 flex border-b border-neutral-100 dark:border-white/5 hover:bg-neutral-50/60 dark:hover:bg-white/[0.02]"
-                                     style={{ top: v.start, height: wrap ? undefined : ROW_H, minHeight: ROW_H, width: totalWidth, minWidth: '100%' }}>
-                                    <div className="w-12 shrink-0 flex items-center justify-center text-[11px] text-neutral-400">
-                                        <span className={selected.has(row.id) ? 'hidden' : 'group-hover:hidden'}>{v.index + 1}</span>
-                                        <input type="checkbox" aria-label={tAdmin('grid.selectRow')} checked={selected.has(row.id)} onChange={() => toggleRow(row.id)}
-                                               className={`w-3.5 h-3.5 accent-orange-500 ${selected.has(row.id) ? '' : 'hidden group-hover:block'}`} />
-                                        <span className="hidden group-hover:inline-flex">
-                                            <RowMenu
-                                                onOpen={() => openRecord(row.id)}
-                                                onDuplicate={(() => {
-                                                    const dup = access.create ? duplicateProperties(database.logicalKey, row.original.properties) : null;
-                                                    return dup ? () => { createPage(database.id, dup as never); } : undefined;
-                                                })()}
-                                                onDelete={access.delete && preventDelete !== true && !(typeof preventDelete === 'function' && preventDelete(row.original))
-                                                    ? () => { if (window.confirm(tAdmin('grid.confirmDeleteOne'))) deletePages(database.id, [row.id]); }
-                                                    : undefined}
-                                            />
-                                        </span>
-                                    </div>
-                                    {row.getVisibleCells().map(cell => (
-                                        <div key={cell.id} style={{ width: widthOf(cell.column.id) }}
-                                             onMouseDown={() => setActive({ pageId: row.id, propId: cell.column.id })}
-                                             className={`shrink-0 ${wrap ? '' : 'h-full'} border-r border-neutral-100 dark:border-white/5 overflow-hidden ${active?.pageId === row.id && active.propId === cell.column.id && !editing ? 'ring-2 ring-inset ring-orange-300' : ''}`}>
-                                            {(cell.column.columnDef.cell as (c: CellContext<Page, unknown>) => React.ReactNode)(cell.getContext())}
-                                        </div>
-                                    ))}
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
+    const handleCopy = (e: React.ClipboardEvent<HTMLDivElement>) => {
+        if (editing) return;
+        const titleOf = (id: string) => resolveRelationTitle(id);
+        let text = '';
+        if (selected.size > 0) {
+            text = rows.filter(p => selected.has(p.id))
+                .map(p => columns.map(c => cellText(c as never, p.properties[c.id], titleOf).replace(/[\t\n]/g, ' ')).join('\t')).join('\n');
+        } else if (active) {
+            const p = rows.find(x => x.id === active.pageId), c = columns.find(x => x.id === active.propId);
+            if (p && c) text = cellText(c as never, p.properties[c.id], titleOf);
+        }
+        if (!text) return;
+        e.preventDefault();
+        e.clipboardData.setData('text/plain', text);
+    };
+
+    const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
+        if (editing || !active || !database) return;
+        e.preventDefault();
+        if (!access.edit) { toast.message(tAdmin('grid.readOnlyPaste')); return; }
+        const block = parseClipboardGrid(e.clipboardData.getData('text/plain'));
+        const r0 = rows.findIndex(p => p.id === active.pageId), c0 = columns.findIndex(p => p.id === active.propId);
+        let written = 0;
+        const skipped: string[] = [];
+        block.forEach((line, i) => line.forEach((txt, j) => {
+            const page = rows[r0 + i], prop = columns[c0 + j];
+            if (!page || !prop) { skipped.push(tAdmin('grid.pasteOutsideGrid')); return; }
+            if (page.properties.accountantExportedAt === true) { skipped.push(tAdmin('grid.pasteExported')); return; }
+            const v = pasteValue(prop as never, txt);
+            if (!v.ok) { skipped.push(`${prop.name}: ${v.reason}`); return; }
+            if (!cellChanged(page.properties[prop.id], v.value)) return;
+            updatePageProperty(database.id, page.id, prop.id, v.value as never);   // ONE field per cell
+            written++;
+        }));
+        if (skipped.length) toast.message(tAdmin('grid.pasteSummary', { written, skipped: skipped.length, reasons: Array.from(new Set(skipped)).slice(0, 3).join('; ') }));
+        else if (written) toast.success(tAdmin('grid.pastedCount', { count: written }));
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+        if (editing || !active) return;
+        const r = rows.findIndex(p => p.id === active.pageId), c = columns.findIndex(p => p.id === active.propId);
+        const go = (dr: number, dc: number) => {
+            const nr = Math.max(0, Math.min(rows.length - 1, r + dr)), nc = Math.max(0, Math.min(columns.length - 1, c + dc));
+            if (rows[nr] && columns[nc]) { setActive({ pageId: rows[nr].id, propId: columns[nc].id }); }
+        };
+        if (e.key === 'ArrowDown') { e.preventDefault(); go(1, 0); }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); go(-1, 0); }
+        else if (e.key === 'ArrowRight' || (e.key === 'Tab' && !e.shiftKey)) { e.preventDefault(); go(0, 1); }
+        else if (e.key === 'ArrowLeft' || (e.key === 'Tab' && e.shiftKey)) { e.preventDefault(); go(0, -1); }
+        else if (e.key === 'Escape') setActive(null);
+        else {
+            const page = rows[r], prop = columns[c];
+            if (!page || !prop || !isTextEditable(prop as never)) return;
+            if (e.key === 'Enter' || e.key === 'F2') { e.preventDefault(); startEdit(page, prop); }
+            else if (e.key.length === 1 && !e.metaKey && !e.ctrlKey && !e.altKey && access.edit && page.properties.accountantExportedAt !== true) {
+                e.preventDefault(); setEditing({ pageId: page.id, propId: prop.id, text: e.key });   // typing replaces, like a spreadsheet
+            }
+        }
+    };
+
+    const footer = ((!hideFooterNew && access.create) || selected.size > 0) ? (
+        <div className="flex items-center justify-between gap-3 min-h-[36px] px-2 border-t border-neutral-200 dark:border-white/10">
+            <div className="flex items-center">
+                {!hideFooterNew && access.create && (
+                    <button type="button"
+                        onClick={() => {
+                            const page = createPage(database.id, hardFilter ? { [hardFilter.propertyId]: hardFilter.value } : {});
+                            const title = database.properties.find(p => p.id === 'title');
+                            if (page && title) setEditing({ pageId: page.id, propId: 'title', text: '' });
+                        }}
+                        className="flex items-center gap-1.5 px-1 py-1 text-xs text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200">
+                        <Plus className="w-3.5 h-3.5" /> {tAdmin('grid.new')}
+                    </button>
+                )}
             </div>
-            {/* The footer: "+ Nieuw" and, while rows are selected, their actions — at the BOTTOM, so a selection never
-                inserts a bar above the rows and shifts the grid under the pointer (Florin 2026-10-08: wrong clicks). */}
-            {((!hideFooterNew && access.create) || selected.size > 0) && (
-                <div className="flex items-center justify-between gap-3 min-h-[36px] px-2 border-t border-neutral-200 dark:border-white/10">
-                    <div className="flex items-center">
-                        {!hideFooterNew && access.create && (
-                            <button type="button"
+            {selected.size > 0 && (
+                <div className="flex items-center gap-3">
+                    <span className="text-xs text-neutral-500">{tAdmin('grid.selectedCount', { count: selected.size })}</span>
+                    {access.delete && preventDelete !== true && (
+                        <button type="button" onClick={deleteSelected} className="inline-flex items-center gap-1 text-xs text-red-600 hover:underline"><Trash2 className="w-3.5 h-3.5" /> {tAdmin('grid.delete')}</button>
+                    )}
+                    <button type="button" onClick={() => setSelected(new Set())} className="text-xs text-neutral-500 hover:underline">{tAdmin('grid.clearSelection')}</button>
+                    {/* VALIDATE-1 · "Te valideren": approve the selected records whose essentials are there — one field each;
+                        the others stay, named with what they lack (the door refuses an incomplete approval anyway) */}
+                    {access.edit && validationScreen === 'to-validate' && (
+                        <button type="button" className="inline-flex items-center gap-1 text-xs text-emerald-600 hover:underline"
                                 onClick={() => {
-                                    const page = createPage(database.id, hardFilter ? { [hardFilter.propertyId]: hardFilter.value } : {});
-                                    const title = database.properties.find(p => p.id === 'title');
-                                    if (page && title) setEditing({ pageId: page.id, propId: 'title', text: '' });
-                                }}
-                                className="flex items-center gap-1.5 px-1 py-1 text-xs text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200">
-                                <Plus className="w-3.5 h-3.5" /> {tAdmin('grid.new')}
-                            </button>
-                        )}
-                    </div>
-                    {selected.size > 0 && (
-                        <div className="flex items-center gap-3">
-                            <span className="text-xs text-neutral-500">{tAdmin('grid.selectedCount', { count: selected.size })}</span>
-                            {access.delete && preventDelete !== true && (
-                                <button type="button" onClick={deleteSelected} className="inline-flex items-center gap-1 text-xs text-red-600 hover:underline"><Trash2 className="w-3.5 h-3.5" /> {tAdmin('grid.delete')}</button>
-                            )}
-                            <button type="button" onClick={() => setSelected(new Set())} className="text-xs text-neutral-500 hover:underline">{tAdmin('grid.clearSelection')}</button>
-                            {/* VALIDATE-1 · "Te valideren": approve the selected records whose essentials are there — one field each;
-                                the others stay, named with what they lack (the door refuses an incomplete approval anyway) */}
-                            {access.edit && validationScreen === 'to-validate' && (
-                                <button type="button" className="inline-flex items-center gap-1 text-xs text-emerald-600 hover:underline"
-                                        onClick={() => {
-                                            const plan = approvalPlan(database.logicalKey, rows.filter(r => selected.has(r.id)));
-                                            const names = (ids: string[]) => ids.map(f => database.properties.find(p => p.id === f)?.name || f).join(', ');
-                                            if (!plan.approve.length) {
-                                                toast.message(tAdmin('grid.nothingToApproveMissing', { count: plan.refused.length, fields: names([...new Set(plan.refused.flatMap(r => r.missing))]) }));
-                                                return;
-                                            }
-                                            const rest = plan.refused.length ? `\n${tAdmin('grid.refusedRemainIncomplete', { count: plan.refused.length })}` : '';
-                                            if (!window.confirm(`${tAdmin('grid.confirmApproveCount', { count: plan.approve.length })}${rest}`)) return;
-                                            for (const id of plan.approve) updatePageProperty(database.id, id, 'reviewStatus', REVIEW_APPROVED);
-                                            setSelected(new Set(plan.refused.map(r => r.id)));
-                                        }}>
-                                    <CheckCircle2 className="w-3.5 h-3.5" /> {tAdmin('grid.approve')}
-                                </button>
-                            )}
-                        </div>
+                                    const plan = approvalPlan(database.logicalKey, rows.filter(r => selected.has(r.id)));
+                                    const names = (ids: string[]) => ids.map(f => database.properties.find(p => p.id === f)?.name || f).join(', ');
+                                    if (!plan.approve.length) {
+                                        toast.message(tAdmin('grid.nothingToApproveMissing', { count: plan.refused.length, fields: names([...new Set(plan.refused.flatMap(r => r.missing))]) }));
+                                        return;
+                                    }
+                                    const rest = plan.refused.length ? `\n${tAdmin('grid.refusedRemainIncomplete', { count: plan.refused.length })}` : '';
+                                    if (!window.confirm(`${tAdmin('grid.confirmApproveCount', { count: plan.approve.length })}${rest}`)) return;
+                                    for (const id of plan.approve) updatePageProperty(database.id, id, 'reviewStatus', REVIEW_APPROVED);
+                                    setSelected(new Set(plan.refused.map(r => r.id)));
+                                }}>
+                            <CheckCircle2 className="w-3.5 h-3.5" /> {tAdmin('grid.approve')}
+                        </button>
                     )}
                 </div>
             )}
         </div>
+    ) : null;
+
+    return (
+        <DataGridSurface
+            data={rows}
+            columns={colDefs}
+            getRowId={r => r.id}
+            wrap={wrap}
+            rowHeight={ROW_H}
+            columnIds={columns.map(c => c.id)}
+            widthOf={widthOf}
+            onColumnMove={(from, to) => saveColumns(moveColumn(activeView?.propertiesState, columns.map(c => c.id), from, to))}
+            onColumnResize={(colId, w) => saveColumns(setColumnWidth(activeView?.propertiesState, colId, w))}
+            onColumnResizeReset={(colId) => saveColumns(setColumnWidth(activeView?.propertiesState, colId, colId === 'title' ? 260 : 160))}
+            selected={selected}
+            onToggleRow={toggleRow}
+            onSelectAll={all => setSelected(all ? new Set(rows.map(r => r.id)) : new Set())}
+            allSelected={allSelected}
+            showSelectionColumn={true}
+            active={active ? { rowId: active.pageId, colId: active.propId } : null}
+            onActiveChange={a => setActive(a ? { pageId: a.rowId, propId: a.colId } : null)}
+            scrollRef={scrollRef}
+            onKeyDown={handleKeyDown}
+            onCopy={handleCopy}
+            onPaste={handlePaste}
+            renderRowLeading={(page, index) => (
+                <>
+                    <span className={selected.has(page.id) ? 'hidden' : 'group-hover:hidden'}>{index + 1}</span>
+                    <input type="checkbox" aria-label={tAdmin('grid.selectRow')} checked={selected.has(page.id)} onChange={() => toggleRow(page.id)}
+                           className={`w-3.5 h-3.5 accent-orange-500 ${selected.has(page.id) ? '' : 'hidden group-hover:block'}`} />
+                    <span className="hidden group-hover:inline-flex">
+                        <RowMenu
+                            onOpen={() => openRecord(page.id)}
+                            onDuplicate={(() => {
+                                const dup = access.create ? duplicateProperties(database.logicalKey, page.properties) : null;
+                                return dup ? () => { createPage(database.id, dup as never); } : undefined;
+                            })()}
+                            onDelete={access.delete && preventDelete !== true && !(typeof preventDelete === 'function' && preventDelete(page))
+                                ? () => { if (window.confirm(tAdmin('grid.confirmDeleteOne'))) deletePages(database.id, [page.id]); }
+                                : undefined}
+                        />
+                    </span>
+                </>
+            )}
+            renderTabs={renderTabs}
+            renderFooter={footer}
+        />
     );
 }

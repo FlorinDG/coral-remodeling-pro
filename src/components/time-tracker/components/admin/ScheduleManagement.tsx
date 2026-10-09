@@ -291,7 +291,7 @@ export function ScheduleManagement() {
 
       {viewMode === 'table' ? (
         <ScheduleTable
-          shifts={shifts}
+          shifts={matrixShifts}
           onDelete={handleDelete}
           onStatusChange={handleStatusChange}
           onShiftClick={handleShiftClick}

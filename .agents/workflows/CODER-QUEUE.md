@@ -10,7 +10,7 @@ UNATTENDED: ON until 2026-10-10 07:33
 
 | # | Item | State | Directive / where | Note |
 |---|---|---|---|---|
-| 1 | `REVIEW-FIX-1` | **GO** | `coder-directive-review-fix-1.md` | corrections A (EMP-PROFILE-1) · B (R2-1-B M4) · C (GRID-SURFACE-1) |
+| 1 | `REVIEW-FIX-1` | ACCEPTED | `coder-directive-review-fix-1.md` | 2026-10-10 00:1x — A ✅ B ✅ C1 ✅; C2 fixed by the Planner (99795b8a: palette → core `lib/records/project-color`; the directive's placement was wrong). 🔴 **You pushed with a red suite** (e96ff640, d4b59c4c — CI red ~25 min). A blocked step is committed LOCALLY, reported, and the run STOPS — never pushed red (§3b). |
 | 2 | `LOC-NEW-1` | **GO · parallel-ok** | this file § 10 | strings only — no overlap with #1 |
 | 3 | `BOUNDARY-1` | **GO · plan only** | this file § 11 | census + plan, then STOP for review — no build before ACCEPTED |
 | 4 | `GRID-REPLACE-5 M5` | **GO** | this file § GRID-REPLACE-5 | package change → commit on develop alone, STOP; Florin pushes |

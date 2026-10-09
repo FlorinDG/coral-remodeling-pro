@@ -38,7 +38,7 @@ busy / disabled + reason)**, then M4 = CRM & Projects. Report `.agents/reports/D
 📄 `coder-directive-r2-1-b.md` — re-measure the census, every direct GlobalPage write → `saveRecord` / `deleteRecord`
 on the caller's scoped door (session / system / portal), or justified in writing. Plan `.agents/plans/R2-1-B.md`, STOP.
 
-## 4 · `LOC-GRID-1` — the new grid speaks the user's language — 🟩 GO (DB-HEADER-1 M3 reviewed; one milestone, stop)
+## ✅ `LOC-GRID-1` — DONE, reviewed + promoted 2026-10-09 (943f4810; strings only, nl unchanged, plurals ICU, throw proof shown)
 📄 `coder-directive-loc-grid-1.md` — every visible string in `v2/NotionGridV2.tsx` + `v2/cells.tsx` → `Admin.grid.*`
 in en/nl/fr/ro; strings only; `tests/i18n.test.ts` is the guard (throw proof). Report `.agents/reports/LOC-GRID-1.md`.
 

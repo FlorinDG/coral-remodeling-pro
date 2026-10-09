@@ -7,7 +7,7 @@ import { storage, resolveDocumentKey } from '@/lib/storage';
 import { buildAuditLogData, buildAuditLogOperation } from '@/lib/audit';
 import JSZip from 'jszip';
 import { describeError } from '@/lib/describe-error';
-import { saveRecord } from '@/lib/data/records';
+import { saveRecords } from '@/lib/data/records';
 import { buildAccountantExportStampIntent } from '@/lib/records/portal-export-intents';
 
 export const runtime = 'nodejs';
@@ -418,22 +418,20 @@ export async function GET(req: Request) {
             reason: `Accountant export for period ${periodStr}`,
         })));
         if (toStamp.length > 0) {
-            for (const d of toStamp) {
-                const { intent, opts } = buildAccountantExportStampIntent(d.id, {
-                    identifier: actorIdentifier,
-                    userId: actorUserId,
-                    email: actorEmail,
-                    timestamp: exportTimestamp,
-                });
-                const res = await saveRecord(db, intent, opts);
-                if (!res.ok) {
-                    console.error(`[accountant-export] Failed to stamp record ${d.id}:`, res.refusal);
-                    throw new Error(`Failed to stamp document ${d.id} for accountant export: ${res.refusal.code}`);
-                }
+            // ONE transaction through the door: every document stamped and every audit entry written, or none.
+            const res = await saveRecords(db, toStamp.map(d => buildAccountantExportStampIntent(d.id, {
+                identifier: actorIdentifier,
+                userId: actorUserId,
+                email: actorEmail,
+                timestamp: exportTimestamp,
+            })), {
+                within: async tx => { for (const data of auditData) await buildAuditLogOperation(tx, data); },
+                timeout: 60_000,
+            });
+            if (!res.ok) {
+                console.error(`[accountant-export] Refused to stamp record ${res.pageId}:`, res.refusal);
+                throw new Error(`Failed to stamp document ${res.pageId} for accountant export: ${res.refusal.code} — nothing was stamped`);
             }
-            await db.$transaction(async tx => {
-                for (const data of auditData) await buildAuditLogOperation(tx, data);
-            }, { timeout: 60_000 });
         }
 
         return new NextResponse(new Uint8Array(zipBuffer), {

@@ -29,12 +29,69 @@ export type SaveRecordResult =
     | { ok: true; created: boolean; changed: boolean; updatedAt: string; blocksVersion: number; properties: Record<string, unknown>; keptServer: Record<string, unknown>; ignored: string[] }
     | { ok: false; refusal: RecordRefusal | { code: 'NOT_FOUND' }; server?: { properties: Record<string, unknown>; blocks: unknown; updatedAt: string; blocksVersion: number; lastEditedBy: string } ; logicalKey?: string | null; dbProperties?: Array<{ id: string; name?: string; type?: string }> };
 
-export async function saveRecord(
+export type SaveRecordOpts = { by: string; meta?: RecordMeta; createIfMissing?: CreateIfMissing; lifecycle?: { reason: string } };
+
+/** The transaction client of the scoped door (what `$transaction(async tx => …)` hands over). */
+type ScopedTx = Parameters<Extract<Parameters<TenantScopedClient['$transaction']>[0], (...args: never[]) => unknown>>[0];
+
+/** A concurrent write of a row (serializable conflict) is retried — the transaction re-reads and re-applies. */
+async function withRetry<T>(run: () => Promise<T>): Promise<T> {
+    for (let attempt = 1; ; attempt++) {
+        try {
+            return await run();
+        } catch (err) {
+            if ((err as { code?: string })?.code === 'P2034' && attempt < 4) continue;   // a concurrent write of this row
+            throw err;
+        }
+    }
+}
+
+export async function saveRecord(db: TenantScopedClient, intent: RecordIntent, opts: SaveRecordOpts): Promise<SaveRecordResult> {
+    return withRetry(() => db.$transaction(tx => saveInTx(tx, intent, opts), { isolationLevel: 'Serializable' }));
+}
+
+/** Thrown inside a batch to roll it back; carries the refusal out. */
+class BatchRefused extends Error {
+    readonly index: number;
+    readonly result: Extract<SaveRecordResult, { ok: false }>;
+    constructor(index: number, result: Extract<SaveRecordResult, { ok: false }>) {
+        super('batch refused');
+        this.index = index;
+        this.result = result;
+    }
+}
+
+/**
+ * Several records in ONE serializable transaction — all saved, or none (e.g. the accountant export's stamp on every
+ * exported document, R2-1-B: a loop of saveRecord left some stamped when one failed). Each item goes through the same
+ * rule as saveRecord. `within(tx)` runs in the same transaction after the saves (the audit entries of the same act).
+ */
+export async function saveRecords(
     db: TenantScopedClient,
-    intent: RecordIntent,
-    opts: { by: string; meta?: RecordMeta; createIfMissing?: CreateIfMissing; lifecycle?: { reason: string } },
-): Promise<SaveRecordResult> {
-    const run = () => db.$transaction(async tx => {
+    items: Array<{ intent: RecordIntent; opts: SaveRecordOpts }>,
+    options: { within?: (tx: ScopedTx) => Promise<void>; timeout?: number } = {},
+): Promise<{ ok: true; results: Array<Extract<SaveRecordResult, { ok: true }>> } | { ok: false; index: number; pageId: string; refusal: Extract<SaveRecordResult, { ok: false }>['refusal'] }> {
+    try {
+        const results = await withRetry(() => db.$transaction(async tx => {
+            const out: Array<Extract<SaveRecordResult, { ok: true }>> = [];
+            for (let i = 0; i < items.length; i++) {
+                const r = await saveInTx(tx, items[i].intent, items[i].opts);
+                if (!r.ok) throw new BatchRefused(i, r);
+                out.push(r);
+            }
+            if (options.within) await options.within(tx);
+            return out;
+        }, { isolationLevel: 'Serializable', timeout: options.timeout ?? 60_000 }));
+        return { ok: true, results };
+    } catch (err) {
+        if (err instanceof BatchRefused) return { ok: false, index: err.index, pageId: items[err.index].intent.pageId, refusal: err.result.refusal };
+        throw err;
+    }
+}
+
+/** The door's rule for ONE record, inside the caller's transaction. */
+async function saveInTx(tx: ScopedTx, intent: RecordIntent, opts: SaveRecordOpts): Promise<SaveRecordResult> {
+    {
         const row = await tx.globalPage.findFirst({
             where: { id: intent.pageId },
             select: { properties: true, blocks: true, blocksVersion: true, updatedAt: true, lastEditedBy: true, coverImage: true, icon: true, order: true, driveFolderId: true, database: { select: { logicalKey: true, properties: true } } },
@@ -97,15 +154,6 @@ export async function saveRecord(
         const saved = await tx.globalPage.update({ where: { id: intent.pageId }, data, select: { updatedAt: true, blocksVersion: true } });
         const keptServer = Object.fromEntries(r.keptServer.map(k => [k, r.properties[k]]));
         return { ok: true as const, created: false, changed: true, updatedAt: saved.updatedAt.toISOString(), blocksVersion: saved.blocksVersion, properties: r.properties, keptServer, ignored: r.ignored };
-    }, { isolationLevel: 'Serializable' });
-
-    for (let attempt = 1; ; attempt++) {
-        try {
-            return await run();
-        } catch (err) {
-            if ((err as { code?: string })?.code === 'P2034' && attempt < 4) continue;   // a concurrent write of this row
-            throw err;
-        }
     }
 }
 

@@ -13,6 +13,7 @@ import type { Prisma } from '@prisma/client';
 import type { TenantScopedClient } from '@/lib/data/scope';
 import { applyRecordIntent, deleteRefusal, type RecordIntent, type RecordRefusal } from '@/lib/records/record-intent';
 import { nextInSeries, type Series } from '@/lib/records/series';
+import { sanitizeBlocks } from '@/lib/records/rich-text';
 
 export interface RecordMeta { coverImage?: string | null; icon?: string | null; order?: number | null; driveFolderId?: string | null }
 
@@ -59,7 +60,7 @@ export async function saveRecord(
                 data: {
                     id: intent.pageId, databaseId: c.databaseId,
                     properties: properties as Prisma.InputJsonValue,
-                    blocks: (c.blocks ?? []) as Prisma.InputJsonValue,
+                    blocks: sanitizeBlocks(c.blocks ?? []) as Prisma.InputJsonValue,   // EDITOR-1 E2
                     blocksVersion: 1,
                     createdBy: c.createdBy, lastEditedBy: opts.by, assignedTo: c.assignedTo ?? [],
                     coverImage: opts.meta?.coverImage ?? null, icon: opts.meta?.icon ?? null,

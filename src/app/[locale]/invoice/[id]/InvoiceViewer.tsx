@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import { acceptInvoice } from '@/app/actions/accept-invoice';
 import { Block } from '@/components/admin/database/types';
 import { t } from '@/lib/document-i18n';
+import { sanitizeRichText } from '@/lib/records/rich-text';   // EDITOR-1 E3: the customer sees only the allowlist
 import {
     PenTool, CheckCircle, FileText, AlertCircle,
     Type, Upload, Pencil, Download, Clock, ChevronDown, ChevronUp, Sparkles
@@ -73,7 +74,7 @@ function InvoiceLineItems({ blocks, lang, brandColor }: { blocks: Block[]; lang:
                 <React.Fragment key={block.id}>
                     <tr className={`${depth === 0 ? 'border-t-2' : 'border-t'} border-neutral-200`}>
                         <td colSpan={3} className={`py-3 font-bold ${depth === 0 ? 'text-base' : 'text-sm text-neutral-600'}`} style={{ paddingLeft: `${depth * 20 + 16}px` }}>
-                            <span dangerouslySetInnerHTML={{ __html: block.content || t('portal_section', lang) }} />
+                            <span dangerouslySetInnerHTML={{ __html: sanitizeRichText(block.content) || t('portal_section', lang) }} />
                         </td>
                         <td className="py-3 text-right font-bold pr-4 tabular-nums whitespace-nowrap" style={{ color: brandColor }}>
                             {`€  ${sectionTotal.toFixed(2)}`}
@@ -87,7 +88,7 @@ function InvoiceLineItems({ blocks, lang, brandColor }: { blocks: Block[]; lang:
         return (
             <tr key={block.id} className="border-t border-neutral-100 hover:bg-neutral-50/50 transition-colors">
                 <td className="py-2.5 text-sm text-neutral-700" style={{ paddingLeft: `${depth * 20 + 16}px` }}>
-                    <span dangerouslySetInnerHTML={{ __html: block.content || '—' }} />
+                    <span dangerouslySetInnerHTML={{ __html: sanitizeRichText(block.content) || '—' }} />
                 </td>
                 <td className="py-2.5 text-sm text-neutral-500 text-center tabular-nums whitespace-nowrap">
                     {block.quantity || 1} {block.unit || ''}

@@ -14,6 +14,7 @@
 import { deepEqual, mergeStaleWrite } from './occ-merge';
 import { checkExportLock, isWipeHazard } from './export-lock';
 import { checkDocumentLock, isQuoteLocked } from './document-lock';
+import { sanitizeBlocks } from './rich-text';
 
 type Props = Record<string, unknown>;
 
@@ -80,7 +81,7 @@ export function applyRecordIntent(server: ServerRow, intent: RecordIntent, ctx: 
     if (intent.blocks !== undefined) {
         if (isWipeHazard(server.blocks, intent.blocks)) return { ok: false, refusal: { code: 'EMPTY_BLOCKS_PROTECTION' } };
         if (intent.baseBlocksVersion != null && intent.baseBlocksVersion !== server.blocksVersion) return { ok: false, refusal: { code: 'STALE_WRITE' } };
-        blocks = intent.blocks;
+        blocks = sanitizeBlocks(intent.blocks);   // EDITOR-1 E2: whatever writes, only the rich-text allowlist is stored
     }
 
     // Fields: on the current row; when the client's version is old, the one merge rule decides per field.

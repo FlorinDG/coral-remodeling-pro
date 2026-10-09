@@ -10,6 +10,7 @@ import FinancialRowRenderer from './FinancialRowRenderer';
 import { Draggable, Droppable } from '@hello-pangea/dnd';
 import { useDatabaseStore } from '@/components/admin/database/store';
 import { blockValue } from '@/lib/records/document-lines';
+import { sanitizeRichText } from '@/lib/records/rich-text';
 
 interface InvoiceRowProps {
     block: Block;
@@ -614,7 +615,7 @@ export default function InvoiceRow({ block, index, onUpdate, onDelete, onDuplica
                                                 <div
                                                     contentEditable
                                                     suppressContentEditableWarning
-                                                    dangerouslySetInnerHTML={{ __html: block.content || '' }}
+                                                    dangerouslySetInnerHTML={{ __html: sanitizeRichText(block.content) }}
                                                     onBlur={(e) => onUpdate(block.id, { content: e.currentTarget.innerHTML })}
                                                     className="w-full min-h-[80px] bg-neutral-50/80 dark:bg-black/30 border border-neutral-200 dark:border-neutral-800 rounded-lg p-3 text-sm leading-relaxed focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 prose prose-sm dark:prose-invert max-w-none [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5"
                                                     data-placeholder="Vrije tekst — wordt niet meegerekend in de financials..."

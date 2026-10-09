@@ -7,8 +7,7 @@
  * - C1: No lifecycle option here (lifecycle is reserved exclusively for payment-status sync & overdue cron).
  */
 
-import type { RecordIntent } from '@/lib/records/record-intent';
-import type { RecordMeta, CreateIfMissing } from '@/lib/data/records';
+import type { RecordIntent, RecordMeta, CreateIfMissing } from './record-intent';
 
 export interface AcceptDocumentPayload {
     signatureBase64: string;

@@ -13,6 +13,8 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
 import {
     buildAccountantExportStampIntent,
     buildPortalProjectCreateData,
@@ -241,4 +243,17 @@ test('R2-1-B M4: updating a non-existent task yields NOT_FOUND refusal', async (
     assert.equal(res.ok, false);
     if (res.ok) return;
     assert.equal(res.refusal.code, 'NOT_FOUND');
+});
+
+test('REVIEW-FIX-1 B1: no file under src/lib/records/ imports from lib/data', () => {
+    const dir = path.resolve('src/lib/records');
+    const files = fs.readdirSync(dir).filter(f => f.endsWith('.ts'));
+    const violating: string[] = [];
+    for (const f of files) {
+        const content = fs.readFileSync(path.join(dir, f), 'utf8');
+        if (content.includes("from '@/lib/data") || content.includes("from '../data")) {
+            violating.push(f);
+        }
+    }
+    assert.deepEqual(violating, [], `Files in src/lib/records importing from lib/data: ${violating.join(', ')}`);
 });

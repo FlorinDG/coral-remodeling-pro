@@ -9,8 +9,7 @@
  * - M2 row columns: order preserved in opts.meta.order for supplier creation.
  */
 
-import type { RecordIntent } from '@/lib/records/record-intent';
-import type { RecordMeta, CreateIfMissing } from '@/lib/data/records';
+import type { RecordIntent, RecordMeta, CreateIfMissing } from './record-intent';
 
 export function buildOverdueDocumentIntent(
     pageId: string,

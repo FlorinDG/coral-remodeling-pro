@@ -8,8 +8,7 @@
  * - Row columns preserved: assignedTo: [] on new records, createdBy, lastEditedBy.
  */
 
-import type { RecordIntent } from '@/lib/records/record-intent';
-import type { CreateIfMissing } from '@/lib/data/records';
+import type { RecordIntent, CreateIfMissing } from './record-intent';
 
 export interface AccountantExportActor {
     identifier: string;

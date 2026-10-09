@@ -10,8 +10,7 @@
  * - Row columns preserved: 'order' carried via opts.meta.order.
  */
 
-import type { RecordIntent } from '@/lib/records/record-intent';
-import type { RecordMeta, CreateIfMissing } from '@/lib/data/records';
+import type { RecordIntent, RecordMeta, CreateIfMissing } from './record-intent';
 
 export interface PeppolSupplierInput {
     name?: string | null;

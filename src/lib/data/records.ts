@@ -12,18 +12,10 @@
 import type { Prisma } from '@prisma/client';
 import type { TenantScopedClient } from '@/lib/data/scope';
 import { applyRecordIntent, deleteRefusal, type RecordIntent, type RecordRefusal } from '@/lib/records/record-intent';
-import { nextInSeries, type Series } from '@/lib/records/series';
+import { nextInSeries } from '@/lib/records/series';
 import { sanitizeBlocks } from '@/lib/records/rich-text';
-
-export interface RecordMeta { coverImage?: string | null; icon?: string | null; order?: number | null; driveFolderId?: string | null }
-
-/** When the record does not exist yet (a page minted by the browser), it is created in this database. */
-/** `assignedTo` is the ROW's column (access-control and the WorkHub "My tasks" read it), not a property. */
-export interface CreateIfMissing {
-    databaseId: string; properties: Record<string, unknown>; blocks?: unknown[]; createdBy: string; assignedTo?: string[];
-    /** PROFORMA-2: number the new record's title in this series — read and assigned INSIDE this transaction (lib/records/series). */
-    series?: Series;
-}
+import type { CreateIfMissing, RecordMeta } from '@/lib/records/record-intent';
+export type { CreateIfMissing, RecordMeta };
 
 export type SaveRecordResult =
     | { ok: true; created: boolean; changed: boolean; updatedAt: string; blocksVersion: number; properties: Record<string, unknown>; keptServer: Record<string, unknown>; ignored: string[] }

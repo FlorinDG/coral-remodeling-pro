@@ -15,6 +15,17 @@ import { deepEqual, mergeStaleWrite } from './occ-merge';
 import { checkExportLock, isWipeHazard } from './export-lock';
 import { checkDocumentLock, isQuoteLocked } from './document-lock';
 import { sanitizeBlocks } from './rich-text';
+import type { Series } from './series';
+
+export interface RecordMeta { coverImage?: string | null; icon?: string | null; order?: number | null; driveFolderId?: string | null }
+
+/** When the record does not exist yet (a page minted by the browser), it is created in this database. */
+/** `assignedTo` is the ROW's column (access-control and the WorkHub "My tasks" read it), not a property. */
+export interface CreateIfMissing {
+    databaseId: string; properties: Record<string, unknown>; blocks?: unknown[]; createdBy: string; assignedTo?: string[];
+    /** PROFORMA-2: number the new record's title in this series — read and assigned INSIDE this transaction (lib/records/series). */
+    series?: Series;
+}
 
 type Props = Record<string, unknown>;
 

@@ -1,5 +1,5 @@
 # CORAL — CODER QUEUE
-**Current as of 2026-10-09 (evening).** 👉 **NEXT, in this order:** **EMP-PROFILE-1b** (correction, below) → **LOC-NEW-1** → **BOUNDARY-1** (plan first, STOP) → **GRID-REPLACE-5 M5** (package — Florin pushes). Done today: LOC-GRID-1, DB-HEADER-1 M4, EMP-PROFILE-1 (correction pending), GRID-SURFACE-1 + R2-1-B M4 (Planner reviewing). This file is always the live queue — superseded items are removed, not renamed.
+**Current as of 2026-10-09 (evening).** 👉 **NEXT, in this order:** **EMP-PROFILE-1b** (correction, below) → **8c review leftovers** → **LOC-NEW-1** → **BOUNDARY-1** (plan first, STOP) → **GRID-REPLACE-5 M5** (package — Florin pushes). Done today: LOC-GRID-1, DB-HEADER-1 M4, EMP-PROFILE-1 (correction pending), GRID-SURFACE-1 + R2-1-B M4 (Planner reviewing). This file is always the live queue — superseded items are removed, not renamed.
 🛑 **The filename never carries a date.** `PLANNER-HANDOVER.md` §7 points here permanently.
 
 **Work top to bottom. Each item is a separate commit set. Report after each.**
@@ -144,6 +144,16 @@ copy proves nothing.
    `isCalendarDay` / `employeeResponse` themselves (show the failing output, restore).
 🛑 Touch only: `lib/kernel/shift-time.ts` (add only), `lib/records/employee-profile.ts` (new), the two routes, the test.
 No schema change. Report `.agents/reports/EMP-PROFILE-1b.md`, push develop, STOP.
+
+### 8c · Review leftovers (Planner 2026-10-09) — after EMP-PROFILE-1b, one commit each
+- **R2-1-B M4 ✅ accepted** — corrections: (a) `lib/records/portal-export-intents.ts` imports the type `CreateIfMissing`
+  from `lib/data/records` (core → data: upside down) → move that type into `lib/records/record-intent.ts`, `lib/data`
+  re-imports it; (b) `prop-task-due` is written with `new Date(d).toISOString()` (a UTC day for a calendar date) → a
+  `YYYY-MM-DD` calendar day via the kernel (`isCalendarDay` from 8b / `zonedParts`), never toISOString. 🛑 The export's
+  lost atomicity (the stamp went from one transaction to a loop) is the Planner's (a batch door) — don't touch.
+- **GRID-SURFACE-1 ✅ accepted** — corrections: (a) `formatSchedulerDate` defaults to `'en-US'` (LOC-1 forbids it) →
+  `lib/format/date` (resolveLocale / formatDate family); (b) the project colour palette is now in THREE places
+  (`schedule-grid-model.ts`, `ScheduleMatrixView.tsx`, `hooks/useScheduledShifts.ts`) → ONE home, the others import it.
 
 ### 9 · `GRID-SURFACE-1` — the scheduler's table view in the ONE grid (Florin 2026-10-08: "wrong table" → our grid)
 Plan first, STOP. Split `v2/NotionGridV2.tsx` into a presentational surface (columns, rows, cell renderers, sort,

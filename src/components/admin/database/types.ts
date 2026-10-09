@@ -93,7 +93,10 @@ export interface Block {
 
     // --- Invoice Engine Fields ---
     unitPrice?: number;   // Unit price excl. VAT (invoice-specific, replaces verkoopPrice column)
+    /** @deprecated legacy, never counted — a line's rate set by hand is `vatRateOverride` (DOC-LINES-2). */
     vatRate?: number;
+    /** DOC-LINES-2: the line's VAT rate set by hand; absent = the document's regime. */
+    vatRateOverride?: number | null;
     vatMedecontractant?: boolean;
     vatIncluded?: boolean;
 

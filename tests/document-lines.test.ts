@@ -57,13 +57,19 @@ test('the discount on the total: before VAT, a percentage or an amount, split ov
 });
 
 test('DOC-LINES-2 · mixed rates (Florin: "yes"): a line\'s own rate counts; reverse charge is the whole document at 0', () => {
-    const blocks = [line({ verkoopPrice: 100, vatRate: 21 }), line({ verkoopPrice: 100, vatRate: 6 }), line({ verkoopPrice: 50, vatMedecontractant: true })];
+    const blocks = [line({ verkoopPrice: 100, vatRateOverride: 21 }), line({ verkoopPrice: 100, vatRateOverride: 6 }), line({ verkoopPrice: 50, vatMedecontractant: true })];
     const t = calculateInvoiceTotals(blocks as never, { vatRegime: '21' });
     assert.deepEqual(t.vatBreakdown.map(v => [v.rate, v.base, v.vat]), [[21, 150, 31.5], [6, 100, 6]]);   // no rate → the document's
     const six = calculateInvoiceTotals(blocks as never, { vatRegime: '6' });
     assert.deepEqual(six.vatBreakdown.map(v => [v.rate, v.base, v.vat]), [[21, 100, 21], [6, 150, 9]]);
     const rc = calculateInvoiceTotals(blocks as never, { vatRegime: 'medecontractant' });
     assert.deepEqual(rc.vatBreakdown.map(v => [v.rate, v.base, v.vat, v.isMedecontractant]), [[0, 250, 0, true]]);
+});
+
+test('DOC-LINES-2 · the legacy vatRate on a line NEVER counts — issued documents keep their VAT (census 2026-10-09)', () => {
+    // 2026-1: regime 21, lines carrying vatRate 6 from an old screen — the VAT must stay 21%
+    const t = calculateInvoiceTotals([line({ verkoopPrice: 100, vatRate: 6 }), line({ verkoopPrice: 100, vatRate: 0, vatMedecontractant: true })] as never, { vatRegime: '21' });
+    assert.deepEqual(t.vatBreakdown.map(v => [v.rate, v.base, v.vat]), [[21, 200, 42]]);
 });
 
 test('DOC-LINES-2 · "rounding then adding": a line is rounded at the line; the subtotal is the sum of printed lines', () => {
@@ -85,7 +91,7 @@ test('DOC-LINES-2 · "la somme des arrondis": each line\'s VAT rounded, then add
 });
 
 test('DOC-LINES-2 · discount on the total over mixed rates: split by base, each share takes its own VAT off', () => {
-    const blocks = [line({ verkoopPrice: 300, vatRate: 21 }), line({ verkoopPrice: 100, vatRate: 6 })];
+    const blocks = [line({ verkoopPrice: 300, vatRateOverride: 21 }), line({ verkoopPrice: 100, vatRateOverride: 6 })];
     const t = calculateInvoiceTotals(blocks as never, { vatRegime: '21', documentDiscount: { kind: 'pct', value: 10 } });
     assert.deepEqual(t.vatBreakdown.map(v => [v.rate, v.base, v.vat]), [[21, 270, 56.7], [6, 90, 5.4]]);
     assert.equal(t.documentDiscount, 40);

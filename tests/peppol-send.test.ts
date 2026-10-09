@@ -67,7 +67,7 @@ test('the discount on the total: one allowance per rate, code 95 — and the tot
 
 test('DOC-LINES-2 · mixed rates: each line its own rate and VAT; the discount split per rate; lines + allowances = the totals', () => {
     const blocks = [line({ verkoopPrice: 2.25, quantity: 1 }), line({ verkoopPrice: 2.25 }), line({ verkoopPrice: 2.25 }), line({ verkoopPrice: 2.25 }),
-        line({ verkoopPrice: 100, vatRate: 6 })];
+        line({ verkoopPrice: 100, vatRateOverride: 6 })];
     const { items, allowances, totals } = peppolFigures(blocks, { vatRegime: '21', documentDiscount: { kind: 'amount', value: 10 } });
     assert.deepEqual(items.map(i => i.tax_rate), ['21.00', '21.00', '21.00', '21.00', '6.00']);
     assert.deepEqual(items.map(i => i.tax), [0.47, 0.47, 0.47, 0.47, 6]);         // rounded at the line

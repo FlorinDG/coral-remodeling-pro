@@ -77,7 +77,7 @@ export default function MobileCreateInvoicePage() {
         setLines(prev => prev.map(l => l.id === id ? { ...l, [key]: value } : l));
     };
 
-    // DOC-LINES-2: the lines as the editor's lines (content / quantity / unitPrice / vatRate on the block — the shape the
+    // DOC-LINES-2: the lines as the editor's lines (content / quantity / unitPrice / vatRateOverride on the block — the shape the
     // desktop editor, the PDF and Peppol read), and the totals from the ONE rule. Before, the values sat in
     // block.properties, so the invoice opened on desktop with empty €0 lines.
     const lineBlocks = lines
@@ -91,7 +91,7 @@ export default function MobileCreateInvoicePage() {
             unitPrice: l.unitPrice,
             verkoopPrice: l.unitPrice,
             // the line's own rate only when it differs from the document's — else it follows the regime if that changes
-            ...(l.vatRate !== Number(DOCUMENT_REGIME) ? { vatRate: l.vatRate } : {}),
+            ...(l.vatRate !== Number(DOCUMENT_REGIME) ? { vatRateOverride: l.vatRate } : {}),
             isOptional: false,
             children: [],
         }));

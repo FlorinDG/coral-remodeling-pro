@@ -25,8 +25,8 @@ Florin's quote: compute each line's VAT, round it to the cent, then add the VATs
 
 ### 3. Mixed rates on one document: YES
 
-- **Line rate.** A line's VAT rate becomes a real line field (`vatRate`). A new line takes the document's default rate
-  (`vatRegime`).
+- **Line rate.** Every line takes the document's regime by default. A rate set BY HAND is `vatRateOverride`. The
+  legacy `vatRate` is never read: the census of 2026-10-09 found 29 documents with leftover rates that never counted.
 - **Editor.** A rate column on the line (select: 21 / 12 / 6 / 0).
 - **Totals.** Grouped by rate at the end. `vatBreakdown` already is a per-rate list.
 - **PDF.** One VAT row per rate. A per-line rate column only when the document has more than one rate.

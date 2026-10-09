@@ -476,7 +476,7 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                     {/* DOC-LINES-2 · the line's VAT rate — empty = the document's */}
                     <div className="flex flex-row items-center justify-between w-full @[600px]:flex-col @[600px]:gap-0.5 @[600px]:w-[80px] shrink-0 self-start mt-0.5 relative border-b border-neutral-200/60 dark:border-neutral-850 @[600px]:border-b-0 py-1.5 @[600px]:py-0">
                         <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-left @[600px]:text-right @[600px]:pr-4 cursor-default">BTW</label>
-                        <LineVatRateSelect className="w-24 @[600px]:w-full pr-1" value={block.vatRate} vatRegime={vatRegime} onChange={r => onUpdate({ vatRate: r ?? undefined })} />
+                        <LineVatRateSelect className="w-24 @[600px]:w-full pr-1" value={block.vatRateOverride} vatRegime={vatRegime} onChange={r => onUpdate({ vatRateOverride: r ?? undefined })} />
                     </div>
 
                     {/* DOC-LINES-1 · the customer discount on this line — a percentage or a fixed amount */}

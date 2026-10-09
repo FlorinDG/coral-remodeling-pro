@@ -31,8 +31,13 @@ export interface DocLine {
     isOptional?: boolean;
     children?: DocLine[] | null;
     clientDiscount?: Discount | null;
-    /** DOC-LINES-2: the line's own VAT rate (mixed rates); absent = the document's rate. */
-    vatRate?: number | null;
+    /**
+     * DOC-LINES-2: a rate set BY HAND on this line (mixed rates). Absent = the document's regime — the default
+     * (Florin 2026-10-09: "VAT has to have a default, and it must be the set regime for the lines. and manually
+     * edited if the case presents itself"). The legacy `vatRate` is NOT read: old screens and imports left it on
+     * lines (e.g. regime 21 with lines at 6) and it never counted — reading it would change issued documents.
+     */
+    vatRateOverride?: number | null;
 }
 
 const PRICED = new Set(['line', 'article', 'bestek']);
@@ -50,9 +55,9 @@ export function roundCents(n: number): number {
 }
 const round2 = roundCents;
 
-/** A line's VAT rate: its own (0–100), else the document's. */
+/** A line's VAT rate: the document's, unless one was set by hand on the line (0–100). */
 export function lineRate(b: DocLine, documentRate: number): number {
-    const r = b.vatRate;
+    const r = b.vatRateOverride;
     return typeof r === 'number' && Number.isFinite(r) && r >= 0 && r <= 100 ? r : documentRate;
 }
 

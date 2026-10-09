@@ -144,22 +144,22 @@ export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRec
         const page = database.pages.find(p => p.id === e.pageId);
         if (!prop || !page) return;
         const parsed = parseCellInput(prop as never, e.text);
-        if (!parsed.ok) { toast.error(`${prop.name}: ${parsed.reason === 'not_an_email' ? 'geen geldig e-mailadres' : 'geen getal'}`); return; }
+        if (!parsed.ok) { toast.error(`${prop.name}: ${parsed.reason === 'not_an_email' ? tAdmin('grid.invalidEmail') : tAdmin('grid.notANumber')}`); return; }
         if (!cellChanged(page.properties[prop.id], parsed.value)) return;
         updatePageProperty(database.id, page.id, prop.id, parsed.value as never);
-    }, [database, updatePageProperty]);
+    }, [database, updatePageProperty, tAdmin]);
 
     /** A control cell's value — ONE field, written only when it changed; an exported document stays as it is. */
     const commitValue = useCallback((page: Page, prop: Property, v: unknown) => {
         if (!database || !access.edit) return;
-        if (page.properties.accountantExportedAt === true) { toast.message('Dit document is geëxporteerd naar de boekhouder en kan niet meer gewijzigd worden.'); return; }
+        if (page.properties.accountantExportedAt === true) { toast.message(tAdmin('grid.exportedLockedToast')); return; }
         if (!cellChanged(page.properties[prop.id], v)) return;
         updatePageProperty(database.id, page.id, prop.id, v as never);
-    }, [database, updatePageProperty, access.edit]);
+    }, [database, updatePageProperty, access.edit, tAdmin]);
 
     const startEdit = (page: Page, prop: Property) => {
         if (!access.edit) return;
-        if (page.properties.accountantExportedAt === true) { toast.message('Dit document is geëxporteerd naar de boekhouder en kan niet meer gewijzigd worden.'); return; }
+        if (page.properties.accountantExportedAt === true) { toast.message(tAdmin('grid.exportedLockedToast')); return; }
         setActive({ pageId: page.id, propId: prop.id });
         setEditing({ pageId: page.id, propId: prop.id, text: cellText(prop as never, page.properties[prop.id]) });
     };
@@ -245,7 +245,7 @@ export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRec
                 >
                     <span className={`${wrap ? 'whitespace-pre-wrap break-words min-w-0' : 'truncate'} ${prop.id === 'title' ? 'font-medium' : ''}`}>{text}</span>
                     {prop.id === 'title' && (
-                        <button type="button" title="Openen" onClick={ev => { ev.stopPropagation(); openRecord(page.id); }}
+                        <button type="button" title={tAdmin('grid.open')} onClick={ev => { ev.stopPropagation(); openRecord(page.id); }}
                                 className="ml-auto shrink-0 p-0.5 rounded opacity-0 group-hover:opacity-100 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-500">
                             <Maximize2 className="w-3.5 h-3.5" />
                         </button>
@@ -270,8 +270,8 @@ export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRec
         if (!access.delete || preventDelete === true) return;
         // a screen's own row guard (e.g. invoices: draft only) — the rest is refused by the door anyway
         const ids = [...selected].filter(id => { const r = rows.find(x => x.id === id); return r && !(typeof preventDelete === 'function' && preventDelete(r)); });
-        if (!ids.length) { toast.message('Geen van de geselecteerde records kan verwijderd worden (enkel concepten).'); return; }
-        if (!window.confirm(`${ids.length} record(s) definitief verwijderen?`)) return;
+        if (!ids.length) { toast.message(tAdmin('grid.cannotDeleteNonDrafts')); return; }
+        if (!window.confirm(tAdmin('grid.confirmDeleteCount', { count: ids.length }))) return;
         // the door refuses an issued document (sent invoice, sent quote, exported record) — the store puts it back and says why
         deletePages(database.id, ids);
         setSelected(new Set());
@@ -303,23 +303,23 @@ export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRec
                  onPaste={e => {
                      if (editing || !active || !database) return;
                      e.preventDefault();
-                     if (!access.edit) { toast.message('Alleen-lezen: hier kan niets geplakt worden.'); return; }
+                     if (!access.edit) { toast.message(tAdmin('grid.readOnlyPaste')); return; }
                      const block = parseClipboardGrid(e.clipboardData.getData('text/plain'));
                      const r0 = rows.findIndex(p => p.id === active.pageId), c0 = columns.findIndex(p => p.id === active.propId);
                      let written = 0;
                      const skipped: string[] = [];
                      block.forEach((line, i) => line.forEach((txt, j) => {
                          const page = rows[r0 + i], prop = columns[c0 + j];
-                         if (!page || !prop) { skipped.push('buiten het raster'); return; }
-                         if (page.properties.accountantExportedAt === true) { skipped.push('geëxporteerd'); return; }
+                         if (!page || !prop) { skipped.push(tAdmin('grid.pasteOutsideGrid')); return; }
+                         if (page.properties.accountantExportedAt === true) { skipped.push(tAdmin('grid.pasteExported')); return; }
                          const v = pasteValue(prop as never, txt);
                          if (!v.ok) { skipped.push(`${prop.name}: ${v.reason}`); return; }
                          if (!cellChanged(page.properties[prop.id], v.value)) return;
                          updatePageProperty(database.id, page.id, prop.id, v.value as never);   // ONE field per cell
                          written++;
                      }));
-                     if (skipped.length) toast.message(`${written} cel(len) geplakt · ${skipped.length} overgeslagen (${Array.from(new Set(skipped)).slice(0, 3).join('; ')})`);
-                     else if (written) toast.success(`${written} cel(len) geplakt`);
+                     if (skipped.length) toast.message(tAdmin('grid.pasteSummary', { written, skipped: skipped.length, reasons: Array.from(new Set(skipped)).slice(0, 3).join('; ') }));
+                     else if (written) toast.success(tAdmin('grid.pastedCount', { count: written }));
                  }}
                  onKeyDown={e => {
                      if (editing || !active) return;
@@ -346,7 +346,7 @@ export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRec
                     {/* header */}
                     <div className="sticky top-0 z-10 flex bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-white/10 text-xs font-semibold text-neutral-500">
                         <div className="w-12 shrink-0 flex items-center justify-center">
-                            <input type="checkbox" aria-label="Alles selecteren" checked={allSelected} onChange={() => setSelected(allSelected ? new Set() : new Set(rows.map(r => r.id)))} className="w-3.5 h-3.5 accent-orange-500" />
+                            <input type="checkbox" aria-label={tAdmin('grid.selectAll')} checked={allSelected} onChange={() => setSelected(allSelected ? new Set() : new Set(rows.map(r => r.id)))} className="w-3.5 h-3.5 accent-orange-500" />
                         </div>
                         {table.getHeaderGroups()[0]?.headers.map(h => (
                             <div key={h.id} style={{ width: widthOf(h.id) }}
@@ -363,7 +363,7 @@ export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRec
                                 )}
                                 {(h.column.columnDef.header as (c: HeaderContext<Page, unknown>) => React.ReactNode)(h.getContext())}
                                 <div
-                                    title="Breedte"
+                                    title={tAdmin('grid.columnWidth')}
                                     className="absolute right-0 top-0 h-full w-1.5 cursor-col-resize hover:bg-orange-400/60"
                                     draggable={false}
                                     onDragStart={e => e.preventDefault()}
@@ -386,7 +386,7 @@ export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRec
                                      style={{ top: v.start, height: wrap ? undefined : ROW_H, minHeight: ROW_H, width: totalWidth, minWidth: '100%' }}>
                                     <div className="w-12 shrink-0 flex items-center justify-center text-[11px] text-neutral-400">
                                         <span className={selected.has(row.id) ? 'hidden' : 'group-hover:hidden'}>{v.index + 1}</span>
-                                        <input type="checkbox" aria-label="Selecteren" checked={selected.has(row.id)} onChange={() => toggleRow(row.id)}
+                                        <input type="checkbox" aria-label={tAdmin('grid.selectRow')} checked={selected.has(row.id)} onChange={() => toggleRow(row.id)}
                                                className={`w-3.5 h-3.5 accent-orange-500 ${selected.has(row.id) ? '' : 'hidden group-hover:block'}`} />
                                         <span className="hidden group-hover:inline-flex">
                                             <RowMenu
@@ -396,7 +396,7 @@ export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRec
                                                     return dup ? () => { createPage(database.id, dup as never); } : undefined;
                                                 })()}
                                                 onDelete={access.delete && preventDelete !== true && !(typeof preventDelete === 'function' && preventDelete(row.original))
-                                                    ? () => { if (window.confirm('Dit record definitief verwijderen?')) deletePages(database.id, [row.id]); }
+                                                    ? () => { if (window.confirm(tAdmin('grid.confirmDeleteOne'))) deletePages(database.id, [row.id]); }
                                                     : undefined}
                                             />
                                         </span>
@@ -427,17 +427,17 @@ export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRec
                                     if (page && title) setEditing({ pageId: page.id, propId: 'title', text: '' });
                                 }}
                                 className="flex items-center gap-1.5 px-1 py-1 text-xs text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200">
-                                <Plus className="w-3.5 h-3.5" /> Nieuw
+                                <Plus className="w-3.5 h-3.5" /> {tAdmin('grid.new')}
                             </button>
                         )}
                     </div>
                     {selected.size > 0 && (
                         <div className="flex items-center gap-3">
-                            <span className="text-xs text-neutral-500">{selected.size} geselecteerd</span>
+                            <span className="text-xs text-neutral-500">{tAdmin('grid.selectedCount', { count: selected.size })}</span>
                             {access.delete && preventDelete !== true && (
-                                <button type="button" onClick={deleteSelected} className="inline-flex items-center gap-1 text-xs text-red-600 hover:underline"><Trash2 className="w-3.5 h-3.5" /> Verwijderen</button>
+                                <button type="button" onClick={deleteSelected} className="inline-flex items-center gap-1 text-xs text-red-600 hover:underline"><Trash2 className="w-3.5 h-3.5" /> {tAdmin('grid.delete')}</button>
                             )}
-                            <button type="button" onClick={() => setSelected(new Set())} className="text-xs text-neutral-500 hover:underline">Wissen</button>
+                            <button type="button" onClick={() => setSelected(new Set())} className="text-xs text-neutral-500 hover:underline">{tAdmin('grid.clearSelection')}</button>
                             {/* VALIDATE-1 · "Te valideren": approve the selected records whose essentials are there — one field each;
                                 the others stay, named with what they lack (the door refuses an incomplete approval anyway) */}
                             {access.edit && validationScreen === 'to-validate' && (
@@ -446,15 +446,15 @@ export default function NotionGridV2({ databaseId, viewId, hardFilter, onOpenRec
                                             const plan = approvalPlan(database.logicalKey, rows.filter(r => selected.has(r.id)));
                                             const names = (ids: string[]) => ids.map(f => database.properties.find(p => p.id === f)?.name || f).join(', ');
                                             if (!plan.approve.length) {
-                                                toast.message(`Niets goed te keuren — ${plan.refused.length} record(s) missen nog: ${names([...new Set(plan.refused.flatMap(r => r.missing))])}`);
+                                                toast.message(tAdmin('grid.nothingToApproveMissing', { count: plan.refused.length, fields: names([...new Set(plan.refused.flatMap(r => r.missing))]) }));
                                                 return;
                                             }
-                                            const rest = plan.refused.length ? `\n${plan.refused.length} blijven staan (onvolledig).` : '';
-                                            if (!window.confirm(`${plan.approve.length} record(s) goedkeuren?${rest}`)) return;
+                                            const rest = plan.refused.length ? `\n${tAdmin('grid.refusedRemainIncomplete', { count: plan.refused.length })}` : '';
+                                            if (!window.confirm(`${tAdmin('grid.confirmApproveCount', { count: plan.approve.length })}${rest}`)) return;
                                             for (const id of plan.approve) updatePageProperty(database.id, id, 'reviewStatus', REVIEW_APPROVED);
                                             setSelected(new Set(plan.refused.map(r => r.id)));
                                         }}>
-                                    <CheckCircle2 className="w-3.5 h-3.5" /> Goedkeuren
+                                    <CheckCircle2 className="w-3.5 h-3.5" /> {tAdmin('grid.approve')}
                                 </button>
                             )}
                         </div>

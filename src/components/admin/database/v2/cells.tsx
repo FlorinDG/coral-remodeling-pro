@@ -7,6 +7,7 @@
 import React, { useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Check, ExternalLink, Search, Calculator, MoreHorizontal, Maximize2, Copy, Trash2 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useRelationTarget, resolveRelationTitle } from '@/lib/relations/resolve';
 import type { RollupResult } from '@/lib/records/rollup';
 import { COLOR_STYLES } from '../select-colors';
@@ -25,6 +26,7 @@ type Option = { id: string; name: string; color?: string };
 export function VatLookupFlyout({ text, anchor, fieldIds, onApply }: {
     text: string; anchor: React.RefObject<HTMLInputElement | null>; fieldIds?: string[]; onApply: (patch: Record<string, unknown>) => void;
 }) {
+    const t = useTranslations('Admin');
     const vat = normaliseVat(text);
     const [state, setState] = React.useState<{ vat: string; status: 'loading' | 'found' | 'not_found' | 'error'; found?: CompanyFound } | null>(null);
     React.useEffect(() => {
@@ -45,17 +47,17 @@ export function VatLookupFlyout({ text, anchor, fieldIds, onApply }: {
         <div className="fixed z-[99998] w-72 rounded-lg border border-neutral-200 dark:border-white/10 bg-white dark:bg-neutral-900 shadow-xl p-3 text-xs"
              style={{ top: rect.bottom + 4, left: rect.left }} onMouseDown={e => e.preventDefault()}>
             <div className="font-mono text-neutral-500 mb-1">{state.vat}</div>
-            {state.status === 'loading' && <div className="text-neutral-500">Opzoeken…</div>}
-            {state.status === 'not_found' && <div className="text-amber-600">Geen onderneming gevonden voor dit nummer.</div>}
-            {state.status === 'error' && <div className="text-red-600">Opzoeken mislukt.</div>}
+            {state.status === 'loading' && <div className="text-neutral-500">{t('grid.lookupSearching')}</div>}
+            {state.status === 'not_found' && <div className="text-amber-600">{t('grid.companyNotFound')}</div>}
+            {state.status === 'error' && <div className="text-red-600">{t('grid.lookupFailed')}</div>}
             {state.status === 'found' && state.found && (
                 <>
                     <div className="font-semibold text-neutral-800 dark:text-neutral-200">{state.found.name || '—'}</div>
                     <div className="text-neutral-500">{[state.found.street, [state.found.postalCode, state.found.city].filter(Boolean).join(' ')].filter(Boolean).join(', ')}</div>
-                    {state.found.peppolActive && <div className="text-emerald-600 mt-0.5">Peppol actief</div>}
+                    {state.found.peppolActive && <div className="text-emerald-600 mt-0.5">{t('grid.peppolActive')}</div>}
                     <button type="button" className="mt-2 w-full rounded-md py-1.5 font-bold text-white bg-[var(--brand-color,#d35400)]"
                             onMouseDown={e => { e.preventDefault(); onApply(vatLookupPatch(state.found!, fieldIds ?? ['company', 'address', 'postal', 'city'])); setState(null); }}>
-                        Toepassen
+                        {t('grid.apply')}
                     </button>
                 </>
             )}
@@ -168,6 +170,7 @@ export function RelationCell({ value, relationDatabaseId, displayPropertyId, rea
     value: unknown; relationDatabaseId: string; displayPropertyId?: string; readOnly?: boolean;
     onCommit: (v: unknown) => void; onOpen: (databaseId: string, pageId: string) => void;
 }) {
+    const t = useTranslations('Admin');
     const ref = useRef<HTMLDivElement>(null);
     const [open, setOpen] = useState(false);
     const [q, setQ] = useState('');
@@ -191,7 +194,7 @@ export function RelationCell({ value, relationDatabaseId, displayPropertyId, rea
             {ids.map(id => (
                 <span key={id} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 whitespace-nowrap group/chip">
                     {titleOf(id)}
-                    <button type="button" title="Openen" onClick={e => { e.stopPropagation(); onOpen(resolvedDb || relationDatabaseId, id); }}
+                    <button type="button" title={t('grid.open')} onClick={e => { e.stopPropagation(); onOpen(resolvedDb || relationDatabaseId, id); }}
                             className="p-0.5 rounded opacity-0 group-hover/chip:opacity-100 text-orange-500 hover:bg-neutral-200 dark:hover:bg-neutral-700">
                         <ExternalLink className="w-3 h-3" />
                     </button>
@@ -203,13 +206,13 @@ export function RelationCell({ value, relationDatabaseId, displayPropertyId, rea
                          style={{ top: pos.top, left: pos.left, width: pos.width, maxHeight: 320 }} onMouseDown={e => e.stopPropagation()}>
                         <div className="p-2 border-b border-neutral-100 dark:border-white/10 flex items-center gap-2">
                             <Search className="w-3.5 h-3.5 text-neutral-400" />
-                            <input autoFocus value={q} onChange={e => setQ(e.target.value)} placeholder="Zoeken…"
+                            <input autoFocus value={q} onChange={e => setQ(e.target.value)} placeholder={t('grid.search')}
                                    onKeyDown={e => { if (e.key === 'Escape') { setOpen(false); setQ(''); } }}
                                    className="flex-1 bg-transparent text-sm outline-none" />
                         </div>
                         <div className="overflow-y-auto py-1">
-                            {target.status === 'unknown-database' && <div className="px-3 py-2 text-xs text-red-500">Doeldatabase niet gevonden</div>}
-                            {target.status !== 'unknown-database' && options.length === 0 && <div className="px-3 py-2 text-xs text-neutral-400">{target.status === 'not-loaded' ? 'Laden…' : '—'}</div>}
+                            {target.status === 'unknown-database' && <div className="px-3 py-2 text-xs text-red-500">{t('grid.targetDbNotFound')}</div>}
+                            {target.status !== 'unknown-database' && options.length === 0 && <div className="px-3 py-2 text-xs text-neutral-400">{target.status === 'not-loaded' ? t('grid.loading') : '—'}</div>}
                             {options.map(o => (
                                 <button key={o.id} type="button" onClick={() => onCommit(toggleOption(ids, o.id))}
                                         className="w-full flex items-center justify-between gap-2 px-3 py-1.5 text-sm text-left hover:bg-neutral-100 dark:hover:bg-white/5">
@@ -228,6 +231,7 @@ export function RelationCell({ value, relationDatabaseId, displayPropertyId, rea
 
 /** Rollup: the related records' field (lib/records/rollup — the one rule), each value opens its record. */
 export function RollupCell({ values, onOpen }: { values: RollupResult[]; onOpen: (databaseId: string, pageId: string) => void }) {
+    const t = useTranslations('Admin');
     if (!values.length) return <div className="w-full h-full px-2 flex items-center text-neutral-300 dark:text-neutral-600 text-sm">—</div>;
     return (
         <div className="w-full h-full px-2 flex items-center gap-1 overflow-hidden">
@@ -235,7 +239,7 @@ export function RollupCell({ values, onOpen }: { values: RollupResult[]; onOpen:
                 <span key={i} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs border border-neutral-200 dark:border-white/10 text-neutral-700 dark:text-neutral-300 whitespace-nowrap group/chip">
                     {v.value}
                     {v.targetDbId && v.targetPageId && (
-                        <button type="button" title="Openen" onClick={e => { e.stopPropagation(); onOpen(v.targetDbId!, v.targetPageId!); }}
+                        <button type="button" title={t('grid.open')} onClick={e => { e.stopPropagation(); onOpen(v.targetDbId!, v.targetPageId!); }}
                                 className="p-0.5 rounded opacity-0 group-hover/chip:opacity-100 text-orange-500 hover:bg-neutral-200 dark:hover:bg-neutral-700">
                             <ExternalLink className="w-3 h-3" />
                         </button>
@@ -260,11 +264,12 @@ export function FormulaCell({ result }: { result: unknown }) {
 
 /** The row menu (⋯ on the row number): open, duplicate (only where lib/records/grid-access allows it), delete. */
 export function RowMenu({ onOpen, onDuplicate, onDelete }: { onOpen: () => void; onDuplicate?: () => void; onDelete?: () => void }) {
+    const t = useTranslations('Admin');
     const ref = useRef<HTMLButtonElement>(null);
     const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
     return (
         <>
-            <button ref={ref} type="button" title="Acties" aria-label="Acties"
+            <button ref={ref} type="button" title={t('grid.actions')} aria-label={t('grid.actions')}
                     onClick={e => { e.stopPropagation(); const r = ref.current!.getBoundingClientRect(); setPos({ top: r.bottom + 2, left: r.left }); }}
                     className="p-0.5 rounded hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-500">
                 <MoreHorizontal className="w-3.5 h-3.5" />
@@ -273,9 +278,9 @@ export function RowMenu({ onOpen, onDuplicate, onDelete }: { onOpen: () => void;
                 <div className="fixed inset-0 z-[99998]" onMouseDown={() => setPos(null)}>
                     <div className="fixed w-44 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-lg shadow-xl py-1 text-sm"
                          style={{ top: pos.top, left: pos.left }} onMouseDown={e => e.stopPropagation()}>
-                        <button type="button" onClick={() => { setPos(null); onOpen(); }} className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-neutral-100 dark:hover:bg-white/5"><Maximize2 className="w-3.5 h-3.5" /> Openen</button>
-                        {onDuplicate && <button type="button" onClick={() => { setPos(null); onDuplicate(); }} className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-neutral-100 dark:hover:bg-white/5"><Copy className="w-3.5 h-3.5" /> Dupliceren</button>}
-                        {onDelete && <button type="button" onClick={() => { setPos(null); onDelete(); }} className="w-full flex items-center gap-2 px-3 py-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"><Trash2 className="w-3.5 h-3.5" /> Verwijderen</button>}
+                        <button type="button" onClick={() => { setPos(null); onOpen(); }} className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-neutral-100 dark:hover:bg-white/5"><Maximize2 className="w-3.5 h-3.5" /> {t('grid.open')}</button>
+                        {onDuplicate && <button type="button" onClick={() => { setPos(null); onDuplicate(); }} className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-neutral-100 dark:hover:bg-white/5"><Copy className="w-3.5 h-3.5" /> {t('grid.duplicate')}</button>}
+                        {onDelete && <button type="button" onClick={() => { setPos(null); onDelete(); }} className="w-full flex items-center gap-2 px-3 py-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"><Trash2 className="w-3.5 h-3.5" /> {t('grid.delete')}</button>}
                     </div>
                 </div>,
                 document.body,

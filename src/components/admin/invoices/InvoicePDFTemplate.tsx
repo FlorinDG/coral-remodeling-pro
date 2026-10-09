@@ -9,7 +9,7 @@ import { t } from '@/lib/document-i18n';
 import { canAccess } from '@/lib/feature-flags';
 import { calculateInvoiceTotals } from '@/lib/invoice-totals';
 import { generateOGM } from '@/lib/ogm';
-import { blockValue } from '@/lib/records/document-lines';
+import { blockValue, discountOf, type Discount } from '@/lib/records/document-lines';
 
 /**
  * Resolve the document type label. Credit notes (CN- prefix) get
@@ -91,6 +91,8 @@ interface InvoicePDFProps {
     docType?: string;
     vatIncluded?: boolean;
     vatRegime?: string;
+    /** DOC-LINES-1: the discount on the total (before VAT). */
+    documentDiscount?: Discount | null;
     structuredComm?: string;
     showSubcomponents?: boolean;
     hidePrices?: boolean;
@@ -118,7 +120,7 @@ export const InvoicePDFTemplate = ({
     blocks, invoiceTitle, betreft, clientInfo, projectId, grandTotalExcl, grandTotalIncl, vatAmount,
     databaseStoreState, tenantProfile, templateId = 't1', language = 'nl',
     invoiceDate, deliveryDate, dueDate, docType,
-    vatIncluded = false, vatRegime = '21',
+    vatIncluded = false, vatRegime = '21', documentDiscount = null,
     structuredComm,
     showSubcomponents = false,
     hidePrices = false,
@@ -252,7 +254,7 @@ export const InvoicePDFTemplate = ({
                     // PDF-FIT-2: a row never splits across pages (wrap={false})
                     <View key={block.id} wrap={false} style={{ ...baseRowStyle, paddingLeft: depth > 0 ? depth * 10 + pad : pad }}>
                         <Text style={colDesc}>
-                            {renderRichText(block.content, colDesc)}
+                            {renderRichText(block.content, colDesc)}{!hidePrices && lineDiscountNote(block) ? <Text style={{ fontSize: 7.5, color: '#666' }}>{'\n'}{lineDiscountNote(block)}</Text> : null}
                         </Text>
                         <Text style={colQty}>{block.quantity || 1}</Text>
                         <Text style={colUnit}>{block.unit || 'stk'}</Text>
@@ -271,8 +273,14 @@ export const InvoicePDFTemplate = ({
 
     // Calculate VAT breakdown and totals using the shared calculator
     const totals = useMemo(() => {
-        return calculateInvoiceTotals(blocks || [], { vatIncluded, vatRegime, databaseStoreState });
-    }, [blocks, vatIncluded, vatRegime, databaseStoreState]);
+        return calculateInvoiceTotals(blocks || [], { vatIncluded, vatRegime, databaseStoreState, documentDiscount });
+    }, [blocks, vatIncluded, vatRegime, databaseStoreState, documentDiscount]);
+    // DOC-LINES-1: the discount on the total, shown above the subtotal; a line's own discount, under its description.
+    const totalDiscount = blocks && blocks.length > 0 ? totals.documentDiscount : 0;
+    const lineDiscountNote = (b: Block) => {
+        const d = discountOf(b.clientDiscount);
+        return d ? `${t('col_discount', lang)} ${d.kind === 'pct' ? `${d.value}%` : `€ ${d.value.toFixed(2)}`}` : '';
+    };
 
     const finalSubtotal = blocks && blocks.length > 0 ? totals.subtotal : grandTotalExcl;
     const vatBreakdown = totals.vatBreakdown;
@@ -468,6 +476,16 @@ export const InvoicePDFTemplate = ({
 
                                     {/* Right Side: Totals Summary */}
                                     <View style={{ flexDirection: 'column', alignItems: 'flex-end', gap: 6, width: 240 }}>
+                                        {totalDiscount > 0 && (<>
+                                        <View style={{ flexDirection: 'row', width: 240, justifyContent: 'space-between', paddingVertical: 2 }}>
+                                            <Text style={{ fontSize: 10, color: '#333333', textTransform: 'uppercase', letterSpacing: 0.5, fontWeight: 'bold' }}>{t('lines_total_excl', lang)}:</Text>
+                                            <Text style={{ fontSize: 12, fontWeight: 'bold' }}>€ {(finalSubtotal + totalDiscount).toFixed(2)}</Text>
+                                        </View>
+                                        <View style={{ flexDirection: 'row', width: 240, justifyContent: 'space-between', paddingVertical: 2 }}>
+                                            <Text style={{ fontSize: 10, color: '#333333', textTransform: 'uppercase', letterSpacing: 0.5, fontWeight: 'bold' }}>{t('discount_on_total', lang)}:</Text>
+                                            <Text style={{ fontSize: 12, fontWeight: 'bold' }}>− € {totalDiscount.toFixed(2)}</Text>
+                                        </View>
+                                        </>)}
                                         <View style={{ flexDirection: 'row', width: 240, justifyContent: 'space-between', paddingVertical: 2 }}>
                                             <Text style={{ fontSize: 10, color: '#333333', textTransform: 'uppercase', letterSpacing: 0.5, fontWeight: 'bold' }}>{t('subtotal_excl', lang)}:</Text>
                                             <Text style={{ fontSize: 12, fontWeight: 'bold' }}>€ {finalSubtotal.toFixed(2)}</Text>
@@ -740,6 +758,16 @@ export const InvoicePDFTemplate = ({
 
                         {/* Right Side: Totals Summary */}
                         <View style={{ width: isT3 ? 265 : 240, gap: 6 }}>
+                            {totalDiscount > 0 && (<>
+                            <View style={{ ...s.summaryRow, paddingVertical: 2 }}>
+                                <Text style={{ ...s.summaryLabel, fontSize: 10, color: '#333333', fontWeight: 'bold' }}>{t('lines_total_excl', lang)}:</Text>
+                                <Text style={{ ...s.summaryValue, fontSize: 12, fontWeight: 'bold' }}>€ {(finalSubtotal + totalDiscount).toFixed(2)}</Text>
+                            </View>
+                            <View style={{ ...s.summaryRow, paddingVertical: 2 }}>
+                                <Text style={{ ...s.summaryLabel, fontSize: 10, color: '#333333', fontWeight: 'bold' }}>{t('discount_on_total', lang)}:</Text>
+                                <Text style={{ ...s.summaryValue, fontSize: 12, fontWeight: 'bold' }}>− € {totalDiscount.toFixed(2)}</Text>
+                            </View>
+                            </>)}
                             <View style={{ ...s.summaryRow, paddingVertical: 2 }}>
                                 <Text style={{ ...s.summaryLabel, fontSize: 10, color: '#333333', fontWeight: 'bold' }}>{t('subtotal_excl', lang)}:</Text>
                                 <Text style={{ ...s.summaryValue, fontSize: 12, fontWeight: 'bold' }}>€ {finalSubtotal.toFixed(2)}</Text>

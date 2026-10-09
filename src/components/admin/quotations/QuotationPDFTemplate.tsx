@@ -8,7 +8,7 @@ import { getTemplateStyles, TemplateId, lighten, withAlpha } from '@/components/
 import { t } from '@/lib/document-i18n';
 import { canAccess } from '@/lib/feature-flags';
 import { calculateInvoiceTotals } from '@/lib/invoice-totals';
-import { blockValue } from '@/lib/records/document-lines';
+import { blockValue, discountOf, type Discount } from '@/lib/records/document-lines';
 
 function formatBelgianVat(vat?: string) {
     if (!vat) return '';
@@ -56,6 +56,8 @@ interface QuotationPDFProps {
     showSubcomponents?: boolean;
     vatIncluded?: boolean;
     vatRegime?: string;
+    /** DOC-LINES-1: the discount on the total (before VAT). */
+    documentDiscount?: Discount | null;
     billingRule?: string;
     paymentTerms?: string;
 }
@@ -66,6 +68,7 @@ export const QuotationPDFTemplate = ({
     showSubcomponents = false,
     vatIncluded = false,
     vatRegime = '21',
+    documentDiscount = null,
     billingRule,
     paymentTerms,
     contentArea,
@@ -203,7 +206,7 @@ export const QuotationPDFTemplate = ({
                 rows.push(
                     <View key={block.id} style={{ ...baseRowStyle, paddingLeft: depth > 0 ? depth * 10 + pad : pad, backgroundColor: depth > 0 ? '#fafafa' : undefined, ...inactiveStyle }}>
                         <Text style={{ ...colDesc, ...descStyle }}>
-                            {renderRichText(block.content, descStyle)}{block.isOptional ? ' (Optional)' : ''}
+                            {renderRichText(block.content, descStyle)}{block.isOptional ? ' (Optional)' : ''}{lineDiscountNote(block) ? <Text style={{ fontSize: 7.5, color: '#666' }}>{'\n'}{lineDiscountNote(block)}</Text> : null}
                         </Text>
                         <Text style={{ ...colQty, fontSize: depth > 0 ? 8 : 9, color: depth > 0 ? '#666' : '#111', ...inactiveStyle }}>{block.quantity || 1}</Text>
                         <Text style={{ ...colUnit, fontSize: depth > 0 ? 8 : 9, color: depth > 0 ? '#666' : '#111', ...inactiveStyle }}>{block.unit || 'stk'}</Text>
@@ -222,8 +225,14 @@ export const QuotationPDFTemplate = ({
     };
 
     const totals = useMemo(() => {
-        return calculateInvoiceTotals(blocks || [], { vatIncluded, vatRegime, databaseStoreState });
-    }, [blocks, vatIncluded, vatRegime, databaseStoreState]);
+        return calculateInvoiceTotals(blocks || [], { vatIncluded, vatRegime, databaseStoreState, documentDiscount });
+    }, [blocks, vatIncluded, vatRegime, databaseStoreState, documentDiscount]);
+    // DOC-LINES-1: the discount on the total, shown above the subtotal; a line's own discount, under its description.
+    const totalDiscount = blocks && blocks.length > 0 ? totals.documentDiscount : 0;
+    const lineDiscountNote = (b: Block) => {
+        const d = discountOf(b.clientDiscount);
+        return d ? `${t('col_discount', lang)} ${d.kind === 'pct' ? `${d.value}%` : `€ ${d.value.toFixed(2)}`}` : '';
+    };
 
     const finalSubtotal = blocks && blocks.length > 0 ? totals.subtotal : grandTotalExcl;
     const vatBreakdown = totals.vatBreakdown;
@@ -370,6 +379,16 @@ export const QuotationPDFTemplate = ({
                         <View wrap={false}>
                             <View style={{ alignItems: 'flex-end', width: '100%', marginTop: 16 }}>
                                 <View style={{ flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+                                    {totalDiscount > 0 && (<>
+                                    <View style={{ flexDirection: 'row', width: 240, justifyContent: 'space-between' }}>
+                                        <Text style={{ fontSize: 8.5, color: '#666', textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('lines_total_excl', lang)}:</Text>
+                                        <Text style={{ fontSize: 10, fontWeight: 'bold' }}>€  {(finalSubtotal + totalDiscount).toFixed(2)}</Text>
+                                    </View>
+                                    <View style={{ flexDirection: 'row', width: 240, justifyContent: 'space-between' }}>
+                                        <Text style={{ fontSize: 8.5, color: '#666', textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('discount_on_total', lang)}:</Text>
+                                        <Text style={{ fontSize: 10, fontWeight: 'bold' }}>− € {totalDiscount.toFixed(2)}</Text>
+                                    </View>
+                                    </>)}
                                     <View style={{ flexDirection: 'row', width: 240, justifyContent: 'space-between' }}>
                                         <Text style={{ fontSize: 8.5, color: '#666', textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('subtotal_excl', lang)}:</Text>
                                         <Text style={{ fontSize: 10, fontWeight: 'bold' }}>€  {finalSubtotal.toFixed(2)}</Text>
@@ -566,6 +585,16 @@ export const QuotationPDFTemplate = ({
                 <View wrap={false}>
                     <View style={{ alignItems: 'flex-end', width: '100%', marginTop: 20 }}>
                         <View style={s.summaryBox}>
+                            {totalDiscount > 0 && (<>
+                            <View style={s.summaryRow}>
+                                <Text style={s.summaryLabel}>{t('lines_total_excl', lang)}:</Text>
+                                <Text style={s.summaryValue}>€  {(finalSubtotal + totalDiscount).toFixed(2)}</Text>
+                            </View>
+                            <View style={s.summaryRow}>
+                                <Text style={s.summaryLabel}>{t('discount_on_total', lang)}:</Text>
+                                <Text style={s.summaryValue}>− € {totalDiscount.toFixed(2)}</Text>
+                            </View>
+                            </>)}
                             <View style={s.summaryRow}>
                                 <Text style={s.summaryLabel}>{t('subtotal_excl', lang)}:</Text>
                                 <Text style={s.summaryValue}>€  {finalSubtotal.toFixed(2)}</Text>

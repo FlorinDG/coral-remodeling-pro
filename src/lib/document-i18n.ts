@@ -34,6 +34,9 @@ const translations: Record<string, Record<DocumentLanguage, string>> = {
     'col_supplier_discount_tooltip': { nl: 'Leverancierskorting — de korting die u van uw leverancier ontvangt', fr: 'Remise fournisseur — la réduction que vous recevez de votre fournisseur', en: 'Supplier discount — the % your supplier gives you' },
 
     // Summary
+    'lines_total_excl': { nl: 'Totaal regels excl. BTW', fr: 'Total des lignes HTVA', en: 'Lines total (Excl. VAT)' },
+    'discount_on_total': { nl: 'Korting op totaal', fr: 'Remise sur le total', en: 'Discount on total' },
+    'col_discount': { nl: 'Korting', fr: 'Remise', en: 'Discount' },
     'subtotal_excl': { nl: 'Subtotaal excl. BTW', fr: 'Sous-total HTVA', en: 'Subtotal (Excl. VAT)' },
     'vat': { nl: 'BTW', fr: 'TVA', en: 'VAT' },
     'amount_due': { nl: 'Te betalen', fr: 'Montant dû', en: 'Amount Due' },

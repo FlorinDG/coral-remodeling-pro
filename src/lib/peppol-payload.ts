@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { chargedLines, splitDocumentDiscount, discountOf, type Discount, type DocLine } from '@/lib/records/document-lines';
 
 export interface InvoiceLinePayload {
     description: string;
@@ -10,18 +11,22 @@ export interface InvoiceLinePayload {
     isReverseCharge?: boolean;
 }
 
-export interface InvoiceBlock {
+/** A document block as the send reads it — the line rule's fields (lib/records/document-lines) + what a line says. */
+export interface InvoiceBlock extends DocLine {
     id: string;
     type: string;
     content: string;
-    quantity?: number;
     unit?: string;
-    unitPrice?: number;
-    verkoopPrice?: number;
-    vatRate?: number;
-    vatMedecontractant?: boolean;
-    isOptional?: boolean;
     children?: InvoiceBlock[];
+}
+
+/** A discount on the whole document, as the e-invoice states it: an allowance before VAT, at the document's rate. */
+export interface DocumentAllowance {
+    amount: number;
+    tax_rate: string;
+    tax_code: 'S' | 'Z' | 'AE';
+    reason: string;
+    reason_code: string;
 }
 
 export interface BuildPayloadParams {
@@ -33,6 +38,10 @@ export interface BuildPayloadParams {
     invoiceDate?: string;
     dueDate?: string;
     vatRegime?: string;
+    /** The document's prices are entered incl. VAT — the send states them excl. */
+    vatIncluded?: boolean;
+    /** DOC-LINES-1: the discount on the total (before VAT). */
+    documentDiscount?: Discount | null;
     isCreditNote?: boolean;
     parentInvoiceNumber?: string;
     structuredComm?: string;
@@ -86,44 +95,55 @@ export function normalizeCountryToCode(country?: string): string {
     return map[clean] || 'BE'; // Fallback to BE
 }
 
+const round2 = (n: number) => Math.round(n * 100) / 100;
+const round4 = (n: number) => Math.round(n * 10000) / 10000;
+
+/** The document's ONE VAT rate (Florin 2026-10-09: "vat per line is a no go. ONLY at the end"). */
+function documentRate(vatRegime?: string): { rate: number; isReverseCharge: boolean } {
+    if (vatRegime === 'medecontractant') return { rate: 0, isReverseCharge: true };
+    const r = parseFloat(vatRegime || '21');
+    return { rate: Number.isFinite(r) ? r : 21, isReverseCharge: false };
+}
+
 /**
- * Recursively flattens the block tree into e-invoice.be line items.
- * Only includes priced lines (type: line, article, bestek) that are NOT optional.
+ * The document's charged lines as e-invoice.be line items — through the ONE line rule (lib/records/document-lines),
+ * so the send says what the editor, the totals and the PDF say: a line with subcomponents is one line at their sum,
+ * the variant surcharge counts, a "post" multiplies its lines. A line goes out at its NET price (BT-146: after its
+ * customer discount), excl. VAT, at the document's rate. Optional lines are not charged.
  */
-export function flattenBlocksToLineItems(blocks: InvoiceBlock[], globalVatRegime?: string): InvoiceLinePayload[] {
+export function flattenBlocksToLineItems(blocks: InvoiceBlock[], opts: { vatRegime?: string; vatIncluded?: boolean } = {}): InvoiceLinePayload[] {
+    const { rate, isReverseCharge } = documentRate(opts.vatRegime);
+    const toBase = (v: number) => (opts.vatIncluded ? v / (1 + rate / 100) : v);
     const items: InvoiceLinePayload[] = [];
-
-    const walk = (nodes: InvoiceBlock[]) => {
-        for (const block of nodes) {
-            if (block.isOptional) continue;
-
-            if (block.type === 'section' || block.type === 'subsection' || block.type === 'post') {
-                walk(block.children || []);
-            } else if (block.type === 'line' || block.type === 'article' || block.type === 'bestek') {
-                const qty = block.quantity || 1;
-                const price = block.unitPrice || block.verkoopPrice || 0;
-                if (price === 0 && !block.content) continue; // skip empty lines
-
-                const lineTotal = price * qty;
-                const isReverseCharge = globalVatRegime === 'medecontractant' || block.vatMedecontractant;
-                const vatRate = isReverseCharge ? 0 : (block.vatRate ?? 21);
-                const unitCode = mapUnitToCode(block.unit);
-
-                items.push({
-                    description: block.content || 'Dienstverlening',
-                    quantity: qty,
-                    unit: unitCode,
-                    unit_price: Math.round(price * 100) / 100,
-                    amount: Math.round(lineTotal * 100) / 100,
-                    tax_rate: vatRate.toFixed(2),
-                    isReverseCharge,
-                });
-            }
-        }
-    };
-
-    walk(blocks);
+    for (const l of chargedLines(blocks)) {
+        const block = l.block as InvoiceBlock;
+        if (l.gross === 0 && !block.content) continue; // skip empty lines
+        const net = toBase(l.net);
+        items.push({
+            description: block.content || 'Dienstverlening',
+            quantity: l.quantity,
+            unit: mapUnitToCode(block.unit),
+            unit_price: round4(net / (l.quantity || 1)),
+            amount: round2(net),
+            tax_rate: rate.toFixed(2),
+            isReverseCharge,
+        });
+    }
     return items;
+}
+
+/** The discount on the total as the e-invoice's allowance(s): before VAT, at the document's rate (UNCL5189 95 = discount). */
+export function documentAllowances(items: InvoiceLinePayload[], documentDiscount: Discount | null | undefined, vatRegime?: string): DocumentAllowance[] {
+    const { rate, isReverseCharge } = documentRate(vatRegime);
+    const base = items.reduce((s, i) => s + i.amount, 0);
+    const split = splitDocumentDiscount(new Map([[rate, base]]), discountOf(documentDiscount));
+    return [...split.byRate.entries()].filter(([, amount]) => amount > 0).map(([r, amount]) => ({
+        amount,
+        tax_rate: r.toFixed(2),
+        tax_code: isReverseCharge ? 'AE' : r === 0 ? 'Z' : 'S',
+        reason: 'Korting',
+        reason_code: '95',
+    }));
 }
 
 export function buildPeppolPayload(params: BuildPayloadParams) {
@@ -166,7 +186,8 @@ export function buildPeppolPayload(params: BuildPayloadParams) {
         countryLabel
     ].filter(Boolean).join(', ') || client.address || '';
 
-    const items = flattenBlocksToLineItems(blocks || [], params.vatRegime);
+    const items = flattenBlocksToLineItems(blocks || [], { vatRegime: params.vatRegime, vatIncluded: params.vatIncluded });
+    const allowances = documentAllowances(items, params.documentDiscount, params.vatRegime);
 
     const invoicePayload: Record<string, any> = {
         document_type: isCreditNote ? 'CREDIT_NOTE' : 'INVOICE',
@@ -189,6 +210,9 @@ export function buildPeppolPayload(params: BuildPayloadParams) {
 
         // Line items
         items,
+        // DOC-LINES-1: the discount on the total — an allowance with VAT impact (not total_discount, which is the
+        // non-VAT financial discount)
+        ...(allowances.length ? { allowances } : {}),
 
         // Payment terms
         payment_term: 'Net 30 days',
@@ -236,7 +260,8 @@ export function buildPeppolPayload(params: BuildPayloadParams) {
         customerVat,
         customerCountry,
         customerAddressStr,
-        items
+        items,
+        allowances
     };
 }
 
@@ -300,7 +325,7 @@ export function performLocalPreflight(params: BuildPayloadParams): { isValid: bo
         errors.push("Landcode van de klant ontbreekt of is ongeldig (moet 2 letters zijn, bijv. BE).");
     }
 
-    const items = flattenBlocksToLineItems(params.blocks || []);
+    const items = flattenBlocksToLineItems(params.blocks || [], { vatRegime: params.vatRegime, vatIncluded: params.vatIncluded });
     if (items.length === 0) {
         errors.push("De factuur heeft geen geldige factuurlijnen. Voeg ten minste één product of dienst toe.");
     }

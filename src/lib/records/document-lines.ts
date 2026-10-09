@@ -80,7 +80,8 @@ export function lineNetUnitPrice(b: DocLine): number {
 }
 
 /** Unrounded values — a caller rounds for display; the totals round the sum once (as they always did). */
-export interface PricedLine { block: DocLine; gross: number; discount: number; net: number }
+/** `quantity`: the line's quantity × the quantities of the posts holding it — what the line is charged for. */
+export interface PricedLine { block: DocLine; quantity: number; gross: number; discount: number; net: number }
 
 /** The document's priced, non-optional lines at the level they are charged (a line with subcomponents is ONE line). */
 export function chargedLines(blocks: DocLine[] | null | undefined): PricedLine[] {
@@ -93,7 +94,7 @@ export function chargedLines(blocks: DocLine[] | null | undefined): PricedLine[]
             if (b.type && PRICED.has(b.type)) {
                 const gross = lineGross(b) * mult;
                 const discount = discountAmount(gross, b.clientDiscount);
-                out.push({ block: b, gross, discount, net: gross - discount });   // unrounded: totals round once, as before
+                out.push({ block: b, quantity: (finite(b.quantity) || 1) * mult, gross, discount, net: gross - discount });   // unrounded: totals round once, as before
             }
         }
     };

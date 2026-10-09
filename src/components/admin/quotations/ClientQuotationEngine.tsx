@@ -535,6 +535,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                     language={docLanguage}
                     vatIncluded={vatIncluded}
                     vatRegime={vatRegime}
+                    documentDiscount={documentDiscountOf(quotation?.properties as Record<string, unknown>)}
                     billingRule={billingRule}
                     paymentTerms={paymentTerms}
                 />
@@ -649,6 +650,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                     language={docLanguage}
                     vatIncluded={vatIncluded}
                     vatRegime={vatRegime}
+                    documentDiscount={documentDiscountOf(quotation?.properties as Record<string, unknown>)}
                     billingRule={billingRule}
                     paymentTerms={paymentTerms}
                 />
@@ -697,6 +699,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                     showSubcomponents={false}
                     vatCalcMode={(tenant?.vatCalcMode as any) || 'lines'}
                     vatRegime={vatRegime}
+                    documentDiscount={documentDiscountOf(quotation?.properties as Record<string, unknown>)}
                     billingRule={billingRule}
                     paymentTerms={paymentTerms}
                 />
@@ -1344,6 +1347,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                                                 showSubcomponents={false}
                                                 vatCalcMode={(tenant?.vatCalcMode as any) || 'lines'}
                                                 vatRegime={vatRegime}
+                                                documentDiscount={documentDiscountOf(quotation?.properties as Record<string, unknown>)}
                                                 billingRule={billingRule}
                                                 paymentTerms={paymentTerms}
                                             />
@@ -1387,6 +1391,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                                                 showSubcomponents={false}
                                                 vatCalcMode={(tenant?.vatCalcMode as any) || 'lines'}
                                                 vatRegime={vatRegime}
+                                                documentDiscount={documentDiscountOf(quotation?.properties as Record<string, unknown>)}
                                                 billingRule={billingRule}
                                                 paymentTerms={paymentTerms}
                                             />
@@ -1523,6 +1528,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                                                         showSubcomponents={true}
                                                         vatCalcMode={(tenant?.vatCalcMode as any) || 'lines'}
                                                         vatRegime={vatRegime}
+                                                        documentDiscount={documentDiscountOf(quotation?.properties as Record<string, unknown>)}
                                                         billingRule={billingRule}
                                                         paymentTerms={paymentTerms}
                                                     />

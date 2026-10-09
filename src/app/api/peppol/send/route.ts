@@ -6,6 +6,7 @@ import { generatePeppolUBL, type UBLLineItem } from '@/lib/peppol-ubl';
 import { Resend } from 'resend';
 import { maybeResetMonthlyCounters, assertPeppolSentLimit, incrementPeppolSent } from '@/lib/plan-limits';
 import { buildPeppolPayload } from '@/lib/peppol-payload';
+import { discountOf } from '@/lib/records/document-lines';
 
 export async function POST(req: Request) {
     try {
@@ -16,7 +17,7 @@ export async function POST(req: Request) {
         const tenantId = (session!.user as any).tenantId;
 
         const body = await req.json();
-        const { invoiceId, blocks, client, invoiceTitle, betreft, invoiceDate, dueDate, vatRegime, isCreditNote, parentInvoiceId, parentInvoiceNumber: bodyParentInvoiceNumber, structuredComm, pdfBase64, peppolScheme } = body;
+        const { invoiceId, blocks, client, invoiceTitle, betreft, invoiceDate, dueDate, vatRegime, vatIncluded, documentDiscount, isCreditNote, parentInvoiceId, parentInvoiceNumber: bodyParentInvoiceNumber, structuredComm, pdfBase64, peppolScheme } = body;
 
         // 1. Fetch Tenant (Sender) details from Prisma
         const tenant = await prisma.tenant.findUnique({
@@ -81,7 +82,8 @@ export async function POST(req: Request) {
             customerVat,
             customerCountry,
             customerAddressStr,
-            items
+            items,
+            allowances
         } = buildPeppolPayload({
             invoiceId,
             blocks: blocks || [],
@@ -91,6 +93,8 @@ export async function POST(req: Request) {
             invoiceDate,
             dueDate,
             vatRegime,
+            vatIncluded: !!vatIncluded,
+            documentDiscount: discountOf(documentDiscount),
             isCreditNote,
             parentInvoiceNumber,
             structuredComm,
@@ -181,6 +185,7 @@ export async function POST(req: Request) {
                 paymentTermNote: 'Betaling binnen 30 dagen',
                 note: betreft || undefined,
                 items: ublItems,
+                allowances: allowances.map(a => ({ amount: a.amount, taxRate: parseFloat(a.tax_rate), isReverseCharge: a.tax_code === 'AE', reason: a.reason })),
                 type: isCreditNote ? '381' : '380',
                 parentInvoiceNumber,
                 pdfBase64: invoicePayload.pdfBase64,
@@ -218,7 +223,7 @@ export async function POST(req: Request) {
                             `Klant: ${customerName}`,
                             `Klant BTW: ${customerVat || 'Niet opgegeven'}`,
                             `Klant Email: ${client.email || 'Niet opgegeven'}`,
-                            `Bedrag excl. BTW: €${items.reduce((s, i) => s + i.amount, 0).toFixed(2)}`,
+                            `Bedrag excl. BTW: €${(items.reduce((s, i) => s + i.amount, 0) - allowances.reduce((s, a) => s + a.amount, 0)).toFixed(2)}`,
                             `Tenant: ${tenant.companyName} (${vendorVat})`,
                             ``,
                             `Het UBL XML bestand en de factuur PDF zijn als bijlagen toegevoegd.`,

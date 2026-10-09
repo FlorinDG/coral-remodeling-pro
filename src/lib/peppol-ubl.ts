@@ -51,6 +51,16 @@ interface UBLInvoiceData {
 
     // Line items
     items: UBLLineItem[];
+
+    /** DOC-LINES-1: discounts on the whole document — before VAT, each at its rate (UNCL5189 95 = discount). */
+    allowances?: UBLAllowance[];
+}
+
+interface UBLAllowance {
+    amount: number;
+    taxRate: number;
+    isReverseCharge?: boolean;
+    reason: string;
 }
 
 function escapeXml(str: string): string {
@@ -122,8 +132,23 @@ export function generatePeppolUBL(data: UBLInvoiceData): string {
         taxMap.set(rateKey, existing);
     }
 
+    // A document allowance lowers its rate's taxable amount (BR-S-08 / BR-AE-08); VAT per rate on what remains (BR-S-09)
+    let totalAllowanceAmount = 0;
+    for (const a of data.allowances || []) {
+        totalAllowanceAmount += a.amount;
+        const rateKey = a.isReverseCharge ? -1 : a.taxRate;
+        const existing = taxMap.get(rateKey) || { taxableAmount: 0, taxAmount: 0 };
+        existing.taxableAmount -= a.amount;
+        taxMap.set(rateKey, existing);
+    }
+    for (const [rateKey, t] of taxMap.entries()) {
+        t.taxableAmount = Math.round(t.taxableAmount * 100) / 100;
+        t.taxAmount = rateKey === -1 ? 0 : Math.round(t.taxableAmount * rateKey) / 100;
+    }
+
+    const taxExclusiveAmount = totalLineExtensionAmount - totalAllowanceAmount;
     const totalTaxAmount = Array.from(taxMap.values()).reduce((sum, t) => sum + t.taxAmount, 0);
-    const totalWithTax = totalLineExtensionAmount + totalTaxAmount;
+    const totalWithTax = taxExclusiveAmount + totalTaxAmount;
 
     // Build XML
     const lines: string[] = [];
@@ -301,6 +326,25 @@ export function generatePeppolUBL(data: UBLInvoiceData): string {
         add('');
     }
 
+    // ── Document allowances (DOC-LINES-1) ──
+    for (const a of data.allowances || []) {
+        const rate = a.isReverseCharge ? 0 : a.taxRate;
+        add('  <cac:AllowanceCharge>');
+        add('    <cbc:ChargeIndicator>false</cbc:ChargeIndicator>');
+        add('    <cbc:AllowanceChargeReasonCode>95</cbc:AllowanceChargeReasonCode>');
+        add(`    <cbc:AllowanceChargeReason>${escapeXml(a.reason)}</cbc:AllowanceChargeReason>`);
+        add(`    <cbc:Amount currencyID="${data.currency}">${formatAmount(a.amount)}</cbc:Amount>`);
+        add('    <cac:TaxCategory>');
+        add(`      <cbc:ID>${a.isReverseCharge ? 'AE' : (rate === 0 ? 'Z' : 'S')}</cbc:ID>`);
+        add(`      <cbc:Percent>${formatAmount(rate)}</cbc:Percent>`);
+        add('      <cac:TaxScheme>');
+        add('        <cbc:ID>VAT</cbc:ID>');
+        add('      </cac:TaxScheme>');
+        add('    </cac:TaxCategory>');
+        add('  </cac:AllowanceCharge>');
+        add('');
+    }
+
     // ── Tax Total ──
     add('  <cac:TaxTotal>');
     add(`    <cbc:TaxAmount currencyID="${data.currency}">${formatAmount(totalTaxAmount)}</cbc:TaxAmount>`);
@@ -331,8 +375,9 @@ export function generatePeppolUBL(data: UBLInvoiceData): string {
     // ── Legal Monetary Total ──
     add('  <cac:LegalMonetaryTotal>');
     add(`    <cbc:LineExtensionAmount currencyID="${data.currency}">${formatAmount(totalLineExtensionAmount)}</cbc:LineExtensionAmount>`);
-    add(`    <cbc:TaxExclusiveAmount currencyID="${data.currency}">${formatAmount(totalLineExtensionAmount)}</cbc:TaxExclusiveAmount>`);
+    add(`    <cbc:TaxExclusiveAmount currencyID="${data.currency}">${formatAmount(taxExclusiveAmount)}</cbc:TaxExclusiveAmount>`);
     add(`    <cbc:TaxInclusiveAmount currencyID="${data.currency}">${formatAmount(totalWithTax)}</cbc:TaxInclusiveAmount>`);
+    if (totalAllowanceAmount > 0) add(`    <cbc:AllowanceTotalAmount currencyID="${data.currency}">${formatAmount(totalAllowanceAmount)}</cbc:AllowanceTotalAmount>`);
     add(`    <cbc:PayableAmount currencyID="${data.currency}">${formatAmount(totalWithTax)}</cbc:PayableAmount>`);
     add('  </cac:LegalMonetaryTotal>');
     add('');
@@ -367,4 +412,4 @@ export function generatePeppolUBL(data: UBLInvoiceData): string {
     return lines.join('\n');
 }
 
-export type { UBLInvoiceData, UBLLineItem };
+export type { UBLInvoiceData, UBLLineItem, UBLAllowance };

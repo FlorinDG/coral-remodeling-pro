@@ -795,6 +795,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                     docType={String(invoice.properties?.['docType'] || '')}
                     vatIncluded={vatIncluded}
                     vatRegime={String(invoice?.properties?.["vatRegime"] || "")}
+                    documentDiscount={documentDiscountOf(invoice?.properties as Record<string, unknown>)}
                     structuredComm={String(invoice?.properties?.["structuredComm"] || "")}
                 />
             );
@@ -915,6 +916,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                     docType={String(invoice.properties?.['docType'] || '')}
                     vatIncluded={vatIncluded}
                     vatRegime={String(invoice?.properties?.["vatRegime"] || "")}
+                    documentDiscount={documentDiscountOf(invoice?.properties as Record<string, unknown>)}
                     structuredComm={String(invoice?.properties?.["structuredComm"] || "")}
                 />
             );
@@ -965,6 +967,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                     docType={String(invoice.properties?.['docType'] || '')}
                     vatIncluded={vatIncluded}
                     vatRegime={String(invoice?.properties?.['vatRegime'] || '')}
+                    documentDiscount={documentDiscountOf(invoice?.properties as Record<string, unknown>)}
                     structuredComm={String(invoice?.properties?.['structuredComm'] || '')}
                 />
             );
@@ -1060,6 +1063,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                     docType={String(invoice?.properties?.['docType'] || '')}
                     vatIncluded={vatIncluded}
                     vatRegime={String(invoice?.properties?.["vatRegime"] || "")}
+                    documentDiscount={documentDiscountOf(invoice?.properties as Record<string, unknown>)}
                     structuredComm={String(invoice?.properties?.["structuredComm"] || "")}
                 />
             );
@@ -1080,6 +1084,8 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                     invoiceDate: invoiceDateProp ? String(invoiceDateProp) : undefined,
                     dueDate: dueDateProp ? String(dueDateProp) : undefined,
                     vatRegime: invoice?.properties?.['vatRegime'] as string | undefined,
+                    vatIncluded: !!invoice?.properties?.['vatIncluded'],
+                    documentDiscount: documentDiscountOf(invoice?.properties as Record<string, unknown>),
                     blocks: blocks,
                     structuredComm: invoice?.properties?.['structuredComm'] as string | undefined,
                     isCreditNote,
@@ -1178,6 +1184,9 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                     betreft: betreft,
                     invoiceDate: invoiceDateProp ? String(invoiceDateProp) : undefined,
                     dueDate: dueDateProp ? String(dueDateProp) : undefined,
+                    vatRegime: invoice?.properties?.['vatRegime'] as string | undefined,
+                    vatIncluded: !!invoice?.properties?.['vatIncluded'],
+                    documentDiscount: documentDiscountOf(invoice?.properties as Record<string, unknown>),
                     blocks: blocks,
                     structuredComm: invoice?.properties?.['structuredComm'] as string | undefined,
                     isCreditNote,
@@ -1900,6 +1909,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                                                 docType={String(invoice.properties?.['docType'] || '')}
                                                 vatIncluded={vatIncluded}
                                                 vatRegime={String(invoice?.properties?.["vatRegime"] || "")}
+                                                documentDiscount={documentDiscountOf(invoice?.properties as Record<string, unknown>)}
                                                 structuredComm={String(invoice?.properties?.["structuredComm"] || "")}
                                             />
                                         );
@@ -1945,6 +1955,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                                                 docType={String(invoice.properties?.['docType'] || '')}
                                                 vatIncluded={vatIncluded}
                                                 vatRegime={String(invoice?.properties?.["vatRegime"] || "")}
+                                                documentDiscount={documentDiscountOf(invoice?.properties as Record<string, unknown>)}
                                                 structuredComm={String(invoice?.properties?.["structuredComm"] || "")}
                                             />
                                         );

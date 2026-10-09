@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
 import { buildPeppolPayload, performLocalPreflight } from '@/lib/peppol-payload';
+import { discountOf } from '@/lib/records/document-lines';
 
 export async function POST(req: Request) {
     try {
@@ -13,7 +14,7 @@ export async function POST(req: Request) {
         const tenantId = (session!.user as any).tenantId;
 
         const body = await req.json();
-        const { invoiceId, blocks, client, invoiceTitle, betreft, invoiceDate, dueDate, isCreditNote, parentInvoiceId, parentInvoiceNumber: bodyParentInvoiceNumber, structuredComm } = body;
+        const { invoiceId, blocks, client, invoiceTitle, betreft, invoiceDate, dueDate, vatRegime, vatIncluded, documentDiscount, isCreditNote, parentInvoiceId, parentInvoiceNumber: bodyParentInvoiceNumber, structuredComm } = body;
 
         // 1. Fetch Tenant (Sender) details
         const tenant = await prisma.tenant.findUnique({
@@ -54,6 +55,9 @@ export async function POST(req: Request) {
             betreft,
             invoiceDate,
             dueDate,
+            vatRegime,
+            vatIncluded: !!vatIncluded,
+            documentDiscount: discountOf(documentDiscount),
             isCreditNote,
             parentInvoiceNumber,
             structuredComm,

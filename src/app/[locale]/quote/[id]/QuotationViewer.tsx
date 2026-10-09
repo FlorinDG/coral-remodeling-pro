@@ -14,6 +14,7 @@ import {
     PenTool, CheckCircle, FileText, AlertCircle,
     Type, Upload, Pencil, Download, Clock, ChevronDown, ChevronUp, Sparkles
 } from 'lucide-react';
+import { documentDiscountOf } from '@/lib/records/document-lines';
 
 const SignatureCanvas = dynamic(() => import('react-signature-canvas'), { ssr: false });
 
@@ -429,6 +430,7 @@ export default function QuotationViewer({ quoteId, properties, blocks, tenant, l
                                                 showSubcomponents={false}
                                                 vatCalcMode={properties?.vatCalcMode || 'lines'}
                                                 vatRegime={properties?.vatRegime || '21'}
+                                                documentDiscount={documentDiscountOf(properties as Record<string, unknown>)}
                                             />
                                         );
                                         const blob = await generatePdfBlob(doc, tenant);

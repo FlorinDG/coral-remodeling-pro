@@ -17,6 +17,7 @@ const scoped = () => scopeFromSession();
 import { WORKSPACE_OWNER_ROLES, PLATFORM_ADMIN_ROLES, ROLES } from '@/lib/roles';
 import { syncSeatQuantities } from '@/lib/stripe';
 import { parseDecimal } from '@/lib/records/decimal';   // DEC-1: '12,5' is 12.5 (parseFloat read 12)
+import { profileOf, profileInput } from '@/lib/records/employee-profile';
 
 // Roles that count as "employees" in HR context
 const HR_EMPLOYEE_ROLES = [
@@ -80,11 +81,7 @@ export async function GET() {
                 hourlyCost: u.hourlyCost,
                 hireDate: u.hireDate,
                 schedule: u.employee?.schedule !== false,
-                department: u.employee?.department ?? null,
-                employmentType: u.employee?.employmentType ?? null,
-                address: u.employee?.address ?? null,
-                birthDate: u.employee?.birthDate ?? null,
-                notes: u.employee?.notes ?? null,
+                ...profileOf(u.employee),
             };
         });
 
@@ -111,9 +108,13 @@ export async function POST(req: Request) {
         }
 
         const body = await req.json();
+        const pInput = profileInput(body);
+        if (!pInput.ok) {
+            return NextResponse.json({ error: pInput.error }, { status: 400 });
+        }
+
         const {
             firstName, lastName, email, phone, role, hourlyCost, hireDate, schedule,
-            department, employmentType, address, birthDate, notes
         } = body;
 
         if (!firstName || !lastName || !email) {
@@ -163,11 +164,7 @@ export async function POST(req: Request) {
                     hourlyCost: hourlyCost ? parseDecimal(hourlyCost) : null,
                     hireDate: hireDate ? new Date(hireDate) : null,
                     schedule: schedule !== undefined ? Boolean(schedule) : true,
-                    department: department ?? null,
-                    employmentType: employmentType ?? null,
-                    address: address ?? null,
-                    birthDate: birthDate ?? null,
-                    notes: notes ?? null,
+                    ...pInput.data,
                     userId: newUser.id,
                 }
             });
@@ -184,11 +181,7 @@ export async function POST(req: Request) {
                     hourlyCost: hourlyCost ? parseDecimal(hourlyCost) : null,
                     hireDate: hireDate ? new Date(hireDate) : null,
                     schedule: schedule !== undefined ? Boolean(schedule) : true,
-                    department: department ?? null,
-                    employmentType: employmentType ?? null,
-                    address: address ?? null,
-                    birthDate: birthDate ?? null,
-                    notes: notes ?? null,
+                    ...pInput.data,
                     userId: newUser.id,
                 }
             });
@@ -205,11 +198,7 @@ export async function POST(req: Request) {
             hourlyCost: newUser.hourlyCost,
             hireDate: newUser.hireDate,
             schedule: schedule !== undefined ? Boolean(schedule) : true,
-            department: department ?? null,
-            employmentType: employmentType ?? null,
-            address: address ?? null,
-            birthDate: birthDate ?? null,
-            notes: notes ?? null,
+            ...profileOf(pInput.data),
         };
 
         // Sync seat quantities

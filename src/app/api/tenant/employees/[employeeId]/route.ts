@@ -14,6 +14,7 @@ const scoped = () => scopeFromSession();
 import { WORKSPACE_OWNER_ROLES, PLATFORM_ADMIN_ROLES, ROLES } from '@/lib/roles';
 import { syncSeatQuantities } from '@/lib/stripe';
 import { parseDecimal } from '@/lib/records/decimal';   // DEC-1: '12,5' is 12.5 (parseFloat read 12)
+import { profileOf, profileInput } from '@/lib/records/employee-profile';
 
 // ── PUT — update employee (User record) ───────────────────────────────
 export async function PUT(
@@ -32,9 +33,13 @@ export async function PUT(
 
         const { employeeId } = await params;
         const body = await req.json();
+        const pInput = profileInput(body);
+        if (!pInput.ok) {
+            return NextResponse.json({ error: pInput.error }, { status: 400 });
+        }
+
         const {
             firstName, lastName, email, phone, role, status, hourlyCost, hireDate, schedule,
-            department, employmentType, address, birthDate, notes
         } = body;
 
         if (role && !Object.values(ROLES).includes(role)) {
@@ -98,11 +103,7 @@ export async function PUT(
                     hireDate: hireDate ? new Date(hireDate) : (existing.hireDate ?? null),
                     userId: employeeId,
                     ...(schedule !== undefined && { schedule: Boolean(schedule) }),
-                    ...(department !== undefined && { department: department || null }),
-                    ...(employmentType !== undefined && { employmentType: employmentType || null }),
-                    ...(address !== undefined && { address: address || null }),
-                    ...(birthDate !== undefined && { birthDate: birthDate || null }),
-                    ...(notes !== undefined && { notes: notes || null }),
+                    ...pInput.data,
                 }
             });
         } else {
@@ -118,11 +119,7 @@ export async function PUT(
                     hourlyCost: hourlyCost ? parseDecimal(hourlyCost) : (existing.hourlyCost ?? null),
                     hireDate: hireDate ? new Date(hireDate) : (existing.hireDate ?? null),
                     schedule: schedule !== undefined ? Boolean(schedule) : true,
-                    department: department || null,
-                    employmentType: employmentType || null,
-                    address: address || null,
-                    birthDate: birthDate || null,
-                    notes: notes || null,
+                    ...pInput.data,
                     userId: employeeId,
                 }
             });
@@ -139,11 +136,7 @@ export async function PUT(
             hourlyCost: updated.hourlyCost,
             hireDate: updated.hireDate,
             schedule: empRecord.schedule !== false,
-            department: empRecord.department ?? null,
-            employmentType: empRecord.employmentType ?? null,
-            address: empRecord.address ?? null,
-            birthDate: empRecord.birthDate ?? null,
-            notes: empRecord.notes ?? null,
+            ...profileOf(empRecord),
         };
 
         // Sync seat quantities

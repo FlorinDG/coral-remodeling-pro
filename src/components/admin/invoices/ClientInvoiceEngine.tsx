@@ -1011,7 +1011,8 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
 
         const invoiceDateProp = invoice?.properties?.['date'] || invoice?.properties?.['datum'] || '';
         const dueDateProp = invoice?.properties?.['dueDate'] || invoice?.properties?.['vervaldatum'] || '';
-        const isCreditNote = Boolean(invoice?.properties?.['isCreditNote']);
+        // A credit note is docType opt-credit-note (isCreditNote above). The send read a property 'isCreditNote' that
+        // nothing writes, so every credit note went to Peppol as an INVOICE (since 5202fcae, 2026-07-14).
 
         const preflight = performLocalPreflight({
             invoiceId: id,
@@ -1019,6 +1020,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
             client: selectedClient,
             invoiceTitle: String(invoiceTitle || ''),
             vatRegime: invoice?.properties?.['vatRegime'] as string | undefined,
+            vatIncluded,
             isCreditNote,
             tenant: tenant as any
         });

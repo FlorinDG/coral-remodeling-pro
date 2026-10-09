@@ -102,3 +102,10 @@ test('the UBL (manual path): allowance lowers the taxable amount; VAT per rate o
     assert.equal(tag('PayableAmount'), t.totalInclVAT.toFixed(2));
     assert.match(xml, /<cbc:AllowanceChargeReasonCode>95</);
 });
+
+test('a credit note is known by its docType — no screen reads a property "isCreditNote" (nothing writes it)', async () => {
+    const { readFileSync } = await import('node:fs');
+    const src = readFileSync(new URL('../src/components/admin/invoices/ClientInvoiceEngine.tsx', import.meta.url), 'utf8');
+    assert.doesNotMatch(src, /properties\?*\.?\[['"]isCreditNote['"]\]/);
+    assert.match(src, /const isCreditNote = String\(invoice\.properties\?\.\['docType'\]\) === 'opt-credit-note'/);
+});

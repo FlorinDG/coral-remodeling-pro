@@ -1357,6 +1357,7 @@
       "showInScheduler": "Afișează în planificator",
       "hourlyCost": "Cost orar (€)",
       "hireDate": "Data angajării",
+      "birthDate": "Data nașterii",
       "selectDate": "Selectează data...",
       "department": "Departament",
       "employmentType": "Tip contract",

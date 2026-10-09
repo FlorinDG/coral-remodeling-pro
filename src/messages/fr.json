@@ -1356,6 +1356,7 @@
       "showInScheduler": "Afficher dans le planning",
       "hourlyCost": "Coût horaire (€)",
       "hireDate": "Date d'embauche",
+      "birthDate": "Date de naissance",
       "selectDate": "Sélectionner une date...",
       "department": "Département",
       "employmentType": "Type de contrat",

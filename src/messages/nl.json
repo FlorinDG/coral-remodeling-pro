@@ -1357,6 +1357,7 @@
       "showInScheduler": "Weergeven in planning",
       "hourlyCost": "Uurtarief (€)",
       "hireDate": "Datum indiensttreding",
+      "birthDate": "Geboortedatum",
       "selectDate": "Selecteer datum...",
       "department": "Afdeling",
       "employmentType": "Type dienstverband",

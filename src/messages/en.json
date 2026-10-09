@@ -1357,6 +1357,7 @@
       "showInScheduler": "Show in Scheduler",
       "hourlyCost": "Hourly Cost (€)",
       "hireDate": "Hire Date",
+      "birthDate": "Birth Date",
       "selectDate": "Select date...",
       "department": "Department",
       "employmentType": "Employment Type",

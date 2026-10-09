@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { chargedLines, splitDocumentDiscount, discountOf, type Discount, type DocLine } from '@/lib/records/document-lines';
+import { type Discount, type DocLine } from '@/lib/records/document-lines';
+import { calculateInvoiceTotals, type InvoiceTotals } from '@/lib/invoice-totals';
 
 export interface InvoiceLinePayload {
     description: string;
@@ -7,6 +8,8 @@ export interface InvoiceLinePayload {
     unit: string;
     unit_price: number;
     amount: number;
+    /** DOC-LINES-2: the line's VAT, rounded at the line. */
+    tax: number;
     tax_rate: string;
     isReverseCharge?: boolean;
 }
@@ -95,55 +98,49 @@ export function normalizeCountryToCode(country?: string): string {
     return map[clean] || 'BE'; // Fallback to BE
 }
 
-const round2 = (n: number) => Math.round(n * 100) / 100;
-const round4 = (n: number) => Math.round(n * 10000) / 10000;
-
-/** The document's ONE VAT rate (Florin 2026-10-09: "vat per line is a no go. ONLY at the end"). */
-function documentRate(vatRegime?: string): { rate: number; isReverseCharge: boolean } {
-    if (vatRegime === 'medecontractant') return { rate: 0, isReverseCharge: true };
-    const r = parseFloat(vatRegime || '21');
-    return { rate: Number.isFinite(r) ? r : 21, isReverseCharge: false };
+export interface PeppolFigures {
+    items: InvoiceLinePayload[];
+    allowances: DocumentAllowance[];
+    totals: InvoiceTotals;
 }
 
 /**
- * The document's charged lines as e-invoice.be line items — through the ONE line rule (lib/records/document-lines),
- * so the send says what the editor, the totals and the PDF say: a line with subcomponents is one line at their sum,
- * the variant surcharge counts, a "post" multiplies its lines. A line goes out at its NET price (BT-146: after its
- * customer discount), excl. VAT, at the document's rate. Optional lines are not charged.
+ * The e-invoice's figures — ALL from the one totals rule (lib/invoice-totals), so the send states what the screen and
+ * the PDF state: each charged line at its NET price excl. VAT (BT-146), its own rate (BR-CO-04; mixed rates) and its
+ * VAT rounded at the line; the discount on the total as one allowance per rate (UNCL5189 95). Reverse charge: the
+ * whole document at 0 (AE). Optional lines are not charged.
  */
-export function flattenBlocksToLineItems(blocks: InvoiceBlock[], opts: { vatRegime?: string; vatIncluded?: boolean } = {}): InvoiceLinePayload[] {
-    const { rate, isReverseCharge } = documentRate(opts.vatRegime);
-    const toBase = (v: number) => (opts.vatIncluded ? v / (1 + rate / 100) : v);
+export function peppolFigures(blocks: InvoiceBlock[], opts: { vatRegime?: string; vatIncluded?: boolean; documentDiscount?: Discount | null } = {}): PeppolFigures {
+    const totals = calculateInvoiceTotals(blocks || [], { vatRegime: opts.vatRegime || '21', vatIncluded: !!opts.vatIncluded, documentDiscount: opts.documentDiscount });
+    const isReverseCharge = opts.vatRegime === 'medecontractant';
     const items: InvoiceLinePayload[] = [];
-    for (const l of chargedLines(blocks)) {
+    for (const l of totals.lines) {
         const block = l.block as InvoiceBlock;
-        if (l.gross === 0 && !block.content) continue; // skip empty lines
-        const net = toBase(l.net);
+        if (l.base === 0 && !block.content) continue; // skip empty lines
         items.push({
             description: block.content || 'Dienstverlening',
             quantity: l.quantity,
             unit: mapUnitToCode(block.unit),
-            unit_price: round4(net / (l.quantity || 1)),
-            amount: round2(net),
-            tax_rate: rate.toFixed(2),
+            unit_price: Math.round((l.base / (l.quantity || 1)) * 10000) / 10000,   // 4 decimals allowed
+            amount: l.base,
+            tax: l.vat,
+            tax_rate: l.rate.toFixed(2),
             isReverseCharge,
         });
     }
-    return items;
-}
-
-/** The discount on the total as the e-invoice's allowance(s): before VAT, at the document's rate (UNCL5189 95 = discount). */
-export function documentAllowances(items: InvoiceLinePayload[], documentDiscount: Discount | null | undefined, vatRegime?: string): DocumentAllowance[] {
-    const { rate, isReverseCharge } = documentRate(vatRegime);
-    const base = items.reduce((s, i) => s + i.amount, 0);
-    const split = splitDocumentDiscount(new Map([[rate, base]]), discountOf(documentDiscount));
-    return [...split.byRate.entries()].filter(([, amount]) => amount > 0).map(([r, amount]) => ({
+    const allowances: DocumentAllowance[] = totals.discountByRate.map(({ rate, amount }) => ({
         amount,
-        tax_rate: r.toFixed(2),
-        tax_code: isReverseCharge ? 'AE' : r === 0 ? 'Z' : 'S',
+        tax_rate: rate.toFixed(2),
+        tax_code: isReverseCharge ? 'AE' : rate === 0 ? 'Z' : 'S',
         reason: 'Korting',
         reason_code: '95',
     }));
+    return { items, allowances, totals };
+}
+
+/** The charged lines as e-invoice line items (see peppolFigures). */
+export function flattenBlocksToLineItems(blocks: InvoiceBlock[], opts: { vatRegime?: string; vatIncluded?: boolean } = {}): InvoiceLinePayload[] {
+    return peppolFigures(blocks, opts).items;
 }
 
 export function buildPeppolPayload(params: BuildPayloadParams) {
@@ -186,8 +183,7 @@ export function buildPeppolPayload(params: BuildPayloadParams) {
         countryLabel
     ].filter(Boolean).join(', ') || client.address || '';
 
-    const items = flattenBlocksToLineItems(blocks || [], { vatRegime: params.vatRegime, vatIncluded: params.vatIncluded });
-    const allowances = documentAllowances(items, params.documentDiscount, params.vatRegime);
+    const { items, allowances, totals } = peppolFigures(blocks || [], { vatRegime: params.vatRegime, vatIncluded: params.vatIncluded, documentDiscount: params.documentDiscount });
 
     const invoicePayload: Record<string, any> = {
         document_type: isCreditNote ? 'CREDIT_NOTE' : 'INVOICE',
@@ -213,6 +209,12 @@ export function buildPeppolPayload(params: BuildPayloadParams) {
         // DOC-LINES-1: the discount on the total — an allowance with VAT impact (not total_discount, which is the
         // non-VAT financial discount)
         ...(allowances.length ? { allowances } : {}),
+        // The totals as the rule computed them — VAT rounded per line, added per rate (BR-S-09 allows ±1)
+        subtotal: totals.subtotal,
+        total_tax: totals.totalVAT,
+        invoice_total: totals.totalInclVAT,
+        amount_due: totals.totalInclVAT,
+        tax_details: totals.vatBreakdown.map(v => ({ rate: v.rate.toFixed(2), amount: v.vat })),
 
         // Payment terms
         payment_term: 'Net 30 days',
@@ -261,7 +263,8 @@ export function buildPeppolPayload(params: BuildPayloadParams) {
         customerCountry,
         customerAddressStr,
         items,
-        allowances
+        allowances,
+        totals
     };
 }
 

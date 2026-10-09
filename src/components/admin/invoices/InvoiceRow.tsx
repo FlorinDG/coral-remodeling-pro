@@ -17,11 +17,12 @@ interface InvoiceRowProps {
     onUpdate: (id: string, updates: Partial<Block>) => void;
     onDelete: (id: string) => void;
     onDuplicate: (id: string) => void;
-    vatCalcMode?: 'lines' | 'total';
+    /** DOC-LINES-2: the document's VAT regime — a line without its own rate takes it. */
+    vatRegime?: string;
     readOnly?: boolean;
 }
 
-export default function InvoiceRow({ block, index, onUpdate, onDelete, onDuplicate, vatCalcMode = 'lines', readOnly }: InvoiceRowProps) {
+export default function InvoiceRow({ block, index, onUpdate, onDelete, onDuplicate, vatRegime = '21', readOnly }: InvoiceRowProps) {
     const [isExpanded, setIsExpanded] = useState(true);
     const [isPostModalOpen, setIsPostModalOpen] = useState(false);
     const [isReferenceModalOpen, setIsReferenceModalOpen] = useState(false);
@@ -350,7 +351,7 @@ export default function InvoiceRow({ block, index, onUpdate, onDelete, onDuplica
                                                     onUpdate={handleChildUpdate}
                                                     onDelete={handleChildDelete}
                                                     onDuplicate={handleChildDuplicate}
-                                                    vatCalcMode={vatCalcMode}
+                                                    vatRegime={vatRegime}
                                                     readOnly={readOnly}
                                                 />
                                             ))}
@@ -393,7 +394,7 @@ export default function InvoiceRow({ block, index, onUpdate, onDelete, onDuplica
                                                     databaseId={block.type === 'article' ? 'db-articles' : 'db-bestek'}
                                                     onUpdate={(updates) => onUpdate(block.id, updates)}
                                                     childrenTotal={block.children && block.children.length > 0 ? block.children.reduce((sum, c) => sum + calculateBlockTotal(c), 0) : undefined}
-                                                    vatCalcMode={vatCalcMode}
+                                                    vatRegime={vatRegime}
                                                 />
 
                                             </>
@@ -511,7 +512,7 @@ export default function InvoiceRow({ block, index, onUpdate, onDelete, onDuplica
                                                                     onUpdate={handleChildUpdate}
                                                                     onDelete={handleChildDelete}
                                                                     onDuplicate={handleChildDuplicate}
-                                                                    vatCalcMode={vatCalcMode}
+                                                                    vatRegime={vatRegime}
                                                                     readOnly={readOnly}
                                                                 />
                                                             ))}
@@ -751,7 +752,7 @@ export default function InvoiceRow({ block, index, onUpdate, onDelete, onDuplica
                                                     onUpdate={handleChildUpdate}
                                                     onDelete={handleChildDelete}
                                                      onDuplicate={handleChildDuplicate}
-                                                    vatCalcMode={vatCalcMode}
+                                                    vatRegime={vatRegime}
                                                     readOnly={readOnly}
                                                 />
                                             ))}

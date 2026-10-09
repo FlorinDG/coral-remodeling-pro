@@ -37,7 +37,7 @@ import { useTenant } from '@/context/TenantContext';
 import { RecordAttachments } from '@/components/shared/RecordAttachments';
 import { Checkbox } from '@/components/common/Checkbox';
 import postcodesData from '@/lib/belgian-postcodes.json';
-import { calculateInvoiceTotals } from '@/lib/invoice-totals';
+import { documentTotals } from '@/lib/invoice-totals';
 import { getProjectScheduledShifts, getProjectLaborStats } from '@/app/actions/timesheets';
 import DecimalInput from '@/components/ui/DecimalInput';
 
@@ -730,7 +730,7 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                                     <PageFinancialAnalysis
                                         databaseId={databaseId}
                                         pageId={pageId}
-                                        quotationTotal={calculateInvoiceTotals(page.blocks || [], { vatCalcMode: (page.properties['vatCalcMode'] as 'lines' | 'total') || 'lines', vatRegime: String(page.properties['vatRegime'] || '21') }).totalInclVAT}
+                                        quotationTotal={documentTotals(page.blocks, page.properties as Record<string, unknown>).totalInclVAT}
                                     />
                                 </div>
                             )}

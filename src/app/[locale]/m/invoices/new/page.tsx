@@ -13,7 +13,12 @@ import { ArrowLeft, Plus, Trash2, Loader2, CheckCircle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { Link } from '@/i18n/routing';
-import { Page } from '@/components/admin/database/types';
+import { Page, Block } from '@/components/admin/database/types';
+import { calculateInvoiceTotals } from '@/lib/invoice-totals';
+import { zonedParts, addDaysYmd } from '@/lib/kernel/shift-time';
+
+/** The document's regime; a line's own rate (the select per line) overrides it — mixed rates (DOC-LINES-2). */
+const DOCUMENT_REGIME = '21';
 import DecimalInput from '@/components/ui/DecimalInput';
 
 interface LineItem {
@@ -44,12 +49,9 @@ export default function MobileCreateInvoicePage() {
     }));
 
     const [selectedClientId, setSelectedClientId] = useState('');
-    const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().split('T')[0]);
-    const [dueDate, setDueDate] = useState(() => {
-        const d = new Date();
-        d.setDate(d.getDate() + 30);
-        return d.toISOString().split('T')[0];
-    });
+    // The business day (Brussels) — never the UTC day
+    const [invoiceDate, setInvoiceDate] = useState(() => zonedParts(new Date()).date);
+    const [dueDate, setDueDate] = useState(() => addDaysYmd(zonedParts(new Date()).date, 30));
     const [lines, setLines] = useState<LineItem[]>([
         { id: '1', description: '', quantity: 1, unitPrice: 0, vatRate: 21 },
     ]);
@@ -75,9 +77,28 @@ export default function MobileCreateInvoicePage() {
         setLines(prev => prev.map(l => l.id === id ? { ...l, [key]: value } : l));
     };
 
-    const subtotal = lines.reduce((sum, l) => sum + (l.quantity * l.unitPrice), 0);
-    const totalVat = lines.reduce((sum, l) => sum + (l.quantity * l.unitPrice * l.vatRate / 100), 0);
-    const totalIncVat = subtotal + totalVat;
+    // DOC-LINES-2: the lines as the editor's lines (content / quantity / unitPrice / vatRate on the block — the shape the
+    // desktop editor, the PDF and Peppol read), and the totals from the ONE rule. Before, the values sat in
+    // block.properties, so the invoice opened on desktop with empty €0 lines.
+    const lineBlocks = lines
+        .filter(l => l.description.trim())
+        .map((l, i) => ({
+            id: `block-${l.id}-${i}`,
+            type: 'line' as const,
+            content: l.description,
+            quantity: l.quantity,
+            unit: 'stk',
+            unitPrice: l.unitPrice,
+            verkoopPrice: l.unitPrice,
+            // the line's own rate only when it differs from the document's — else it follows the regime if that changes
+            ...(l.vatRate !== Number(DOCUMENT_REGIME) ? { vatRate: l.vatRate } : {}),
+            isOptional: false,
+            children: [],
+        }));
+    const totals = calculateInvoiceTotals(lineBlocks, { vatRegime: DOCUMENT_REGIME });
+    const subtotal = totals.subtotal;
+    const totalVat = totals.totalVAT;
+    const totalIncVat = totals.totalInclVAT;
 
     const selectedClientName = clientOptions.find(c => c.value === selectedClientId)?.label || '';
 
@@ -87,7 +108,7 @@ export default function MobileCreateInvoicePage() {
             toast.error('Please select a client');
             return;
         }
-        if (lines.every(l => !l.description.trim())) {
+        if (lineBlocks.length === 0) {
             toast.error('Please add at least one line item');
             return;
         }
@@ -111,6 +132,7 @@ export default function MobileCreateInvoicePage() {
                 clientName: selectedClientName,
                 invoiceDate,
                 dueDate,
+                vatRegime: DOCUMENT_REGIME,
                 totalExVat: subtotal,
                 totalVat: totalVat,
                 totalIncVat: totalIncVat,
@@ -125,25 +147,9 @@ export default function MobileCreateInvoicePage() {
             addConfirmedPage(pageResult.page);
             await createPrismaInvoice(pageResult.page.id, invoiceNumber);
 
-            // Create line item blocks
-            const blocks = lines
-                .filter(l => l.description.trim())
-                .map((l, i) => ({
-                    id: `block-${Date.now()}-${i}`,
-                    type: 'line' as const,
-                    content: '',
-                    properties: {
-                        description: l.description,
-                        quantity: l.quantity,
-                        unitPrice: l.unitPrice,
-                        vatRate: l.vatRate,
-                        lineTotal: l.quantity * l.unitPrice,
-                    },
-                }));
-
-            if (blocks.length > 0) {
+            if (lineBlocks.length > 0) {
                 const updatePageBlocks = useDatabaseStore.getState().updatePageBlocks;
-                updatePageBlocks(invoicesDbId, pageResult.page.id, blocks);
+                updatePageBlocks(invoicesDbId, pageResult.page.id, lineBlocks as Block[]);
             }
 
             toast.success('Invoice created!');
@@ -153,7 +159,7 @@ export default function MobileCreateInvoicePage() {
             toast.error('Something went wrong');
         }
         setIsCreating(false);
-    }, [isCreating, selectedClientId, selectedClientName, invoiceDate, dueDate, lines, subtotal, totalVat, totalIncVat, invoicesDbId, addConfirmedPage, router, tenant, setIsCreating]);
+    }, [isCreating, selectedClientId, selectedClientName, invoiceDate, dueDate, lineBlocks, subtotal, totalVat, totalIncVat, invoicesDbId, addConfirmedPage, router, tenant, setIsCreating]);
 
     const handleClientCreated = (pageId: string) => {
         setSelectedClientId(pageId);

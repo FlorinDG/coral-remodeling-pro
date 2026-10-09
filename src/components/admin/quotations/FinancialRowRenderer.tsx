@@ -9,6 +9,7 @@ import { Database as DatabaseIcon, Check, Search, X } from 'lucide-react';
 import { t } from '@/lib/document-i18n';
 import { parseDecimal, formatDecimal } from '@/lib/decimal-parser';
 import ClientDiscountInput from '@/components/admin/shared/ClientDiscountInput';
+import LineVatRateSelect from '@/components/admin/shared/LineVatRateSelect';
 import { lineNet } from '@/lib/records/document-lines';
 
 // ── Labor rate constants ─────────────────────────────────────────────────────
@@ -18,7 +19,8 @@ const LABOR_RATES: Record<string, number> = {
 };
 
 interface FinancialRowRendererProps {
-    vatCalcMode?: "total" | "lines";
+    /** DOC-LINES-2: the document's VAT regime — a line without its own rate takes it. */
+    vatRegime?: string;
     block: Block;
     databaseId: 'db-articles' | 'db-bestek' | string;
     onUpdate: (updates: Partial<Block>) => void;
@@ -75,7 +77,7 @@ const RichTextInput = ({ value, onChange, onSearch, placeholder, className, onBl
     );
 };
 
-export default function FinancialRowRenderer({ block, databaseId, onUpdate, childrenTotal, hasLibraryAccess = true, language = 'nl' }: FinancialRowRendererProps) {
+export default function FinancialRowRenderer({ block, databaseId, onUpdate, childrenTotal, hasLibraryAccess = true, language = 'nl', vatRegime = '21' }: FinancialRowRendererProps) {
     const getDatabase = useDatabaseStore(state => state.getDatabase);
     const [isSaving, setIsSaving] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
@@ -747,6 +749,12 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                                 className="bg-transparent border-none text-base text-black dark:text-white text-right focus:outline-none focus:ring-0 font-medium placeholder:text-neutral-300 pr-1 pl-4 py-0.5 cursor-text w-full disabled:cursor-not-allowed"
                             />
                         </div>
+                    </div>
+
+                    {/* DOC-LINES-2 · the line's VAT rate — empty = the document's */}
+                    <div className="flex flex-row items-center justify-between w-full @[600px]:flex-col @[600px]:gap-0.5 @[600px]:w-[80px] shrink-0 self-start mt-0.5 relative border-b border-neutral-200/60 dark:border-neutral-850 @[600px]:border-b-0 py-1.5 @[600px]:py-0">
+                        <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-left @[600px]:text-right @[600px]:pr-4 cursor-default">BTW</label>
+                        <LineVatRateSelect className="w-24 @[600px]:w-full pr-1" value={block.vatRate} vatRegime={vatRegime} onChange={r => onUpdate({ vatRate: r ?? undefined })} />
                     </div>
 
                     {/* DOC-LINES-1 · the customer discount on this line — a percentage or a fixed amount */}

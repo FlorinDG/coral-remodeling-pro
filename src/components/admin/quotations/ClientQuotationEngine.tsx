@@ -697,7 +697,6 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                     templateId={tenant?.documentTemplate || 't1'}
                     language={docLanguage}
                     showSubcomponents={false}
-                    vatCalcMode={(tenant?.vatCalcMode as any) || 'lines'}
                     vatRegime={vatRegime}
                     documentDiscount={documentDiscountOf(quotation?.properties as Record<string, unknown>)}
                     billingRule={billingRule}
@@ -1187,7 +1186,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                                             onDelete={handleDeleteBlock}
                                             onDuplicate={handleDuplicateBlock}
                                             hasLibraryAccess={hasLibraryAccess}
-                                            vatCalcMode={(tenant?.vatCalcMode as any) || 'lines'}
+                                            vatRegime={vatRegime}
                                             language={docLanguage}
                                             isDraggingGlobal={isDraggingGlobal}
                                         />
@@ -1205,7 +1204,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                                             onDelete={() => {}}
                                             onDuplicate={() => {}}
                                             hasLibraryAccess={hasLibraryAccess}
-                                            vatCalcMode={(tenant?.vatCalcMode as any) || 'lines'}
+                                            vatRegime={vatRegime}
                                             language={docLanguage}
                                             isDraggingGlobal={true}
                                             isDragging={true}
@@ -1261,7 +1260,6 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
 
                         {/* Phase 10: Financial Summary & Profitability */}
                         <QuotationFooterReport
-                            vatCalcMode={(tenant?.vatCalcMode as any) || 'lines'}
                             blocks={blocks}
                             quotationTitle={String(quotationTitle)}
                             expiryDate={quotationDate}
@@ -1345,7 +1343,6 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                                                 templateId={tenant?.documentTemplate || 't1'}
                                                 language={docLanguage}
                                                 showSubcomponents={false}
-                                                vatCalcMode={(tenant?.vatCalcMode as any) || 'lines'}
                                                 vatRegime={vatRegime}
                                                 documentDiscount={documentDiscountOf(quotation?.properties as Record<string, unknown>)}
                                                 billingRule={billingRule}
@@ -1389,7 +1386,6 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                                                 templateId={tenant?.documentTemplate || 't1'}
                                                 language={docLanguage}
                                                 showSubcomponents={false}
-                                                vatCalcMode={(tenant?.vatCalcMode as any) || 'lines'}
                                                 vatRegime={vatRegime}
                                                 documentDiscount={documentDiscountOf(quotation?.properties as Record<string, unknown>)}
                                                 billingRule={billingRule}
@@ -1526,7 +1522,6 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                                                         templateId={tenant?.documentTemplate || 't1'}
                                                         language={docLanguage}
                                                         showSubcomponents={true}
-                                                        vatCalcMode={(tenant?.vatCalcMode as any) || 'lines'}
                                                         vatRegime={vatRegime}
                                                         documentDiscount={documentDiscountOf(quotation?.properties as Record<string, unknown>)}
                                                         billingRule={billingRule}

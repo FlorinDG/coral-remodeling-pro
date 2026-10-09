@@ -54,6 +54,12 @@ interface UBLInvoiceData {
 
     /** DOC-LINES-1: discounts on the whole document — before VAT, each at its rate (UNCL5189 95 = discount). */
     allowances?: UBLAllowance[];
+
+    /**
+     * DOC-LINES-2: the VAT per rate as the totals rule computed it (lib/invoice-totals — each line's VAT rounded, then
+     * added per rate). Given, it is stated as is; absent, VAT is computed here per rate on the taxable amount.
+     */
+    taxSubtotals?: { rate: number; taxableAmount: number; taxAmount: number; isReverseCharge?: boolean }[];
 }
 
 interface UBLAllowance {
@@ -144,6 +150,10 @@ export function generatePeppolUBL(data: UBLInvoiceData): string {
     for (const [rateKey, t] of taxMap.entries()) {
         t.taxableAmount = Math.round(t.taxableAmount * 100) / 100;
         t.taxAmount = rateKey === -1 ? 0 : Math.round(t.taxableAmount * rateKey) / 100;
+    }
+    if (data.taxSubtotals) {
+        taxMap.clear();
+        for (const t of data.taxSubtotals) taxMap.set(t.isReverseCharge ? -1 : t.rate, { taxableAmount: t.taxableAmount, taxAmount: t.isReverseCharge ? 0 : t.taxAmount });
     }
 
     const taxExclusiveAmount = totalLineExtensionAmount - totalAllowanceAmount;

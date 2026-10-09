@@ -7,9 +7,9 @@ import { renderRichText } from '@/components/admin/shared/pdfRichText';
 import { getTemplateStyles, TemplateId, lighten, withAlpha } from '@/components/admin/shared/templateStyles';
 import { t } from '@/lib/document-i18n';
 import { canAccess } from '@/lib/feature-flags';
-import { calculateInvoiceTotals } from '@/lib/invoice-totals';
+import { calculateInvoiceTotals, documentRateOf } from '@/lib/invoice-totals';
 import { generateOGM } from '@/lib/ogm';
-import { blockValue, discountOf, type Discount } from '@/lib/records/document-lines';
+import { blockValue, discountOf, lineRate, type Discount } from '@/lib/records/document-lines';
 
 /**
  * Resolve the document type label. Credit notes (CN- prefix) get
@@ -277,9 +277,16 @@ export const InvoicePDFTemplate = ({
     }, [blocks, vatIncluded, vatRegime, databaseStoreState, documentDiscount]);
     // DOC-LINES-1: the discount on the total, shown above the subtotal; a line's own discount, under its description.
     const totalDiscount = blocks && blocks.length > 0 ? totals.documentDiscount : 0;
+    // DOC-LINES-2: a document with mixed rates states each line's rate (EN 16931: every line has one)
+    const mixedRates = totals.vatBreakdown.length > 1;
+    const documentRate = vatRegime === 'medecontractant' ? 0 : documentRateOf(vatRegime);
     const lineDiscountNote = (b: Block) => {
         const d = discountOf(b.clientDiscount);
-        return d ? `${t('col_discount', lang)} ${d.kind === 'pct' ? `${d.value}%` : `€ ${d.value.toFixed(2)}`}` : '';
+        const parts = [
+            d ? `${t('col_discount', lang)} ${d.kind === 'pct' ? `${d.value}%` : `€ ${d.value.toFixed(2)}`}` : '',
+            mixedRates ? `${t('vat', lang)} ${lineRate(b, documentRate)}%` : '',
+        ];
+        return parts.filter(Boolean).join(' · ');
     };
 
     const finalSubtotal = blocks && blocks.length > 0 ? totals.subtotal : grandTotalExcl;

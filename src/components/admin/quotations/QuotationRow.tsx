@@ -70,7 +70,8 @@ interface QuotationRowProps {
     onDelete: (id: string) => void;
     onDuplicate: (id: string) => void;
     hasLibraryAccess?: boolean;
-    vatCalcMode?: 'lines' | 'total';
+    /** DOC-LINES-2: the document's VAT regime — a line without its own rate takes it. */
+    vatRegime?: string;
     language?: string;
     isDraggingGlobal?: boolean;
     isInactive?: boolean;
@@ -79,7 +80,7 @@ interface QuotationRowProps {
     depth?: number;
 }
 
-export default function QuotationRow({ block, index, onUpdate, onDelete, onDuplicate, hasLibraryAccess = true, vatCalcMode = 'lines', language = 'nl', isDraggingGlobal = false, isInactive = false, dragHandleProps, isDragging = false, depth = 0 }: QuotationRowProps) {
+export default function QuotationRow({ block, index, onUpdate, onDelete, onDuplicate, hasLibraryAccess = true, vatRegime = '21', language = 'nl', isDraggingGlobal = false, isInactive = false, dragHandleProps, isDragging = false, depth = 0 }: QuotationRowProps) {
     const currentInactive = isInactive || !!block.isOptional;
     const isExpanded = !(block.properties?.isCollapsed);
     const [isPostModalOpen, setIsPostModalOpen] = useState(false);
@@ -482,7 +483,7 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
                                                     onUpdate={(updates) => onUpdate(block.id, updates)}
                                                     childrenTotal={block.children && block.children.length > 0 ? block.children.reduce((sum, c) => sum + (c ? calculateBlockTotal(c) : 0), 0) : undefined}
                                                     hasLibraryAccess={hasLibraryAccess}
-                                                    vatCalcMode={vatCalcMode}
+                                                    vatRegime={vatRegime}
                                                     language={language}
                                                 />
 
@@ -611,7 +612,7 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
                                                         onDelete={handleChildDelete}
                                                         onDuplicate={handleChildDuplicate}
                                                         hasLibraryAccess={hasLibraryAccess}
-                                                        vatCalcMode={vatCalcMode}
+                                                        vatRegime={vatRegime}
                                                         language={language}
                                                         isDraggingGlobal={isDraggingGlobal}
                                                         isInactive={currentInactive}

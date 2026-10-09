@@ -5,7 +5,7 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { flattenBlocksToLineItems, documentAllowances, buildPeppolPayload, type InvoiceBlock } from '../src/lib/peppol-payload.ts';
+import { flattenBlocksToLineItems, peppolFigures, buildPeppolPayload, type InvoiceBlock } from '../src/lib/peppol-payload.ts';
 import { generatePeppolUBL } from '../src/lib/peppol-ubl.ts';
 import { calculateInvoiceTotals } from '../src/lib/invoice-totals.ts';
 
@@ -50,21 +50,35 @@ test('prices entered incl. VAT go out excl. VAT', () => {
     assert.equal(i.amount, 100);
 });
 
-test('the discount on the total: one allowance at the document rate, code 95 — and the totals agree', () => {
+test('the discount on the total: one allowance per rate, code 95 — and the totals agree', () => {
     const blocks = [line({ verkoopPrice: 333.33 }), line({ verkoopPrice: 66.66, clientDiscount: { kind: 'pct', value: 50 } })];
     const discount = { kind: 'pct' as const, value: 10 };
-    const items = flattenBlocksToLineItems(blocks, { vatRegime: '6' });
-    const allowances = documentAllowances(items, discount, '6');
+    const { items, allowances, totals } = peppolFigures(blocks, { vatRegime: '6', documentDiscount: discount });
     assert.equal(allowances.length, 1);
     assert.equal(allowances[0].reason_code, '95');
     assert.equal(allowances[0].tax_rate, '6.00');
     assert.equal(allowances[0].tax_code, 'S');
-    const totals = calculateInvoiceTotals(blocks, { vatRegime: '6', documentDiscount: discount });
     assert.equal(allowances[0].amount, totals.documentDiscount);
     assert.equal(sum(items.map(i => i.amount)) - allowances[0].amount, totals.subtotal);
 
-    assert.deepEqual(documentAllowances(items, null, '6'), []);
-    assert.equal(documentAllowances(items, discount, 'medecontractant')[0].tax_code, 'AE');
+    assert.deepEqual(peppolFigures(blocks, { vatRegime: '6' }).allowances, []);
+    assert.equal(peppolFigures(blocks, { vatRegime: 'medecontractant', documentDiscount: discount }).allowances[0].tax_code, 'AE');
+});
+
+test('DOC-LINES-2 · mixed rates: each line its own rate and VAT; the discount split per rate; lines + allowances = the totals', () => {
+    const blocks = [line({ verkoopPrice: 2.25, quantity: 1 }), line({ verkoopPrice: 2.25 }), line({ verkoopPrice: 2.25 }), line({ verkoopPrice: 2.25 }),
+        line({ verkoopPrice: 100, vatRate: 6 })];
+    const { items, allowances, totals } = peppolFigures(blocks, { vatRegime: '21', documentDiscount: { kind: 'amount', value: 10 } });
+    assert.deepEqual(items.map(i => i.tax_rate), ['21.00', '21.00', '21.00', '21.00', '6.00']);
+    assert.deepEqual(items.map(i => i.tax), [0.47, 0.47, 0.47, 0.47, 6]);         // rounded at the line
+    assert.deepEqual(allowances.map(a => a.tax_rate).sort(), ['21.00', '6.00']);
+    assert.equal(sum(allowances.map(a => a.amount)), 10);
+    for (const v of totals.vatBreakdown) {
+        const lines = sum(items.filter(i => parseFloat(i.tax_rate) === v.rate).map(i => i.amount));
+        const off = sum(allowances.filter(a => parseFloat(a.tax_rate) === v.rate).map(a => a.amount));
+        assert.equal(Math.round((lines - off) * 100) / 100, v.base);                // BR-S-08, to the cent
+        assert.ok(Math.abs(v.vat - v.base * v.rate / 100) < 1);                      // BR-S-09 tolerance
+    }
 });
 
 test('the payload carries the allowance — never as total_discount (that is the NON-VAT discount)', () => {
@@ -76,6 +90,10 @@ test('the payload carries the allowance — never as total_discount (that is the
     assert.equal(invoicePayload.allowances.length, 1);
     assert.equal(invoicePayload.allowances[0].amount, 20);
     assert.equal(invoicePayload.total_discount, undefined);
+    assert.equal(invoicePayload.subtotal, 180);
+    assert.equal(invoicePayload.total_tax, 37.8);
+    assert.equal(invoicePayload.invoice_total, 217.8);
+    assert.deepEqual(invoicePayload.tax_details, [{ rate: '21.00', amount: 37.8 }]);
     const none = buildPeppolPayload({
         invoiceId: 'x', invoiceTitle: 'F-2', client: { companyName: 'Klant' }, blocks: [line({ verkoopPrice: 200 })], vatRegime: '21',
         tenant: { companyName: 'Coral', vatNumber: 'BE0123456789', street: null, postalCode: null, city: null, email: null, iban: null, bic: null },
@@ -86,13 +104,13 @@ test('the payload carries the allowance — never as total_discount (that is the
 test('the UBL (manual path): allowance lowers the taxable amount; VAT per rate on what remains; totals match the PDF', () => {
     const blocks = [line({ verkoopPrice: 123.45, quantity: 3 }), line({ verkoopPrice: 10.01 })];
     const discount = { kind: 'pct' as const, value: 7 };
-    const items = flattenBlocksToLineItems(blocks, { vatRegime: '21' });
-    const allowances = documentAllowances(items, discount, '21');
+    const { items, allowances, totals } = peppolFigures(blocks, { vatRegime: '21', documentDiscount: discount });
     const xml = generatePeppolUBL({
         invoiceId: 'F-1', issueDate: '2026-10-09', dueDate: '2026-11-08', currency: 'EUR',
         supplierName: 'Coral', supplierVatNumber: 'BE0123456789', supplierCountry: 'BE', customerName: 'Klant',
         items: items.map(i => ({ description: i.description, quantity: i.quantity, unit: i.unit, unitPrice: i.unit_price, lineTotal: i.amount, taxRate: parseFloat(i.tax_rate) })),
         allowances: allowances.map(a => ({ amount: a.amount, taxRate: parseFloat(a.tax_rate), reason: a.reason })),
+        taxSubtotals: totals.vatBreakdown.map(v => ({ rate: v.rate, taxableAmount: v.base, taxAmount: v.vat })),
     });
     const t = calculateInvoiceTotals(blocks, { vatRegime: '21', documentDiscount: discount });
     const tag = (name: string) => xml.match(new RegExp(`<cbc:${name} [^>]*>([^<]+)<`))![1];
@@ -100,6 +118,7 @@ test('the UBL (manual path): allowance lowers the taxable amount; VAT per rate o
     assert.equal(tag('TaxableAmount'), t.subtotal.toFixed(2));
     assert.equal(tag('AllowanceTotalAmount'), t.documentDiscount.toFixed(2));
     assert.equal(tag('PayableAmount'), t.totalInclVAT.toFixed(2));
+    assert.equal(xml.match(/<cac:TaxTotal>\s*<cbc:TaxAmount [^>]*>([^<]+)</)![1], t.totalVAT.toFixed(2));
     assert.match(xml, /<cbc:AllowanceChargeReasonCode>95</);
 });
 

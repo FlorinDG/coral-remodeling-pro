@@ -1742,8 +1742,9 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                                             onUpdate={handleUpdateBlock}
                                             onDelete={handleDeleteBlock}
                                             onDuplicate={handleDuplicateBlock}
+                                            vatRegime={vatRegime}
                                             readOnly={isLocked || !isDraft}
-                                        />
+                                            />
                                     ))}
                                     {provided.placeholder}
                                 </div>

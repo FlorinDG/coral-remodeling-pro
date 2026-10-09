@@ -24,7 +24,6 @@ export default function FinancialsSettingsPage() {
     const router = useRouter();
 
     const [defaultVatRate, setDefaultVatRate] = useState(21);
-    const [vatCalcMode, setVatCalcMode] = useState('lines');
     const [defaultPaymentTermDays, setDefaultPaymentTermDays] = useState(30);
     const [defaultPaymentMethod, setDefaultPaymentMethod] = useState('transfer');
     const [defaultPaymentDueModel, setDefaultPaymentDueModel] = useState('net');
@@ -45,7 +44,6 @@ export default function FinancialsSettingsPage() {
     useEffect(() => {
         if (tenant) {
             if (tenant.defaultVatRate != null) setDefaultVatRate(tenant.defaultVatRate);
-            if (tenant.vatCalcMode) setVatCalcMode(tenant.vatCalcMode);
             if (tenant.defaultPaymentTermDays != null) setDefaultPaymentTermDays(tenant.defaultPaymentTermDays);
             if (tenant.defaultPaymentMethod) setDefaultPaymentMethod(tenant.defaultPaymentMethod);
             if (tenant.defaultPaymentDueModel) setDefaultPaymentDueModel(tenant.defaultPaymentDueModel);
@@ -108,7 +106,6 @@ export default function FinancialsSettingsPage() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 defaultVatRate,
-                vatCalcMode,
                 defaultPaymentTermDays,
                 defaultPaymentMethod,
                 defaultPaymentDueModel,
@@ -168,29 +165,8 @@ export default function FinancialsSettingsPage() {
                             <p className="text-xs text-neutral-400 mt-2">Applied when adding new line items. Can be overridden per line.</p>
                         </div>
 
-                        {/* VAT Calculation Mode */}
-                        <div className="bg-white dark:bg-white/5 rounded-2xl border border-neutral-200 dark:border-white/10 p-5">
-                            <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 mb-2 block">VAT Calculation Mode</label>
-                            <div className="flex gap-2">
-                                {[
-                                    { value: 'lines', label: 'Per Line', desc: 'VAT calculated per line item' },
-                                    { value: 'total', label: 'On Total', desc: 'VAT applied on subtotal' },
-                                ].map(opt => (
-                                    <button
-                                        key={opt.value}
-                                        onClick={() => setVatCalcMode(opt.value)}
-                                        className={`flex-1 p-3 rounded-xl text-left transition-all border ${
-                                            vatCalcMode === opt.value
-                                                ? 'border-[var(--brand-color,#d35400)] bg-[var(--brand-color,#d35400)]/5'
-                                                : 'border-neutral-200 dark:border-white/10 hover:border-neutral-300'
-                                        }`}
-                                    >
-                                        <p className="text-sm font-bold text-neutral-900 dark:text-white">{opt.label}</p>
-                                        <p className="text-xs text-neutral-500 mt-0.5">{opt.desc}</p>
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
+                        {/* DOC-LINES-2: VAT is computed one way — each line's VAT rounded, then added per rate. The old
+                            "per line / on total" choice never changed the calculation and is gone. */}
 
                         {/* Payment Terms */}
                         <div className="bg-white dark:bg-white/5 rounded-2xl border border-neutral-200 dark:border-white/10 p-5">

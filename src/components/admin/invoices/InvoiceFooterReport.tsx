@@ -5,6 +5,7 @@ import { Block } from '@/components/admin/database/types';
 import { useRouter } from 'next/navigation';
 import { t } from '@/lib/document-i18n';
 import { calculateInvoiceTotals } from '@/lib/invoice-totals';
+import VatBreakdownRows from '@/components/admin/shared/VatBreakdownRows';
 import DocumentDiscountRows from '@/components/admin/shared/DocumentDiscountRows';
 import type { Discount } from '@/lib/records/document-lines';
 
@@ -252,6 +253,7 @@ export default function InvoiceFooterReport({
                                 </select>
                                 <span className="text-[13px] font-semibold text-neutral-600 dark:text-neutral-300 tabular-nums shrink-0">{formatCurrency(totalVAT)}</span>
                             </div>
+                            <VatBreakdownRows breakdown={totals.vatBreakdown} formatCurrency={formatCurrency} />
                             <div className="flex items-center justify-end px-5 py-1.5 pb-2">
                                 <label className="flex items-center gap-2 cursor-pointer group">
                                     <input 

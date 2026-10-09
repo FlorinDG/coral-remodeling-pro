@@ -428,7 +428,6 @@ export default function QuotationViewer({ quoteId, properties, blocks, tenant, l
                                                 templateId={(tenant?.documentTemplate as TemplateId) || 't1'}
                                                 language={lang}
                                                 showSubcomponents={false}
-                                                vatCalcMode={properties?.vatCalcMode || 'lines'}
                                                 vatRegime={properties?.vatRegime || '21'}
                                                 documentDiscount={documentDiscountOf(properties as Record<string, unknown>)}
                                             />

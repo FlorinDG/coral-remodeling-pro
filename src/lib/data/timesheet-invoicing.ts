@@ -200,7 +200,7 @@ export async function invoiceSelectedHours(entryIds: string[]):
         unit: 'u',
         unitPrice: 0,
         verkoopPrice: 0,
-        vatRate: Number(vat),
+        // no vatRate: the line takes the document's regime (DOC-LINES-2 — a line's own rate is only a deliberate one)
         isOptional: false,
         children: [],
     } as Block));

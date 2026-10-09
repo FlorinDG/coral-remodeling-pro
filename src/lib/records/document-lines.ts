@@ -10,6 +10,10 @@
  * A line's value: its unit price (+ the variant surcharge frozen on it — lib/records/variant-price) × its quantity; a
  * line with subcomponents is worth the sum of its subcomponents × its quantity. The line's CUSTOMER discount comes off
  * that (never below 0). `discountPercent` on a line is the SUPPLIER discount (cost side, margin) — not this.
+ *
+ * DOC-LINES-2 (Florin 2026-10-09: "rounding then adding — it is standard"): a line's value is rounded to the cent AT
+ * THE LINE; every total is a sum of rounded lines (EN 16931 BR-CO-10). Each line has a VAT rate — its own, else the
+ * document's (mixed rates: "yes").
  */
 import { lineVariantDelta } from './variant-price';
 
@@ -27,12 +31,30 @@ export interface DocLine {
     isOptional?: boolean;
     children?: DocLine[] | null;
     clientDiscount?: Discount | null;
+    /** DOC-LINES-2: the line's own VAT rate (mixed rates); absent = the document's rate. */
+    vatRate?: number | null;
 }
 
 const PRICED = new Set(['line', 'article', 'bestek']);
 const CONTAINERS = new Set(['section', 'subsection', 'post']);
-const round2 = (n: number) => Math.round(n * 100) / 100;
 const finite = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : 0);
+
+/**
+ * Rounds money to the cent, half away from zero, without binary noise (33.335 → 33.34; Math.round(33.335 * 100)
+ * gives 33.33 because 33.335 is 33.33499… in binary).
+ */
+export function roundCents(n: number): number {
+    if (!Number.isFinite(n)) return 0;
+    const r = Math.round(Number(`${Math.abs(n).toFixed(9)}e2`)) / 100;
+    return n < 0 ? -r : r;
+}
+const round2 = roundCents;
+
+/** A line's VAT rate: its own (0–100), else the document's. */
+export function lineRate(b: DocLine, documentRate: number): number {
+    const r = b.vatRate;
+    return typeof r === 'number' && Number.isFinite(r) && r >= 0 && r <= 100 ? r : documentRate;
+}
 
 /** A discount read from a block or a document — anything not a positive number is no discount. */
 export function discountOf(d: unknown): Discount | null {
@@ -55,22 +77,27 @@ export function lineUnitPrice(b: DocLine): number {
     return finite(b.unitPrice ?? b.verkoopPrice) + lineVariantDelta(b);
 }
 
-/** A priced line's value BEFORE its customer discount (subcomponents summed, × quantity). Optional lines count. */
-export function lineGross(b: DocLine): number {
+/** Unrounded: subcomponents (each rounded) summed × quantity, or the unit price × quantity. */
+function rawGross(b: DocLine): number {
     const qty = finite(b.quantity) || 1;
     const kids = (b.children || []).filter(Boolean);
     if (kids.length) return kids.reduce((s, c) => s + (c.isOptional ? 0 : lineNet(c)), 0) * qty;
     return lineUnitPrice(b) * qty;
 }
 
-/** The customer discount on a line, in money. */
-export function lineDiscount(b: DocLine): number {
-    return discountAmount(lineGross(b), b.clientDiscount);
+/** A priced line's value BEFORE its customer discount, to the cent. Optional subcomponents don't count. */
+export function lineGross(b: DocLine): number {
+    return round2(rawGross(b));
 }
 
-/** A priced line's value AFTER its customer discount. */
+/** The customer discount on a line, to the cent. */
+export function lineDiscount(b: DocLine): number {
+    return round2(discountAmount(lineGross(b), b.clientDiscount));
+}
+
+/** A priced line's value AFTER its customer discount, to the cent. */
 export function lineNet(b: DocLine): number {
-    return lineGross(b) - lineDiscount(b);
+    return round2(lineGross(b) - lineDiscount(b));
 }
 
 /** The net price per unit (the line's value after discount ÷ quantity) — what an e-invoice states as the line price. */
@@ -79,12 +106,15 @@ export function lineNetUnitPrice(b: DocLine): number {
     return lineNet(b) / qty;
 }
 
-/** Unrounded values — a caller rounds for display; the totals round the sum once (as they always did). */
-/** `quantity`: the line's quantity × the quantities of the posts holding it — what the line is charged for. */
-export interface PricedLine { block: DocLine; quantity: number; gross: number; discount: number; net: number }
+/**
+ * A charged line, to the cent. `quantity`: the line's quantity × the quantities of the posts holding it — what the
+ * line is charged for. `rate`: its VAT rate (its own, else the document's).
+ */
+export interface PricedLine { block: DocLine; quantity: number; gross: number; discount: number; net: number; rate: number }
 
 /** The document's priced, non-optional lines at the level they are charged (a line with subcomponents is ONE line). */
-export function chargedLines(blocks: DocLine[] | null | undefined): PricedLine[] {
+export function chargedLines(blocks: DocLine[] | null | undefined, opts: { documentRate?: number } = {}): PricedLine[] {
+    const documentRate = opts.documentRate ?? 21;
     const out: PricedLine[] = [];
     // A "post" (phase) multiplies what it holds by its quantity; a section / subsection only groups (as the totals did).
     const walk = (nodes: DocLine[] | null | undefined, mult: number) => {
@@ -92,9 +122,9 @@ export function chargedLines(blocks: DocLine[] | null | undefined): PricedLine[]
             if (!b || b.isOptional) continue;
             if (b.type && CONTAINERS.has(b.type)) { walk(b.children, b.type === 'post' ? mult * (finite(b.quantity) || 1) : mult); continue; }
             if (b.type && PRICED.has(b.type)) {
-                const gross = lineGross(b) * mult;
-                const discount = discountAmount(gross, b.clientDiscount);
-                out.push({ block: b, quantity: (finite(b.quantity) || 1) * mult, gross, discount, net: gross - discount });   // unrounded: totals round once, as before
+                const gross = mult === 1 ? lineGross(b) : round2(rawGross(b) * mult);
+                const discount = round2(discountAmount(gross, b.clientDiscount));
+                out.push({ block: b, quantity: (finite(b.quantity) || 1) * mult, gross, discount, net: round2(gross - discount), rate: lineRate(b, documentRate) });
             }
         }
     };

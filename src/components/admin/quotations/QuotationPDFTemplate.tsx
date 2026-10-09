@@ -7,8 +7,8 @@ import { renderRichText } from '@/components/admin/shared/pdfRichText';
 import { getTemplateStyles, TemplateId, lighten, withAlpha } from '@/components/admin/shared/templateStyles';
 import { t } from '@/lib/document-i18n';
 import { canAccess } from '@/lib/feature-flags';
-import { calculateInvoiceTotals } from '@/lib/invoice-totals';
-import { blockValue, discountOf, type Discount } from '@/lib/records/document-lines';
+import { calculateInvoiceTotals, documentRateOf } from '@/lib/invoice-totals';
+import { blockValue, discountOf, lineRate, type Discount } from '@/lib/records/document-lines';
 
 function formatBelgianVat(vat?: string) {
     if (!vat) return '';
@@ -41,7 +41,6 @@ interface QuotationPDFProps {
     /** PDF-FIT-1: the writing area on the letterhead (lib/documents/stationery-area) — measured by generatePdfBlob. */
     contentArea?: { top: number; bottom: number };
     blocks: Block[];
-    vatCalcMode?: 'lines' | 'total';
     quotationTitle?: string;
     betreft: string;
     clientInfo: ClientInfo;
@@ -229,9 +228,16 @@ export const QuotationPDFTemplate = ({
     }, [blocks, vatIncluded, vatRegime, databaseStoreState, documentDiscount]);
     // DOC-LINES-1: the discount on the total, shown above the subtotal; a line's own discount, under its description.
     const totalDiscount = blocks && blocks.length > 0 ? totals.documentDiscount : 0;
+    // DOC-LINES-2: a document with mixed rates states each line's rate (EN 16931: every line has one)
+    const mixedRates = totals.vatBreakdown.length > 1;
+    const documentRate = vatRegime === 'medecontractant' ? 0 : documentRateOf(vatRegime);
     const lineDiscountNote = (b: Block) => {
         const d = discountOf(b.clientDiscount);
-        return d ? `${t('col_discount', lang)} ${d.kind === 'pct' ? `${d.value}%` : `€ ${d.value.toFixed(2)}`}` : '';
+        const parts = [
+            d ? `${t('col_discount', lang)} ${d.kind === 'pct' ? `${d.value}%` : `€ ${d.value.toFixed(2)}`}` : '',
+            mixedRates ? `${t('vat', lang)} ${lineRate(b, documentRate)}%` : '',
+        ];
+        return parts.filter(Boolean).join(' · ');
     };
 
     const finalSubtotal = blocks && blocks.length > 0 ? totals.subtotal : grandTotalExcl;
@@ -241,25 +247,25 @@ export const QuotationPDFTemplate = ({
     const hasLineMedecontractant = totals.hasMedecontractant;
     const hasVat6 = vatBreakdown.some(v => v.rate === 6);
 
-    const renderVatRows = (boxWidth: number) => {
-        const label = `${t('vat', lang)} (${vatRegime === 'medecontractant' ? (lang === 'fr' ? 'Autoliquidation' : lang === 'en' ? 'Reverse charge' : 'Verlegd') : `${vatRegime}%`}):`;
-        return (
-            <View style={{ flexDirection: 'row', width: boxWidth, justifyContent: 'space-between' }}>
-                <Text style={{ fontSize: 8.5, color: '#666', textTransform: 'uppercase', letterSpacing: 0.5 }}>{label}</Text>
-                <Text style={{ fontSize: 10, fontWeight: 'bold' }}>€  {taxAmount.toFixed(2)}</Text>
-            </View>
-        );
-    };
+    // DOC-LINES-2: one VAT row per rate (mixed rates); a document without lines keeps its stored VAT
+    const vatRows = blocks && blocks.length > 0 && vatBreakdown.length > 0
+        ? vatBreakdown.map(v => ({ rate: v.rate, vat: v.vat }))
+        : [{ rate: vatRegime === 'medecontractant' ? 0 : documentRateOf(vatRegime), vat: taxAmount }];
+    const vatLabel = (rate: number) => `${t('vat', lang)} (${vatRegime === 'medecontractant' ? (lang === 'fr' ? 'Autoliquidation' : lang === 'en' ? 'Reverse charge' : 'Verlegd') : `${rate}%`}):`;
 
-    const renderVatRowsDynamic = () => {
-        const label = `${t('vat', lang)} (${vatRegime === 'medecontractant' ? (lang === 'fr' ? 'Autoliquidation' : lang === 'en' ? 'Reverse charge' : 'Verlegd') : `${vatRegime}%`}):`;
-        return (
-            <View style={s.summaryRow}>
-                <Text style={s.summaryLabel}>{label}</Text>
-                <Text style={s.summaryValue}>€  {taxAmount.toFixed(2)}</Text>
-            </View>
-        );
-    };
+    const renderVatRows = (boxWidth: number) => vatRows.map(v => (
+        <View key={v.rate} style={{ flexDirection: 'row', width: boxWidth, justifyContent: 'space-between' }}>
+            <Text style={{ fontSize: 8.5, color: '#666', textTransform: 'uppercase', letterSpacing: 0.5 }}>{vatLabel(v.rate)}</Text>
+            <Text style={{ fontSize: 10, fontWeight: 'bold' }}>€  {v.vat.toFixed(2)}</Text>
+        </View>
+    ));
+
+    const renderVatRowsDynamic = () => vatRows.map(v => (
+        <View key={v.rate} style={s.summaryRow}>
+            <Text style={s.summaryLabel}>{vatLabel(v.rate)}</Text>
+            <Text style={s.summaryValue}>€  {v.vat.toFixed(2)}</Text>
+        </View>
+    ));
 
     const padH = isStationery ? 40 : (isT1 || isT4 ? 28 : 40);
 

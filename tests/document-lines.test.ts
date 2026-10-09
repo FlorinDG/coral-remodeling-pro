@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { lineGross, lineNet, lineDiscount, discountOf, splitDocumentDiscount, chargedLines, lineNetUnitPrice } from '../src/lib/records/document-lines.ts';
+import { roundCents, lineGross, lineNet, lineDiscount, discountOf, splitDocumentDiscount, chargedLines, lineNetUnitPrice } from '../src/lib/records/document-lines.ts';
 import { calculateInvoiceTotals } from '../src/lib/invoice-totals.ts';
 import { calculateInvoiceTotals as oldTotals } from './_old-invoice-totals.ts';
 
@@ -56,10 +56,53 @@ test('the discount on the total: before VAT, a percentage or an amount, split ov
     assert.equal([...split.byRate.values()].reduce((a, b) => a + b, 0), 10);   // the cents add up
 });
 
-test('Florin 2026-10-09: VAT ONLY at the end — a line\'s own rate or medecontractant flag never changes the totals', () => {
+test('DOC-LINES-2 · mixed rates (Florin: "yes"): a line\'s own rate counts; reverse charge is the whole document at 0', () => {
     const blocks = [line({ verkoopPrice: 100, vatRate: 21 }), line({ verkoopPrice: 100, vatRate: 6 }), line({ verkoopPrice: 50, vatMedecontractant: true })];
-    for (const vatCalcMode of [undefined, 'lines', 'total'] as const) {
-        const t = calculateInvoiceTotals(blocks as never, { vatCalcMode, vatRegime: '21' });
-        assert.deepEqual(t.vatBreakdown.map(v => [v.rate, v.base, v.vat]), [[21, 250, 52.5]]);
-    }
+    const t = calculateInvoiceTotals(blocks as never, { vatRegime: '21' });
+    assert.deepEqual(t.vatBreakdown.map(v => [v.rate, v.base, v.vat]), [[21, 150, 31.5], [6, 100, 6]]);   // no rate → the document's
+    const six = calculateInvoiceTotals(blocks as never, { vatRegime: '6' });
+    assert.deepEqual(six.vatBreakdown.map(v => [v.rate, v.base, v.vat]), [[21, 100, 21], [6, 150, 9]]);
+    const rc = calculateInvoiceTotals(blocks as never, { vatRegime: 'medecontractant' });
+    assert.deepEqual(rc.vatBreakdown.map(v => [v.rate, v.base, v.vat, v.isMedecontractant]), [[0, 250, 0, true]]);
+});
+
+test('DOC-LINES-2 · "rounding then adding": a line is rounded at the line; the subtotal is the sum of printed lines', () => {
+    assert.equal(roundCents(33.335), 33.34);           // Math.round(33.335 * 100) / 100 gives 33.33
+    assert.equal(roundCents(-33.335), -33.34);
+    assert.equal(roundCents(1.005), 1.01);
+    const half = line({ verkoopPrice: 66.67, clientDiscount: { kind: 'pct', value: 50 } });
+    assert.equal(lineDiscount(half), 33.34);             // the discount is rounded at the line …
+    assert.equal(lineNet(half), 33.33);                 // … and the line is what remains: 66.67 − 33.34
+    const t = calculateInvoiceTotals([half, line({ verkoopPrice: 66.67, clientDiscount: { kind: 'pct', value: 50 } })] as never, { vatRegime: '0' });
+    assert.equal(t.subtotal, 66.66);                    // 33.33 + 33.33 — not round(33.335 × 2) = 66.67
+});
+
+test('DOC-LINES-2 · "la somme des arrondis": each line\'s VAT rounded, then added per rate (4 × 2.25 at 21% → 1.88, not 1.89)', () => {
+    const t = calculateInvoiceTotals([1, 2, 3, 4].map(() => line({ verkoopPrice: 2.25 })) as never, { vatRegime: '21' });
+    assert.equal(t.subtotal, 9);
+    assert.equal(t.totalVAT, 1.88);
+    assert.equal(t.totalInclVAT, 10.88);
+});
+
+test('DOC-LINES-2 · discount on the total over mixed rates: split by base, each share takes its own VAT off', () => {
+    const blocks = [line({ verkoopPrice: 300, vatRate: 21 }), line({ verkoopPrice: 100, vatRate: 6 })];
+    const t = calculateInvoiceTotals(blocks as never, { vatRegime: '21', documentDiscount: { kind: 'pct', value: 10 } });
+    assert.deepEqual(t.vatBreakdown.map(v => [v.rate, v.base, v.vat]), [[21, 270, 56.7], [6, 90, 5.4]]);
+    assert.equal(t.documentDiscount, 40);
+    assert.equal(t.totalInclVAT, 422.1);
+});
+
+test('DOC-LINES-2 · prices incl. VAT: the line\'s base rounded, its VAT the rest — the incl. total is what was typed', () => {
+    const t = calculateInvoiceTotals([line({ verkoopPrice: 10 }), line({ verkoopPrice: 10 }), line({ verkoopPrice: 10 })] as never, { vatRegime: '21', vatIncluded: true });
+    assert.equal(t.subtotal, 24.78);                    // 8.26 × 3
+    assert.equal(t.totalInclVAT, 30);
+});
+
+test('DOC-LINES-2 · the mobile quick invoice writes the editor\'s line shape and takes its totals from the rule', async () => {
+    const { readFileSync } = await import('node:fs');
+    const src = readFileSync(new URL('../src/app/[locale]/m/invoices/new/page.tsx', import.meta.url), 'utf8');
+    assert.doesNotMatch(src, /properties:\s*\{\s*description/);          // the values belong ON the block
+    assert.doesNotMatch(src, /toISOString\(\)/);                          // the business day, never the UTC day
+    assert.match(src, /calculateInvoiceTotals\(lineBlocks/);
+    assert.doesNotMatch(src, /l\.unitPrice \* l\.vatRate/);               // no own VAT arithmetic
 });

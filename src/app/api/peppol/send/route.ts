@@ -83,7 +83,8 @@ export async function POST(req: Request) {
             customerCountry,
             customerAddressStr,
             items,
-            allowances
+            allowances,
+            totals
         } = buildPeppolPayload({
             invoiceId,
             blocks: blocks || [],
@@ -186,6 +187,7 @@ export async function POST(req: Request) {
                 note: betreft || undefined,
                 items: ublItems,
                 allowances: allowances.map(a => ({ amount: a.amount, taxRate: parseFloat(a.tax_rate), isReverseCharge: a.tax_code === 'AE', reason: a.reason })),
+                taxSubtotals: totals.vatBreakdown.map(v => ({ rate: v.rate, taxableAmount: v.base, taxAmount: v.vat, isReverseCharge: v.isMedecontractant })),
                 type: isCreditNote ? '381' : '380',
                 parentInvoiceNumber,
                 pdfBase64: invoicePayload.pdfBase64,

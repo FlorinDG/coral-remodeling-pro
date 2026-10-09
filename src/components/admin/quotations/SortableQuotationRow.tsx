@@ -12,7 +12,8 @@ interface SortableQuotationRowProps {
     onDelete: (id: string) => void;
     onDuplicate: (id: string) => void;
     hasLibraryAccess?: boolean;
-    vatCalcMode?: 'lines' | 'total';
+    /** DOC-LINES-2: the document's VAT regime — a line without its own rate takes it. */
+    vatRegime?: string;
     language?: string;
     isDraggingGlobal?: boolean;
     isInactive?: boolean;

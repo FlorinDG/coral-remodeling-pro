@@ -4,6 +4,7 @@ import React, { useMemo } from 'react';
 import { Block } from '@/components/admin/database/types';
 import { t as ti18n } from '@/lib/document-i18n';
 import { calculateInvoiceTotals } from '@/lib/invoice-totals';
+import VatBreakdownRows from '@/components/admin/shared/VatBreakdownRows';
 import { chargedLines, type Discount } from '@/lib/records/document-lines';
 import DocumentDiscountRows from '@/components/admin/shared/DocumentDiscountRows';
 
@@ -11,7 +12,6 @@ interface QuotationFooterReportProps {
     blocks: Block[];
     quotationTitle?: string;
     expiryDate?: string;
-    vatCalcMode: 'lines' | 'total';
     vatRegime: string;
     onVatRegimeChange: (regime: string) => void;
     language?: string;
@@ -30,7 +30,6 @@ export default function QuotationFooterReport({
     blocks,
     quotationTitle,
     expiryDate,
-    vatCalcMode,
     vatRegime: vatRegimeProp,
     onVatRegimeChange,
     language = 'nl',
@@ -51,7 +50,6 @@ export default function QuotationFooterReport({
     );
     const { subtotal, vatBreakdown } = totals;
     const lineCount = useMemo(() => chargedLines(blocks).length, [blocks]);
-    const hasLineMedecontractant = false;
 
     // ── Profitability Calculation ──
     const { grandKost, grandVerkoop } = useMemo(() => {
@@ -105,8 +103,6 @@ export default function QuotationFooterReport({
         }).format(val);
         return `€  ${parts}`;
     };
-
-    const isLinesMode = false;   // VAT at the end only — the per-line display is gone with VAT-DOC-1
 
     return (
         <div className="w-full mt-10 pt-6 border-t border-dashed border-neutral-300 dark:border-neutral-700">
@@ -189,24 +185,6 @@ export default function QuotationFooterReport({
                     </div>
 
                     {/* BTW rows */}
-                    {isLinesMode ? (
-                        <>
-                            {vatBreakdown.map(({ rate, base, vat }) => (
-                                <div key={rate} className="flex items-center justify-between px-5 py-2 border-t border-neutral-100 dark:border-white/5 gap-3">
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-[11px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest shrink-0">{ti18n('footer_vat_label', language)}</span>
-                                        <span className="text-[13px] font-semibold text-neutral-600 dark:text-neutral-300">
-                                            {rate === 0 ? (hasLineMedecontractant ? ti18n('footer_vat_shifted', language) : '0%') : `${rate}%`}
-                                        </span>
-                                        <span className="text-[11px] text-neutral-400 tabular-nums">
-                                            ({ti18n('footer_on_base', language)} {formatCurrency(base)})
-                                        </span>
-                                    </div>
-                                    <span className="text-[13px] font-semibold text-neutral-600 dark:text-neutral-300 tabular-nums shrink-0 text-right min-w-[120px]">{formatCurrency(vat)}</span>
-                                </div>
-                            ))}
-                        </>
-                    ) : (
                         <div className="flex flex-col border-t border-neutral-100 dark:border-white/5">
                             <div className="flex items-center justify-between px-5 py-2.5 gap-3">
                                 <span className="text-[11px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest shrink-0">{ti18n('footer_vat_regime', language)}</span>
@@ -227,6 +205,7 @@ export default function QuotationFooterReport({
                                 </select>
                                 <span className="text-[13px] font-semibold text-neutral-600 dark:text-neutral-300 tabular-nums shrink-0 text-right min-w-[120px]">{formatCurrency(totalVAT)}</span>
                             </div>
+                            <VatBreakdownRows breakdown={vatBreakdown} formatCurrency={formatCurrency} />
                             <div className="flex items-center justify-end px-5 py-1.5 pb-2">
                                 <label className="flex items-center gap-2 cursor-pointer group">
                                     <input 
@@ -239,7 +218,6 @@ export default function QuotationFooterReport({
                                 </label>
                             </div>
                         </div>
-                    )}
 
                     {/* Grand Total */}
                     <div

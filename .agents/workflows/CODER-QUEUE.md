@@ -22,7 +22,13 @@
 📄 `coder-directive-r1-7-b1.md` — notifications → calendar → tenant, one commit per module; each migrated file leaves
 the R1-5 allowlist and lowers `CEILING` by the files removed, from its current value. STOP on any cross-tenant read. Report `.agents/reports/R1-7-B1.md`.
 
-## 2 · `DB-HEADER-1` — one database header across the ERP — ✅ M3 ACCEPTED · 🟩 GO M4 (stop after M4)
+## 2 · `DB-HEADER-1` — one database header across the ERP — ✅ M4 ACCEPTED + promoted 2026-10-09 (e7b739df)
+**M4 review (Planner 2026-10-09):** C11 states ✅ (busy spins, disabled + reason tooltip, rule stays pure) · bulk approve
+on `validationScreen` ✅ · CRM view tabs + pipeline labels from data ✅ · project type tabs in the header ✅.
+**Two leftovers, fold into the next milestone:** (a) the projects screen tab "All" is hardcoded English → `Admin.dbHeader.*`
+key in en/nl/fr/ro; (b) the fallback type options in `projects-management/page.tsx` copy the kernel's `prop-project-type`
+options → read them from the kernel schema (`lib/kernel/system-schemas`), no inline list.
+Next: M5 per the plan — 🛑 wait for the Planner's GO.
 📄 `coder-directive-db-header-1.md` + **`.agents/plans/DB-HEADER-1.md` § PLANNER REVIEW — M3 (C11 first: actions carry
 busy / disabled + reason)**, then M4 = CRM & Projects. Report `.agents/reports/DB-HEADER-1-M4.md`. Push, STOP.
 

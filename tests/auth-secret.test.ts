@@ -26,10 +26,8 @@ function sources(dir: string): string[] {
 }
 
 test('AUTH-SECRET-1: no source file reads AUTH_SECRET with a fallback, and the emergency back door is gone', () => {
-    // PENDING (Florin): lib/encryption.ts derives the stored-secret key from NEXTAUTH_SECRET with a dev default. Making it
-    // throw could make existing encrypted values unreadable if prod relied on it — removed once ENCRYPTION_KEY is confirmed.
-    const PENDING = ['src/lib/encryption.ts'];
-    const offenders = sources('src').filter(f => !PENDING.includes(f) && /\bAUTH_SECRET\s*(\?\?|\|\|)|fallback-secret|coral-secret-12345|dev-secret-key/.test(readFileSync(f, 'utf8')));
+    // lib/encryption.ts (a dev default key, imported by nothing) was deleted on 2026-10-10.
+    const offenders = sources('src').filter(f => /\bAUTH_SECRET\s*(\?\?|\|\|)|fallback-secret|coral-secret-12345|dev-secret-key/.test(readFileSync(f, 'utf8')));
     assert.deepEqual(offenders, []);
     assert.equal(sources('src').some(f => f.includes('emergency-access')), false);
 });

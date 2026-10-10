@@ -1,5 +1,6 @@
 import type { NextAuthConfig } from "next-auth";
 import type { Role } from "@/lib/roles";
+import { authSecretOf } from "@/lib/auth-secret";
  
 export const authConfig = {
     pages: {
@@ -60,7 +61,8 @@ export const authConfig = {
             },
         },
     },
-    secret: process.env.AUTH_SECRET || "coral-secret-12345",
+    // AUTH-SECRET-1: no default. Unset → Auth.js refuses to issue or read a session (MissingSecret).
+    secret: authSecretOf(process.env.AUTH_SECRET) ?? undefined,
     // Trust host headers forwarded by Vercel so Auth.js accepts requests from
     // ALL subdomains (coral-sys, app, coral-group.be), not just NEXTAUTH_URL.
     trustHost: true,

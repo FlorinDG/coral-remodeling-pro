@@ -1649,5 +1649,11 @@
     "connectionLostRetrying": "Conexiune pierdută — se reîncearcă...",
     "documentAlreadyExists": "Există deja un fișier cu acest nume atașat la acest document. Înlocuiți-l sau redenumiți fișierul.",
     "documentArchivedCannotReplace": "Acest document este arhivat și nu poate fi înlocuit."
+  },
+  "System": {
+    "authNotConfigured": {
+      "title": "Autentificarea nu este configurată",
+      "body": "Această instalare nu are o cheie de sesiune, deci nimeni nu se poate autentifica. Nu s-a modificat nimic. Vă rugăm să contactați administratorul."
+    }
   }
 }

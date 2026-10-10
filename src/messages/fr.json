@@ -1648,5 +1648,11 @@
     "connectionLostRetrying": "Connexion perdue — nouvelle tentative...",
     "documentAlreadyExists": "Un fichier portant ce nom est déjà associé à ce document. Remplacez-le ou renommez le fichier.",
     "documentArchivedCannotReplace": "Ce document est archivé et ne peut pas être remplacé."
+  },
+  "System": {
+    "authNotConfigured": {
+      "title": "La connexion n'est pas configurée",
+      "body": "Cette installation n'a pas de clé de session : personne ne peut se connecter. Rien n'a été modifié. Veuillez contacter votre administrateur."
+    }
   }
 }

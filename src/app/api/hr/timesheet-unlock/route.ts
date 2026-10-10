@@ -2,12 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { cookies } from 'next/headers';
 import crypto from 'crypto';
+import { authSecret } from '@/lib/auth-secret';
 
-const AUTH_SECRET = process.env.AUTH_SECRET || 'fallback-secret-for-dev';
 
 // Function to generate an HMAC signature
 function signPayload(payload: string): string {
-    return crypto.createHmac('sha256', AUTH_SECRET).update(payload).digest('hex');
+    return crypto.createHmac('sha256', authSecret()).update(payload).digest('hex');
 }
 
 export async function POST(req: NextRequest) {

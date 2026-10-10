@@ -1649,5 +1649,11 @@
     "connectionLostRetrying": "Connection lost — retrying...",
     "documentAlreadyExists": "A file with this name is already attached to this document. Replace it, or rename the file.",
     "documentArchivedCannotReplace": "This document is archived and cannot be replaced."
+  },
+  "System": {
+    "authNotConfigured": {
+      "title": "Sign-in is not configured",
+      "body": "This installation has no session key, so nobody can sign in. Nothing has been changed. Please contact your administrator."
+    }
   }
 }

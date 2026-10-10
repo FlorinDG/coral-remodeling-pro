@@ -2,12 +2,13 @@ import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import type { NextResponse } from "next/server";
 import { getPortalById, getPortalBySlug } from "@/lib/data/portals";
+import { authSecret } from "@/lib/auth-secret";
 
 export const PORTAL_SESSION_COOKIE = "portal_session";
 export const PORTAL_SESSION_MAX_AGE = 24 * 60 * 60; // 24 hours in seconds
 
 function getPortalSecret(): string {
-    return process.env.PORTAL_AUTH_SECRET || process.env.AUTH_SECRET || "coral-portal-fallback-secret";
+    return process.env.PORTAL_AUTH_SECRET || authSecret(); // AUTH-SECRET-1: no default secret
 }
 
 export interface PortalSessionPayload {

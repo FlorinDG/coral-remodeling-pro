@@ -3,6 +3,11 @@ import { NextResponse, NextRequest } from 'next/server';
 import createMiddleware from 'next-intl/middleware';
 import { routing } from './i18n/routing';
 import { PLATFORM_ADMIN_ROLES } from '@/lib/roles';
+import { authSecretOf } from '@/lib/auth-secret';
+import en from './messages/en.json';
+import nl from './messages/nl.json';
+import fr from './messages/fr.json';
+import ro from './messages/ro.json';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 type DecodedToken = {
@@ -18,7 +23,8 @@ type DecodedToken = {
 // ── Constants ──────────────────────────────────────────────────────────────
 const SUPPORTED_LOCALES = routing.locales as readonly string[];
 const DEFAULT_LOCALE    = routing.defaultLocale as string;
-const AUTH_SECRET       = process.env.AUTH_SECRET ?? 'coral-secret-12345';
+// AUTH-SECRET-1: no default — without a secret no session is decoded and every page shows the notice below.
+const AUTH_SECRET       = authSecretOf(process.env.AUTH_SECRET);
 
 // Cookie name differs by environment (Auth.js v5 default naming)
 const SESSION_COOKIE = process.env.NODE_ENV === 'production'
@@ -32,7 +38,7 @@ const intlMiddleware = createMiddleware(routing);
 /** Decode the Auth.js v5 JWT from the session cookie — Edge-runtime safe. */
 async function getToken(req: NextRequest): Promise<DecodedToken | null> {
     const raw = req.cookies.get(SESSION_COOKIE)?.value;
-    if (!raw) return null;
+    if (!raw || !AUTH_SECRET) return null;
     try {
         const token = await decode({
             token:  raw,
@@ -111,7 +117,26 @@ function getMobileEquivalent(normalisedPath: string): string | null {
  *
  * We use NextResponse.rewrite() directly for subdomain routing.
  */
+const NOT_CONFIGURED: Record<string, { title: string; body: string }> = {
+    en: en.System.authNotConfigured, nl: nl.System.authNotConfigured,
+    fr: fr.System.authNotConfigured, ro: ro.System.authNotConfigured,
+};
+
+/** AUTH-SECRET-1 · nothing moves forward without the secret: one plain page, in the visitor's language, status 503. */
+function authNotConfigured(req: NextRequest): NextResponse {
+    const { title, body } = NOT_CONFIGURED[resolveLocale(req)] ?? NOT_CONFIGURED[DEFAULT_LOCALE];
+    console.error('[auth] AUTH_SECRET is not set — every page shows the not-configured notice');
+    const html = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title>`
+        + `<style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#fafafa;color:#18181b;font:15px/1.5 system-ui,sans-serif}`
+        + `main{max-width:440px;margin:16px;padding:32px;background:#fff;border:1px solid #e4e4e7;border-radius:12px}`
+        + `h1{font-size:18px;margin:0 0 8px}p{margin:0;color:#52525b}`
+        + `@media (prefers-color-scheme:dark){body{background:#09090b;color:#fafafa}main{background:#18181b;border-color:#27272a}p{color:#a1a1aa}}</style>`
+        + `</head><body><main><h1>${title}</h1><p>${body}</p></main></body></html>`;
+    return new NextResponse(html, { status: 503, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' } });
+}
+
 export default async function middleware(req: NextRequest) {
+    if (!AUTH_SECRET) return authNotConfigured(req);
     const { pathname } = req.nextUrl;
     const hostname = req.nextUrl.hostname || '';
 

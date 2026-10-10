@@ -1649,5 +1649,11 @@
     "connectionLostRetrying": "Verbinding verbroken — opnieuw proberen...",
     "documentAlreadyExists": "Er is al een bestand met deze naam gekoppeld aan dit document. Vervang het, of hernoem het bestand.",
     "documentArchivedCannotReplace": "Dit document is gearchiveerd en kan niet worden vervangen."
+  },
+  "System": {
+    "authNotConfigured": {
+      "title": "Aanmelden is niet geconfigureerd",
+      "body": "Deze installatie heeft geen sessiesleutel, dus niemand kan zich aanmelden. Er is niets gewijzigd. Neem contact op met uw beheerder."
+    }
   }
 }

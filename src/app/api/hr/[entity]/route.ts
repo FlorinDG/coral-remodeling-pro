@@ -11,6 +11,7 @@
  */
 
 import { NextResponse } from 'next/server';
+import { authSecret } from '@/lib/auth-secret';
 import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
 import { buildAuditLogData, buildAuditLogOperation } from '@/lib/audit';
@@ -641,8 +642,7 @@ async function verifyUnlockCookie(tenantId: string, userId: string): Promise<boo
     if (parts.length !== 2) return false;
     
     const [payloadBase64, signature] = parts;
-    const AUTH_SECRET = process.env.AUTH_SECRET || 'fallback-secret-for-dev';
-    const expectedSignature = crypto.createHmac('sha256', AUTH_SECRET).update(Buffer.from(payloadBase64, 'base64').toString('utf-8')).digest('hex');
+    const expectedSignature = crypto.createHmac('sha256', authSecret()).update(Buffer.from(payloadBase64, 'base64').toString('utf-8')).digest('hex');
     
     if (signature !== expectedSignature) return false;
 

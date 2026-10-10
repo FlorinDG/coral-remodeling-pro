@@ -71,7 +71,7 @@ export function ShiftLinkReview({ labels, locale, mine = false, showWorker = fal
 }
 
 function optionText(o: ShiftOption, labels: ShiftLinkLabels, locale: string) {
-    const span = `${formatTime(o.start, locale)}–${formatTime(o.end, locale)}`;
+    const span = `${o.traceNo ? `${o.traceNo} · ` : ''}${formatTime(o.start, locale)}–${formatTime(o.end, locale)}`;   // TRACE-1
     const extra = [o.label, o.submitted ? labels.submitted : '', o.overlap === 0 ? labels.noOverlap : ''].filter(Boolean).join(' · ');
     return extra ? `${span} · ${extra}` : span;
 }
@@ -96,6 +96,7 @@ function Row({ item, labels, locale, showWorker, onDone }: {
         <li className="rounded-xl border border-border bg-card p-3 space-y-2">
             <div className="flex flex-wrap items-baseline justify-between gap-x-3">
                 <p className="text-base font-semibold text-foreground">
+                    {item.traceNo && <span className="font-mono text-sm text-muted-foreground mr-1.5">{item.traceNo}</span>}
                     {showWorker && item.workerName ? `${item.workerName} · ` : ''}
                     <span className="capitalize">{formatWeekdayDayMonth(`${item.date}T12:00:00`, locale)}</span>
                     {' · '}<span className="tabular-nums">{formatTime(item.start, locale)}–{formatTime(item.end === '24:00' ? '00:00' : item.end, locale)}</span>

@@ -1740,6 +1740,16 @@
         "completedSuccess": "Tâche marquée comme terminée",
         "completedFailed": "Impossible de terminer la tâche",
         "tasksWithoutProject": "Tâches sans projet"
+      },
+      "trace": {
+        "actual": "Réel",
+        "breakShort": "pause",
+        "shiftNo": "Service",
+        "hoursNo": "Heures",
+        "openShift": "Ouvrir le service",
+        "openHours": "Ouvrir ces heures",
+        "noHoursYet": "Aucune heure pointée",
+        "linkedHours": "Heures pointées"
       }
     },
     "werkbon": {

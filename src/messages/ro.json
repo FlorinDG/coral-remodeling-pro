@@ -1741,6 +1741,16 @@
         "completedSuccess": "Sarcină marcată ca finalizată",
         "completedFailed": "Nu s-a putut finaliza sarcina",
         "tasksWithoutProject": "Sarcini fără proiect"
+      },
+      "trace": {
+        "actual": "Efectiv",
+        "breakShort": "pauză",
+        "shiftNo": "Tură",
+        "hoursNo": "Ore",
+        "openShift": "Deschide tura",
+        "openHours": "Deschide aceste ore",
+        "noHoursYet": "Nicio oră pontată încă",
+        "linkedHours": "Ore pontate"
       }
     },
     "werkbon": {

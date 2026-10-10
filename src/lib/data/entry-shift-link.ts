@@ -19,9 +19,10 @@ import { buildAuditLogData, buildAuditLogOperation } from '@/lib/audit';
 import { entrySpan, matchSpanToShifts, isShiftSubmitted, overlapMinutes } from '@/lib/kernel/shift-time';
 import { isShiftSigned } from '@/lib/data/work-order-lock';
 
-export interface ShiftOption { id: string; label: string; start: string; end: string; overlap: number; submitted: boolean }
+export interface ShiftOption { id: string; traceNo: string | null; label: string; start: string; end: string; overlap: number; submitted: boolean }
 export interface ShiftLinkItem {
     entryId: string;
+    traceNo: string | null;             // TRACE-1: the hours' number (HR-…), shown where it waits for its shift
     workerName: string | null;
     date: string; start: string; end: string;
     source: string | null;
@@ -50,7 +51,7 @@ export async function listShiftLinkReview(days = 14, mine = false): Promise<{ ok
 
     const entries = await prisma.clockEntry.findMany({
         where: { tenantId: a.tenantId, clockInTime: { gte: since }, clockOutTime: { not: null }, ...(a.hr && !mine ? {} : { userId: a.userId }) },
-        select: { id: true, userId: true, clockInTime: true, clockOutTime: true, shiftId: true, source: true },
+        select: { id: true, traceNo: true, userId: true, clockInTime: true, clockOutTime: true, shiftId: true, source: true },
         orderBy: { clockInTime: 'asc' },
     });
     if (!entries.length) return { ok: true, items: [] };
@@ -62,7 +63,7 @@ export async function listShiftLinkReview(days = 14, mine = false): Promise<{ ok
 
     const shifts = await prisma.scheduledShift.findMany({
         where: { tenantId: a.tenantId, OR: [{ userId: { in: userIds }, shiftDate: { in: dates } }, { id: { in: linkedIds } }] },
-        select: { id: true, userId: true, shiftDate: true, shiftStart: true, shiftEnd: true, status: true, shiftName: true, notes: true, projectId: true },
+        select: { id: true, traceNo: true, userId: true, shiftDate: true, shiftStart: true, shiftEnd: true, status: true, shiftName: true, notes: true, projectId: true },
     });
     const reviews = await prisma.auditLog.findMany({
         where: { tenantId: a.tenantId, entityType: 'clockEntry', action: 'shift_link', reason: { startsWith: 'review' }, entityId: { in: entries.map(e => e.id) } },
@@ -100,10 +101,11 @@ export async function listShiftLinkReview(days = 14, mine = false): Promise<{ ok
         if (reviewedAs.has(e.id) && reviewedAs.get(e.id) === (e.shiftId ?? null)) continue;
 
         const opt = (s: typeof shifts[number], overlap: number): ShiftOption => ({
-            id: s.id, label: label(s), start: s.shiftStart, end: s.shiftEnd, overlap, submitted: isShiftSubmitted(s.status),
+            id: s.id, traceNo: s.traceNo ?? null, label: label(s), start: s.shiftStart, end: s.shiftEnd, overlap, submitted: isShiftSubmitted(s.status),
         });
         items.push({
             entryId: e.id,
+            traceNo: e.traceNo ?? null,
             workerName: nameOf.get(e.userId) || null,
             date: span.date, start: span.start, end: span.end,
             source: e.source,

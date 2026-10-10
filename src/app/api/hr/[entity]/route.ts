@@ -32,6 +32,8 @@ import { parseScope, seriesData, seriesWhere } from '@/lib/data/shift-series';
 import { isShiftSigned, SIGNED_REFUSAL } from '@/lib/data/work-order-lock';
 import { recordClockPlace } from '@/lib/data/geo';
 import { releaseOldProjectLinks } from '@/lib/data/shift-project-links';
+import { nextTraceNo } from '@/lib/data/trace-number';
+import { TRACE_SERIES } from '@/lib/records/trace-number';
 import { after } from 'next/server';
 import type { Prisma } from '@prisma/client';
 import { isTenantHrRole, isTenantTopRole } from '@/lib/roles';
@@ -78,7 +80,7 @@ const HR_EMPLOYEE_ROLES = [
 ];
 
 // Fields that should NOT be overwritten by client
-const PROTECTED_FIELDS = ['id', 'tenantId', 'tenant', 'createdAt', 'updatedAt', 'createdBy'];
+const PROTECTED_FIELDS = ['id', 'tenantId', 'tenant', 'createdAt', 'updatedAt', 'createdBy', 'traceNo'];   // TRACE-1: the server numbers
 
 async function getTenantAndUser() {
     const session = await auth();
@@ -627,7 +629,15 @@ export async function POST(
     }
 
     try {
-        const record = await model.create({ data });
+        // TRACE-1: a shift and an hours entry get their trace number in the same transaction as their creation.
+        const series = entity === 'clock-entries' ? TRACE_SERIES.hours : (entity === 'shifts' || entity === 'scheduled-shifts') ? TRACE_SERIES.shift : null;
+        const record = series
+            ? await db.$transaction(async tx => {
+                data.traceNo = await nextTraceNo(tx, ctx.tenantId, series);
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                return (tx as any)[ENTITY_MAP[entity]].create({ data });
+            })
+            : await model.create({ data });
 
         // ── POST Automations ───────────────────────────────────────────
         // GEO-1: where the clock-in happened (address + distance to site) — after the response,
@@ -923,8 +933,9 @@ export async function PATCH(
                         });
                     } else if (data.status === 'approved' && approval.requestType === 'manual_hours') {
                         // Legacy manual hours without pre-existing clock entry
-                        const entry = await db.clockEntry.create({
+                        const entry = await db.$transaction(async tx => tx.clockEntry.create({
                             data: {
+                                traceNo: await nextTraceNo(tx, ctx.tenantId, TRACE_SERIES.hours),   // TRACE-1
                                 tenantId: approval.tenantId,
                                 userId: approval.userId,
                                 clockInTime: new Date(reqData.clockInTime),
@@ -936,7 +947,7 @@ export async function PATCH(
                                 approvedAt: approval.reviewedAt ? new Date(approval.reviewedAt) : new Date(),
                                 projectId: reqData.projectId || null,
                             }
-                        });
+                        }));
                         // NO ad-hoc shifts (Florin 2026-10-04): the entry keeps its project; no shift is invented.
                     }
                 }

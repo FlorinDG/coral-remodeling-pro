@@ -13,6 +13,8 @@ import { orderGiverIdOf } from '@/lib/records/order-giver';
 
 export interface EntryShiftContext {
     shiftId: string;
+    shiftTraceNo: string | null;      // TRACE-1
+    shiftDate: string;
     shiftLabel: string;               // date + planned times
     plannerNote: string | null;       // ScheduledShift.notes (the editor's "Description")
     /** The rest of the shift editor's Details tab (Florin 2026-10-10: "the DETAILS of the shift" were missing). */
@@ -35,7 +37,7 @@ export async function getEntryShiftContext(entryId: string): Promise<{ ok: true;
     const shift = await prisma.scheduledShift.findFirst({
         where: { id: entry.shiftId, tenantId },
         select: {
-            id: true, shiftDate: true, shiftStart: true, shiftEnd: true, notes: true, crewNote: true,
+            id: true, traceNo: true, shiftDate: true, shiftStart: true, shiftEnd: true, notes: true, crewNote: true,
             role: true, siteAddress: true, materialsEnabled: true, projectId: true, contactPageId: true,
             tasks: { select: { id: true, taskId: true, status: true, workerNotes: true, subtasks: true }, orderBy: { createdAt: 'asc' } },
             attachments: { select: { id: true, name: true, url: true, type: true }, orderBy: { createdAt: 'asc' } },
@@ -68,6 +70,8 @@ export async function getEntryShiftContext(entryId: string): Promise<{ ok: true;
         ok: true,
         context: {
             shiftId: shift.id,
+            shiftTraceNo: shift.traceNo ?? null,
+            shiftDate: shift.shiftDate,
             shiftLabel: `${shift.shiftDate} · ${shift.shiftStart}–${shift.shiftEnd}`,
             plannerNote: shift.notes?.trim() || null,
             details: {

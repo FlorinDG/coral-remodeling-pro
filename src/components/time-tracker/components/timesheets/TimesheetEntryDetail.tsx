@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from '@/i18n/routing';
 import { Button } from '@/components/ui/button';
 import { hrUpdate, hrList } from '@/lib/hr-api';
 import { format, parseISO } from 'date-fns';
@@ -545,6 +546,11 @@ export function TimesheetEntryDetail({ entry, onUpdate, unlockTokenValid }: Time
                         <div className="space-y-1">
                             {/* The shift editor's Details tab, read-only, with the editor's own labels (Florin 2026-10-10). */}
                             <h4 className="text-xs font-semibold uppercase text-muted-foreground">{tShift('create.tabDetails')}</h4>
+                            {/* TRACE-1: the shift these hours belong to — its number, a link that opens it in the scheduler */}
+                            <Link href={`/admin/hr/time-tracker/schedule?shift=${encodeURIComponent(shiftCtx.shiftId)}&date=${shiftCtx.shiftDate}`}
+                                title={tShift('trace.openShift')} className="inline-block font-mono text-xs font-semibold text-primary hover:underline">
+                                {shiftCtx.shiftTraceNo || tShift('trace.openShift')}
+                            </Link>
                             <p className="text-[11px] text-neutral-500">{shiftCtx.shiftLabel}</p>
                             <dl className="text-xs grid grid-cols-[auto_1fr] gap-x-2 gap-y-0.5">
                                 {shiftCtx.details.projectName && <><dt className="text-neutral-500">{tShift('create.projectLabel')}</dt><dd>{shiftCtx.details.projectName}</dd></>}

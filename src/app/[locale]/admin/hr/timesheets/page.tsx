@@ -126,6 +126,11 @@ function TimesheetsContent() {
     const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
     const [selectedEntries, setSelectedEntries] = useState<Set<string>>(new Set());
     const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
+    // TRACE-1: a link from a shift (?entry=<id>) opens that hours entry once the report has it.
+    const entryParam = searchParams.get('entry');
+    useEffect(() => {
+        if (entryParam && entries.some((e: { id: string }) => e.id === entryParam)) setExpandedRowId(entryParam);
+    }, [entryParam, entries]);
     const [unlockState, setUnlockState] = useState<{ valid: boolean, expiresAt: number | null }>({ valid: false, expiresAt: null });
     const [nowMs, setNowMs] = useState(Date.now());
 
@@ -380,6 +385,7 @@ function TimesheetsContent() {
                     />
                 </td>
                 <td className="px-6 py-4">
+                    {entry.traceNo && <div className="font-mono text-[11px] text-neutral-500">{entry.traceNo}</div>}
                     <div className="font-semibold text-sm">{format(start, 'dd MMM yyyy')}</div>
                     <div className="text-xs text-neutral-500">
                         {format(start, 'HH:mm')} - {end ? format(end, 'HH:mm') : '?'}

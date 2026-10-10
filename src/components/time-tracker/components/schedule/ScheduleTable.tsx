@@ -21,6 +21,7 @@ import { cn } from '@/lib/utils';
 import { isWritableShiftStatus, SHIFT_STATUS_OPTIONS } from '@/lib/kernel/shift-status';
 import { zonedParts } from '@/lib/kernel/shift-time';
 import { SHIFT_STATUS_PILL, getShiftStatusLabel } from './shift-status-ui';
+import { ShiftActualsLine } from './ShiftActualsLine';
 import { useLocale, useTranslations } from 'next-intl';
 import DataGridSurface from '@/components/admin/database/v2/DataGridSurface';
 import {
@@ -89,8 +90,10 @@ export function ScheduleTable({
         header: () => <span className="truncate">{t('colTime')}</span>,
         size: 130,
         cell: ({ row }) => (
-          <div className="w-full h-full px-2 flex items-center text-sm text-neutral-700 dark:text-neutral-300 truncate font-mono text-xs">
-            {row.original.timeRange}
+          <div className="w-full h-full px-2 flex flex-col justify-center text-sm text-neutral-700 dark:text-neutral-300 truncate font-mono text-xs">
+            <span className="truncate">{row.original.timeRange}</span>
+            {/* TRACE-1: the actual hours under the planned ones */}
+            <ShiftActualsLine entries={row.original.rawShift.clockEntries} />
           </div>
         ),
       },

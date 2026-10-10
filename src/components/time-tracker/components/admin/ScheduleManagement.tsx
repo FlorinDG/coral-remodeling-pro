@@ -20,6 +20,7 @@ import {
 import { hrList } from '@/lib/hr-api';
 import { WorkerOption } from '@/components/time-tracker/types/timesheet';
 import { useTranslations } from 'next-intl';
+import { useSearchParams } from 'next/navigation';
 
 type ViewMode = 'table' | 'matrix';
 
@@ -34,7 +35,11 @@ function getMonday(date: Date): Date {
 
 export function ScheduleManagement() {
   const t = useTranslations('Hr.scheduler');
-  const [weekStart, setWeekStart] = useState<Date>(() => getMonday(new Date()));
+  // TRACE-1: a link from an hours entry (?shift=<id>&date=<YYYY-MM-DD>) opens that shift's week and its dialog.
+  const searchParams = useSearchParams();
+  const linkedShiftId = searchParams.get('shift');
+  const linkedDate = searchParams.get('date');
+  const [weekStart, setWeekStart] = useState<Date>(() => getMonday(linkedDate && /^\d{4}-\d{2}-\d{2}$/.test(linkedDate) ? shiftMoment(linkedDate, '12:00') : new Date()));
   const [weekCount, setWeekCount] = useState<1 | 2>(1);
   // SCHED-WINDOW-1: the planner loads the weeks on screen ± one week (copy-previous-week reads the week before).
   const { shifts, projects, absences, loading, createShift, createLeave, updateShift, updateShiftStatus, deleteShift, canManage } = useScheduledShifts({ kind: 'planner', weekStart: localDateKey(weekStart), weeks: weekCount });
@@ -137,6 +142,13 @@ export function ScheduleManagement() {
       toast.error(t('failedToReschedule'));
     }
   };
+
+  const [linkedOpened, setLinkedOpened] = useState(false);
+  useEffect(() => {
+    if (!linkedShiftId || linkedOpened) return;
+    const target = shifts.find(sh => sh.id === linkedShiftId);
+    if (target) { setEditingShift(target); setEditDialogOpen(true); setLinkedOpened(true); }
+  }, [linkedShiftId, linkedOpened, shifts]);
 
   const handleShiftClick = (shift: ScheduledShift) => {
     setEditingShift(shift);

@@ -8,6 +8,7 @@ import { projectColorOf } from '@/lib/records/project-color';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { formatTime } from '@/lib/format/date';
+import { ShiftActualsLine } from './ShiftActualsLine';
 import { shiftStatus } from '@/lib/kernel/shift-status';
 import { absenceOn, type Absence } from '@/lib/kernel/absence';
 import { SHIFT_STATUS_DOT, getShiftStatusLabel } from './shift-status-ui';
@@ -567,6 +568,8 @@ export function ScheduleMatrixView({
                                               ) : (
                                                 <div className="text-[10px] font-black text-neutral-400 mt-1">{hours.toFixed(1)}h</div>
                                               )}
+                                              {/* TRACE-1: a closed shift shows what was actually worked under its plan */}
+                                              <ShiftActualsLine entries={shift.clockEntries} />
                                             </>
                                           );
                                         })()}

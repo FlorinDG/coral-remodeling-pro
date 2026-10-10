@@ -1741,6 +1741,16 @@
         "completedSuccess": "Task marked as completed",
         "completedFailed": "Could not complete task",
         "tasksWithoutProject": "Tasks without a project"
+      },
+      "trace": {
+        "actual": "Actual",
+        "breakShort": "break",
+        "shiftNo": "Shift",
+        "hoursNo": "Hours",
+        "openShift": "Open the shift",
+        "openHours": "Open these hours",
+        "noHoursYet": "No hours clocked yet",
+        "linkedHours": "Clocked hours"
       }
     },
     "werkbon": {

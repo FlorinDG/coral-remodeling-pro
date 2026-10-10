@@ -59,6 +59,7 @@ import { SHIFT_STATUS_LABEL, SHIFT_STATUS_PILL, getShiftStatusLabel } from '../s
 import { ShiftTasksTab } from './components/ShiftTasksTab';
 import { ShiftAttachmentsTab } from './components/ShiftAttachmentsTab';
 import { OrderGiverField } from './components/OrderGiverField';
+import { ShiftTraceLinks } from './components/ShiftTraceLinks';
 import {
   validateShiftForm,
   buildUpdateShiftPayload,
@@ -331,6 +332,8 @@ export function EditShiftDialog({
       <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{t('title')}</DialogTitle>
+          {/* TRACE-1: the shift's number and its clocked hours, linked */}
+          {shift && <ShiftTraceLinks traceNo={(shift as { traceNo?: string | null }).traceNo} entries={(shift as { clockEntries?: [] }).clockEntries} />}
         </DialogHeader>
 
         {/* Lock Banner when signed */}

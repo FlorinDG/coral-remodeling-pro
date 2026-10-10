@@ -37,7 +37,7 @@ describe('HR-ENTITY-SERAPH · census of the route', () => {
         const platform = ROUTE.match(/platformDb\(\)\.(\w+)/g) ?? [];
         assert.deepEqual([...new Set(platform)], ['platformDb().tenant']);
         assert.doesNotMatch(ROUTE, /\$transaction\(\[/);
-        assert.equal((ROUTE.match(/db\.\$transaction\(async tx =>/g) ?? []).length, 4);
+        assert.equal((ROUTE.match(/db\.\$transaction\(async tx =>/g) ?? []).length, 6);
     });
 });
 

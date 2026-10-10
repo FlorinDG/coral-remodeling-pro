@@ -1,6 +1,8 @@
 "use server";
 
 import { isTenantHrRole } from '@/lib/roles';
+import { nextTraceNo } from '@/lib/data/trace-number';
+import { TRACE_SERIES } from '@/lib/records/trace-number';
 import { isShiftSubmitted } from '@/lib/kernel/shift-time';
 import { autoLinkIfUnique } from '@/lib/data/entry-shift-match';
 import { isShiftSigned } from '@/lib/data/work-order-lock';
@@ -284,8 +286,10 @@ export async function submitLateEntry(params: {
         // shift are recorded as such, the project on the entry; the admin plans a shift afterwards if needed.
         let shiftId: string | null = boundShift?.id ?? null;
 
-        const clockEntry = await prisma.clockEntry.create({
+        // TRACE-1: numbered in the same transaction as its creation.
+        const clockEntry = await prisma.$transaction(async tx => tx.clockEntry.create({
             data: {
+                traceNo: await nextTraceNo(tx, tenantId, TRACE_SERIES.hours),
                 tenantId,
                 userId: targetUserId,
                 clockInTime: new Date(clockInTime),
@@ -302,7 +306,7 @@ export async function submitLateEntry(params: {
                 clockOutLongitude: location?.lng || null,
                 photos: filesData || null
             }
-        });
+        }));
 
         // SHIFT-LINK-1: no project picked → link to the one planned shift these hours overlap, if unique.
         if (!shiftId && !projectId) {

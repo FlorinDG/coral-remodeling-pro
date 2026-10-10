@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { ScheduleManagement } from "@/components/time-tracker/components/admin/ScheduleManagement";
 import ModuleTabs from "@/components/admin/ModuleTabs";
 import { hrTabs } from "@/config/tabs";
@@ -25,7 +25,8 @@ export default function Page() {
             <ModuleTabs tabs={hrTabs} groupId="hr" />
             <div className="w-full flex-1 flex flex-col pt-6 min-h-0">
                 <div className="hidden md:flex flex-1 flex-col">
-                    <ScheduleManagement />
+                    {/* useSearchParams (TRACE-1 links) needs a Suspense boundary */}
+                    <Suspense fallback={null}><ScheduleManagement /></Suspense>
                 </div>
                 <div className="md:hidden flex flex-1 flex-col items-center pt-20 p-6 text-center">
                     <div className="bg-neutral-100 dark:bg-white/5 rounded-2xl p-6 max-w-sm">

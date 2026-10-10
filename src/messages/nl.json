@@ -1741,6 +1741,16 @@
         "completedSuccess": "Taak gemarkeerd als voltooid",
         "completedFailed": "Kan taak niet voltooien",
         "tasksWithoutProject": "Taken zonder project"
+      },
+      "trace": {
+        "actual": "Werkelijk",
+        "breakShort": "pauze",
+        "shiftNo": "Dienst",
+        "hoursNo": "Uren",
+        "openShift": "Open de dienst",
+        "openHours": "Open deze uren",
+        "noHoursYet": "Nog geen uren geklokt",
+        "linkedHours": "Geklokte uren"
       }
     },
     "werkbon": {

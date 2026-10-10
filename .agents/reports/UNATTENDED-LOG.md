@@ -8,3 +8,4 @@
 | 2026-10-10 00:29 | green (fbab9794) | — (coder idle: LOC-NEW-1 GO, not started — its cron may not run) | — | PR #2 (EDITOR-1) green: build + Vercel preview pass. Planner: HR-ENTITY-SERAPH planned, not built — clock-in path, needs a daytime preview test. |
 | 2026-10-10 01:02 | green | — (coder idle) | main = 14881864 (docs) | DB-HEADER-1 M5 → GO. Planner: VAT regime literals → core (engines, PDFs, footers, viewer); rows/renderers after PR #2. |
 | 2026-10-10 01:29 | green | — (coder idle) | main = f75277de | Planner: SCHED-WINDOW-1 planned (the scheduler loads ALL shifts + time-off with a 9 s timeout → a slow-growing outage for office and crew); daytime, with HR-ENTITY-SERAPH. |
+| 2026-10-10 02:02 | green | — (coder idle) | main = 85073626 (docs) | Planner: PEPPOL-SCOPE-1 — send/validate read records unscoped (another tenant's invoice id → its archive + Invoice row written); fixed on the scoped client, check before any send. Promote after CI. |

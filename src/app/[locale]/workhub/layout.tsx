@@ -6,6 +6,8 @@ import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
 import { bindSystemDatabases } from "@/lib/data/tenant-databases";
 import { redirect } from "next/navigation";
+import { staleSessionOf } from "@/lib/data/session-guard";
+import { staleSessionUrl } from "@/lib/session-guard";
 import { isWorkforceRole } from "@/lib/roles";
 
 /**
@@ -21,6 +23,11 @@ export default async function WorkHubLayout({ children }: { children: React.Reac
     if (!session?.user?.tenantId) redirect("/login");
 
     const tenantId = session.user.tenantId;
+    // STALE-SESSION-1: a session naming a tenant / user that no longer exists ends — before any read builds on it.
+    {
+        const stale = await staleSessionOf(tenantId, session.user.id, !!(session.user as { isImpersonating?: boolean }).isImpersonating);
+        if (stale) redirect(staleSessionUrl(stale));
+    }
 
     // FILES-CREW-1 / WH-2 / WH-LEAN-1: the WorkHub's screens read the HR API, never the ERP database
     // store. Loading it shipped every ERP database to the phone at start-up (every PAGE while the lazy

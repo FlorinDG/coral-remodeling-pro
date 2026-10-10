@@ -7,6 +7,8 @@ import { prepareTenantDatabases } from "@/lib/data/tenant-databases";
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { staleSessionReason, staleSessionUrl } from "@/lib/session-guard";
 import { PLATFORM_ADMIN_ROLES } from "@/lib/roles";
 
 // Coral Enterprises tenant — the platform owner workspace.
@@ -61,6 +63,9 @@ export default async function Layout({ children }: { children: React.ReactNode }
 
     // ── 3. Tenant DB read — INDEPENDENT of database fetch ───────────────────
 
+    // STALE-SESSION-1: found / not found / unknown (read failed) — only a proven absence ends the session.
+    let tenantFound: boolean | null = null;
+    let userFound: boolean | null = null;
     if (tenantId) {
         // 3a. Tenant profile — critical path
         try {
@@ -137,16 +142,29 @@ export default async function Layout({ children }: { children: React.ReactNode }
                 // directly in JSX gets React error #301.
                 fullTenant = JSON.parse(JSON.stringify(tenant));
                 console.log(`[layout] Tenant OK: planType=${planType}, modules=${activeModules.length}, dbs=${Object.keys(lockedDbIds).length}`);
+                tenantFound = true;
             } else {
                 console.warn(`[layout] Tenant ${tenantId} not found`);
+                tenantFound = false;
             }
         } catch (e) {
             console.error(`[layout] Tenant read FAILED for ${tenantId}:`, e);
+        }
+        if (session?.user?.id) {
+            try { userFound = !!(await prisma.user.findUnique({ where: { id: session.user.id }, select: { id: true } })); }
+            catch (e) { console.error('[layout] User read FAILED:', e); }
         }
 
         // 3b. The store's data streams in under <Suspense> (DatabaseBootstrap — MOBILE-PERF-1)
     } else {
         console.warn('[layout] No tenantId — skipping all DB reads');
+    }
+
+    // STALE-SESSION-1: a session naming a tenant / user that no longer exists ends (outside any try: redirect throws).
+    const stale = staleSessionReason({ tenantFound, userFound, impersonating: isImpersonating });
+    if (stale) {
+        console.warn(`[layout] stale session (${stale}) — tenant=${tenantId}`);
+        redirect(staleSessionUrl(stale));
     }
 
     return (

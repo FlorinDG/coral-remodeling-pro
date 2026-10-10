@@ -1783,6 +1783,7 @@
     "authNotConfigured": {
       "title": "La connexion n'est pas configurée",
       "body": "Cette installation n'a pas de clé de session : personne ne peut se connecter. Rien n'a été modifié. Veuillez contacter votre administrateur."
-    }
+    },
+    "sessionStale": "Votre session faisait référence à un compte ou un espace de travail qui n'existe plus. Veuillez vous reconnecter."
   }
 }

@@ -1784,6 +1784,7 @@
     "authNotConfigured": {
       "title": "Sign-in is not configured",
       "body": "This installation has no session key, so nobody can sign in. Nothing has been changed. Please contact your administrator."
-    }
+    },
+    "sessionStale": "Your session referred to an account or workspace that no longer exists. Please sign in again."
   }
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { signIn } from 'next-auth/react';
 import { Link } from '@/i18n/routing';
 import { useSearchParams } from 'next/navigation';
@@ -71,6 +72,8 @@ export default function LoginPage() {
     const callbackUrl = searchParams.get('callbackUrl');
 
     const verifiedStatus = searchParams.get('verified');
+    const sessionStale = searchParams.get('session') === 'stale';   // STALE-SESSION-1
+    const tSystem = useTranslations('System');
 
     const pwRules = useMemo(() => validatePasswordRules(signupPassword), [signupPassword]);
     const allRulesPassed = Object.values(pwRules).every(Boolean);
@@ -207,6 +210,11 @@ export default function LoginPage() {
             </div>
 
             {/* Verification status messages from URL params */}
+            {sessionStale && (
+                <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 px-6 py-3 rounded-xl text-sm font-medium max-w-md text-center animate-in fade-in slide-in-from-top-2">
+                    {tSystem('sessionStale')}
+                </div>
+            )}
             {verifiedStatus === 'success' && (
                 <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 px-6 py-3 rounded-xl text-sm font-bold flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
                     <ShieldCheck className="w-4 h-4" />

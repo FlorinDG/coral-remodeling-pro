@@ -6,6 +6,9 @@ import MobileShell from "@/components/mobile/MobileShell";
 import { MobileScopeProvider } from "@/components/mobile/MobileScopeContext";
 import DatabaseBootstrap from "@/components/admin/database/DatabaseBootstrap";
 import StoreSession from "@/components/admin/database/StoreSession";
+import { redirect } from "next/navigation";
+import { staleSessionOf } from "@/lib/data/session-guard";
+import { staleSessionUrl } from "@/lib/session-guard";
 
 export default async function MobileLayout({ children }: { children: React.ReactNode }) {
     const t0 = performance.now();
@@ -15,17 +18,25 @@ export default async function MobileLayout({ children }: { children: React.React
     let fullTenant: any                     = null;
     let tenantId: string | null             = null;
     let userId: string | null               = null;
+    let impersonating                       = false;
 
     try {
         const session = await auth();
         tenantId = session?.user?.tenantId ?? null;
         userId = session?.user?.id ?? null;
+        impersonating = !!(session?.user as { isImpersonating?: boolean } | undefined)?.isImpersonating;
         if (session?.user) {
             if ((session.user as any).activeModules) activeModules = (session.user as any).activeModules;
             if ((session.user as any).planType)      planType      = (session.user as any).planType;
         }
     } catch (e) {
         console.error('[m/layout] auth() failed:', e);
+    }
+
+    // STALE-SESSION-1: a session naming a tenant / user that no longer exists ends — before any read builds on it.
+    {
+        const stale = await staleSessionOf(tenantId, userId, impersonating);
+        if (stale) redirect(staleSessionUrl(stale));
     }
 
     if (tenantId) {

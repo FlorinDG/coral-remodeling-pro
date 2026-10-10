@@ -55,4 +55,7 @@ Florin starts both sides at the same moment:
 - he tells the Planner "work unattended", and the Planner sets `UNATTENDED: ON until <time>` and pushes;
 - he tells the coder "start the cron per coder-cron-protocol.md".
 
+**Auto mode** (`UNATTENDED: AUTO idle 30`): the gate itself says WORK once Florin has been away 30 minutes and WAIT
+as soon as he is back. Nothing changes for you: keep the cron running and obey the gate.
+
 Your cron may keep running all the time: while the switch is OFF, every run exits at step 2.

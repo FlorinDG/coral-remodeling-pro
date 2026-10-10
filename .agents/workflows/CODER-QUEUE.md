@@ -5,7 +5,7 @@
 ## ⚙️ STATUS
 
 ```
-UNATTENDED: OFF
+UNATTENDED: AUTO idle 30
 ```
 
 | # | Item | State | Directive / where | Note |

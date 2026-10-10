@@ -18,6 +18,15 @@ case "$SWITCH" in
     UNTIL=${SWITCH#UNATTENDED: ON until }
     NOW=$(date +"%Y-%m-%d %H:%M")
     if [[ "$NOW" > "$UNTIL" ]]; then echo "WAIT unattended window ended ($UNTIL)"; exit 1; fi ;;
+  # "UNATTENDED: AUTO idle 30": ON while Florin has been away ≥ 30 minutes. His every message to the Planner stamps
+  # <git common dir>/florin-last-seen (a UserPromptSubmit hook, local only — nothing is pushed). No stamp → WAIT.
+  "UNATTENDED: AUTO idle "*)
+    IDLE_MIN=${SWITCH#UNATTENDED: AUTO idle }; IDLE_MIN=${IDLE_MIN%% *}
+    SEEN_FILE="${LAST_SEEN_FILE:-$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)/florin-last-seen}"
+    SEEN=$(cat "$SEEN_FILE" 2>/dev/null || true)
+    [[ "$SEEN" =~ ^[0-9]+$ ]] || { echo "WAIT no presence stamp ($SEEN_FILE)"; exit 1; }
+    AWAY=$(( ($(date +%s) - SEEN) / 60 ))
+    if (( AWAY < IDLE_MIN )); then echo "WAIT Florin is here (last seen ${AWAY} min ago, idle after ${IDLE_MIN})"; exit 1; fi ;;
   *) echo "WAIT unattended is OFF"; exit 1 ;;
 esac
 

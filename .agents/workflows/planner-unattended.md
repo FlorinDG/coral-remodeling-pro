@@ -15,6 +15,19 @@ same time to restart the cron job." The coder's side is `coder-cron-protocol.md`
 3. **Tell Florin** the window, the job id, and the rows marked `GO`. The coder needs one sentence: *"start the cron per
    .agents/workflows/coder-cron-protocol.md"*.
 
+## Auto mode — Florin 2026-10-10: "keep unattended mode ON half hour after my last interaction, and turn off when I'm back"
+- § STATUS reads `UNATTENDED: AUTO idle 30`. It stays like that; no commit per message.
+- **Presence stamp:** every message Florin sends to the Planner runs a `UserPromptSubmit` hook
+  (`.claude/settings.local.json`, local) that writes the epoch to `<git common dir>/florin-last-seen`
+  (`.git/florin-last-seen`, shared by every worktree, never pushed).
+- **The coder's gate** answers WORK only when that stamp is ≥ 30 minutes old; when Florin writes, the next run WAITs.
+  An item already in progress is finished (one item per run), never cut halfway.
+- **My runs:** a session `CronCreate` every 30 minutes, prompt *"Planner auto run — follow
+  .agents/workflows/planner-unattended.md § Auto mode"*. Each run: `.agents/tools/presence.sh` (prints AWAY/HERE).
+  HERE → stop at once, say nothing. AWAY → § Each run. When Florin comes back, the first reply opens with a short
+  summary of what happened while he was away (from `UNATTENDED-LOG.md`).
+- The session cron dies with the app and after 7 days; recreate it at the next session start.
+
 ## Each run
 1. `git fetch`. Develop's CI state, plus any new commits and reports since the last run.
 2. **CI red** on develop: find the cause. Fix it if it is mine or a one-line obvious one (as with

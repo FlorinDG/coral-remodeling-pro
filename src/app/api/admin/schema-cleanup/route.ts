@@ -12,8 +12,7 @@
 
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { auth } from '@/auth';
-import { PLATFORM_ADMIN_ROLES } from '@/lib/roles';
+import { platformAccess } from '@/lib/platform-admin';
 import { provisionLockedDatabases } from '@/lib/provisionTenantDbs';
 import { SYSTEM_DATABASES, SYSTEM_DATABASE_ROLES, SystemDatabaseRole, BASE_TO_KEY } from '@/lib/kernel/system-databases';
 
@@ -353,10 +352,9 @@ async function executeCleanup(): Promise<FullReport> {
 }
 
 export async function GET(request: Request) {
-    const session = await auth();
-    const role = session?.user?.role;
-    if (!role || !PLATFORM_ADMIN_ROLES.includes(role as any)) {
-        return NextResponse.json({ error: 'Forbidden — SuperAdmin only' }, { status: 403 });
+    // IMPERSONATE-1: a cross-tenant tool — platform admins only, and never during an impersonation.
+    if ((await platformAccess()) !== 'platform') {
+        return NextResponse.json({ error: 'Forbidden — SuperAdmin only, outside an impersonation' }, { status: 403 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -371,10 +369,9 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-    const session = await auth();
-    const role = session?.user?.role;
-    if (!role || !PLATFORM_ADMIN_ROLES.includes(role as any)) {
-        return NextResponse.json({ error: 'Forbidden — SuperAdmin only' }, { status: 403 });
+    // IMPERSONATE-1: a cross-tenant tool — platform admins only, and never during an impersonation.
+    if ((await platformAccess()) !== 'platform') {
+        return NextResponse.json({ error: 'Forbidden — SuperAdmin only, outside an impersonation' }, { status: 403 });
     }
 
     const { searchParams } = new URL(request.url);

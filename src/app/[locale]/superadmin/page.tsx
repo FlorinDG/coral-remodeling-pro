@@ -2,12 +2,12 @@ import prisma from "@/lib/prisma";
 import TenantsGrid from "./TenantsGrid";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-import { PLATFORM_ADMIN_ROLES } from "@/lib/roles";
+import { platformAccess } from "@/lib/platform-admin";
 
 export default async function SuperadminDashboardPage() {
     const session = await auth();
     const role = session?.user?.role;
-    if (!role || !PLATFORM_ADMIN_ROLES.includes(role)) {
+    if ((await platformAccess()) !== 'platform'  /* IMPERSONATE-1: closed while impersonating */) {
         redirect("/nl/admin");
     }
 

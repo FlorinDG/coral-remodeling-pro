@@ -2,15 +2,18 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { auth } from '@/auth';
 import { hashPassword, validatePassword } from '@/lib/password';
-import { PLATFORM_ADMIN_ROLES, WORKSPACE_OWNER_ROLES } from '@/lib/roles';
+import { WORKSPACE_OWNER_ROLES, platformAccessOf } from '@/lib/roles';
 
 export async function POST(req: Request) {
     try {
         const session = await auth();
         const role = session?.user?.role;
  
-        const isPlatformAdmin = role ? PLATFORM_ADMIN_ROLES.includes(role) : false;
-        const isWorkspaceOwner = role ? WORKSPACE_OWNER_ROLES.includes(role) : false;
+        // IMPERSONATE-1: only a platform admin OUTSIDE an impersonation resets across tenants; while impersonating, the
+        // reset is confined to the impersonated tenant, like a workspace owner's.
+        const access = platformAccessOf(role, (session?.user as { isImpersonating?: boolean } | undefined)?.isImpersonating);
+        const isPlatformAdmin = access === 'platform';
+        const isWorkspaceOwner = access === 'impersonating' || (role ? WORKSPACE_OWNER_ROLES.includes(role) : false);
 
         if (!isPlatformAdmin && !isWorkspaceOwner) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });

@@ -1,7 +1,7 @@
 import prisma from "@/lib/prisma";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-import { PLATFORM_ADMIN_ROLES } from "@/lib/roles";
+import { platformAccess } from "@/lib/platform-admin";
 import { Receipt, TrendingUp, Users, AlertCircle, CheckCircle2, Clock, XCircle, Zap } from "lucide-react";
 
 // Rough monthly revenue per plan (adjust to actual pricing)
@@ -31,7 +31,7 @@ const STATUS_ICON: Record<string, React.ReactNode> = {
 export default async function SuperadminBillingPage() {
     const session = await auth();
     const role = session?.user?.role;
-    if (!role || !PLATFORM_ADMIN_ROLES.includes(role)) redirect("/nl/admin");
+    if ((await platformAccess()) !== 'platform'  /* IMPERSONATE-1: closed while impersonating */) redirect("/nl/admin");
 
     const tenants = await prisma.tenant.findMany({
         select: {

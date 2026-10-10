@@ -185,3 +185,11 @@ export function canRunAccountantExport(role?: string | null, isImpersonating?: b
     if (isImpersonating) return true;
     return isAccountantRole(role) || isOwnerOrAdminRole(role);
 }
+
+/** IMPERSONATE-1 · what a session may do across tenants. A platform admin who is impersonating is confined to the
+ *  impersonated tenant until the impersonation ends (the gate: lib/platform-admin requirePlatformAdmin). Pure. */
+export type PlatformAccess = 'platform' | 'impersonating' | 'none';
+export function platformAccessOf(role: string | null | undefined, isImpersonating: boolean | null | undefined): PlatformAccess {
+    if (!role || !PLATFORM_ADMIN_ROLES.includes(role as Role)) return 'none';
+    return isImpersonating ? 'impersonating' : 'platform';
+}

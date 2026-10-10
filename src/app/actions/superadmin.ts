@@ -1,20 +1,18 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { requirePlatformAdmin, platformAccessOf } from '@/lib/platform-admin';
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
-import { PLATFORM_ADMIN_ROLES } from "@/lib/roles";
 
 import { calculatePeppolOverage } from "@/lib/stripe";
 import { describeError } from "@/lib/describe-error";
 
+/** IMPERSONATE-1: every platform action is closed during an impersonation (lib/platform-admin) — incl. entering
+ *  another tenant. The one exception is stopImpersonation, the exit. */
 async function verifySuperadmin() {
-    const session = await auth();
-    const role = session?.user?.role;
-    if (!role || !PLATFORM_ADMIN_ROLES.includes(role)) {
-        throw new Error("Unauthorized: Platform admin role required.");
-    }
+    await requirePlatformAdmin();
 }
 
 export async function updateTenantSubscription(tenantId: string, subscriptionStatus: string, planType: string) {
@@ -156,7 +154,11 @@ export async function impersonateTenant(tenantId: string) {
  * SuperAdmin: Exit impersonation and return to the SuperAdmin panel.
  */
 export async function stopImpersonation() {
-    await verifySuperadmin();
+    // The exit works while impersonating (verifySuperadmin would refuse it): any platform admin may leave.
+    const session = await auth();
+    if (platformAccessOf(session?.user?.role, (session?.user as { isImpersonating?: boolean } | undefined)?.isImpersonating) === 'none') {
+        throw new Error("Unauthorized: Platform admin role required.");
+    }
     const cookieStore = await cookies();
     cookieStore.delete(IMPERSONATION_COOKIE);
     revalidatePath("/");

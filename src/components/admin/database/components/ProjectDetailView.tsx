@@ -24,6 +24,7 @@ import { subtasksOf, subtaskProgress, topLevel, isTaskCompleted, PROP_TASK_PAREN
 const JournalCard = dynamic(() => import('./JournalCard'), { ssr: false });
 import { RecordAttachments } from '@/components/shared/RecordAttachments';
 import { isValidated } from '@/lib/records/validation';
+import { zonedParts } from '@/lib/kernel/shift-time';
 const LinkedRecords = dynamic(() => import('./LinkedRecords'), { ssr: false });
 const PageFinancialAnalysis = dynamic(() => import('./PageFinancialAnalysis'), { ssr: false });
 const SupplierQuotationsCard = dynamic(() => import('./SupplierQuotationsCard'), { ssr: false });
@@ -496,7 +497,7 @@ export default function ProjectDetailView({ databaseId, pageId, locale, onClose 
 
     const handleCreateInvoiceFromVS = async (vs: any) => {
         const invoiceDbId = resolveDbId('db-invoices');
-        const today = new Date().toISOString().split('T')[0];
+        const today = zonedParts(new Date()).date;
 
         // 1. Resolve client
         const rawClient = page.properties['client'] || page.properties['prop-client'] || [];

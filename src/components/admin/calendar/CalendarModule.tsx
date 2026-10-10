@@ -17,6 +17,7 @@ import { enGB } from 'date-fns/locale';
 import { createPageServerFirst } from '@/app/actions/pages';
 import { useTenant } from '@/context/TenantContext';
 import SearchableSelect from '@/components/ui/SearchableSelect';
+import { zonedParts } from '@/lib/kernel/shift-time';
 interface EventData {
     id: string;
     title: string;
@@ -349,7 +350,7 @@ export default function CalendarModule() {
                     createTask: {
                         text: '+ Create Task',
                         click: () => {
-                            setTaskData({ title: '', dueDate: new Date().toISOString().split('T')[0], priority: 'opt-med' });
+                            setTaskData({ title: '', dueDate: zonedParts(new Date()).date, priority: 'opt-med' });
                             setIsTaskModalOpen(true);
                         }
                     }
@@ -504,7 +505,7 @@ export default function CalendarModule() {
                     <div className="absolute bottom-6 right-6 flex flex-col gap-3 z-40">
                         <button
                             onClick={() => {
-                                setTaskData({ title: '', dueDate: new Date().toISOString().split('T')[0], priority: 'opt-med' });
+                                setTaskData({ title: '', dueDate: zonedParts(new Date()).date, priority: 'opt-med' });
                                 setIsTaskModalOpen(true);
                             }}
                             className="w-12 h-12 rounded-full bg-blue-600 text-white shadow-lg flex items-center justify-center hover:bg-blue-700 transition-colors ml-auto"
@@ -788,7 +789,7 @@ export default function CalendarModule() {
                                         }
                                         toast.success('Task created successfully!');
                                         setIsTaskModalOpen(false);
-                                        setTaskData({ title: '', dueDate: new Date().toISOString().split('T')[0], priority: 'opt-med' });
+                                        setTaskData({ title: '', dueDate: zonedParts(new Date()).date, priority: 'opt-med' });
                                     }
                                 }}
                             >

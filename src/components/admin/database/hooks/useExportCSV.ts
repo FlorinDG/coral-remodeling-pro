@@ -3,6 +3,7 @@ import { useCallback } from 'react';
 import Papa from 'papaparse';
 import type { Database, Page } from '../types';
 import { useDatabaseStore } from '../store';
+import { zonedParts } from '@/lib/kernel/shift-time';
 
 interface UseExportCSVParams {
     database: Database | undefined;
@@ -70,7 +71,7 @@ export function useExportCSV({ database, filteredPages, selectedRowIds }: UseExp
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.setAttribute('href', url);
-        const dateStr = new Date().toISOString().split('T')[0];
+        const dateStr = zonedParts(new Date()).date;
         link.setAttribute('download', `${database.name}_${dateStr}.csv`);
         document.body.appendChild(link);
         link.click();

@@ -128,3 +128,18 @@ test('a credit note is known by its docType — no screen reads a property "isCr
     assert.doesNotMatch(src, /properties\?*\.?\[['"]isCreditNote['"]\]/);
     assert.match(src, /const isCreditNote = String\(invoice\.properties\?\.\['docType'\]\) === 'opt-credit-note'/);
 });
+
+test('PEPPOL-SCOPE-1 · the send checks the invoice is THIS tenant\'s before archiving or sending; no record is read unscoped', async () => {
+    const { readFileSync } = await import('node:fs');
+    const send = readFileSync(new URL('../src/app/api/peppol/send/route.ts', import.meta.url), 'utf8');
+    const validate = readFileSync(new URL('../src/app/api/peppol/validate/route.ts', import.meta.url), 'utf8');
+    const own = send.indexOf('const ownInvoice = await db.globalPage.findFirst');
+    assert.ok(own > 0, 'the ownership check exists');
+    // nothing is archived or transmitted before the check (the quota read before it writes nothing)
+    assert.ok(send.indexOf('archiveDocument(') > own, 'archive after the check');
+    assert.ok(send.indexOf('fetch(`${') > own, 'transmission after the check');
+    for (const [name, src] of [['send', send], ['validate', validate]] as const) {
+        assert.doesNotMatch(src, /prisma\.(globalPage|invoice)\.find/, `${name}: a record read without the tenant scope`);
+    }
+    assert.match(send, /prisma\.invoice\.update\(\{\s*where: \{ id: invoiceId, tenantId \}/);
+});

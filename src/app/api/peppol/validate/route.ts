@@ -4,6 +4,7 @@ import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
 import { buildPeppolPayload, performLocalPreflight } from '@/lib/peppol-payload';
 import { discountOf } from '@/lib/records/document-lines';
+import { scopeFromSession } from '@/lib/data/scope';
 
 export async function POST(req: Request) {
     try {
@@ -31,15 +32,18 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'TENANT_NOT_FOUND', code: 'TENANT_NOT_FOUND', success: false }, { status: 404 });
         }
 
+        // PEPPOL-SCOPE-1: records are read on the session's scoped client — another tenant's id finds nothing.
+        const db = await scopeFromSession();
+
         // Fetch original invoice number if Credit Note
         let parentInvoiceNumber = bodyParentInvoiceNumber || undefined;
         const resolvedParentInvoiceId = Array.isArray(parentInvoiceId) ? parentInvoiceId[0] : parentInvoiceId;
         if (isCreditNote && !parentInvoiceNumber && resolvedParentInvoiceId) {
-            const parent = await prisma.invoice.findUnique({ where: { id: resolvedParentInvoiceId } });
+            const parent = await db.invoice.findFirst({ where: { id: resolvedParentInvoiceId } });
             if (parent?.invoiceNumber) {
                 parentInvoiceNumber = parent.invoiceNumber;
             } else {
-                const parentPage = await prisma.globalPage.findUnique({ where: { id: resolvedParentInvoiceId } });
+                const parentPage = await db.globalPage.findFirst({ where: { id: resolvedParentInvoiceId } });
                 if (parentPage) {
                     const props = (parentPage.properties as Record<string, any>) || {};
                     parentInvoiceNumber = props.title || props.invoiceNumber || props.invoice_number;

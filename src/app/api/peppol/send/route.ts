@@ -7,6 +7,7 @@ import { Resend } from 'resend';
 import { maybeResetMonthlyCounters, assertPeppolSentLimit, incrementPeppolSent } from '@/lib/plan-limits';
 import { buildPeppolPayload } from '@/lib/peppol-payload';
 import { discountOf } from '@/lib/records/document-lines';
+import { scopeFromSession } from '@/lib/data/scope';
 
 export async function POST(req: Request) {
     try {
@@ -57,15 +58,24 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'MISSING_CLIENT', code: 'MISSING_CLIENT', success: false }, { status: 400 });
         }
 
+        // PEPPOL-SCOPE-1: the invoice must be THIS tenant's — checked on the scoped client BEFORE anything is archived,
+        // sent or stamped. Before, every record here was looked up by the body's id alone: another tenant's id would
+        // have filed this PDF in THAT tenant's archive and marked THAT tenant's invoice as sent.
+        const db = await scopeFromSession();
+        const ownInvoice = await db.globalPage.findFirst({ where: { id: invoiceId }, select: { id: true } });
+        if (!ownInvoice) {
+            return NextResponse.json({ error: 'INVOICE_RECORD_NOT_FOUND', code: 'INVOICE_RECORD_NOT_FOUND', success: false }, { status: 404 });
+        }
+
         // 3b. Fetch original invoice for Credit Note reference if applicable
         let parentInvoiceNumber = bodyParentInvoiceNumber || undefined;
         const resolvedParentInvoiceId = Array.isArray(parentInvoiceId) ? parentInvoiceId[0] : parentInvoiceId;
         if (isCreditNote && !parentInvoiceNumber && resolvedParentInvoiceId) {
-            const parent = await prisma.invoice.findUnique({ where: { id: resolvedParentInvoiceId } });
+            const parent = await db.invoice.findFirst({ where: { id: resolvedParentInvoiceId } });
             if (parent?.invoiceNumber) {
                 parentInvoiceNumber = parent.invoiceNumber;
             } else {
-                const parentPage = await prisma.globalPage.findUnique({ where: { id: resolvedParentInvoiceId } });
+                const parentPage = await db.globalPage.findFirst({ where: { id: resolvedParentInvoiceId } });
                 if (parentPage) {
                     const props = (parentPage.properties as Record<string, any>) || {};
                     parentInvoiceNumber = props.title || props.invoiceNumber || props.invoice_number;
@@ -115,7 +125,7 @@ export async function POST(req: Request) {
             const { archiveDocument } = await import('@/lib/records/document-archive');
             const { updatePageServerFirst } = await import('@/app/actions/pages');
 
-            const page = await prisma.globalPage.findUnique({
+            const page = await db.globalPage.findFirst({
                 where: { id: invoiceId },
                 include: { database: { select: { tenantId: true } } }
             });
@@ -247,7 +257,7 @@ export async function POST(req: Request) {
             if (archiveKey) {
                 const { updatePageServerFirst } = await import('@/app/actions/pages');
                 const { resolveInvoiceDatesOnSend } = await import('@/lib/invoices/due-date');
-                const page = await prisma.globalPage.findUnique({
+                const page = await db.globalPage.findFirst({
                     where: { id: invoiceId },
                 });
                 if (page) {
@@ -463,7 +473,7 @@ export async function POST(req: Request) {
         // Step 7: Finalize in Prisma (Lock + Snapshot + Peppol ID)
         await prisma.$transaction([
             prisma.invoice.update({
-                where: { id: invoiceId },
+                where: { id: invoiceId, tenantId },   // PEPPOL-SCOPE-1: this tenant's row only
                 data: {
                     isLocked: true,
                     status: 'SENT',
@@ -493,7 +503,7 @@ export async function POST(req: Request) {
         let serverPage: any = undefined;
         const { updatePageServerFirst } = await import('@/app/actions/pages');
         const { resolveInvoiceDatesOnSend } = await import('@/lib/invoices/due-date');
-        const page = await prisma.globalPage.findUnique({
+        const page = await db.globalPage.findFirst({
             where: { id: invoiceId },
         });
         if (page) {

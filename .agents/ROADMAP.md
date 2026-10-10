@@ -1,6 +1,6 @@
 # CoralOS — System Mindmap & Execution Roadmap
 
-> Living document. Updated: 2026-10-09 (planned modules BANK-REC-1, CONSTRUCT-1).
+> Living document. Updated: 2026-10-10 (BANK-REC-1 source = CODA; CONSTRUCT-1 starts with .xlsx; SITE-VISIT-1, REMIND-1, EDITOR-1 E8 + FILES-1 planned).
 > Gold rule: `/pd` — Protect What Is Already Built.
 > Maturity: 🟢 Production | 🟡 Functional | 🟠 Scaffolded | 🔴 Placeholder | ⚫ Missing
 
@@ -33,6 +33,8 @@
 
 ### `BANK-REC-1` — bank reconciliation with expenses (and income) · ⚫
 
+**Florin 2026-10-10:** the source is **CODA** (daily, D+1 — as the major accounting packages use). PSD2 is not planned.
+
 - **In:** the tenant's bank movements.
   - Option 1: a statement file. **CODA** is the Belgian bank standard; **CAMT.053** is ISO 20022.
   - Option 2, later: a PSD2 feed through a Belgian aggregator (e.g. Ponto, Isabel).
@@ -53,6 +55,8 @@
 - **Open (Florin):** CODA upload first, or a PSD2 feed? Which banks?
 
 ### `CONSTRUCT-1` — construction specifics: the architect's meetstaat and BIM · ⚫
+
+**Florin 2026-10-10:** the meetstaat is mainly .xlsx — **we start there**; BIM and other formats follow as needed.
 
 **a) The meetstaat (bill of quantities) from the architect → a quote.**
 - **In:** the architect's meetstaat as .xlsx (most common), PDF, sometimes XML. Posts carry the bestek's numbering

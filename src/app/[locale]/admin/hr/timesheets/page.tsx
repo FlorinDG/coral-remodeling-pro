@@ -67,6 +67,17 @@ interface Report { entries: ClockEntry[]; summary: any; rollups: { byWorker: any
  *  its own page, so this screen mounted empty on every visit. The last report per query is kept for the session: a
  *  return shows it at once and refreshes it quietly. */
 const reportCache = new Map<string, Report>();
+/** One request per query at a time: the first visit names the period in the URL (router.replace) and reads the report
+ *  at once; the effect that runs again for the new URL shares this request instead of starting a second one. */
+const reportInFlight = new Map<string, Promise<Report>>();
+function loadReport(key: string): Promise<Report> {
+    let p = reportInFlight.get(key);
+    if (!p) {
+        p = hrFetch<Report>(`timesheet-reports?${key}`).finally(() => reportInFlight.delete(key));
+        reportInFlight.set(key, p);
+    }
+    return p;
+}
 
 /** The query with the default period (this month) filled in — the key a report is cached under. */
 function withDefaultPeriod(params: URLSearchParams | { toString(): string }): URLSearchParams {
@@ -190,17 +201,17 @@ function TimesheetsContent() {
         setError(null);
         try {
             const currentParams = withDefaultPeriod(searchParams);
-            if (currentParams.toString() !== searchParams.toString()) {
-                router.replace(`${pathname}?${currentParams.toString()}`);
-                return; // The redirect will re-trigger the effect
-            }
-            
             const key = currentParams.toString();
+            // TS-FLASH-1 (Florin 2026-10-10: "first hangs on a no entries screen for a second or two"): the URL is given
+            // its period, but the report is read NOW — it used to return here and wait for the navigation, and the
+            // `finally` below cleared the spinner, so the empty table showed for the whole round trip.
+            if (key !== searchParams.toString()) router.replace(`${pathname}?${key}`);
+
             const hit = reportCache.get(key);
             if (hit && !silent) {   // shown at once; refreshed below without the spinner
                 setEntries(hit.entries); setSummary(hit.summary); setRollups(hit.rollups); setLoading(false);
             }
-            const data = await hrFetch<Report>(`timesheet-reports?${key}`);
+            const data = await loadReport(key);
 
             const mappedEntries = data.entries.map((e: any) => ({
                 ...e,

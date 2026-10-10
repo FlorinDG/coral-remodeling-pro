@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { scopeFromSession, type TenantScopedClient } from '@/lib/data/scope';
 import { ImapFlow } from 'imapflow';
 import { simpleParser } from 'mailparser';
-import { getGmailOAuth2Client } from './connect/google/route';
+import { getGmailOAuth2Client } from '@/lib/mail/gmail-oauth';
 import { auth } from '@/auth';
 
 // R1-5: this route built its OWN `new PrismaClient()` — a second, unscoped client the import gate could not

@@ -21,3 +21,4 @@
 | 2026-10-10 07:00 | green | — (coder idle) | main = 3fcd0137 | Quiet run. |
 | 2026-10-10 07:28 | green | — (coder idle) | main = 3fcd0137 | Quiet run; stop at the next run (window ends 07:33). |
 | 2026-10-10 08:00 | green | — | main = 3fcd0137 | STOP: job deleted, UNATTENDED: OFF, summary final (UNATTENDED-SUMMARY.md). |
+| 2026-10-10 19:25 (auto, Florin away 30 min) | develop green (da8b5c4a) | no coder report | main ← 224d3119 (docs) | built SCHED-WINDOW-1 (475bee86); main held: AUTH-SECRET-1 + HR-ENTITY-SERAPH + SCHED-WINDOW-1 wait for Florin's preview test, which needs `prisma migrate deploy` on the preview DB |

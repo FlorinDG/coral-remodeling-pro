@@ -8,6 +8,7 @@
  * Never re-rendered once stored: approving and sending use the stored bytes.
  */
 import { storage } from '@/lib/storage';
+import { orderGiverIdOf } from '@/lib/records/order-giver';
 import { platformDb, systemScope, type TenantScopedClient } from '@/lib/data/scope';
 import { werkbonStatus, type WerkbonStatus } from '@/lib/records/werkbon-status';
 import { workOrderMembers } from '@/lib/data/work-order-lock';
@@ -59,8 +60,7 @@ export async function generateWerkbon(tenantId: string, shiftId: string, opts: {
         ? await db.globalPage.findFirst({ where: { id: anchor.projectId, database: { logicalKey: 'projects' } }, select: { properties: true } })
         : null;
     const projectProps = (project?.properties || null) as Props | null;
-    const projectClient = projectProps?.['prop-client'];
-    const clientId = anchor.contactPageId || (Array.isArray(projectClient) ? (projectClient[0] as string) : (typeof projectClient === 'string' ? projectClient : null));
+    const clientId = orderGiverIdOf(anchor.contactPageId, projectProps);
     const client = clientId
         ? await db.globalPage.findFirst({ where: { id: clientId, database: { logicalKey: 'clients' } }, select: { properties: true } })
         : null;

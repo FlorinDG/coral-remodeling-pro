@@ -1372,7 +1372,9 @@
         "notesPlaceholder": "Ex. transmis par téléphone depuis le chantier",
         "cancel": "Annuler",
         "save": "Enregistrer"
-      }
+      },
+      "notLinkedToShift": "Non lié à un service planifié",
+      "address": "Adresse"
     },
     "shiftForm": {
       "orderGiver": "Donneur d’ordre (reçoit le bon de travail signé)",

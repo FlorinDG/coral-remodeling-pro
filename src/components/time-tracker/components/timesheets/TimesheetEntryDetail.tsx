@@ -24,6 +24,7 @@ interface TimesheetEntryDetailProps {
 export function TimesheetEntryDetail({ entry, onUpdate, unlockTokenValid }: TimesheetEntryDetailProps) {
     const locale = useLocale();
     const t = useTranslations('Hr.timesheets');
+    const tShift = useTranslations('Hr.shifts');
     const dateFnsLocale = locale === 'nl' ? nl : locale === 'fr' ? fr : enUS;
 
     const [loading, setLoading] = useState(false);
@@ -211,11 +212,12 @@ export function TimesheetEntryDetail({ entry, onUpdate, unlockTokenValid }: Time
     // not have to go back to the scheduler (Florin 2026-10-01).
     const [shiftCtx, setShiftCtx] = useState<EntryShiftContext | null>(null);
     const [shiftCtxError, setShiftCtxError] = useState<string | null>(null);
+    const [shiftCtxLoaded, setShiftCtxLoaded] = useState(false);   // loaded with no shift = "not linked", said out loud
     useEffect(() => {
         let live = true;
-        setShiftCtx(null); setShiftCtxError(null);
+        setShiftCtx(null); setShiftCtxError(null); setShiftCtxLoaded(false);
         getEntryShiftContext(entry.id)
-            .then(r => { if (!live) return; if (r.ok) setShiftCtx(r.context); else setShiftCtxError(r.error); })
+            .then(r => { if (!live) return; setShiftCtxLoaded(true); if (r.ok) setShiftCtx(r.context); else setShiftCtxError(r.error); })
             .catch(err => live && setShiftCtxError(describeError(err)));
         return () => { live = false; };
     }, [entry.id, entry.shiftId]);
@@ -532,14 +534,26 @@ export function TimesheetEntryDetail({ entry, onUpdate, unlockTokenValid }: Time
             </div>
 
             {/* SHIFT — what the planner wrote, what the crew wrote, the tasks (read-only) */}
+            {shiftCtxLoaded && !shiftCtx && !shiftCtxError && (
+                <p className="border-t border-border pt-4 text-xs text-neutral-500 italic">{t('notLinkedToShift')}</p>
+            )}
             {(shiftCtx || shiftCtxError) && (
                 <div className="border-t border-border pt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
                     {shiftCtxError ? (
                         <p className="text-xs text-amber-700 dark:text-amber-300 md:col-span-3">{t('shiftContextFailed')} — {shiftCtxError}</p>
                     ) : shiftCtx && (<>
                         <div className="space-y-1">
-                            <h4 className="text-xs font-semibold uppercase text-muted-foreground">{t('shiftNote')}</h4>
+                            {/* The shift editor's Details tab, read-only, with the editor's own labels (Florin 2026-10-10). */}
+                            <h4 className="text-xs font-semibold uppercase text-muted-foreground">{tShift('create.tabDetails')}</h4>
                             <p className="text-[11px] text-neutral-500">{shiftCtx.shiftLabel}</p>
+                            <dl className="text-xs grid grid-cols-[auto_1fr] gap-x-2 gap-y-0.5">
+                                {shiftCtx.details.projectName && <><dt className="text-neutral-500">{tShift('create.projectLabel')}</dt><dd>{shiftCtx.details.projectName}</dd></>}
+                                {shiftCtx.details.orderGiver && <><dt className="text-neutral-500">{tShift('create.orderGiver')}</dt><dd>{shiftCtx.details.orderGiver}</dd></>}
+                                {shiftCtx.details.role && <><dt className="text-neutral-500">{tShift('create.roleLabel')}</dt><dd>{tShift.has(`roles.${shiftCtx.details.role}`) ? tShift(`roles.${shiftCtx.details.role}`) : shiftCtx.details.role}</dd></>}
+                                {shiftCtx.details.siteAddress && <><dt className="text-neutral-500">{t('address')}</dt><dd>{shiftCtx.details.siteAddress}</dd></>}
+                            </dl>
+                            {shiftCtx.details.materialsEnabled && <p className="text-[11px] text-neutral-500">{tShift('create.materialsLabel')}</p>}
+                            <p className="text-[11px] font-semibold text-neutral-500 pt-1">{tShift('create.notesLabel')}</p>
                             {shiftCtx.plannerNote
                                 ? <p className="text-sm whitespace-pre-wrap bg-amber-50 dark:bg-amber-950/30 border border-amber-200/70 dark:border-amber-900/50 rounded p-2">{shiftCtx.plannerNote}</p>
                                 : <p className="text-xs text-neutral-400 italic">{t('none')}</p>}

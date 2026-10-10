@@ -1373,7 +1373,9 @@
         "notesPlaceholder": "Ex. comunicat telefonic de pe șantier",
         "cancel": "Anulează",
         "save": "Salvează"
-      }
+      },
+      "notLinkedToShift": "Nelegat de o tură planificată",
+      "address": "Adresă"
     },
     "shiftForm": {
       "orderGiver": "Beneficiar (primește fișa de lucru semnată)",

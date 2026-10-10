@@ -1373,7 +1373,9 @@
         "notesPlaceholder": "Bijv. telefonisch doorgegeven vanaf de werf",
         "cancel": "Annuleren",
         "save": "Opslaan"
-      }
+      },
+      "notLinkedToShift": "Niet gekoppeld aan een geplande dienst",
+      "address": "Adres"
     },
     "shiftForm": {
       "orderGiver": "Opdrachtgever (ontvangt de getekende werkbon)",

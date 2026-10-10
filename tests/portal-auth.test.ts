@@ -8,6 +8,18 @@ import {
     verifyPortalAccess,
     PORTAL_SESSION_COOKIE
 } from '../src/lib/portal-auth.ts';
+import { AuthNotConfiguredError } from '../src/lib/auth-secret.ts';
+
+// AUTH-SECRET-1: the portal has no default secret — the tests set their own (read at call time).
+const TEST_SECRET = 'test-portal-secret';
+process.env.PORTAL_AUTH_SECRET = TEST_SECRET;
+
+test('AUTH-SECRET-1 · portal: no PORTAL_AUTH_SECRET and no AUTH_SECRET → no token is signed', () => {
+    const saved = { p: process.env.PORTAL_AUTH_SECRET, a: process.env.AUTH_SECRET };
+    delete process.env.PORTAL_AUTH_SECRET; delete process.env.AUTH_SECRET;
+    try { assert.throws(() => signPortalSessionToken('portal-x'), AuthNotConfiguredError); }
+    finally { process.env.PORTAL_AUTH_SECRET = saved.p; if (saved.a !== undefined) process.env.AUTH_SECRET = saved.a; }
+});
 
 test('PORTAL-1 · session token: valid token round-trip verifies portalId', () => {
     const portalId = 'portal-alpha-123';
@@ -31,7 +43,7 @@ test('PORTAL-1 · session token: tampered token is rejected', () => {
 test('PORTAL-1 · session token: expired token is rejected', () => {
     const expPast = Date.now() - 1000;
     const payloadStr = Buffer.from(JSON.stringify({ portalId: 'portal-expired', exp: expPast })).toString('base64url');
-    const secret = process.env.PORTAL_AUTH_SECRET || process.env.AUTH_SECRET || 'coral-portal-fallback-secret';
+    const secret = TEST_SECRET;
     const sig = crypto.createHmac('sha256', secret).update(payloadStr).digest('base64url');
     const expiredToken = `${payloadStr}.${sig}`;
 

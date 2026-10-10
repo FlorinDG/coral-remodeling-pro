@@ -17,9 +17,3 @@ export async function getPortalById(id: string) {
         where: { id },
     });
 }
-
-export async function getPortalTask(id: string) {
-    return prisma.globalPage.findUnique({
-        where: { id },
-    });
-}

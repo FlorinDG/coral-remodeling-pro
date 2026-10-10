@@ -17,6 +17,8 @@ import {
 import { Link } from '@/i18n/routing';
 import { Lock } from 'lucide-react';
 import { BASE_TO_KEY } from '@/lib/kernel/system-databases';
+import { useSession } from 'next-auth/react';
+import { gridAccess } from '@/lib/records/grid-access';
 
 const JournalCard       = dynamic(() => import('@/components/admin/database/components/JournalCard'),       { ssr: false });
 const FileManagerCard = dynamic(() => import('@/components/admin/file-manager/FileManagerCard'), { ssr: false });
@@ -34,6 +36,7 @@ interface RecordDetailPageProps {
 
 export default function RecordDetailPage({ databaseId, pageId, locale }: RecordDetailPageProps) {
     const router = useRouter();
+    const { data: session } = useSession();
     const { resolveDbId, planType, isEnterprise } = useTenant();
 
     const resolvedDbId = resolveDbId(databaseId);
@@ -42,8 +45,12 @@ export default function RecordDetailPage({ databaseId, pageId, locale }: RecordD
         state.databases.find(db => db.id === resolvedDbId)
     );
     const role = database?.logicalKey || (databaseId in BASE_TO_KEY ? BASE_TO_KEY[databaseId] : null);
-    const isBestek = role === 'bestek';
-    const isBestekReadOnly = isBestek && !isEnterprise;
+    const access = gridAccess({
+        userRole: (session?.user as { role?: string } | undefined)?.role,
+        logicalKey: role,
+        isEnterprise,
+    });
+    const isBestekReadOnly = !access.edit;
     const page = useDatabaseStore(state =>
         state.databases.find(db => db.id === resolvedDbId)?.pages.find(p => p.id === pageId)
     );

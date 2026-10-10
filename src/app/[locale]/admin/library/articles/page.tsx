@@ -12,7 +12,7 @@ const DatabaseCloneDynamic = dynamic(
 );
 
 export default function ArticlesPage() {
-    const { planType, isPro, resolveDbId } = useTenant();
+    const { planType, isPro } = useTenant();
 
     return (
         <div className="flex flex-col w-full h-full">
@@ -27,7 +27,7 @@ export default function ArticlesPage() {
                 />
             ) : (
                 <div className="w-full flex-1 flex flex-col pt-4 min-h-0">
-                    <DatabaseCloneDynamic databaseId={resolveDbId('db-articles')} />
+                    <DatabaseCloneDynamic databaseId="db-articles" />
                 </div>
             )}
         </div>

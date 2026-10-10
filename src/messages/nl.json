@@ -256,6 +256,7 @@
   },
   "Admin": {
     "dbHeader": {
+      "all": "Alle",
       "searchLines": "Zoeken in regels",
       "sortAdded": "Toegevoegd",
       "sortEdited": "Laatst gewijzigd",

@@ -12,7 +12,7 @@ const DatabaseCloneDynamic = dynamic(
 );
 
 export default function BestekPage() {
-    const { planType, isPro, resolveDbId } = useTenant();
+    const { planType, isPro } = useTenant();
 
     return (
         <div className="flex flex-col w-full h-full">
@@ -26,12 +26,8 @@ export default function BestekPage() {
                     description="Standardized technical specifications and building codes. PRO tenants get read-only catalog access; ENTERPRISE tenants can edit and create custom Bestek entries."
                 />
             ) : (
-                <div className="w-full flex-1 flex flex-col pt-6 min-h-0">
-                    <div className="mb-4">
-                        <h1 className="text-2xl font-bold">Bestek (Specifications) Library</h1>
-                        <p className="text-sm text-neutral-500">Standardized technical specifications and building codes context.</p>
-                    </div>
-                    <DatabaseCloneDynamic databaseId={resolveDbId('db-bestek')} />
+                <div className="w-full flex-1 flex flex-col pt-4 min-h-0">
+                    <DatabaseCloneDynamic databaseId="db-bestek" />
                 </div>
             )}
         </div>

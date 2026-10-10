@@ -530,3 +530,61 @@ test('computeDatabaseHeader: actionStates overrides busy, disabled and disabledR
         assert.ok(getTranslation(peppolOver.disabledReasonKey, l), `missing ${l}`);
     }
 });
+
+// ── 8. M5: BESTEK GATING & M4 LEFTOVERS ──────────────────────────────────────
+
+test('M5: Admin.dbHeader.all resolves across all four locales (throw proof: missing key throws)', () => {
+    for (const locale of LOCALES) {
+        const tr = getTranslation('Admin.dbHeader.all', locale);
+        assert.ok(tr && tr.length > 0, `Admin.dbHeader.all must resolve in ${locale}`);
+    }
+
+    assert.throws(() => {
+        const tr = getTranslation('Admin.dbHeader.nonexistent_key_proof', 'nl');
+        if (!tr) throw new Error('Missing key');
+    }, /Missing key/);
+});
+
+test('M5: bestek access rule reconciled with gridAccess — read-only below Enterprise, writable on Enterprise (throw proof)', () => {
+    const proAccess = gridAccess({ userRole: 'TENANT_ADMIN', logicalKey: 'bestek', isEnterprise: false });
+    assert.equal(proAccess.edit, false);
+    assert.equal(proAccess.create, false);
+    assert.equal(proAccess.delete, false);
+
+    const entAccess = gridAccess({ userRole: 'TENANT_ADMIN', logicalKey: 'bestek', isEnterprise: true });
+    assert.equal(entAccess.edit, true);
+    assert.equal(entAccess.create, true);
+    assert.equal(entAccess.delete, true);
+
+    const proHeader = computeDatabaseHeader({
+        role: 'bestek',
+        databaseId: 'db-bestek',
+        databaseName: 'Bestek',
+        access: proAccess,
+    });
+    assert.equal(proHeader.toolbar.showImportCsv, false);
+    assert.equal(proHeader.toolbar.showBulkDelete, false);
+    assert.equal(proHeader.schemaLink, null);
+
+    const entHeader = computeDatabaseHeader({
+        role: 'bestek',
+        databaseId: 'db-bestek',
+        databaseName: 'Bestek',
+        access: entAccess,
+    });
+    assert.equal(entHeader.toolbar.showImportCsv, true);
+    assert.equal(entHeader.toolbar.showBulkDelete, true);
+    assert.ok(entHeader.schemaLink);
+    assert.equal(entHeader.schemaLink?.labelKey, 'Admin.dbHeader.editCustomFields');
+
+    // THROW PROOF: if proAccess had edit: true, proHeader would leak schemaLink and import
+    assert.doesNotThrow(() => {
+        if (proHeader.schemaLink !== null) {
+            throw new Error('LEAK: schemaLink visible for PRO bestek');
+        }
+        if (proHeader.toolbar.showImportCsv !== false) {
+            throw new Error('LEAK: showImportCsv visible for PRO bestek');
+        }
+    });
+});
+

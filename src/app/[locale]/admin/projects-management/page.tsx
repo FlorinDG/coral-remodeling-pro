@@ -3,11 +3,12 @@
 import dynamic from 'next/dynamic';
 import { useState } from 'react';
 import { useTenant } from '@/context/TenantContext';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import ModuleTabs from "@/components/admin/ModuleTabs";
 import { projectsTabs } from "@/config/tabs";
 import { useDatabaseStore } from '@/components/admin/database/store';
 import type { ScreenTabItem } from '@/lib/records/db-header';
+import { canonicalSchemas } from '@/lib/kernel/system-schemas';
 
 const ProjectDetailView = dynamic(
     () => import('@/components/admin/database/components/ProjectDetailView'),
@@ -24,6 +25,7 @@ const DatabaseCloneDynamic = dynamic(
 
 export default function ProjectManagementPage() {
     const locale = useLocale();
+    const t = useTranslations('Admin.dbHeader');
     const { resolveDbId } = useTenant();
     const [activeType, setActiveType] = useState<string>('all');
     const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
@@ -31,14 +33,13 @@ export default function ProjectManagementPage() {
     const resolvedDbId = resolveDbId('db-1');
     const projectDb = useDatabaseStore(state => state.getDatabase(resolvedDbId));
     const typeProp = projectDb?.properties.find(p => p.id === 'prop-project-type');
-    const typeOptions = typeProp?.config?.options || [
-        { id: 'type-operations', name: 'Operations' },
-        { id: 'type-admin', name: 'Administration' },
-        { id: 'type-bizdev', name: 'Business Development' },
-    ];
+    const fallbackOptions = (canonicalSchemas(resolveDbId)['db-1']?.find(
+        p => p.id === 'prop-project-type'
+    )?.config?.options as Array<{ id: string; name: string }>) || [];
+    const typeOptions = (typeProp?.config?.options as Array<{ id: string; name: string }> | undefined) || fallbackOptions;
 
     const screenTabs: ScreenTabItem[] = [
-        { id: 'all', label: 'All', active: activeType === 'all' },
+        { id: 'all', label: t('all'), active: activeType === 'all' },
         ...typeOptions.map(opt => ({
             id: opt.id,
             label: opt.name,

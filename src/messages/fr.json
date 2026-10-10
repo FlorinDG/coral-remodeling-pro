@@ -255,6 +255,7 @@
   },
   "Admin": {
     "dbHeader": {
+      "all": "Tous",
       "searchLines": "Rechercher dans les lignes",
       "sortAdded": "Date d’ajout",
       "sortEdited": "Dernière modification",

@@ -18,7 +18,7 @@ same time to restart the cron job." The coder's side is `coder-cron-protocol.md`
 ## Auto mode — Florin 2026-10-10: "keep unattended mode ON half hour after my last interaction, and turn off when I'm back"
 - § STATUS reads `UNATTENDED: AUTO idle 30`. It stays like that; no commit per message.
 - **Presence stamp:** every message Florin sends to the Planner runs a `UserPromptSubmit` hook
-  (`.claude/settings.local.json`, local) that writes the epoch to `<git common dir>/florin-last-seen`
+  (`.claude/settings.local.json`, local) that writes the epoch to `<git common dir>/florin-last-seen` (skipping my own cron prompts and background-task notifications)
   (`.git/florin-last-seen`, shared by every worktree, never pushed).
 - **The coder's gate** answers WORK only when that stamp is ≥ 30 minutes old; when Florin writes, the next run WAITs.
   An item already in progress is finished (one item per run), never cut halfway.

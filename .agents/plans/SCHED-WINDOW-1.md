@@ -40,4 +40,4 @@
 - Crew: today's shift and clock-in, MySchedule four weeks ahead, a late entry for last week.
 - Leave shows in every window it overlaps.
 
-Owner: the Planner (the hook and the route are fenced from the coder). **Do it together with HR-ENTITY-SERAPH.**
+Owner: the Planner (the hook and the route are fenced from the coder). **BUILT 2026-10-10 with HR-ENTITY-SERAPH — on develop; waiting for the preview test before main.**

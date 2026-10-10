@@ -90,4 +90,4 @@ line | call
 - **Employees:** edit a profile (EMP-PROFILE-1 fields).
 - **The audit log** shows the actor.
 
-Owner: the Planner (fenced from the coder). Status: **planned, waiting for a daytime slot.**
+Owner: the Planner (fenced from the coder). Status: **BUILT 2026-10-10 (303ee058) — on develop; waiting for the preview clock-in test before main.**

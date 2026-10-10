@@ -15,6 +15,8 @@ import { generateOGM } from '@/lib/ogm';
 import { toast } from 'sonner';
 import { type SystemDatabaseRole, SYSTEM_DATABASES, BASE_TO_KEY } from '@/lib/kernel/system-databases';
 import { describeError } from '@/lib/describe-error';
+import { zonedParts } from '@/lib/kernel/shift-time';
+import { calculateDueDate } from '@/lib/invoices/due-date';
 
 export function extractPageTitle(properties: Record<string, any> | undefined): string {
     if (!properties) return 'Untitled';
@@ -1688,7 +1690,7 @@ export const useDatabaseStore = create<DatabaseState>()(
 
                                 // Automations mapping for Project Tracker Execution Status
                                 if (isBaseDb(databaseId, 'db-1') && propertyId === 'prop-execution-status') {
-                                    const today = new Date().toISOString().split('T')[0];
+                                    const today = zonedParts(new Date()).date;   // the business day, not the UTC day
                                     if (value === 'opt-in-prog' && !newProps['prop-actual-start']) {
                                         newProps['prop-actual-start'] = today; // In Progress sets Start Date
                                     } else if (value === 'opt-done' && !newProps['prop-actual-end']) {
@@ -1698,7 +1700,7 @@ export const useDatabaseStore = create<DatabaseState>()(
 
                                 // Automations for Invoice status changes
                                 if (isBaseDb(databaseId, 'db-invoices') && propertyId === 'status') {
-                                    const today = new Date().toISOString().split('T')[0];
+                                    const today = zonedParts(new Date()).date;   // the business day, not the UTC day
                                     if (value === 'opt-sent') {
                                         // Auto-set invoiceDate to today if empty
                                         if (!newProps['invoiceDate']) {
@@ -1826,23 +1828,15 @@ export const useDatabaseStore = create<DatabaseState>()(
 
                                     if (currentInvDate) {
                                         if (currentPaymentMethod && currentPaymentMethod.startsWith('pay-')) {
-                                            const daysStr = currentPaymentMethod.split('-')[1];
-                                            const days = parseInt(daysStr, 10);
-                                            if (!isNaN(days)) {
-                                                const invoiceDate = new Date(currentInvDate);
-                                                invoiceDate.setDate(invoiceDate.getDate() + days);
-                                                const dueDate = invoiceDate.toISOString().split('T')[0];
-                                                newProps['dueDate'] = dueDate;
-                                            }
+                                            // The ONE due-date rule (lib/invoices/due-date — kernel day arithmetic), not a copy
+                                            const dueDate = calculateDueDate(currentInvDate, currentPaymentMethod);
+                                            if (dueDate) newProps['dueDate'] = dueDate;
                                         } else {
                                             // Fallback to fetch tenant default profile if invoiceDate was changed and prop-payment-method is not set
                                             if (propertyId === 'invoiceDate' && (!newProps['dueDate'] || newProps['dueDate'] === page.properties['dueDate'])) {
                                                 fetch('/api/tenant/profile', { cache: 'no-store', headers: { 'Cache-Control': 'no-store' } }).then(r => r.json()).then(data => {
-                                                    const days = data.defaultPaymentTermDays ?? 30;
-                                                    const invoiceDate = new Date(currentInvDate);
-                                                    invoiceDate.setDate(invoiceDate.getDate() + days);
-                                                    const dueDate = invoiceDate.toISOString().split('T')[0];
-                                                    get().updatePageProperty(databaseId, pageId, 'dueDate', dueDate);
+                                                    const dueDate = calculateDueDate(currentInvDate, null, data.defaultPaymentTermDays ?? 30);
+                                                    if (dueDate) get().updatePageProperty(databaseId, pageId, 'dueDate', dueDate);
                                                 }).catch(() => { /* silent — fallback to manual */ });
                                             }
                                         }
@@ -1852,7 +1846,7 @@ export const useDatabaseStore = create<DatabaseState>()(
                                 // Automations for Quotation: status → 'sent' sets date to today
                                 if (isBaseDb(databaseId, 'db-quotations') && propertyId === 'status') {
                                     if (value === 'opt-sent' && !newProps['date']) {
-                                        newProps['date'] = new Date().toISOString().split('T')[0];
+                                        newProps['date'] = zonedParts(new Date()).date;
                                     }
                                 }
 

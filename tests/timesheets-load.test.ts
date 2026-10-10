@@ -18,7 +18,7 @@ test('TS-FLASH-1: naming the period in the URL never ends the load (no return af
 });
 
 test('TS-FLASH-1: the report is read through the shared in-flight request', () => {
-    assert.match(fetchData, /await loadReport\(key\)/);
+    assert.match(fetchData, /await loadReport\(key, cacheKey\)/);
     assert.doesNotMatch(fetchData, /hrFetch<Report>/);
     assert.match(PAGE, /const reportInFlight = new Map<string, Promise<Report>>\(\);/);
 });

@@ -5,6 +5,7 @@ import prisma from "@/lib/prisma";
 import MobileShell from "@/components/mobile/MobileShell";
 import { MobileScopeProvider } from "@/components/mobile/MobileScopeContext";
 import DatabaseBootstrap from "@/components/admin/database/DatabaseBootstrap";
+import StoreSession from "@/components/admin/database/StoreSession";
 
 export default async function MobileLayout({ children }: { children: React.ReactNode }) {
     const t0 = performance.now();
@@ -99,6 +100,8 @@ export default async function MobileLayout({ children }: { children: React.React
     return (
         <AuthProvider>
             {/* MOBILE-PERF-1: the shell renders at once; the data streams in behind it (was: a white screen until all loaded) */}
+            {/* CACHE-OWNER-1: the store knows who is signed in before any screen reads it */}
+            {tenantId && <StoreSession tenantId={tenantId} userId={userId} />}
             {tenantId && (
                 <Suspense fallback={null}>
                     <DatabaseBootstrap tenantId={tenantId} userId={userId} prepare={{ planType, activeModules }} label="m" />

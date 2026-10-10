@@ -2,6 +2,7 @@ import AdminLayout from "@/components/AdminLayout";
 import AuthProvider from "@/components/AuthProvider";
 import { Suspense } from "react";
 import DatabaseBootstrap from "@/components/admin/database/DatabaseBootstrap";
+import StoreSession from "@/components/admin/database/StoreSession";
 import { prepareTenantDatabases } from "@/lib/data/tenant-databases";
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
@@ -150,6 +151,8 @@ export default async function Layout({ children }: { children: React.ReactNode }
 
     return (
         <AuthProvider>
+            {/* CACHE-OWNER-1: the store knows who is signed in before any screen reads it */}
+            {tenantId && <StoreSession tenantId={tenantId} userId={session?.user?.id} />}
             {tenantId && (
                 <Suspense fallback={null}>
                     <DatabaseBootstrap tenantId={tenantId} userId={session?.user?.id} label="admin" />

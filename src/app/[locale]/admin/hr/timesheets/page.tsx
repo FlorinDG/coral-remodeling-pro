@@ -25,6 +25,8 @@ import { toast } from 'sonner';
 import SearchableSelect from '@/components/ui/SearchableSelect';
 import { listInvoicesForHours, markHoursInvoiced, unmarkHoursInvoiced, invoiceSelectedHours, setHoursArchived, type InvoiceOption } from '@/lib/data/timesheet-invoicing';
 import { useDatabaseStore } from '@/components/admin/database/store';
+import { useSession } from 'next-auth/react';
+import { ownerKey } from '@/lib/records/browser-cache-owner';
 
 interface Employee {
     id: string;
@@ -66,15 +68,17 @@ interface Report { entries: ClockEntry[]; summary: any; rollups: { byWorker: any
 /** TS-SPEED-1 (Florin 2026-10-08: "has to reload every time … even inside the same active session"). Each HR tab is
  *  its own page, so this screen mounted empty on every visit. The last report per query is kept for the session: a
  *  return shows it at once and refreshes it quietly. */
-const reportCache = new Map<string, Report>();
+const reportCache = new Map<string, Report>();   // CACHE-OWNER-1: keyed `<tenant>|<user>|<query>` — one identity's reports
 /** One request per query at a time: the first visit names the period in the URL (router.replace) and reads the report
  *  at once; the effect that runs again for the new URL shares this request instead of starting a second one. */
 const reportInFlight = new Map<string, Promise<Report>>();
-function loadReport(key: string): Promise<Report> {
-    let p = reportInFlight.get(key);
+/** `cacheKey` = ownerKey + query; null while the identity is unknown — then the request is never shared or kept. */
+function loadReport(query: string, cacheKey: string | null): Promise<Report> {
+    if (!cacheKey) return hrFetch<Report>(`timesheet-reports?${query}`);
+    let p = reportInFlight.get(cacheKey);
     if (!p) {
-        p = hrFetch<Report>(`timesheet-reports?${key}`).finally(() => reportInFlight.delete(key));
-        reportInFlight.set(key, p);
+        p = hrFetch<Report>(`timesheet-reports?${query}`).finally(() => reportInFlight.delete(cacheKey));
+        reportInFlight.set(cacheKey, p);
     }
     return p;
 }
@@ -101,7 +105,13 @@ function TimesheetsContent() {
     const pathname = usePathname();
     const searchParams = useSearchParams();
 
-    const cached = reportCache.get(withDefaultPeriod(searchParams).toString());
+    // CACHE-OWNER-1: the session cache belongs to this tenant AND user (another account or an impersonated tenant in
+    // the same browser never sees it).
+    const { data: authSession } = useSession();
+    const owner = ownerKey({ tenantId: (authSession?.user as { tenantId?: string } | undefined)?.tenantId, userId: authSession?.user?.id });
+    const cacheKeyOf = (query: string) => (owner ? `${owner}|${query}` : null);
+    const firstKey = cacheKeyOf(withDefaultPeriod(searchParams).toString());
+    const cached = firstKey ? reportCache.get(firstKey) : undefined;
     const [entries, setEntries] = useState<ClockEntry[]>(cached?.entries ?? []);
     const [summary, setSummary] = useState<any>(cached?.summary ?? null);
     // The groups of By Worker / By Project — they come BESIDE the summary (they were read from summary.rollups,
@@ -197,7 +207,8 @@ function TimesheetsContent() {
     /** `silent`: re-read the report without the full-page spinner — after every action, so totals,
      *  counts, approver, project and source labels match the server (they were stale until a reload). */
     const fetchData = async (silent = false) => {
-        if (!silent && !reportCache.has(withDefaultPeriod(searchParams).toString())) setLoading(true);
+        const startKey = cacheKeyOf(withDefaultPeriod(searchParams).toString());
+        if (!silent && !(startKey && reportCache.has(startKey))) setLoading(true);
         setError(null);
         try {
             const currentParams = withDefaultPeriod(searchParams);
@@ -207,18 +218,19 @@ function TimesheetsContent() {
             // `finally` below cleared the spinner, so the empty table showed for the whole round trip.
             if (key !== searchParams.toString()) router.replace(`${pathname}?${key}`);
 
-            const hit = reportCache.get(key);
+            const cacheKey = cacheKeyOf(key);
+            const hit = cacheKey ? reportCache.get(cacheKey) : undefined;
             if (hit && !silent) {   // shown at once; refreshed below without the spinner
                 setEntries(hit.entries); setSummary(hit.summary); setRollups(hit.rollups); setLoading(false);
             }
-            const data = await loadReport(key);
+            const data = await loadReport(key, cacheKey);
 
             const mappedEntries = data.entries.map((e: any) => ({
                 ...e,
                 userName: e.workerName === 'Unknown' ? t('unknownWorker', { fallback: 'Onbekend' }) : e.workerName
             }));
 
-            reportCache.set(key, { entries: mappedEntries as ClockEntry[], summary: data.summary, rollups: data.rollups });
+            if (cacheKey) reportCache.set(cacheKey, { entries: mappedEntries as ClockEntry[], summary: data.summary, rollups: data.rollups });
             setEntries(mappedEntries as ClockEntry[]);
             setSummary(data.summary);
             setRollups(data.rollups);

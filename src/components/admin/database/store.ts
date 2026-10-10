@@ -3,6 +3,7 @@ import { isTenantDatabase } from '@/lib/relations/resolve';
 import { articleCounters, nextArticleCodes } from '@/lib/records/article-import';
 import { create } from 'zustand';
 import { persist, createJSONStorage, StateStorage } from 'zustand/middleware';
+import { cacheUsableBy } from '@/lib/records/browser-cache-owner';
 import { get, set, del } from 'idb-keyval';
 import { v4 as uuidv4 } from 'uuid';
 import { mintDatabaseId } from '@/lib/database-identity';
@@ -323,6 +324,97 @@ const versionChecks = new Map<string, Promise<boolean>>();
 
 const inFlightPageLoads = new Map<string, Promise<Page[]>>();
 
+/** The browser copy merged into the live state (schemas from the server win, the copy's unsynced pages and index stay).
+ *  Only ever called for the copy's OWN identity (CACHE-OWNER-1). */
+function mergePersisted(persistedState: any, currentState: DatabaseState): DatabaseState {
+                if (!persistedState?.databases) return currentState;
+
+                // Intelligently merge the freshly loaded source-code schemas (currentState) 
+                // with the user's localized row additions and edits (persistedState).
+                const mergedDbs = currentState.databases.map(currentDb => {
+                    const savedDb = persistedState.databases.find((d: Database) => d.id === currentDb.id);
+                    if (savedDb) {
+                        // Merge properties: preserve user's dynamic CSV columns while inheriting codebase static updates
+                        const mergedProperties = [...(savedDb.properties || [])];
+                        currentDb.properties.forEach((devProp: Property) => {
+                            const existingIdx = mergedProperties.findIndex(p => p.id === devProp.id);
+                            if (existingIdx === -1) {
+                                mergedProperties.push(devProp);
+                            } else {
+                                // Override codebase modifications (like new config options) into the saved state
+                                mergedProperties[existingIdx] = { ...mergedProperties[existingIdx], ...devProp };
+                            }
+                        });
+
+                        const mergedViews = (savedDb.views || currentDb.views);
+
+                        
+                        let migratedViews = [...mergedViews];
+                        if ((savedDb.activeFilters && savedDb.activeFilters.length > 0) || (savedDb.activeSorts && savedDb.activeSorts.length > 0)) {
+                            if (migratedViews.length > 0) {
+                                const defaultView = migratedViews[0];
+                                if ((!defaultView.filters || defaultView.filters.length === 0) && (!defaultView.sorts || defaultView.sorts.length === 0)) {
+                                    migratedViews[0] = {
+                                        ...defaultView,
+                                        filters: savedDb.activeFilters || [],
+                                        sorts: savedDb.activeSorts || []
+                                    };
+                                }
+                            }
+                        }
+
+                        // Inherit new source code properties/views, but keep the user's row data and view customizations
+                        return {
+                            ...currentDb,
+                            properties: mergedProperties,
+                            pages: savedDb.pages || [],
+                            activeFilters: [],
+                            activeSorts: [],
+                            views: migratedViews
+                        };
+                    }
+                    return currentDb;
+                });
+
+                // Post-merge migration: auto-upgrade text-typed date properties
+                // and normalise ISO timestamps to clean YYYY-MM-DD strings
+                const DATE_NAME_PATTERNS = ['datum', 'date', 'vervaldatum', 'factuurdatum', 'startdatum', 'einddatum', 'leveringsdatum'];
+                mergedDbs.forEach(db => {
+                    db.properties.forEach((prop: any) => {
+                        if (prop.type === 'text' && DATE_NAME_PATTERNS.includes(prop.name?.toLowerCase())) {
+                            prop.type = 'date';
+                        }
+                    });
+                    // Normalise ISO timestamps in date-typed property values
+                    const datePropertyIds = db.properties.filter((p: any) => p.type === 'date' || p.type === 'created_time' || p.type === 'last_edited_time').map((p: any) => p.id);
+                    if (datePropertyIds.length > 0 && db.pages) {
+                        db.pages.forEach((page: any) => {
+                            datePropertyIds.forEach((pid: string) => {
+                                const val = page.properties?.[pid];
+                                if (typeof val === 'string' && val.includes('T')) {
+                                    const d = new Date(val);
+                                    if (!isNaN(d.getTime())) {
+                                        page.properties[pid] = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                                    }
+                                }
+                            });
+                        });
+                    }
+                });
+
+                return {
+                    ...currentState,
+                    databases: mergedDbs,
+                    pageIndex: persistedState.pageIndex ? { ...persistedState.pageIndex, ...currentState.pageIndex } : currentState.pageIndex,
+                    loadedDatabaseIds: mergedDbs.filter(d => d.pages && d.pages.length > 0).map(d => d.id),
+                    _hasHydrated: true
+                } as DatabaseState;
+            }
+
+/** CACHE-OWNER-1: a browser copy restored before the signed-in identity is known waits here; setSession applies it to
+ *  its own identity or discards it. Never shown to anyone else. */
+let deferredCopy: any = null;
+
 export const useDatabaseStore = create<DatabaseState>()(
     persist(
         (set, get) => ({
@@ -484,11 +576,19 @@ export const useDatabaseStore = create<DatabaseState>()(
             },
 
             setSession: (tenantId, userId) => {
-                const currentTenant = get().sessionTenantId;
-                if (currentTenant && currentTenant !== tenantId) {
+                // CACHE-OWNER-1: the store holds ONE identity's data — another tenant OR another user empties it.
+                const who = { tenantId, userId };
+                const s = get();
+                if (s.sessionTenantId && !cacheUsableBy({ tenantId: s.sessionTenantId, userId: s.sessionUserId }, who)) {
                     get().clearStore();
                 }
                 set({ sessionTenantId: tenantId, sessionUserId: userId });
+                if (deferredCopy) {
+                    const copy = deferredCopy;
+                    deferredCopy = null;
+                    if (cacheUsableBy({ tenantId: copy.sessionTenantId, userId: copy.sessionUserId }, who)) set(state => mergePersisted(copy, state));
+                    else console.info('[store] CACHE-OWNER-1: the browser copy belongs to another identity — discarded');
+                }
             },
 
             hydratePageIndex: (entries) => {
@@ -2240,88 +2340,14 @@ export const useDatabaseStore = create<DatabaseState>()(
                 return persistedState as DatabaseState;
             },
             merge: (persistedState: any, currentState: DatabaseState) => {
-                if (!persistedState?.databases) return currentState;
-
-                // Intelligently merge the freshly loaded source-code schemas (currentState) 
-                // with the user's localized row additions and edits (persistedState).
-                const mergedDbs = currentState.databases.map(currentDb => {
-                    const savedDb = persistedState.databases.find((d: Database) => d.id === currentDb.id);
-                    if (savedDb) {
-                        // Merge properties: preserve user's dynamic CSV columns while inheriting codebase static updates
-                        const mergedProperties = [...(savedDb.properties || [])];
-                        currentDb.properties.forEach((devProp: Property) => {
-                            const existingIdx = mergedProperties.findIndex(p => p.id === devProp.id);
-                            if (existingIdx === -1) {
-                                mergedProperties.push(devProp);
-                            } else {
-                                // Override codebase modifications (like new config options) into the saved state
-                                mergedProperties[existingIdx] = { ...mergedProperties[existingIdx], ...devProp };
-                            }
-                        });
-
-                        const mergedViews = (savedDb.views || currentDb.views);
-
-                        
-                        let migratedViews = [...mergedViews];
-                        if ((savedDb.activeFilters && savedDb.activeFilters.length > 0) || (savedDb.activeSorts && savedDb.activeSorts.length > 0)) {
-                            if (migratedViews.length > 0) {
-                                const defaultView = migratedViews[0];
-                                if ((!defaultView.filters || defaultView.filters.length === 0) && (!defaultView.sorts || defaultView.sorts.length === 0)) {
-                                    migratedViews[0] = {
-                                        ...defaultView,
-                                        filters: savedDb.activeFilters || [],
-                                        sorts: savedDb.activeSorts || []
-                                    };
-                                }
-                            }
-                        }
-
-                        // Inherit new source code properties/views, but keep the user's row data and view customizations
-                        return {
-                            ...currentDb,
-                            properties: mergedProperties,
-                            pages: savedDb.pages || [],
-                            activeFilters: [],
-                            activeSorts: [],
-                            views: migratedViews
-                        };
-                    }
-                    return currentDb;
-                });
-
-                // Post-merge migration: auto-upgrade text-typed date properties
-                // and normalise ISO timestamps to clean YYYY-MM-DD strings
-                const DATE_NAME_PATTERNS = ['datum', 'date', 'vervaldatum', 'factuurdatum', 'startdatum', 'einddatum', 'leveringsdatum'];
-                mergedDbs.forEach(db => {
-                    db.properties.forEach((prop: any) => {
-                        if (prop.type === 'text' && DATE_NAME_PATTERNS.includes(prop.name?.toLowerCase())) {
-                            prop.type = 'date';
-                        }
-                    });
-                    // Normalise ISO timestamps in date-typed property values
-                    const datePropertyIds = db.properties.filter((p: any) => p.type === 'date' || p.type === 'created_time' || p.type === 'last_edited_time').map((p: any) => p.id);
-                    if (datePropertyIds.length > 0 && db.pages) {
-                        db.pages.forEach((page: any) => {
-                            datePropertyIds.forEach((pid: string) => {
-                                const val = page.properties?.[pid];
-                                if (typeof val === 'string' && val.includes('T')) {
-                                    const d = new Date(val);
-                                    if (!isNaN(d.getTime())) {
-                                        page.properties[pid] = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-                                    }
-                                }
-                            });
-                        });
-                    }
-                });
-
-                return {
-                    ...currentState,
-                    databases: mergedDbs,
-                    pageIndex: persistedState.pageIndex ? { ...persistedState.pageIndex, ...currentState.pageIndex } : currentState.pageIndex,
-                    loadedDatabaseIds: mergedDbs.filter(d => d.pages && d.pages.length > 0).map(d => d.id),
-                    _hasHydrated: true
-                };
+                // CACHE-OWNER-1 (Florin 2026-10-10: "make sure this doesn't leak cross tenant"): the copy is bound to the
+                // tenant AND user that wrote it. The owner used to be dropped here, so after a reload the store never
+                // knew whose copy it held: another account (or the next impersonated tenant) got its page titles and
+                // unsynced pages. Identity unknown yet → the copy waits for setSession.
+                const who = { tenantId: currentState.sessionTenantId, userId: currentState.sessionUserId };
+                if (!who.tenantId) { deferredCopy = persistedState ?? null; return { ...currentState, _hasHydrated: true } as DatabaseState; }
+                const owner = { tenantId: persistedState?.sessionTenantId, userId: persistedState?.sessionUserId };
+                return cacheUsableBy(owner, who) ? mergePersisted(persistedState, currentState) : { ...currentState, _hasHydrated: true } as DatabaseState;
             },
             onRehydrateStorage: () => {
                 return (state) => {

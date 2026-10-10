@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { Page, FilterRule } from '@/components/admin/database/types';
+import { zonedParts } from '@/lib/kernel/shift-time';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -25,7 +26,8 @@ export interface TaskGroup {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-export const todayStr = () => new Date().toISOString().slice(0, 10);
+/** Today as a calendar day — the BUSINESS day (Brussels), not the UTC day. */
+export const todayStr = () => zonedParts(new Date()).date;
 
 export const isDone = (p: Page) => {
     const s = p.properties['prop-task-status'] as string | undefined;

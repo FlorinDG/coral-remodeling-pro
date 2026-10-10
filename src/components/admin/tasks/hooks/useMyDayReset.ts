@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { zonedParts } from '@/lib/kernel/shift-time';
 
 const RESET_KEY = 'tasks-my-day-reset-date';
 
@@ -9,7 +10,7 @@ const RESET_KEY = 'tasks-my-day-reset-date';
  */
 export function useMyDayReset(onReset: () => void) {
     useEffect(() => {
-        const today = new Date().toISOString().slice(0, 10);
+        const today = zonedParts(new Date()).date;
         const last = localStorage.getItem(RESET_KEY);
         if (last !== today) {
             localStorage.setItem(RESET_KEY, today);

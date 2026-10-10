@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { Link } from "@/i18n/routing";
 import { getTranslations } from 'next-intl/server';
+import { zonedParts, addDaysYmd, weekdayOfYmd } from '@/lib/kernel/shift-time';
 
 // ── Types ─────────────────────────────────────────────────────────
 interface KPI {
@@ -50,18 +51,10 @@ const HR_EMPLOYEE_ROLES = [
 ];
 
 async function getHRData(db: TenantScopedClient, tenantId: string) {
-    const now = new Date();
-    const startOfWeek = new Date(now);
-    const day = startOfWeek.getDay();
-    startOfWeek.setDate(startOfWeek.getDate() - (day === 0 ? 6 : day - 1));
-    startOfWeek.setHours(0, 0, 0, 0);
-
-    const endOfWeek = new Date(startOfWeek);
-    endOfWeek.setDate(endOfWeek.getDate() + 6);
-    endOfWeek.setHours(23, 59, 59, 999);
-
-    const weekStartStr = startOfWeek.toISOString().split('T')[0];
-    const weekEndStr = endOfWeek.toISOString().split('T')[0];
+    // This week, Monday → Sunday, of the BUSINESS day (Brussels) — the server's UTC day showed last week until 02:00 Monday
+    const today = zonedParts(new Date()).date;
+    const weekStartStr = addDaysYmd(today, -((weekdayOfYmd(today) + 6) % 7));
+    const weekEndStr = addDaysYmd(weekStartStr, 6);
 
     const [
         activeEmployees,
@@ -105,13 +98,14 @@ async function getHRData(db: TenantScopedClient, tenantId: string) {
     ]);
 
     // Calculate hours this week from clock entries
-    const weekClocks = await db.clockEntry.findMany({
+    // A day's margin each side, then the exact cut on the BUSINESS day of each clock-in (no zone arithmetic here)
+    const weekClocks = (await db.clockEntry.findMany({
         where: {
             tenantId,
-            clockInTime: { gte: startOfWeek, lte: endOfWeek },
+            clockInTime: { gte: new Date(`${addDaysYmd(weekStartStr, -1)}T00:00:00Z`), lt: new Date(`${addDaysYmd(weekEndStr, 2)}T00:00:00Z`) },
         },
         select: { clockInTime: true, clockOutTime: true },
-    });
+    })).filter(c => { const d = zonedParts(c.clockInTime).date; return d >= weekStartStr && d <= weekEndStr; });
 
     let totalHoursThisWeek = 0;
     for (const c of weekClocks) {

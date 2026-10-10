@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { scopeFromSession, platformDb } from '@/lib/data/scope';
 import { saveRecord } from '@/lib/data/records';
 import { buildTaskCreateData, buildTaskStatusIntent } from '@/lib/records/actions-record-intents';
+import { zonedParts } from '@/lib/kernel/shift-time';
 
 /**
  * Creates a new task page in the tenant's db-tasks GlobalDatabase.
@@ -156,7 +157,7 @@ export async function sendTaskDigestAction() {
         select: { id: true, properties: true }
     });
 
-    const nowStr = new Date().toISOString().slice(0, 10);
+    const nowStr = zonedParts(new Date()).date;   // the business day, not the UTC day
     const digestTasks = pages.filter(p => {
         const props = (p.properties as Record<string, any>) || {};
         const status = props['prop-task-status'];

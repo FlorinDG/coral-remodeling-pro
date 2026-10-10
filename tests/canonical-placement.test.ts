@@ -81,7 +81,7 @@ test('a calendar day is the BUSINESS day (kernel zonedParts / addDaysYmd) — ne
     const FINANCIAL = /^(lib\/peppol|lib\/invoice|components\/admin\/(invoices|quotations|expenses)\/|app\/\[locale\]\/m\/(invoices|purchases|expenses))/;
     assert.deepEqual(ALL.filter(p => FINANCIAL.test(rel(p)) && count(p) > 0).map(rel), []);
     // Everywhere else: a RATCHET — the total may only go down (lower it as files are fixed; never raise it)
-    const CEILING = 31;
+    const CEILING = 22;
     const total = ALL.reduce((n, p) => n + count(p), 0);
     assert.ok(total <= CEILING, `${total} UTC-day dates (ceiling ${CEILING}) — use zonedParts(new Date()).date`);
 });

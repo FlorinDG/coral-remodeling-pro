@@ -8,6 +8,7 @@ import {
 import { Page } from '@/components/admin/database/types';
 import { SmartListId, ActivePerspective } from './hooks/useTaskFilter';
 import { useTranslations } from 'next-intl';
+import { zonedParts } from '@/lib/kernel/shift-time';
 
 // ── Smart list config ─────────────────────────────────────────────────────────
 
@@ -31,7 +32,7 @@ const MODULE_PERSPECTIVES: { id: SmartListId; label: string; icon: React.Element
 // ── Badge count helper ────────────────────────────────────────────────────────
 
 function countFor(pages: Page[], id: SmartListId, userId: string): number {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = zonedParts(new Date()).date;
     switch (id) {
         case 'my-day':          return pages.filter(p => p.properties['prop-task-my-day'] === true && !isDone(p)).length;
         case 'today':           return pages.filter(p => !isDone(p) && (p.properties['prop-task-due'] as string)?.slice(0, 10) === today).length;

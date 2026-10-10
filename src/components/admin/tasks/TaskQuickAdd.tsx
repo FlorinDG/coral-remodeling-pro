@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, KeyboardEvent } from 'react';
 import { Search } from 'lucide-react';
+import { zonedParts, addDaysYmd, weekdayOfYmd } from '@/lib/kernel/shift-time';
 
 // ── NLP Parser ────────────────────────────────────────────────────────────────
 
@@ -78,19 +79,16 @@ function parseNLP(raw: string): ParsedTask {
     return result;
 }
 
+// Calendar days from the BUSINESS day (Brussels), with the kernel's exact day arithmetic — never the UTC day
 function offsetDate(days: number): string {
-    const d = new Date();
-    d.setDate(d.getDate() + days);
-    return d.toISOString().slice(0, 10);
+    return addDaysYmd(zonedParts(new Date()).date, days);
 }
 
 function nextWeekday(targetDay: number): string {
-    const d = new Date();
-    const today = d.getDay();
-    let diff = targetDay - today;
+    const today = zonedParts(new Date()).date;
+    let diff = targetDay - weekdayOfYmd(today);
     if (diff <= 0) diff += 7;
-    d.setDate(d.getDate() + diff);
-    return d.toISOString().slice(0, 10);
+    return addDaysYmd(today, diff);
 }
 
 function resolveDate(str: string): string | undefined {

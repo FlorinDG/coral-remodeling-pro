@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { Page } from '@/components/admin/database/types';
 import { parseRecurrenceRule, getNextDueDate } from '../RecurrenceEngine';
+import { zonedParts } from '@/lib/kernel/shift-time';
 
 interface UseRecurrenceOptions {
     /** Create a new page derived from the completed recurring task */
@@ -21,7 +22,7 @@ export function useRecurrence({ createPage }: UseRecurrenceOptions) {
 
         const now = new Date();
         const nextDue = getNextDueDate(rule, now);
-        const nextDueStr = nextDue.toISOString().slice(0, 10);
+        const nextDueStr = zonedParts(nextDue).date;   // the business day of that moment, not the UTC day
 
         // Clone the task's properties, reset completion fields
         const nextProps: Record<string, unknown> = {

@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { hrList, hrCreate, hrDelete } from '@/lib/hr-api';
+import { TenantFilePicker, type StoredFile } from '@/components/shared/TenantFilePicker';
 import { uploadFileAction, listRecordFiles } from '@/app/actions/files';
 import { addShiftFile } from '@/lib/data/shift-files';
 import { toast } from 'sonner';
@@ -184,6 +185,12 @@ export function ShiftAttachmentsTab({
     }
   };
 
+  /** A file the tenant already stores (TenantFilePicker): linked by its url, like a project file. */
+  const handleAddStored = (f: StoredFile) => handleAddFromProject({
+    id: f.id, project_id: projectId || '', file_name: f.name, file_path: f.url,
+    file_type: f.name.split('.').pop() || '', file_size: f.size,
+  });
+
   const handleDeleteAttachment = async (id: string) => {
     if (isLocked) return;
     try {
@@ -235,6 +242,8 @@ export function ShiftAttachmentsTab({
               {t('uploadButton')}
             </Button>
           </div>
+
+          <TenantFilePicker onPick={handleAddStored} label={t('fromFiles')} searchLabel={t('searchFiles')} emptyLabel={t('noFilesFound')} />
 
           {projectAttachments.length > 0 && (
             <Popover open={attachmentPopoverOpen} onOpenChange={setAttachmentPopoverOpen}>

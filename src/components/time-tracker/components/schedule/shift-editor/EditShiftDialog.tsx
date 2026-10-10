@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { weekdaysMondayFirst } from '@/lib/format/date';
 import {
   Loader2,
   Trash2,
@@ -57,6 +58,7 @@ import { shiftStatus, isWritableShiftStatus, SHIFT_STATUS_OPTIONS, type ShiftSta
 import { SHIFT_STATUS_LABEL, SHIFT_STATUS_PILL, getShiftStatusLabel } from '../shift-status-ui';
 import { ShiftTasksTab } from './components/ShiftTasksTab';
 import { ShiftAttachmentsTab } from './components/ShiftAttachmentsTab';
+import { OrderGiverField } from './components/OrderGiverField';
 import {
   validateShiftForm,
   buildUpdateShiftPayload,
@@ -127,17 +129,13 @@ export function EditShiftDialog({
   const tShifts = useTranslations('Hr.shifts');
   const locale = useLocale();
 
-  const dayLabels = useMemo(() => {
-    const formatter = new Intl.DateTimeFormat(locale, { weekday: 'short' });
-    return [0, 1, 2, 3, 4, 5, 6].map(day => {
-      const d = new Date(Date.UTC(2026, 0, 4 + day, 12, 0, 0));
-      return formatter.format(d);
-    });
-  }, [locale]);
+  // Monday first, the user's language (lib/format/date — one home for date display).
+  const weekdays = useMemo(() => weekdaysMondayFirst(locale), [locale]);
 
   const [loading, setLoading] = useState(false);
   const [userId, setUserId] = useState('');
   const [projectId, setProjectId] = useState('');
+  const [contactPageId, setContactPageId] = useState('');
   const [shiftDate, setShiftDate] = useState('');
   const [shiftStart, setShiftStart] = useState('');
   const [shiftEnd, setShiftEnd] = useState('');
@@ -151,7 +149,7 @@ export function EditShiftDialog({
   const [activeTab, setActiveTab] = useState('details');
   const [editScope, setEditScope] = useState<EditScope>('occurrence');
   const [isConvertingToRecurring, setIsConvertingToRecurring] = useState(false);
-  const [recurringWeeks, setRecurringWeeks] = useState(4);
+  const [recurringWeeks, setRecurringWeeks] = useState(1);   // Florin 2026-10-10: one week by default
   const [selectedDays, setSelectedDays] = useState<number[]>([]);
 
   // Task & attachment counts for tab badges
@@ -167,6 +165,8 @@ export function EditShiftDialog({
       const s = shift as ShiftWithFallbacks;
       setUserId(s.userId || s.user_id || '');
       setProjectId(s.projectId || s.project_id || '');
+      // The order giver is kept on edit (was not loaded: every save sent contactPageId null and erased it).
+      setContactPageId((s as { contactPageId?: string | null }).contactPageId || '');
       setShiftDate(s.shiftDate || s.shift_date || '');
       setShiftStart(s.shiftStart || s.shift_start || '');
       setShiftEnd(s.shiftEnd || s.shift_end || '');
@@ -218,6 +218,7 @@ export function EditShiftDialog({
     const formInput: ShiftEditorFormInput = {
       userIds: [userId],
       projectId: projectId || null,
+      contactPageId: contactPageId || null,
       shiftDate,
       shiftStart,
       shiftEnd,
@@ -396,6 +397,8 @@ export function EditShiftDialog({
                 />
               </div>
 
+              {!isInputDisabled && <OrderGiverField value={contactPageId} onChange={setContactPageId} hasProject={!!projectId} />}
+
               <div className="flex flex-col gap-2">
                 <Label>{t('date')}</Label>
                 <Popover>
@@ -568,7 +571,7 @@ export function EditShiftDialog({
                   <div>
                     <Label>{tShifts('create.daysOfWeek')}</Label>
                     <div className="flex flex-wrap gap-2 mt-2">
-                      {dayLabels.map((d, i) => (
+                      {weekdays.map(({ day: i, label: d }) => (
                         <Badge
                           key={i}
                           variant={selectedDays.includes(i) ? 'default' : 'outline'}

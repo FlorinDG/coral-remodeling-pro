@@ -1659,7 +1659,8 @@
         "failedToSaveTemplate": "Kan sjabloon niet opslaan",
         "leaveSuccessSingle": "Verlof ingepland",
         "leaveSuccessMultiple": "{count} verlofperiodes ingepland",
-        "formErrors": "Controleer het formulier op fouten"
+        "formErrors": "Controleer het formulier op fouten",
+        "projectClient": "— De klant van het project —"
       },
       "edit": {
         "title": "Dienst bewerken",
@@ -1712,7 +1713,10 @@
         "fromProject": "Uit project",
         "projectFiles": "Projectbestanden",
         "added": "Toegevoegd",
-        "noFiles": "Geen bestanden gekoppeld aan deze dienst"
+        "noFiles": "Geen bestanden gekoppeld aan deze dienst",
+        "fromFiles": "Uit bestanden",
+        "searchFiles": "Bestanden zoeken…",
+        "noFilesFound": "Geen bestanden gevonden"
       },
       "tasks": {
         "selectProject": "Selecteer een project om taken te beheren",
@@ -1733,7 +1737,8 @@
         "removedSuccess": "Taak verwijderd van dienst",
         "removedFailed": "Kan taak niet verwijderen",
         "completedSuccess": "Taak gemarkeerd als voltooid",
-        "completedFailed": "Kan taak niet voltooien"
+        "completedFailed": "Kan taak niet voltooien",
+        "tasksWithoutProject": "Taken zonder project"
       }
     },
     "werkbon": {

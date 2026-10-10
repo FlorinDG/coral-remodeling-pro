@@ -1,6 +1,10 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { weekdaysMondayFirst } from '@/lib/format/date';
+import { taskFitsShift, taskProjectIdsOf } from '@/lib/records/shift-project-links';
+import { OrderGiverField } from './components/OrderGiverField';
+import { TenantFilePicker, type StoredFile } from '@/components/shared/TenantFilePicker';
 import {
   Plus,
   Loader2,
@@ -108,7 +112,7 @@ interface ProjectAttachment {
 }
 
 interface PendingAttachment {
-  type: 'file' | 'project';
+  type: 'file' | 'project' | 'stored';
   file?: File;
   projectAttachment?: ProjectAttachment;
   name: string;
@@ -120,7 +124,6 @@ interface SelectedTask {
 }
 
 const ROLE_OPTIONS = ['Crew', 'Lead', 'Supervisor', 'Driver', 'Helper'];
-const DAY_LABELS = ['Zo', 'Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za'];
 
 const getParsedDate = (dateStr: string) => {
   if (!dateStr) return undefined;
@@ -164,13 +167,8 @@ export function CreateShiftForm({
   const tLeave = useTranslations('Hr.leave');
   const locale = useLocale();
 
-  const dayLabels = useMemo(() => {
-    const formatter = new Intl.DateTimeFormat(locale, { weekday: 'short' });
-    return [0, 1, 2, 3, 4, 5, 6].map(day => {
-      const d = new Date(Date.UTC(2026, 0, 4 + day, 12, 0, 0));
-      return formatter.format(d);
-    });
-  }, [locale]);
+  // Monday first, the user's language (lib/format/date — one home for date display).
+  const weekdays = useMemo(() => weekdaysMondayFirst(locale), [locale]);
 
   const [loading, setLoading] = useState(false);
   const [templates, setTemplates] = useState<ShiftTemplate[]>([]);
@@ -190,11 +188,10 @@ export function CreateShiftForm({
   const [siteAddress, setSiteAddress] = useState('');
   const [materialsEnabled, setMaterialsEnabled] = useState(false);
   const [contactPageId, setContactPageId] = useState('');
-  const [clients, setClients] = useState<{ id: string; name: string }[]>([]);
 
   // Schedule type
   const [scheduleType, setScheduleType] = useState<ShiftScheduleType>('single');
-  const [recurringWeeks, setRecurringWeeks] = useState(4);
+  const [recurringWeeks, setRecurringWeeks] = useState(1);   // Florin 2026-10-10: one week by default
   const [selectedDays, setSelectedDays] = useState<number[]>([]);
   const [leaveReason, setLeaveReason] = useState('Vakantie');
 
@@ -212,7 +209,9 @@ export function CreateShiftForm({
   const [selectedTasks, setSelectedTasks] = useState<SelectedTask[]>([]);
   const [taskPopoverOpen, setTaskPopoverOpen] = useState(false);
   const [quickTaskTitle, setQuickTaskTitle] = useState('');
-  const { tasks: projectTasks, createTask, refetch: refetchTasks } = useTasks(projectId || null);
+  // The tasks this shift may carry — its project's, or the tasks without a project (core: taskFitsShift).
+  const { tasks: allTasks, createTask, refetch: refetchTasks } = useTasks(null);
+  const projectTasks = allTasks.filter(task => taskFitsShift(taskProjectIdsOf(task.properties), projectId || null));
 
   // Prefill values
   useEffect(() => {
@@ -243,13 +242,6 @@ export function CreateShiftForm({
     if (open) fetchTemplates();
   }, [open]);
 
-  // Fetch ERP clients (order giver when no project supplies one)
-  useEffect(() => {
-    if (!open) return;
-    hrList<{ id: string; name: string }>('erp-clients')
-      .then(data => setClients(data || []))
-      .catch(() => setClients([]));
-  }, [open]);
 
   // Fetch project files
   useEffect(() => {
@@ -292,7 +284,7 @@ export function CreateShiftForm({
     setSiteAddress('');
     setMaterialsEnabled(false);
     setScheduleType('single');
-    setRecurringWeeks(4);
+    setRecurringWeeks(1);
     setSelectedDays([]);
     setLeaveReason('Vakantie');
     setSelectedTemplateId('');
@@ -342,10 +334,10 @@ export function CreateShiftForm({
   };
 
   const handleQuickCreateTask = async () => {
-    if (!projectId || !quickTaskTitle.trim()) return;
+    if (!quickTaskTitle.trim()) return;
     try {
       const result = await createTask({
-        projectId,
+        projectId: projectId || undefined,
         title: quickTaskTitle.trim(),
         priority: 'normal',
       });
@@ -387,6 +379,19 @@ export function CreateShiftForm({
     setAttachmentPopoverOpen(false);
   };
 
+  /** A file the tenant already stores (TenantFilePicker): linked by its url after the shift is created. */
+  const addStoredFile = (f: StoredFile) => {
+    if (pendingAttachments.some(p => p.projectAttachment?.file_path === f.url)) {
+      toast.error('Bestand is al toegevoegd');
+      return;
+    }
+    setPendingAttachments(prev => [...prev, {
+      type: 'stored',
+      projectAttachment: { id: f.id, project_id: projectId || '', file_name: f.name, file_path: f.url, file_type: f.name.split('.').pop() || '', file_size: f.size },
+      name: f.name,
+    }]);
+  };
+
   const removeAttachment = (index: number) => {
     setPendingAttachments(prev => prev.filter((_, i) => i !== index));
   };
@@ -421,7 +426,7 @@ export function CreateShiftForm({
               size: att.file.size,
             });
           }
-        } else if (att.type === 'project' && att.projectAttachment) {
+        } else if ((att.type === 'project' || att.type === 'stored') && att.projectAttachment) {
           await hrCreate('shift-attachments', {
             shiftId,
             name: att.projectAttachment.file_name,
@@ -718,20 +723,9 @@ export function CreateShiftForm({
               </div>
             )}
 
-            {/* Order Giver Picker (when no project is chosen) */}
-            {scheduleType !== 'leave' && !projectId && clients.length > 0 && (
-              <div>
-                <Label>{t('orderGiver')}</Label>
-                <SearchableSelect
-                  options={[
-                    { value: '', label: t('noClient') },
-                    ...clients.map(c => ({ value: c.id, label: c.name })),
-                  ]}
-                  value={contactPageId}
-                  onChange={setContactPageId}
-                  placeholder={t('selectClient')}
-                />
-              </div>
+            {/* Order giver — on every shift (END-CLIENT-1: the shift's client, else the project's) */}
+            {scheduleType !== 'leave' && (
+              <OrderGiverField value={contactPageId} onChange={setContactPageId} hasProject={!!projectId} />
             )}
 
             {/* Leave Reason (Leave schedule) */}
@@ -843,7 +837,7 @@ export function CreateShiftForm({
                 <div>
                   <Label>{t('daysOfWeek')}</Label>
                   <div className="flex flex-wrap gap-2 mt-1">
-                    {dayLabels.map((d, i) => (
+                    {weekdays.map(({ day: i, label: d }) => (
                       <Badge
                         key={i}
                         variant={selectedDays.includes(i) ? 'default' : 'outline'}
@@ -994,12 +988,7 @@ export function CreateShiftForm({
 
         {/* Tasks Tab */}
         <TabsContent value="tasks" className="space-y-4 h-[min(648px,70vh)] overflow-y-auto pr-1">
-          {!projectId ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">{tShifts('tasks.selectProject')}</p>
-            </div>
-          ) : (
+          {(
             <>
               <div className="space-y-3 pb-2 border-b">
                 <Popover open={taskPopoverOpen} onOpenChange={setTaskPopoverOpen}>
@@ -1011,7 +1000,7 @@ export function CreateShiftForm({
                   </PopoverTrigger>
                   <PopoverContent className="w-80 p-3" align="start">
                     <h4 className="font-semibold text-xs uppercase tracking-wider text-muted-foreground mb-2">
-                      {tShifts('tasks.projectTasks')}
+                      {projectId ? tShifts('tasks.projectTasks') : tShifts('tasks.tasksWithoutProject')}
                     </h4>
                     <div className="space-y-1 max-h-48 overflow-y-auto">
                       {projectTasks.length === 0 ? (
@@ -1102,6 +1091,8 @@ export function CreateShiftForm({
               </Button>
             </div>
 
+            <TenantFilePicker onPick={addStoredFile} label={tShifts('attachments.fromFiles')} searchLabel={tShifts('attachments.searchFiles')} emptyLabel={tShifts('attachments.noFilesFound')} />
+
             {projectAttachments.length > 0 && (
               <Popover open={attachmentPopoverOpen} onOpenChange={setAttachmentPopoverOpen}>
                 <PopoverTrigger asChild>
@@ -1147,7 +1138,7 @@ export function CreateShiftForm({
                     <Paperclip className="h-3.5 w-3.5 text-muted-foreground" />
                     <span className="truncate">{att.name}</span>
                     <Badge variant="outline" className="text-[10px]">
-                      {att.type === 'file' ? 'Upload' : 'Project'}
+                      {att.type === 'file' ? 'Upload' : att.type === 'stored' ? tShifts('attachments.fromFiles') : 'Project'}
                     </Badge>
                   </div>
                   <Button

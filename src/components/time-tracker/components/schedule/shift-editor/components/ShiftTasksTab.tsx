@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Loader2, ListTodo, Plus, Check, Trash } from 'lucide-react';
 import { useTasks, useShiftTasks } from '@/components/time-tracker/hooks/useTasks';
+import { taskFitsShift, taskProjectIdsOf } from '@/lib/records/shift-project-links';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -28,7 +29,9 @@ export function ShiftTasksTab({
   onCountChange,
 }: ShiftTasksTabProps) {
   const t = useTranslations('Hr.shifts.tasks');
-  const { tasks: projectTasks, loading: tasksLoading, createTask } = useTasks(projectId || null);
+  // The tasks this shift may carry — its project's, or the tasks without a project (core: taskFitsShift).
+  const { tasks: allTasks, loading: tasksLoading, createTask } = useTasks(null);
+  const projectTasks = allTasks.filter(task => taskFitsShift(taskProjectIdsOf(task.properties), projectId));
   const {
     shiftTasks,
     loading: shiftTasksLoading,
@@ -61,12 +64,12 @@ export function ShiftTasksTab({
   };
 
   const handleQuickCreateTask = async () => {
-    if (!newTaskTitle.trim() || !projectId || isLocked) return;
+    if (!newTaskTitle.trim() || isLocked) return;
     setCreatingTask(true);
     try {
       const result = await createTask({
         title: newTaskTitle.trim(),
-        projectId,
+        projectId: projectId || undefined,
         priority: 'normal',
       });
       if (result?.data?.id) {
@@ -102,15 +105,6 @@ export function ShiftTasksTab({
     }
   };
 
-  if (!projectId) {
-    return (
-      <div className="text-center py-8 text-neutral-500">
-        <ListTodo className="h-8 w-8 mx-auto mb-2 opacity-50" />
-        <p className="text-sm">{t('selectProject')}</p>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-4 h-[min(648px,70vh)] overflow-y-auto pr-1">
       {/* Add task controls (hidden if locked or cannot manage) */}
@@ -127,7 +121,7 @@ export function ShiftTasksTab({
               <PopoverContent className="w-80 p-3" align="start">
                 <div className="space-y-3">
                   <h4 className="font-semibold text-xs uppercase tracking-wider text-neutral-500">
-                    {t('projectTasks')}
+                    {projectId ? t('projectTasks') : t('tasksWithoutProject')}
                   </h4>
                   {tasksLoading ? (
                     <div className="flex items-center justify-center py-4">

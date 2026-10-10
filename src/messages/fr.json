@@ -1658,7 +1658,8 @@
         "failedToSaveTemplate": "Impossible d'enregistrer le modèle",
         "leaveSuccessSingle": "Congé planifié",
         "leaveSuccessMultiple": "{count} périodes de congé planifiées",
-        "formErrors": "Veuillez vérifier les erreurs dans le formulaire"
+        "formErrors": "Veuillez vérifier les erreurs dans le formulaire",
+        "projectClient": "— Le client du projet —"
       },
       "edit": {
         "title": "Modifier le service",
@@ -1711,7 +1712,10 @@
         "fromProject": "Depuis le projet",
         "projectFiles": "Fichiers du projet",
         "added": "Ajouté",
-        "noFiles": "Aucun fichier associé à ce service"
+        "noFiles": "Aucun fichier associé à ce service",
+        "fromFiles": "Depuis les fichiers",
+        "searchFiles": "Rechercher des fichiers…",
+        "noFilesFound": "Aucun fichier trouvé"
       },
       "tasks": {
         "selectProject": "Sélectionnez un projet pour gérer les tâches",
@@ -1732,7 +1736,8 @@
         "removedSuccess": "Tâche retirée du service",
         "removedFailed": "Impossible de retirer la tâche",
         "completedSuccess": "Tâche marquée comme terminée",
-        "completedFailed": "Impossible de terminer la tâche"
+        "completedFailed": "Impossible de terminer la tâche",
+        "tasksWithoutProject": "Tâches sans projet"
       }
     },
     "werkbon": {

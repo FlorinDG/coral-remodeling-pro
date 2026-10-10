@@ -1659,7 +1659,8 @@
         "failedToSaveTemplate": "Nu s-a putut salva șablonul",
         "leaveSuccessSingle": "Concediu programat",
         "leaveSuccessMultiple": "{count} perioade de concediu programate",
-        "formErrors": "Verificați erorile din formular"
+        "formErrors": "Verificați erorile din formular",
+        "projectClient": "— Clientul proiectului —"
       },
       "edit": {
         "title": "Editează tura",
@@ -1712,7 +1713,10 @@
         "fromProject": "Din proiect",
         "projectFiles": "Fișiere proiect",
         "added": "Adăugat",
-        "noFiles": "Niciun fișier asociat acestei ture"
+        "noFiles": "Niciun fișier asociat acestei ture",
+        "fromFiles": "Din fișiere",
+        "searchFiles": "Caută fișiere…",
+        "noFilesFound": "Niciun fișier găsit"
       },
       "tasks": {
         "selectProject": "Selectați un proiect pentru a gestiona sarcinile",
@@ -1733,7 +1737,8 @@
         "removedSuccess": "Sarcină eliminată din tură",
         "removedFailed": "Nu s-a putut elimina sarcina",
         "completedSuccess": "Sarcină marcată ca finalizată",
-        "completedFailed": "Nu s-a putut finaliza sarcina"
+        "completedFailed": "Nu s-a putut finaliza sarcina",
+        "tasksWithoutProject": "Sarcini fără proiect"
       }
     },
     "werkbon": {

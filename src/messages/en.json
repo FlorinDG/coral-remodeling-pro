@@ -1659,7 +1659,8 @@
         "failedToSaveTemplate": "Failed to save template",
         "leaveSuccessSingle": "Leave scheduled",
         "leaveSuccessMultiple": "{count} leave periods scheduled",
-        "formErrors": "Please check the form for errors"
+        "formErrors": "Please check the form for errors",
+        "projectClient": "— The project's client —"
       },
       "edit": {
         "title": "Edit Shift",
@@ -1712,7 +1713,10 @@
         "fromProject": "From project",
         "projectFiles": "Project files",
         "added": "Added",
-        "noFiles": "No files linked to this shift"
+        "noFiles": "No files linked to this shift",
+        "fromFiles": "From files",
+        "searchFiles": "Search files…",
+        "noFilesFound": "No files found"
       },
       "tasks": {
         "selectProject": "Select a project to manage tasks",
@@ -1733,7 +1737,8 @@
         "removedSuccess": "Task removed from shift",
         "removedFailed": "Could not remove task",
         "completedSuccess": "Task marked as completed",
-        "completedFailed": "Could not complete task"
+        "completedFailed": "Could not complete task",
+        "tasksWithoutProject": "Tasks without a project"
       }
     },
     "werkbon": {

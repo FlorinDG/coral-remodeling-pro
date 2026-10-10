@@ -5,13 +5,9 @@
  * The crew's progress on a released task link is kept as an open comment on that task (actor = who moved the shift).
  */
 import type { ScopedTx } from '@/lib/data/scope';
-import { linksLeavingProject, hasWorkerProgress, progressNote, type ShiftLinks } from '@/lib/records/shift-project-links';
+import { linksLeavingProject, hasWorkerProgress, progressNote, taskProjectIdsOf, type ShiftLinks } from '@/lib/records/shift-project-links';
 import { zonedParts } from '@/lib/kernel/shift-time';
 
-function projectIdsOf(properties: unknown): string[] {
-    const v = (properties as Record<string, unknown> | null)?.['prop-task-project'];
-    return Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string' && !!x) : typeof v === 'string' && v ? [v] : [];
-}
 
 export async function releaseOldProjectLinks(tx: ScopedTx, tenantId: string, actorId: string, shiftIds: string[], newProjectId: string | null): Promise<{ tasks: number; files: number; notes: number }> {
     if (!shiftIds.length) return { tasks: 0, files: 0, notes: 0 };
@@ -26,7 +22,7 @@ export async function releaseOldProjectLinks(tx: ScopedTx, tenantId: string, act
     const pages = taskLinks.length
         ? await tx.globalPage.findMany({ where: { id: { in: [...new Set(taskLinks.map(l => l.taskId))] } }, select: { id: true, properties: true } })
         : [];
-    const projectsOfTask = new Map(pages.map(p => [p.id, projectIdsOf(p.properties)]));
+    const projectsOfTask = new Map(pages.map(p => [p.id, taskProjectIdsOf(p.properties)]));
 
     const dropTasks: string[] = [], dropFiles: string[] = [];
     for (const s of shifts) {

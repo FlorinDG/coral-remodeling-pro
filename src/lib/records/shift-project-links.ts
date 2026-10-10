@@ -84,3 +84,18 @@ export function progressNote(p: TaskLinkProgress, shift: { day: string; start: s
     if (p.workerNotes?.trim()) lines.push(`Notities: ${p.workerNotes.trim()}`);
     return lines.join('\n').slice(0, COMMENT_MAX);
 }
+
+/** The projects a task page names (`prop-task-project`, a relation stored as string[]; a legacy single id too). */
+export function taskProjectIdsOf(properties: unknown): string[] {
+    const v = (properties as Record<string, unknown> | null)?.['prop-task-project'];
+    return Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string' && !!x) : typeof v === 'string' && v ? [v] : [];
+}
+
+/**
+ * Which tasks a shift may carry (Florin 2026-10-10: tasks "should be available even on shifts without project"):
+ * a shift on a project carries that project's tasks; a shift without a project carries the tasks without one.
+ * The same line as linksLeavingProject — what a shift may take is what it keeps.
+ */
+export function taskFitsShift(taskProjectIds: string[], shiftProjectId: string | null | undefined): boolean {
+    return shiftProjectId ? taskProjectIds.includes(shiftProjectId) : taskProjectIds.length === 0;
+}

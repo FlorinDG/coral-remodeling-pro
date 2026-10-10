@@ -216,3 +216,14 @@ export function formatCalendarDay(dateYmd: string, locale: string = 'nl-BE'): st
         timeZone: 'Europe/Brussels',
     }).format(noonUtc);
 }
+
+/**
+ * The days of a week in display order — Monday first (Belgium / ISO 8601; Florin 2026-10-10: the recurring scheduler
+ * started on Sunday) — with their short name in the user's language. `day` keeps the kernel's numbering
+ * (weekdayOfYmd: 0 = Sunday … 6 = Saturday), so a selection means the same day everywhere.
+ */
+export function weekdaysMondayFirst(locale?: string | null): { day: number; label: string }[] {
+    const fmt = new Intl.DateTimeFormat(resolveLocale(locale), { weekday: 'short', timeZone: 'UTC' });
+    // 2026-01-05 is a Monday; noon UTC, formatted in UTC — no zone can move it to another day.
+    return [1, 2, 3, 4, 5, 6, 0].map((day, i) => ({ day, label: fmt.format(new Date(Date.UTC(2026, 0, 5 + i, 12))) }));
+}

@@ -41,7 +41,7 @@ function getNotionColor(colorName: string) {
 
 export function LateEntryForm({ open, onClose }: LateEntryFormProps) {
   const { user } = useAuth();
-  const { projects } = useScheduledShifts();
+  const { projects } = useScheduledShifts({ kind: 'late-entry' });
   const { createRequest } = useApprovalRequests();
   const { location, loading: geoLoading, requestLocation } = useGeolocation();
 

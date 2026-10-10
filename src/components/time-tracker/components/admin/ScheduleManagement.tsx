@@ -34,7 +34,10 @@ function getMonday(date: Date): Date {
 
 export function ScheduleManagement() {
   const t = useTranslations('Hr.scheduler');
-  const { shifts, projects, absences, loading, createShift, createLeave, updateShift, updateShiftStatus, deleteShift, canManage } = useScheduledShifts();
+  const [weekStart, setWeekStart] = useState<Date>(() => getMonday(new Date()));
+  const [weekCount, setWeekCount] = useState<1 | 2>(1);
+  // SCHED-WINDOW-1: the planner loads the weeks on screen ± one week (copy-previous-week reads the week before).
+  const { shifts, projects, absences, loading, createShift, createLeave, updateShift, updateShiftStatus, deleteShift, canManage } = useScheduledShifts({ kind: 'planner', weekStart: localDateKey(weekStart), weeks: weekCount });
   // LEAVE-1 (Florin 2026-10-08): a shift planned on a day its worker is off is a conflict — flagged everywhere it shows.
   const conflicts = useMemo(() => leaveConflicts(shifts, absences), [shifts, absences]);
   const conflictIds = useMemo(() => new Set(conflicts.map(c => c.shiftId)), [conflicts]);
@@ -46,8 +49,6 @@ export function ScheduleManagement() {
     }
   ]);
   const [viewMode, setViewMode] = useState<ViewMode>('matrix');
-  const [weekStart, setWeekStart] = useState<Date>(() => getMonday(new Date()));
-  const [weekCount, setWeekCount] = useState<1 | 2>(1);
   const [editingShift, setEditingShift] = useState<ScheduledShift | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
 

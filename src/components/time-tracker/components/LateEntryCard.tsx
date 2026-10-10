@@ -44,7 +44,7 @@ function getNotionColor(colorName: string) {
 export function LateEntryCard({ shiftId, shiftDate, onSubmitted }: { shiftId?: string; shiftDate?: string; onSubmitted?: () => void } = {}) {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
-  const { projects } = useScheduledShifts();
+  const { projects } = useScheduledShifts({ kind: 'late-entry' });
   const { createRequest } = useApprovalRequests();
   const { isAdmin } = useUserRoles();
   const { location, loading: geoLoading, requestLocation } = useGeolocation();

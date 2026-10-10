@@ -138,7 +138,7 @@ export function MySchedule() {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const { isManager } = useUserRoles();
-  const { shifts, absences, loading, error, failedEndpoints, refetch: refetchShifts } = useScheduledShifts();
+  const { shifts, absences, loading, error, failedEndpoints, refetch: refetchShifts } = useScheduledShifts({ kind: 'crew' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { activeEntry, clockIn, clockOut } = useClockEntries();
   const { requestLocation, explainerDialog } = useGeolocation();

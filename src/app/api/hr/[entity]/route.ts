@@ -18,7 +18,8 @@ import { buildAuditLogData, buildAuditLogOperation } from '@/lib/audit';
 import { resolveReach } from '../lib/actor-reach';
 import { hrWriteRefusal } from '../lib/write-policy';
 import { describeError } from '@/lib/describe-error';
-import { isShiftSubmitted } from '@/lib/kernel/shift-time';
+import { isShiftSubmitted, zonedParts } from '@/lib/kernel/shift-time';
+import { requestedWindow } from '@/lib/records/shift-window';
 import { resolveProjects, projectNameMap } from '@/lib/data/projects';
 import crypto from 'crypto';
 import { Resend } from 'resend';
@@ -191,6 +192,22 @@ export async function GET(
     // One record by id (the werkbon viewer read every clock entry, employee and shift of the tenant to show one).
     const idParam = url.searchParams.get('id');
     if (idParam) where.id = idParam;
+
+    // SCHED-WINDOW-1: a list of shifts is a window of days (lib/records/shift-window) — never all of history.
+    // Without from/to the bounded default applies. Leave (time-off) is windowed when a range is asked (the scheduler);
+    // the leave register and balances read it whole (a few rows per person per year).
+    if (((entity === 'shifts' || entity === 'scheduled-shifts') && !idParam) || (entity === 'time-off' && (url.searchParams.has('from') || url.searchParams.has('to')))) {
+        const asked = requestedWindow(url.searchParams.get('from'), url.searchParams.get('to'), zonedParts(new Date()).date);
+        if (!asked.ok) return NextResponse.json({ error: asked.error }, { status: 400 });
+        const { from, to } = asked.window;
+        if (entity === 'time-off') {
+            // Overlap. The dates are strings that may carry a time ('…T08:00'): '<to>T~' sorts after every time of that day.
+            where.startDate = { lte: `${to}T~` };
+            where.endDate = { gte: from };
+        } else {
+            where.shiftDate = { gte: from, lte: to };
+        }
+    }
 
     // Gate 2 (actor reach) — asked of ONE authority, never decided here (pd.md 5a).
     const reach = await resolveReach(ctx);

@@ -41,7 +41,7 @@ import { useAppBasePath } from '@/components/time-tracker/hooks/useAppBasePath';
 
 export function DailySummary() {
   const { user } = useAuth();
-  const { shifts, loading } = useScheduledShifts();
+  const { shifts, loading } = useScheduledShifts({ kind: 'crew' });
   const basePath = useAppBasePath();
 
   // Find today's shift for the current user

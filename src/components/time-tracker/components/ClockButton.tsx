@@ -24,7 +24,7 @@ function ClockButtonComponent() {
   const [entriesTimedOut, setEntriesTimedOut] = useState(false);
   
   const { activeEntry, loading: entriesLoading, error: entriesError, clockIn, clockOut } = useClockEntries();
-  const { getTodayShift, loading: shiftsLoading, error: shiftsError, failedEndpoints, refetch: refetchShifts } = useScheduledShifts();
+  const { getTodayShift, loading: shiftsLoading, error: shiftsError, failedEndpoints, refetch: refetchShifts } = useScheduledShifts({ kind: 'crew' });
   const { formattedTime, isRunning, startTimer, stopTimer, resetTimer, setStartTime } = useTimer();
   const { requestLocation, loading: locationLoading, permissionState, explainerDialog } = useGeolocation();
 

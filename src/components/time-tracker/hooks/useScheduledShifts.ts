@@ -2,7 +2,8 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { hrList, hrCreate, hrUpdate, hrDelete } from '@/lib/hr-api';
 import { useUserRoles } from '@/components/time-tracker/hooks/useUserRoles';
-import { pickShiftNow, localDateKey, isShiftSubmitted } from '@/lib/kernel/shift-time';
+import { pickShiftNow, localDateKey, isShiftSubmitted, zonedParts } from '@/lib/kernel/shift-time';
+import { shiftWindow, type ShiftSurface } from '@/lib/records/shift-window';
 import type { Absence } from '@/lib/kernel/absence';
 import type { LeaveRequestPayload } from '@/components/time-tracker/components/schedule/shift-editor/model';
 // The project colours live in core (lib/records/project-color) — pure data, no hook needed to read them.
@@ -90,7 +91,16 @@ function addSnakeCase(s: ScheduledShift): ScheduledShift {
   };
 }
 
-export function useScheduledShifts() {
+/**
+ * SCHED-WINDOW-1: every caller names its surface; the hook loads that window of days (lib/records/shift-window),
+ * never all of history. A planner moving to another week gets that week's window.
+ */
+export function useScheduledShifts(surface: ShiftSurface) {
+  const range = shiftWindow(surface, zonedParts(new Date()).date);
+  const rangeKey = `${range.from}|${range.to}`;
+  const rangeRef = useRef(range);
+  rangeRef.current = range;
+  const loadedOnce = useRef(false);
   const [rawShifts, setRawShifts] = useState<ScheduledShift[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   // LEAVE-1: who is off — TimeOffRequests, read beside the shifts (never mixed into them).
@@ -132,11 +142,11 @@ export function useScheduledShifts() {
       ]);
 
     const results = await Promise.allSettled([
-      withTimeout(hrList<ScheduledShift>('shifts'), 9000, 'shifts'),
+      withTimeout(hrList<ScheduledShift>('shifts', { from: rangeRef.current.from, to: rangeRef.current.to }), 9000, 'shifts'),
       // PROJ-SSOT-1: the HrProject list ('projects') is gone — one project source, one fewer call to fail.
       withTimeout(hrList<{ id: string; name: string; address?: string; latitude?: number; longitude?: number }>('erp-projects'), 9000, 'erp-projects'),
       withTimeout(hrList<{ id: string; userId?: string | null; firstName: string; lastName: string }>('employees'), 9000, 'employees'),
-      withTimeout(hrList<any>('time-off'), 9000, 'time-off'),
+      withTimeout(hrList<any>('time-off', { from: rangeRef.current.from, to: rangeRef.current.to }), 9000, 'time-off'),
     ]);
 
     const [shiftsRes, erpProjectsRes, employeesRes, timeOffRes] = results;
@@ -212,11 +222,14 @@ export function useScheduledShifts() {
     setProjects(allProjects);
     if (timeOffRes.status === 'fulfilled') setAbsences(timeOffRes.value as Absence[]);
     setLoading(false);
+    loadedOnce.current = true;
   }, []);
 
+  // The first load shows the loading state; a new window (another week) reloads quietly — the screen keeps what it
+  // shows until the window's shifts arrive (the neighbouring week is already in the previous window).
   useEffect(() => {
-    fetchAll();
-  }, [fetchAll]);
+    void fetchAll(loadedOnce.current);
+  }, [fetchAll, rangeKey]);
 
   // SCHED-SYNC-1: ONE quiet reload at a time — a burst of changes (copy week = many creates) shares it.
   // A change that lands while one runs marks it to run ONCE more, so the last reload always starts after the

@@ -5,7 +5,7 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { linksLeavingProject, isProjectFileUrl } from '../src/lib/records/shift-project-links.ts';
+import { linksLeavingProject, isProjectFileUrl, hasWorkerProgress, progressNote } from '../src/lib/records/shift-project-links.ts';
 import { releaseOldProjectLinks } from '../src/lib/data/shift-project-links.ts';
 
 const T = 'ten1';
@@ -42,35 +42,77 @@ describe('SHIFT-PROJ-1 · the rule (core)', () => {
     });
 });
 
+describe('SHIFT-PROJ-1 · the crew\'s progress stays in the old project (Florin)', () => {
+    const base = { status: 'pending', subtasks: [], workerNotes: null, completedByName: null, completedAt: null };
+    test('an untouched link leaves no trace; status, a checklist or notes do', () => {
+        assert.equal(hasWorkerProgress(base), false);
+        assert.equal(hasWorkerProgress({ ...base, status: 'in_progress' }), true);
+        assert.equal(hasWorkerProgress({ ...base, subtasks: [{ title: 'Voegen', done: false }] }), true);
+        assert.equal(hasWorkerProgress({ ...base, workerNotes: '  tegels op  ' }), true);
+        assert.equal(hasWorkerProgress({ ...base, workerNotes: '   ' }), false);
+    });
+    test('the note names the shift and carries status, checklist and notes, flagged', () => {
+        const note = progressNote({ ...base, status: 'done_by_worker', subtasks: [{ title: 'Voegen', done: true }, { title: 'Silicone', done: false }], workerNotes: 'Kit op', completedByName: 'Jan', completedAt: '2026-10-09 16:40' },
+            { day: '2026-10-09', start: '08:00', end: '16:30', workerName: 'Jan' });
+        assert.match(note, /^⚑ /);
+        assert.match(note, /Dienst: 2026-10-09 08:00–16:30 · Jan/);
+        assert.match(note, /Status: klaar volgens de ploeg/);
+        assert.match(note, /Klaar gemeld door Jan op 2026-10-09 16:40/);
+        assert.match(note, /Checklist \(1\/2\):\n☑ Voegen\n☐ Silicone/);
+        assert.match(note, /Notities: Kit op/);
+    });
+});
+
 describe('SHIFT-PROJ-1 · the door', () => {
     function fakeTx() {
         const deleted = { shiftTask: [] as string[], shiftAttachment: [] as string[] };
+        const comments: { pageId: string; authorId: string; body: string; tenantId: string }[] = [];
+        const order: string[] = [];
         const tx = {
-            scheduledShift: { findMany: async () => [{ id: 's1', projectId: 'p-old' }, { id: 's2', projectId: 'p-new' }] },
+            scheduledShift: { findMany: async () => [
+                { id: 's1', projectId: 'p-old', shiftDate: '2026-10-09', shiftStart: '08:00', shiftEnd: '16:30', userId: 'u-crew' },
+                { id: 's2', projectId: 'p-new', shiftDate: '2026-10-10', shiftStart: '08:00', shiftEnd: '16:30', userId: 'u-crew' },
+            ] },
             shiftTask: {
-                findMany: async () => [{ id: 'l-old', shiftId: 's1', taskId: 'task-a' }, { id: 'l-keep', shiftId: 's2', taskId: 'task-a' }],
-                deleteMany: async ({ where }: { where: { id: { in: string[] } } }) => { deleted.shiftTask.push(...where.id.in); return { count: where.id.in.length }; },
+                findMany: async () => [
+                    { id: 'l-old', shiftId: 's1', taskId: 'task-a', status: 'in_progress', subtasks: [], workerNotes: 'half', completedBy: null, completedAt: null },
+                    { id: 'l-old-untouched', shiftId: 's1', taskId: 'task-b', status: 'pending', subtasks: [], workerNotes: null, completedBy: null, completedAt: null },
+                    { id: 'l-keep', shiftId: 's2', taskId: 'task-a', status: 'pending', subtasks: [], workerNotes: null, completedBy: null, completedAt: null },
+                ],
+                deleteMany: async ({ where }: { where: { id: { in: string[] } } }) => { order.push('delete'); deleted.shiftTask.push(...where.id.in); return { count: where.id.in.length }; },
             },
             shiftAttachment: {
                 findMany: async () => [{ id: 'f-old', shiftId: 's1', url: fileOf('p-old', 'plan.pdf') }],
                 deleteMany: async ({ where }: { where: { id: { in: string[] } } }) => { deleted.shiftAttachment.push(...where.id.in); return { count: where.id.in.length }; },
             },
-            globalPage: { findMany: async () => [{ id: 'task-a', properties: { 'prop-task-project': ['p-old'] } }] },
+            globalPage: { findMany: async () => [
+                { id: 'task-a', properties: { 'prop-task-project': ['p-old'] } },
+                { id: 'task-b', properties: { 'prop-task-project': ['p-old'] } },
+            ] },
+            user: { findMany: async () => [{ id: 'u-crew', name: 'Jan', email: null }] },
+            comment: { create: async ({ data }: { data: { pageId: string; authorId: string; body: string; tenantId: string } }) => { order.push('comment'); comments.push(data); return { id: 'c1' }; } },
         };
-        return { tx, deleted };
+        return { tx, deleted, comments, order };
     }
-    test('only the shifts that change project lose links; the deletes name exactly those links', async () => {
-        const { tx, deleted } = fakeTx();
-        const n = await releaseOldProjectLinks(tx as never, T, ['s1', 's2'], 'p-new');
-        assert.deepEqual(n, { tasks: 1, files: 1 });
-        assert.deepEqual(deleted, { shiftTask: ['l-old'], shiftAttachment: ['f-old'] });
+    test('only the shifts that change project lose links; progress is written to the old task BEFORE the link goes', async () => {
+        const { tx, deleted, comments, order } = fakeTx();
+        const n = await releaseOldProjectLinks(tx as never, T, 'u-planner', ['s1', 's2'], 'p-new');
+        assert.deepEqual(n, { tasks: 2, files: 1, notes: 1 });
+        assert.deepEqual(deleted, { shiftTask: ['l-old', 'l-old-untouched'], shiftAttachment: ['f-old'] });
+        assert.equal(comments.length, 1);
+        assert.equal(comments[0].pageId, 'task-a');
+        assert.equal(comments[0].authorId, 'u-planner');
+        assert.equal(comments[0].tenantId, T);
+        assert.match(comments[0].body, /Status: bezig[\s\S]*Notities: half/);
+        assert.match(comments[0].body, /· Jan/);
+        assert.deepEqual(order, ['comment', 'delete']);
     });
 });
 
 describe('SHIFT-PROJ-1 · the route', () => {
     const ROUTE = readFileSync('src/app/api/hr/[entity]/route.ts', 'utf8');
     test('a single shift and a series release the old links inside the transaction that moves them', () => {
-        assert.match(ROUTE, /await releaseOldProjectLinks\(tx, ctx\.tenantId, \[id\], \(data\.projectId as string \| null\) \|\| null\);\s*return tx\.scheduledShift\.update/);
-        assert.match(ROUTE, /if \('projectId' in fields\) \{[\s\S]{0,200}await releaseOldProjectLinks\(tx, ctx\.tenantId, \[id, \.\.\.others\]/);
+        assert.match(ROUTE, /await releaseOldProjectLinks\(tx, ctx\.tenantId, ctx\.userId, \[id\], \(data\.projectId as string \| null\) \|\| null\);\s*return tx\.scheduledShift\.update/);
+        assert.match(ROUTE, /if \('projectId' in fields\) \{[\s\S]{0,200}await releaseOldProjectLinks\(tx, ctx\.tenantId, ctx\.userId, \[id, \.\.\.others\]/);
     });
 });

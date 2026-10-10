@@ -871,7 +871,7 @@ export async function PATCH(
                         // SHIFT-PROJ-1: a series moved to another project drops the old project's task and file links.
                         if ('projectId' in fields) {
                             const others = (await tx.scheduledShift.findMany({ where, select: { id: true } })).map(r => r.id);
-                            await releaseOldProjectLinks(tx, ctx.tenantId, [id, ...others], (fields.projectId as string | null) || null);
+                            await releaseOldProjectLinks(tx, ctx.tenantId, ctx.userId, [id, ...others], (fields.projectId as string | null) || null);
                         }
                         return [
                             await tx.scheduledShift.updateMany({ where, data: { ...fields, lastEditedBy: ctx.userId } }),
@@ -885,7 +885,7 @@ export async function PATCH(
             if (record === undefined && entity === 'shifts' && 'projectId' in data) {
                 // SHIFT-PROJ-1: the move and the release of the old project's task and file links, together.
                 record = await db.$transaction(async tx => {
-                    await releaseOldProjectLinks(tx, ctx.tenantId, [id], (data.projectId as string | null) || null);
+                    await releaseOldProjectLinks(tx, ctx.tenantId, ctx.userId, [id], (data.projectId as string | null) || null);
                     return tx.scheduledShift.update({ where: { id }, data: data as Prisma.ScheduledShiftUncheckedUpdateInput });
                 });
             }

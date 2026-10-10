@@ -14,3 +14,4 @@
 | 2026-10-10 03:29 | green | — (coder idle) | main = 7284079e | lib/data sweep: all unscoped writes follow a tenant-checked read; removed dead getPortalTask. |
 | 2026-10-10 04:01 | green | — (coder idle) | main = 6242f0ac | BUSINESS-DAY: 8 financial UTC-day dates → kernel (Peppol default dates, conversion, due fallback, paid date, vorderingsstaat, footer +14/+30). Ratchet: 36 elsewhere (tasks/calendar/store). |
 | 2026-10-10 04:29 | green | — (coder idle) | main = d327310d | store.ts: due-date rule copy → calculateDueDate; status automations → business day. Ratchet 36 → 31. |
+| 2026-10-10 05:01 | green | — (coder idle) | main = 3525f0d6 | Tasks + HR dashboard on the business day (quick-add offsets, recurrence, My Day, this week). Ratchet 31 → 22. |

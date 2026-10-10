@@ -3,13 +3,12 @@
  *
  * Rules:
  * - Only changed fields in intent.fields (no spreading existing properties).
- * - Exact caller 'by' tags ('system:cron-overdue', 'system:backfill-peppol').
- * - C1: lifecycle option passed ONLY for overdue cron (reason: 'cron-overdue').
- *       Backfill writes NEVER pass lifecycle.
- * - M2 row columns: order preserved in opts.meta.order for supplier creation.
+ * - Exact caller 'by' tag ('system:cron-overdue').
+ * - C1: the lifecycle option (reason: 'cron-overdue') lets the overdue status reach an accountant-exported document.
+ * (The Peppol backfill's builders were deleted with its route on 2026-10-10 — a one-time repair, Florin.)
  */
 
-import type { RecordIntent, RecordMeta, CreateIfMissing } from './record-intent';
+import type { RecordIntent } from './record-intent';
 
 export function buildOverdueDocumentIntent(
     pageId: string,
@@ -33,92 +32,3 @@ export function buildOverdueDocumentIntent(
 
 export const buildOverdueInvoiceIntent = buildOverdueDocumentIntent;
 export const buildOverdueExpenseIntent = buildOverdueDocumentIntent;
-
-export interface BackfillSupplierInput {
-    name?: string | null;
-    vat?: string | null;
-    address?: string | null;
-}
-
-export function buildBackfillSupplierCreateData(
-    supplierId: string,
-    databaseId: string,
-    order: number,
-    vendor: BackfillSupplierInput
-): {
-    intent: RecordIntent;
-    opts: {
-        by: string;
-        meta: RecordMeta;
-        createIfMissing: CreateIfMissing;
-    };
-} {
-    const properties: Record<string, unknown> = {
-        title: vendor.name || 'Unknown Supplier',
-        vat: vendor.vat || null,
-        address: vendor.address || '',
-    };
-    return {
-        intent: {
-            pageId: supplierId,
-            fields: properties,
-        },
-        opts: {
-            by: 'system:backfill-peppol',
-            meta: { order },
-            createIfMissing: {
-                databaseId,
-                properties,
-                blocks: [],
-                createdBy: 'system:backfill-peppol',
-                assignedTo: [],
-            },
-        },
-    };
-}
-
-export interface BackfillExpenseDelta {
-    supplierId?: string | null;
-    vendorName?: string | null;
-    vendorVat?: string | null;
-    receiptUrl?: string | null;
-    blocks?: unknown[];
-}
-
-export function buildBackfillExpenseUpdateIntent(
-    pageId: string,
-    baseUpdatedAt: string | null | undefined,
-    delta: BackfillExpenseDelta
-): {
-    intent: RecordIntent;
-    opts: { by: string };
-} | null {
-    const fields: Record<string, unknown> = {};
-    if (delta.supplierId) {
-        fields.supplier = [delta.supplierId];
-        if (delta.vendorName) fields.supplierName = delta.vendorName;
-        if (delta.vendorVat) fields.supplierVat = delta.vendorVat;
-    }
-    if (delta.receiptUrl) {
-        fields.receiptUrl = delta.receiptUrl;
-    }
-
-    const hasFields = Object.keys(fields).length > 0;
-    const hasBlocks = delta.blocks !== undefined && delta.blocks.length > 0;
-
-    if (!hasFields && !hasBlocks) return null;
-
-    const intent: RecordIntent = {
-        pageId,
-        fields,
-        baseUpdatedAt: baseUpdatedAt ?? null,
-    };
-    if (hasBlocks) {
-        intent.blocks = delta.blocks;
-    }
-
-    return {
-        intent,
-        opts: { by: 'system:backfill-peppol' },
-    };
-}

@@ -13,6 +13,7 @@ import {
     ChevronDown, KeyRound, Calculator, Phone,
 } from 'lucide-react';
 import SearchableSelect from '@/components/ui/SearchableSelect';
+import { toast } from 'sonner';
 
 // Roles that can manage team (must match WORKSPACE_OWNER_ROLES in src/lib/roles.ts)
 const OWNER_ROLES = WORKSPACE_OWNER_ROLES;
@@ -193,7 +194,18 @@ export default function TeamSettingsPage() {
 
     const handleRemoveUser = async (userId: string) => {
         if (!confirm('Remove this user from your workspace? This cannot be undone.')) return;
-        await fetch(`/api/tenant/users/${userId}`, { method: 'DELETE' });
+        // ERROR-SURFACING: the server's refusal is shown — it was ignored, so a failed removal looked like nothing happened.
+        try {
+            const res = await fetch(`/api/tenant/users/${userId}`, { method: 'DELETE' });
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                toast.error(`${res.status} — ${data.error || res.statusText}`);
+                return;
+            }
+            toast.success('User removed');
+        } catch (e) {
+            toast.error(`Network error — ${e instanceof Error ? e.message : String(e)}`);
+        }
         fetchUsers();
     };
 

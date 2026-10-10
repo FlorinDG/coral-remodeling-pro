@@ -13,7 +13,7 @@
 import { NextResponse } from 'next/server';
 import { authSecret } from '@/lib/auth-secret';
 import { auth } from '@/auth';
-import prisma from '@/lib/prisma';
+import { scopeFromSession, platformDb, type TenantScopedClient } from '@/lib/data/scope';
 import { buildAuditLogData, buildAuditLogOperation } from '@/lib/audit';
 import { resolveReach } from '../lib/actor-reach';
 import { hrWriteRefusal } from '../lib/write-policy';
@@ -85,11 +85,12 @@ async function getTenantAndUser() {
     return { userId: user.id || '', tenantId: user.tenantId, role: user.role || '' };
 }
 
-function getModel(entity: string) {
+/** HR-ENTITY-SERAPH: the entity's delegate on the TENANT-SCOPED client — never the raw one. */
+function getModel(db: TenantScopedClient, entity: string) {
     const modelName = ENTITY_MAP[entity];
     if (!modelName) return null;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return (prisma as any)[modelName];
+    return (db as any)[modelName];
 }
 
 function sanitize(data: Record<string, unknown>) {
@@ -102,10 +103,10 @@ function sanitize(data: Record<string, unknown>) {
 
 /** WB-A: a shift's order giver must be a page of THIS tenant's clients database — the FK alone only
  *  proves "some page" (GlobalPage is polymorphic). null/'' clears it. Returns an error response or null. */
-async function contactPageRefusal(tenantId: string, data: Record<string, unknown>): Promise<NextResponse | null> {
+async function contactPageRefusal(db: TenantScopedClient, tenantId: string, data: Record<string, unknown>): Promise<NextResponse | null> {
     if (!('contactPageId' in data)) return null;
     if (data.contactPageId === '' || data.contactPageId === null) { data.contactPageId = null; return null; }
-    const page = await prisma.globalPage.findFirst({
+    const page = await db.globalPage.findFirst({
         where: { id: String(data.contactPageId), database: { tenantId, logicalKey: 'clients' } },
         select: { id: true },
     });
@@ -127,7 +128,7 @@ function hrWriteGate(
  * EVERY role — no unlock exists. Returns a 409 naming the refusal, or null.
  */
 async function signedRefusal(
-    tenantId: string, entity: string, id: string | null, data: Record<string, unknown>,
+    db: TenantScopedClient, tenantId: string, entity: string, id: string | null, data: Record<string, unknown>,
 ): Promise<NextResponse | null> {
     const touched = new Set<string>();
     if (entity === 'shifts' && id) touched.add(id);
@@ -135,7 +136,7 @@ async function signedRefusal(
         if (typeof data.shiftId === 'string' && data.shiftId) touched.add(data.shiftId);   // moving INTO / creating on
         if (id) {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const row = await (getModel(entity) as any)?.findUnique({ where: { id }, select: { shiftId: true } });
+            const row = await (getModel(db, entity) as any)?.findUnique({ where: { id }, select: { shiftId: true } });
             if (row?.shiftId) touched.add(row.shiftId);                                      // already ON
         }
     }
@@ -148,11 +149,11 @@ async function signedRefusal(
 }
 
 /** A series action never reaches a signed shift. */
-async function withoutSigned(tenantId: string, where: Prisma.ScheduledShiftWhereInput | null): Promise<Prisma.ScheduledShiftWhereInput | null> {
+async function withoutSigned(db: TenantScopedClient, tenantId: string, where: Prisma.ScheduledShiftWhereInput | null): Promise<Prisma.ScheduledShiftWhereInput | null> {
     if (!where) return null;
-    const ids = (await prisma.scheduledShift.findMany({ where, select: { id: true } })).map(r => r.id);
+    const ids = (await db.scheduledShift.findMany({ where, select: { id: true } })).map(r => r.id);
     if (!ids.length) return where;
-    const signed = await prisma.auditLog.findMany({
+    const signed = await db.auditLog.findMany({
         where: { tenantId, entityType: 'shift', action: 'sign', entityId: { in: ids } },
         select: { entityId: true },
     });
@@ -166,10 +167,13 @@ export async function GET(
 ) {
     const ctx = await getTenantAndUser();
     if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // HR-ENTITY-SERAPH: every read and write below goes through the tenant-scoped client (the seraph enforces the
+    // tenant; the hand-written tenantId filters stay as a second lock).
+    const db = await scopeFromSession();
 
     const { entity } = await params;
 
-    const model = getModel(entity);
+    const model = getModel(db, entity);
     if (!model && entity !== 'erp-projects' && entity !== 'erp-tasks' && entity !== 'erp-clients') {
         return NextResponse.json({ error: `Unknown entity: ${entity}` }, { status: 400 });
     }
@@ -228,7 +232,7 @@ export async function GET(
     if (entity === 'erp-clients') {
         if (!reach.mayApprove) return NextResponse.json([]);
         try {
-            const pages = await prisma.globalPage.findMany({
+            const pages = await db.globalPage.findMany({
                 where: { database: { tenantId: ctx.tenantId, logicalKey: 'clients' } },
                 select: { id: true, properties: true },
             });
@@ -251,7 +255,7 @@ export async function GET(
     // ── VIRTUAL ENTITIES: ERP Projects & Tasks ───────────────────────────
     if (entity === 'erp-projects' || entity === 'erp-tasks') {
         try {
-            const tenant = await prisma.tenant.findUnique({
+            const tenant = await platformDb().tenant.findUnique({
                 where: { id: ctx.tenantId },
                 select: { lockedDbIds: true }
             });
@@ -263,7 +267,7 @@ export async function GET(
                 let onlyIds: string[] | undefined;
                 if (!isAdminRole) {
                     const accessibleIds = Array.from(reach.userIds ?? []);
-                    const shifts = await prisma.scheduledShift.findMany({
+                    const shifts = await db.scheduledShift.findMany({
                         where: { userId: { in: accessibleIds }, tenantId: ctx.tenantId },
                         select: { projectId: true }
                     });
@@ -297,7 +301,7 @@ export async function GET(
                     ];
                 }
 
-                const tasks = await prisma.globalPage.findMany({
+                const tasks = await db.globalPage.findMany({
                     where: pageWhere,
                     select: { id: true, properties: true, createdAt: true, assignedTo: true }
                 });
@@ -340,11 +344,11 @@ export async function GET(
         if (entity === 'clock-entries' || entity === 'time-off' || entity === 'shifts') {
             const userIds = [...new Set(records.map((r: any) => r.userId).filter(Boolean))] as string[];
             if (userIds.length > 0) {
-                const users = await prisma.user.findMany({
+                const users = await db.user.findMany({
                     where: { id: { in: userIds } },
                     select: { id: true, name: true, email: true }
                 });
-                const employees = await prisma.employee.findMany({
+                const employees = await db.employee.findMany({
                     where: { userId: { in: userIds } },
                     select: { userId: true, firstName: true, lastName: true }
                 });
@@ -357,7 +361,7 @@ export async function GET(
                 const unresolvedIds = userIds.filter(id => !userMap.has(id) && !empMap.has(id));
                 const legacyEmpMap = new Map<string, { firstName: string; lastName: string }>();
                 if (unresolvedIds.length > 0) {
-                    const legacyEmployees = await prisma.employee.findMany({
+                    const legacyEmployees = await db.employee.findMany({
                         where: { id: { in: unresolvedIds } },
                         select: { id: true, firstName: true, lastName: true }
                     });
@@ -395,7 +399,7 @@ export async function GET(
             if (entity === 'shifts') {
                 const shiftIds = records.map((r: any) => r.id).filter(Boolean);
                 if (shiftIds.length > 0) {
-                    const entries = await prisma.clockEntry.findMany({
+                    const entries = await db.clockEntry.findMany({
                         where: { shiftId: { in: shiftIds } },
                         orderBy: { clockInTime: 'asc' },
                     });
@@ -431,6 +435,9 @@ export async function POST(
 ) {
     const ctx = await getTenantAndUser();
     if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // HR-ENTITY-SERAPH: every read and write below goes through the tenant-scoped client (the seraph enforces the
+    // tenant; the hand-written tenantId filters stay as a second lock).
+    const db = await scopeFromSession();
 
     const { entity } = await params;
 
@@ -438,7 +445,7 @@ export async function POST(
         return NextResponse.json({ error: 'Audit logs are immutable' }, { status: 403 });
     }
 
-    const model = getModel(entity);
+    const model = getModel(db, entity);
     if (!model) return NextResponse.json({ error: `Unknown entity: ${entity}` }, { status: 400 });
 
     const body = await req.json();
@@ -456,7 +463,7 @@ export async function POST(
         const shiftId = data.shiftId as string | undefined;
         if (!shiftId) return NextResponse.json({ error: 'shiftId required' }, { status: 400 });
         // TODO(R1-4): Class-B parent check — TenantScopedClient makes this automatic (TSC-0 D7). Delete this block when R1-4 lands.
-        const parent = await prisma.scheduledShift.findFirst({
+        const parent = await db.scheduledShift.findFirst({
             where: { id: shiftId, tenantId: ctx.tenantId },
             select: { id: true },
         });
@@ -475,10 +482,10 @@ export async function POST(
     const writeReach = await resolveReach(ctx);
     const gate2 = hrWriteGate(entity, 'POST', writeReach.mayApprove, ctx.userId, data, null);
     if (gate2) return gate2;
-    const locked = await signedRefusal(ctx.tenantId, entity, null, data);
+    const locked = await signedRefusal(db, ctx.tenantId, entity, null, data);
     if (locked) return locked;
     if (entity === 'shifts') {
-        const bad = await contactPageRefusal(ctx.tenantId, data);
+        const bad = await contactPageRefusal(db, ctx.tenantId, data);
         if (bad) return bad;
     }
     if (entity === 'clock-entries') {
@@ -522,7 +529,7 @@ export async function POST(
     if (entity === 'clock-entries') {
         // Seraph (checklist item 8): the worker an entry is FOR must be a user of THIS tenant.
         // ClockEntry.userId has no FK; without this a foreign user's id was accepted as-is.
-        const subject = await prisma.user.findFirst({
+        const subject = await db.user.findFirst({
             where: { id: data.userId as string, tenantId: ctx.tenantId },
             select: { id: true },
         });
@@ -536,7 +543,7 @@ export async function POST(
         // Read-then-refuse; the durable form is a partial unique index (Florin decision).
         if (!data.clockOutTime) {
             try {
-                const open = await prisma.clockEntry.findFirst({
+                const open = await db.clockEntry.findFirst({
                     where: { tenantId: ctx.tenantId, userId: data.userId as string, clockOutTime: null },
                     orderBy: { clockInTime: 'desc' },
                 });
@@ -554,7 +561,7 @@ export async function POST(
 
         // TS-8: Stamp hourly cost from Employee profile at time of creation
         try {
-            const employee = await prisma.employee.findFirst({
+            const employee = await db.employee.findFirst({
                 where: { userId: data.userId as string, tenantId: ctx.tenantId },
                 select: { hourlyCost: true }
             });
@@ -570,7 +577,7 @@ export async function POST(
         if (data.shiftId) {
             try {
                 // TODO(R1-4): Class-B parent check — TenantScopedClient makes this automatic (TSC-0 D7). Delete this block when R1-4 lands.
-                parentShift = await prisma.scheduledShift.findFirst({
+                parentShift = await db.scheduledShift.findFirst({
                     where: { id: data.shiftId as string, tenantId: ctx.tenantId },
                     select: { id: true, projectId: true, status: true },
                 });
@@ -663,6 +670,9 @@ export async function PATCH(
 ) {
     const ctx = await getTenantAndUser();
     if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // HR-ENTITY-SERAPH: every read and write below goes through the tenant-scoped client (the seraph enforces the
+    // tenant; the hand-written tenantId filters stay as a second lock).
+    const db = await scopeFromSession();
 
     const { entity } = await params;
 
@@ -670,7 +680,7 @@ export async function PATCH(
         return NextResponse.json({ error: 'Audit logs are immutable' }, { status: 403 });
     }
 
-    const model = getModel(entity);
+    const model = getModel(db, entity);
     if (!model) return NextResponse.json({ error: `Unknown entity: ${entity}` }, { status: 400 });
 
     const url = new URL(req.url);
@@ -686,7 +696,7 @@ export async function PATCH(
         if (entity === 'team-members') {
             // team-members don't have tenantId — verify via parent team
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const member = await (prisma as any).hrTeamMember.findUnique({ 
+            const member = await (db as any).hrTeamMember.findUnique({ 
                 where: { id }, 
                 include: { team: { select: { tenantId: true } } } 
             });
@@ -698,7 +708,7 @@ export async function PATCH(
             const existing = await model.findUnique({ where: { id } });
             if (!existing || !existing.shiftId) return NextResponse.json({ error: 'Not found' }, { status: 404 });
             // TODO(R1-4): Class-B parent check — TenantScopedClient makes this automatic (TSC-0 D7). Delete this block when R1-4 lands.
-            const parentShift = await prisma.scheduledShift.findFirst({
+            const parentShift = await db.scheduledShift.findFirst({
                 where: { id: existing.shiftId, tenantId: ctx.tenantId },
                 select: { id: true },
             });
@@ -722,13 +732,13 @@ export async function PATCH(
 
     // ── WO-3 · a signed work order is closed for every role ──
     {
-        const locked = await signedRefusal(ctx.tenantId, entity, id, data);
+        const locked = await signedRefusal(db, ctx.tenantId, entity, id, data);
         if (locked) return locked;
     }
 
     // ── GATE 2 · WRITE POLICY (PATCH) ──
     if (entity === 'shifts') {
-        const bad = await contactPageRefusal(ctx.tenantId, data);
+        const bad = await contactPageRefusal(db, ctx.tenantId, data);
         if (bad) return bad;
     }
     const patchReach = await resolveReach(ctx);
@@ -760,7 +770,7 @@ export async function PATCH(
 
         // --- CLOCK ENTRIES INTERCEPT: Audit and Edit Guard ---
         if (entity === 'clock-entries') {
-            const existingEntry = await prisma.clockEntry.findUnique({ where: { id } });
+            const existingEntry = await db.clockEntry.findUnique({ where: { id } });
             if (!existingEntry || existingEntry.tenantId !== ctx.tenantId) {
                 return NextResponse.json({ error: 'Not found' }, { status: 404 });
             }
@@ -822,28 +832,27 @@ export async function PATCH(
                 after: { ...existingEntry, ...data, ...(data.source ? { source: data.source } : {}) },
                 reason: data.editedAfterApproval ? `edited-after-approval: ${editReason}` : (editReason || null),
             });
-            const auditOp = buildAuditLogOperation(prisma, auditData);
 
             // Execute in transaction
-            const [updated] = await prisma.$transaction([
-                prisma.clockEntry.update({ where: { id }, data }),
-                auditOp
-            ]);
-            record = updated;
+            record = await db.$transaction(async tx => {
+                const updated = await tx.clockEntry.update({ where: { id }, data });
+                await buildAuditLogOperation(tx, auditData);
+                return updated;
+            });
         } else {
             // SCH-8: "this and following" / "all in series" — the other shifts first, in ONE statement.
             const scope = entity === 'shifts' ? parseScope(url.searchParams.get('scope')) : 'occurrence';
             if (scope !== 'occurrence') {
                 if (!patchReach.mayApprove) return NextResponse.json({ error: 'forbidden: series edits are for planners' }, { status: 403 });
-                const anchor = await prisma.scheduledShift.findFirst({ where: { id, tenantId: ctx.tenantId }, select: { id: true, seriesId: true, shiftDate: true } });
-                const where = anchor ? await withoutSigned(ctx.tenantId, seriesWhere(ctx.tenantId, anchor, scope)) : null;
+                const anchor = await db.scheduledShift.findFirst({ where: { id, tenantId: ctx.tenantId }, select: { id: true, seriesId: true, shiftDate: true } });
+                const where = anchor ? await withoutSigned(db, ctx.tenantId, seriesWhere(ctx.tenantId, anchor, scope)) : null;
                 const fields = seriesData(data);
                 if (where && Object.keys(fields).length) {
                     // ONE transaction: the series and the edited shift change together or not at all.
-                    const [res, anchorRow] = await prisma.$transaction([
-                        prisma.scheduledShift.updateMany({ where, data: { ...fields, lastEditedBy: ctx.userId } }),
-                        prisma.scheduledShift.update({ where: { id }, data: data as Prisma.ScheduledShiftUncheckedUpdateInput }),
-                    ]);
+                    const [res, anchorRow] = await db.$transaction(async tx => [
+                        await tx.scheduledShift.updateMany({ where, data: { ...fields, lastEditedBy: ctx.userId } }),
+                        await tx.scheduledShift.update({ where: { id }, data: data as Prisma.ScheduledShiftUncheckedUpdateInput }),
+                    ] as const);
                     seriesCount = res.count;
                     record = anchorRow;
                 }
@@ -866,7 +875,7 @@ export async function PATCH(
 
                     if (existingClockEntryId) {
                         // Clock entry was created at submit time (late_entry) — update approval status
-                        await prisma.clockEntry.updateMany({
+                        await db.clockEntry.updateMany({
                             where: { id: existingClockEntryId, tenantId: ctx.tenantId },
                             data: {
                                 requiresApproval: false,
@@ -877,7 +886,7 @@ export async function PATCH(
                         });
                     } else if (data.status === 'approved' && approval.requestType === 'manual_hours') {
                         // Legacy manual hours without pre-existing clock entry
-                        const entry = await prisma.clockEntry.create({
+                        const entry = await db.clockEntry.create({
                             data: {
                                 tenantId: approval.tenantId,
                                 userId: approval.userId,
@@ -923,6 +932,9 @@ export async function DELETE(
 ) {
     const ctx = await getTenantAndUser();
     if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // HR-ENTITY-SERAPH: every read and write below goes through the tenant-scoped client (the seraph enforces the
+    // tenant; the hand-written tenantId filters stay as a second lock).
+    const db = await scopeFromSession();
 
     const { entity } = await params;
 
@@ -930,7 +942,7 @@ export async function DELETE(
         return NextResponse.json({ error: 'Audit logs are immutable' }, { status: 403 });
     }
 
-    const model = getModel(entity);
+    const model = getModel(db, entity);
     if (!model) return NextResponse.json({ error: `Unknown entity: ${entity}` }, { status: 400 });
 
     const url = new URL(req.url);
@@ -945,7 +957,7 @@ export async function DELETE(
     try {
         if (entity === 'team-members') {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const member = await (prisma as any).hrTeamMember.findUnique({ 
+            const member = await (db as any).hrTeamMember.findUnique({ 
                 where: { id }, 
                 include: { team: { select: { tenantId: true } } } 
             });
@@ -957,7 +969,7 @@ export async function DELETE(
             const existing = await model.findUnique({ where: { id } });
             if (!existing || !existing.shiftId) return NextResponse.json({ error: 'Not found' }, { status: 404 });
             // TODO(R1-4): Class-B parent check — TenantScopedClient makes this automatic (TSC-0 D7). Delete this block when R1-4 lands.
-            const parentShift = await prisma.scheduledShift.findFirst({
+            const parentShift = await db.scheduledShift.findFirst({
                 where: { id: existing.shiftId, tenantId: ctx.tenantId },
                 select: { id: true },
             });
@@ -972,13 +984,13 @@ export async function DELETE(
 
     // ── WO-3 · a signed work order is closed for every role ──
     {
-        const locked = await signedRefusal(ctx.tenantId, entity, id, {});
+        const locked = await signedRefusal(db, ctx.tenantId, entity, id, {});
         if (locked) return locked;
     }
 
     // ── GATE 2 · WRITE POLICY (DELETE) ──
     if (entity === 'clock-entries') {
-        const row = await prisma.clockEntry.findFirst({ where: { id, tenantId: ctx.tenantId }, select: { invoicedAt: true } });
+        const row = await db.clockEntry.findFirst({ where: { id, tenantId: ctx.tenantId }, select: { invoicedAt: true } });
         if (row?.invoicedAt) return NextResponse.json({ error: 'invoiced: these hours are on an invoice — unmark them first' }, { status: 409 });
     }
     const deleteReach = await resolveReach(ctx);
@@ -991,16 +1003,16 @@ export async function DELETE(
         const scope = entity === 'shifts' ? parseScope(url.searchParams.get('scope')) : 'occurrence';
         if (scope !== 'occurrence') {
             if (!deleteReach.mayApprove) return NextResponse.json({ error: 'forbidden: series deletes are for planners' }, { status: 403 });
-            const anchor = await prisma.scheduledShift.findFirst({ where: { id, tenantId: ctx.tenantId }, select: { id: true, seriesId: true, shiftDate: true } });
-            const where = anchor ? await withoutSigned(ctx.tenantId, seriesWhere(ctx.tenantId, anchor, scope)) : null;
+            const anchor = await db.scheduledShift.findFirst({ where: { id, tenantId: ctx.tenantId }, select: { id: true, seriesId: true, shiftDate: true } });
+            const where = anchor ? await withoutSigned(db, ctx.tenantId, seriesWhere(ctx.tenantId, anchor, scope)) : null;
             let deleted = 0, kept = 0;
             if (where) {
                 // ONE transaction: the series and the shift itself are deleted together or not at all.
-                const [res, withHours] = await prisma.$transaction([
-                    prisma.scheduledShift.deleteMany({ where: { ...where, clockEntries: { none: {} } } }),
-                    prisma.scheduledShift.count({ where }),
-                    prisma.scheduledShift.delete({ where: { id } }),
-                ]);
+                const [res, withHours] = await db.$transaction(async tx => [
+                    await tx.scheduledShift.deleteMany({ where: { ...where, clockEntries: { none: {} } } }),
+                    await tx.scheduledShift.count({ where }),
+                    await tx.scheduledShift.delete({ where: { id } }),
+                ] as const);
                 deleted = res.count; kept = withHours;
             } else {
                 await model.delete({ where: { id } });

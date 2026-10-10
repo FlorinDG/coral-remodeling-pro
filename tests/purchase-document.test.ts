@@ -27,7 +27,7 @@ test('a ticket shows only ticket fields — never the invoice fields (throw proo
     for (const f of ['supplierName', 'invoiceDate', 'totalIncVat', 'category', 'paymentMethod', 'notes', 'project']) assert.equal(editorShows('tickets', f), true, f);
     for (const f of ['supplierVat', 'ogm', 'supplierIban', 'dueDate', 'costType', 'ledgerAccount', 'vatRegime', 'paidDate', 'lines', 'totalVat', 'peppol']) assert.equal(editorShows('tickets', f), false, f);
     assert.equal(editorShows('expenses', 'ogm'), true);
-    assert.equal(editorLabel('tickets', 'supplierName', 'Leverancier'), 'Handelaar');
+    assert.equal(editorLabel('tickets', 'supplierName', 'Leverancier'), 'Admin.purchaseDocument.merchant');
     assert.equal(editorLabel('expenses', 'supplierName', 'Leverancier'), 'Leverancier');
 });
 
@@ -50,8 +50,8 @@ test('QUOTE-IN-1: a quote opens in the purchase editor, but is never validated (
 test('QUOTE-IN-1: the editor\'s "due date" is the quote\'s validity — read and written as validUntil', () => {
     assert.equal(purchaseView('purchase-quotes', { validUntil: '2026-11-30' }).dueDate, '2026-11-30');
     assert.deepEqual(purchaseWrite('purchase-quotes', 'dueDate', '2026-12-01'), { key: 'validUntil', value: '2026-12-01' });
-    assert.equal(editorLabel('purchase-quotes', 'dueDate', 'Vervaldatum'), 'Geldig tot');
-    assert.equal(editorLabel('purchase-quotes', 'invoiceDate', 'Factuurdatum'), 'Offertedatum');
+    assert.equal(editorLabel('purchase-quotes', 'dueDate', 'Vervaldatum'), 'Admin.purchaseDocument.validUntil');
+    assert.equal(editorLabel('purchase-quotes', 'invoiceDate', 'Factuurdatum'), 'Admin.purchaseDocument.quoteDate');
 });
 
 test('QUOTE-IN-1: no payment, accounting or Peppol fields on a quote — and they are never written', () => {

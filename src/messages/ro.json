@@ -693,6 +693,128 @@
       "revise": "Revizuiește — versiune nouă",
       "revised": "Versiunea nouă {title} a fost creată (ciornă)",
       "reviseFailed": "Revizuirea a eșuat"
+    },
+    "lineSearch": {
+      "dialogLabel": "Căutare în linii",
+      "searchPlaceholder": "Căutați un material, cod articol sau furnizor — în facturi de achiziție și oferte",
+      "close": "Închide",
+      "hint": "Tastați unul sau mai multe cuvinte — fiecare linie care le conține pe toate va apărea, cea mai nouă prima.",
+      "noHits": "Nicio linie găsită.",
+      "searchFailed": "Căutare eșuată",
+      "libraryNotEntitled": "Biblioteca nu este inclusă în abonamentul dvs.",
+      "addToLibraryFailed": "Adăugarea în bibliotecă a eșuat",
+      "itemAdded": "Articol adăugat în bibliotecă",
+      "priceUpdated": "Prețul articolului existent a fost actualizat (prețul vechi păstrat)",
+      "quote": "Ofertă",
+      "invoice": "Factură",
+      "gross": "brut",
+      "net": "net",
+      "open": "Deschide",
+      "inLibrary": "În bibliotecă",
+      "toLibrary": "În bibliotecă",
+      "add": "Adaugă",
+      "unit": "Unitate",
+      "unitPiece": "buc",
+      "unitM": "m",
+      "unitM2": "m²",
+      "unitM3": "m³",
+      "unitL": "L",
+      "unitHour": "oră",
+      "unitSet": "set",
+      "unitKg": "kg"
+    },
+    "expenses": {
+      "duplicateBanner": {
+        "possible": "Posibil duplicat",
+        "alreadyExists": "Acest document există deja",
+        "docDeleted": "Acest document nu mai există",
+        "open": "Deschide",
+        "keep": "Nu este duplicat — păstrează",
+        "confirmDelete": "Ștergeți acest document? Celălalt va rămâne.",
+        "delete": "Șterge acest document",
+        "scanMatchReason": "Aceleași {fields} ca un document existent. A fost salvat și marcat — în De validat alegeți: păstrare sau ștergere."
+      },
+      "validation": {
+        "missing": "Lipsesc: {fields}",
+        "fillBeforeApprove": "Completați mai întâi pentru a aproba",
+        "approve": "Aprobă",
+        "fields": {
+          "duplicateOf": "gestionează duplicatul",
+          "title": "comerciant",
+          "date": "dată",
+          "amount": "sumă",
+          "supplier": "furnizor",
+          "invoiceDate": "data facturii",
+          "totalIncVat": "total",
+          "totalVat": "TVA neconcordant"
+        }
+      },
+      "import": {
+        "toValidate": "La De validat",
+        "toQuotes": "La oferte",
+        "verdictReviewDuplicate": "De verificat — posibil duplicat",
+        "verdictReadyToApprove": "Gata de aprobat",
+        "verdictToReview": "De verificat",
+        "verdictManual": "De verificat — manual",
+        "verdictScanFailed": "De verificat — scanare eșuată",
+        "verdictDone": "Gata",
+        "openInValidation": "Deschide în De validat",
+        "tabInvoices": "Facturi achiziții",
+        "tabTickets": "Bonuri",
+        "tabQuotes": "Oferte"
+      },
+      "tickets": {
+        "receiptSaveFailed": "Bonul nu a putut fi salvat: {reason}"
+      }
+    },
+    "purchaseDocument": {
+      "merchant": "Comerciant",
+      "date": "Dată",
+      "amount": "Sumă",
+      "quoteDate": "Data ofertei",
+      "validUntil": "Valabil până la",
+      "quote": "Ofertă",
+      "notes": "Observații",
+      "details": "Detalii",
+      "ticket": "Bon",
+      "invoiceDetails": "Detalii factură",
+      "supplier": "Furnizor",
+      "supplierVat": "Cod TVA furnizor",
+      "contact": "Persoană de contact",
+      "ogm": "OGM / Comunicare structurată",
+      "subject": "Descriere / Subiect",
+      "ourRef": "Referința noastră",
+      "iban": "IBAN",
+      "bic": "BIC",
+      "reverseCharge": "Taxare inversă TVA / Medecontractant",
+      "invoiceDate": "Data facturii",
+      "dueDate": "Data scadenței",
+      "deliveryDate": "Data livrării",
+      "totalIncVat": "Total incl. TVA",
+      "paymentAndNotes": "Plată & Observații"
+    },
+    "lineVatRate": {
+      "ariaLabel": "Cota TVA a liniei",
+      "reverseCharge": "taxare inversă",
+      "doc": "doc"
+    },
+    "vatBreakdown": {
+      "row": "TVA {rate}% la {base}"
+    },
+    "documentDiscount": {
+      "lineDiscounts": "Reducere pe linii",
+      "totalDiscount": "Reducere pe total"
+    },
+    "clientDiscount": {
+      "discount": "Reducere",
+      "discountType": "Tip reducere"
+    },
+    "financialRow": {
+      "vat": "TVA",
+      "discount": "Reducere"
+    },
+    "sync": {
+      "stuckSaveFailed": "O modificare adusă la „{title}” nu a putut fi salvată — este afișată versiunea de pe server."
     }
   },
   "Footer": {

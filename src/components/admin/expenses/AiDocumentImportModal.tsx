@@ -8,7 +8,7 @@ import { isTenantDatabase } from '@/lib/relations/resolve';
 import { uploadFileAction } from '@/app/actions/files';
 import { useDatabaseStore } from '../database/store';
 import { useRouter } from 'next/navigation';
-import { useLocale } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { READABLE_ACCEPT } from '@/lib/records/readable-document';   // SCAN-2: iOS converts HEIC to JPEG itself
 import { prepareUpload } from '@/lib/files/prepare-upload';
 import { readingSummary, needsValidation } from '@/lib/records/purchase-document';
@@ -55,6 +55,7 @@ export default function AiDocumentImportModal({ onClose, targetDatabaseId = 'db-
     const modalRef = useRef<HTMLDivElement>(null);
     const router = useRouter();
     const locale = useLocale();
+    const t = useTranslations('Admin');
     // VALIDATE-1: imports wait in "Te valideren" (the Tickets / Purchase-invoice screens show only what counts) — the
     // right tab, and the document itself when a row is chosen
     // QUOTE-IN-1: a supplier quote is not a cost — it is never validated; it opens in its own list
@@ -123,7 +124,7 @@ export default function AiDocumentImportModal({ onClose, targetDatabaseId = 'db-
                 if (isFree) {
                     if (!file.type.startsWith('image/')) {
                         await toReview('PDF lezen vraagt PRO — handmatig invullen');
-                        setJobs(prev => prev.map(j => j.id === job.id ? { ...j, status: 'done', verdict: 'Na te kijken — handmatig' } : j));
+                        setJobs(prev => prev.map(j => j.id === job.id ? { ...j, status: 'done', verdict: t('expenses.import.verdictManual') } : j));
                         continue;
                     }
                     const { recognizeReceipt } = await import('@/lib/ocr');
@@ -137,15 +138,15 @@ export default function AiDocumentImportModal({ onClose, targetDatabaseId = 'db-
                 const scanData = await scanRes.json();
                 if (!scanRes.ok || !scanData.success) {
                     await toReview(`Lezen mislukt: ${scanData?.error || scanRes.status}`);
-                    setJobs(prev => prev.map(j => j.id === job.id ? { ...j, status: 'done', verdict: 'Na te kijken — lezen mislukt' } : j));
+                    setJobs(prev => prev.map(j => j.id === job.id ? { ...j, status: 'done', verdict: t('expenses.import.verdictScanFailed') } : j));
                     continue;
                 }
                 if (scanData.page) latest = scanData.page;
 
                 const reviewStatus = scanData.page?.properties?.reviewStatus;
                 // DUP-1: a possible duplicate is saved and flagged — said here, decided in Te valideren
-                const verdictText = scanData.dedupResult && scanData.dedupResult.status !== 'none' ? 'Na te kijken — mogelijk duplicaat'
-                    : reviewStatus === 'Klaar' ? 'Klaar om goed te keuren' : 'Na te kijken';
+                const verdictText = scanData.dedupResult && scanData.dedupResult.status !== 'none' ? t('expenses.import.verdictReviewDuplicate')
+                    : reviewStatus === 'Klaar' ? t('expenses.import.verdictReadyToApprove') : t('expenses.import.verdictToReview');
                 setJobs(prev => prev.map(j => j.id === job.id ? { ...j, status: 'done', verdict: verdictText } : j));
             } catch (err: any) {
                 await toReview(`Import onderbroken: ${err?.message || 'fout'}`).catch(() => {});
@@ -191,7 +192,7 @@ export default function AiDocumentImportModal({ onClose, targetDatabaseId = 'db-
                         <div>
                             <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">AI Document Import</h2>
                             <div className="mt-1 inline-flex rounded-lg border border-neutral-200 dark:border-neutral-700 p-0.5 text-xs font-semibold">
-                                {([['db-expenses', 'Aankoopfacturen'], ['db-tickets', 'Tickets'], ['db-purchase-quotes', 'Offertes']] as const).map(([k, label]) => (
+                                {([['db-expenses', t('expenses.import.tabInvoices')], ['db-tickets', t('expenses.import.tabTickets')], ['db-purchase-quotes', t('expenses.import.tabQuotes')]] as const).map(([k, label]) => (
                                     <button
                                         key={k}
                                         type="button"
@@ -245,7 +246,7 @@ export default function AiDocumentImportModal({ onClose, targetDatabaseId = 'db-
                                 <div key={job.id}
                                      onClick={() => { if (job.pageId) openInValidation(job.pageId); }}
                                      className={`flex items-center justify-between p-3 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 ${job.pageId ? 'cursor-pointer hover:border-orange-300 dark:hover:border-orange-500/40' : ''}`}
-                                     title={job.pageId ? 'Openen in Te valideren' : undefined}>
+                                     title={job.pageId ? t('expenses.import.openInValidation') : undefined}>
                                     <div className="flex items-center gap-3 overflow-hidden">
                                         <FileText className="w-5 h-5 text-neutral-400 flex-shrink-0" />
                                         <div className="min-w-0">
@@ -258,7 +259,7 @@ export default function AiDocumentImportModal({ onClose, targetDatabaseId = 'db-
                                         {job.status === 'pending' && <span className="text-xs text-neutral-500">Waiting...</span>}
                                         {job.status === 'uploading' && <><Loader2 className="w-4 h-4 text-blue-500 animate-spin" /><span className="text-xs text-blue-500">Uploading...</span></>}
                                         {job.status === 'processing' && <><Loader2 className="w-4 h-4 text-indigo-500 animate-spin" /><span className="text-xs text-indigo-500">Scanning...</span></>}
-                                        {job.status === 'done' && <><CheckCircle className="w-4 h-4 text-emerald-500" /><span className="text-xs text-emerald-500 truncate max-w-[180px]">{job.verdict || 'Klaar'}</span></>}
+                                        {job.status === 'done' && <><CheckCircle className="w-4 h-4 text-emerald-500" /><span className="text-xs text-emerald-500 truncate max-w-[180px]">{job.verdict || t('expenses.import.verdictDone')}</span></>}
                                         {job.status === 'error' && <><AlertCircle className="w-4 h-4 text-red-500" /><span className="text-xs text-red-500 truncate max-w-[150px]">{job.error}</span></>}
                                     </div>
                                 </div>
@@ -272,7 +273,7 @@ export default function AiDocumentImportModal({ onClose, targetDatabaseId = 'db-
                                 className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors"
                             >
                                 <Inbox className="w-4 h-4" />
-                                {needsValidation(role) ? 'Naar Te valideren' : 'Naar offertes'} ({jobs.filter(j => j.status === 'done').length})
+                                {needsValidation(role) ? t('expenses.import.toValidate') : t('expenses.import.toQuotes')} ({jobs.filter(j => j.status === 'done').length})
                                 <ArrowRight className="w-4 h-4 opacity-70" />
                             </button>
                         </div>

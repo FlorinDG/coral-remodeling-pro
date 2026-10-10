@@ -121,9 +121,16 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
     const { resolveDbId, tenant } = useTenant();
     const locale = useLocale();
     const tPlaceholders = useTranslations('Admin.placeholders');
+    const t = useTranslations('Admin');
     const expensesDbId = databaseId || resolveDbId('db-expenses');
     const suppliersDbId = resolveDbId('db-suppliers');
     const projectsDbId = resolveDbId('db-1');
+
+    const trLabel = (field: string, defaultKeyOrText: string) => {
+        const raw = editorLabel(role, field, defaultKeyOrText);
+        const k = raw.startsWith('Admin.') ? raw.slice('Admin.'.length) : raw;
+        return t.has(k) ? t(k) : (t.has(`purchaseDocument.${k}`) ? t(`purchaseDocument.${k}`) : raw);
+    };
 
     const [animationDone, setAnimationDone] = useState(false);
 
@@ -587,15 +594,16 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                             (lib/records/validation); the door refuses an incomplete approval anyway */}
                         {needsValidation(role) && rawPage && !isValidated(rawPage.properties) && (() => {
                             const missing = approveRefusal(role, rawPage.properties);
+                            const missingStr = missing ? missing.map(f => (t.has(`expenses.validation.fields.${f}`) ? t(`expenses.validation.fields.${f}`) : (APPROVE_FIELD_LABEL[f] || f))).join(', ') : '';
                             return missing ? (
                                 <span className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
-                                      title="Vul eerst aan om goed te keuren">
-                                    Ontbreekt: {missing.map(f => APPROVE_FIELD_LABEL[f] || f).join(', ')}
+                                      title={t('expenses.validation.fillBeforeApprove')}>
+                                    {t('expenses.validation.missing', { fields: missingStr })}
                                 </span>
                             ) : (
                                 <button type="button" onClick={() => writeField('reviewStatus', REVIEW_APPROVED)}
                                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700">
-                                    <CheckCircle2 className="w-3.5 h-3.5" /> Goedkeuren
+                                    <CheckCircle2 className="w-3.5 h-3.5" /> {t('expenses.validation.approve')}
                                 </button>
                             );
                         })()}
@@ -613,18 +621,18 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                             const dbPages = useDatabaseStore.getState().getDatabase(expensesDbId)?.pages || [];
                             return (
                                 <div role="alert" className="rounded-xl border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800 p-4 space-y-3">
-                                    <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">{String(rawPage.properties.reviewReason || 'Mogelijk duplicaat')}</p>
+                                    <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">{String(rawPage.properties.reviewReason || t('expenses.duplicateBanner.possible'))}</p>
                                     <ul className="space-y-1.5">
                                         {ids.map(id => {
                                             const other = dbPages.find(p => p.id === id);
                                             return (
                                                 <li key={id} className="flex items-center justify-between gap-3 text-sm">
                                                     <span className="text-neutral-700 dark:text-neutral-300 truncate">
-                                                        {other ? (readingSummary(role, other.properties) || String(other.properties.title || id)) : 'Dat document bestaat niet meer'}
+                                                        {other ? (readingSummary(role, other.properties) || String(other.properties.title || id)) : t('expenses.duplicateBanner.docDeleted')}
                                                     </span>
                                                     {other && (
                                                         <button type="button" onClick={() => openLinked(expensesDbId, id)}
-                                                                className="shrink-0 text-xs font-semibold text-amber-800 dark:text-amber-300 underline">Openen</button>
+                                                                className="shrink-0 text-xs font-semibold text-amber-800 dark:text-amber-300 underline">{t('expenses.duplicateBanner.open')}</button>
                                                     )}
                                                 </li>
                                             );
@@ -634,16 +642,16 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                                         <button type="button"
                                                 onClick={() => { for (const [k, v] of Object.entries(clearDuplicateFlag(rawPage.properties))) writeField(k, v); }}
                                                 className="px-3 py-2 rounded-lg text-sm font-semibold bg-white dark:bg-white/10 border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200 hover:bg-amber-100">
-                                            Geen duplicaat — behouden
+                                            {t('expenses.duplicateBanner.keep')}
                                         </button>
                                         <button type="button"
                                                 onClick={() => {
-                                                    if (!window.confirm('Dit document verwijderen? Het andere blijft.')) return;
+                                                    if (!window.confirm(t('expenses.duplicateBanner.confirmDelete'))) return;
                                                     useDatabaseStore.getState().deletePage(expensesDbId, pageId);
                                                     onClose();
                                                 }}
                                                 className="px-3 py-2 rounded-lg text-sm font-semibold text-white bg-red-600 hover:bg-red-700">
-                                            Dit document verwijderen
+                                            {t('expenses.duplicateBanner.delete')}
                                         </button>
                                     </div>
                                 </div>
@@ -658,11 +666,11 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
 
                         {/* Invoice Details */}
                         <div className="space-y-4">
-                            <h3 className="text-xs font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider">{editorLabel(role, 'details', role === 'tickets' ? 'Ticket' : 'Factuur Details')}</h3>
+                            <h3 className="text-xs font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider">{trLabel('details', role === 'tickets' ? 'purchaseDocument.ticket' : 'purchaseDocument.invoiceDetails')}</h3>
                             <div className="grid grid-cols-2 gap-4">
                                 {editorShows(role, 'supplierName') && (
                                 <InfoField
-                                    label={editorLabel(role, 'supplierName', 'Leverancier')}
+                                    label={trLabel('supplierName', 'purchaseDocument.supplier')}
                                     value={isEditing ? String(editData.supplierName || '') : String(page.properties.supplierName || resolvedSupplier?.properties.title || '—')}
                                     editable={isEditing}
                                     onChange={v => setEditData(p => ({ ...p, supplierName: v }))}
@@ -670,7 +678,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                                 )}
                                 {editorShows(role, 'supplierVat') && (
                                 <InfoField
-                                    label={editorLabel(role, 'supplierVat', 'BTW-nummer leverancier')}
+                                    label={trLabel('supplierVat', 'purchaseDocument.supplierVat')}
                                     value={isEditing ? String(editData.supplierVat || '') : String(page.properties.supplierVat || resolvedSupplier?.properties.vat || resolvedSupplier?.properties.vatNumber || peppolDetail?.supplierVat || '')}
                                     editable={isEditing}
                                     onChange={v => setEditData(p => ({ ...p, supplierVat: v }))}
@@ -678,7 +686,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                                 )}
                                 {editorShows(role, 'contact') && (
                                 <InfoField
-                                    label={editorLabel(role, 'contact', 'Contactpersoon')}
+                                    label={trLabel('contact', 'purchaseDocument.contact')}
                                     value={isEditing ? String(editData.contact || '') : String(page.properties.contact || '') || '—'}
                                     editable={isEditing}
                                     onChange={v => setEditData(p => ({ ...p, contact: v }))}
@@ -686,7 +694,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                                 )}
                                 {editorShows(role, 'structuredCommunication') && (
                                 <InfoField
-                                    label={editorLabel(role, 'structuredCommunication', 'OGM / Gestructureerde mededeling')}
+                                    label={trLabel('structuredCommunication', 'purchaseDocument.ogm')}
                                     value={isEditing ? String(editData.structuredCommunication || '') : String(page.properties.structuredCommunication || page.properties.ogm || '') || '—'}
                                     editable={isEditing}
                                     onChange={v => setEditData(p => ({ ...p, structuredCommunication: v }))}
@@ -694,7 +702,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                                 )}
                                 {editorShows(role, 'betreft') && (
                                 <InfoField
-                                    label={editorLabel(role, 'betreft', 'Omschrijving / Betreft')}
+                                    label={trLabel('betreft', 'purchaseDocument.subject')}
                                     value={isEditing ? String(editData.betreft || '') : String(page.properties.betreft || '') || '—'}
                                     editable={isEditing}
                                     onChange={v => setEditData(p => ({ ...p, betreft: v }))}
@@ -702,7 +710,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                                 )}
                                 {editorShows(role, 'ourRef') && (
                                 <InfoField
-                                    label={editorLabel(role, 'ourRef', 'Onze Referentie')}
+                                    label={trLabel('ourRef', 'purchaseDocument.ourRef')}
                                     value={isEditing ? String(editData.ourRef || '') : String(page.properties.ourRef || '') || '—'}
                                     editable={isEditing}
                                     onChange={v => setEditData(p => ({ ...p, ourRef: v }))}
@@ -710,7 +718,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                                 )}
                                 {editorShows(role, 'supplierIban') && (
                                 <InfoField
-                                    label={editorLabel(role, 'supplierIban', 'IBAN')}
+                                    label={trLabel('supplierIban', 'purchaseDocument.iban')}
                                     value={isEditing ? String(editData.supplierIban || '') : String(page.properties.supplierIban || '') || '—'}
                                     editable={isEditing}
                                     onChange={v => setEditData(p => ({ ...p, supplierIban: v }))}
@@ -718,7 +726,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                                 )}
                                 {editorShows(role, 'supplierBic') && (
                                 <InfoField
-                                    label={editorLabel(role, 'supplierBic', 'BIC')}
+                                    label={trLabel('supplierBic', 'purchaseDocument.bic')}
                                     value={isEditing ? String(editData.supplierBic || '') : String(page.properties.supplierBic || '') || '—'}
                                     editable={isEditing}
                                     onChange={v => setEditData(p => ({ ...p, supplierBic: v }))}
@@ -726,7 +734,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                                 )}
                                 {editorShows(role, 'reverseCharge') && (
                                 <InfoField
-                                    label={editorLabel(role, 'reverseCharge', 'Btw Verlegd / Medecontractant')}
+                                    label={trLabel('reverseCharge', 'purchaseDocument.reverseCharge')}
                                     value={isEditing ? (editData.reverseCharge ? 'Ja' : 'Nee') : (page.properties.reverseCharge ? 'Ja' : 'Nee')}
                                     editable={isEditing}
                                     onChange={v => setEditData(p => ({ ...p, reverseCharge: v === 'Ja' || v === 'true' || v === true as unknown as string }))}
@@ -734,7 +742,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                                 )}
                                 {editorShows(role, 'invoiceDate') && (
                                 <InfoField
-                                    label={editorLabel(role, 'invoiceDate', 'Factuurdatum')}
+                                    label={trLabel('invoiceDate', 'purchaseDocument.invoiceDate')}
                                     value={isEditing ? String(editData.invoiceDate || '') : formatDateBE(String(page.properties.invoiceDate || ''))}
                                     editable={isEditing}
                                     type="date"
@@ -743,7 +751,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                                 )}
                                 {editorShows(role, 'dueDate') && (
                                 <InfoField
-                                    label={editorLabel(role, 'dueDate', 'Vervaldatum')}
+                                    label={trLabel('dueDate', 'purchaseDocument.dueDate')}
                                     value={isEditing ? String(editData.dueDate || '') : formatDateBE(String(page.properties.dueDate || ''))}
                                     editable={isEditing}
                                     type="date"
@@ -764,7 +772,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                                 )}
                                 {editorShows(role, 'deliveryDate') && (
                                 <InfoField
-                                    label={editorLabel(role, 'deliveryDate', 'Leveringsdatum')}
+                                    label={trLabel('deliveryDate', 'purchaseDocument.deliveryDate')}
                                     value={isEditing ? String(editData.deliveryDate || '') : formatDateBE(String(page.properties.deliveryDate || ''))}
                                     editable={isEditing}
                                     type="date"
@@ -899,7 +907,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
 
                         {/* Payment & Notes */}
                         <div className="space-y-4 pt-4 border-t border-neutral-150 dark:border-white/5">
-                            <h3 className="text-xs font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider">{editorLabel(role, 'paymentNotes', 'Betaling & Opmerkingen')}</h3>
+                            <h3 className="text-xs font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider">{trLabel('paymentNotes', 'purchaseDocument.paymentAndNotes')}</h3>
                             <div className="grid grid-cols-2 gap-4">
                                 {editorShows(role, 'paymentMethod') && (
                                 <div>
@@ -946,7 +954,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                         {role === 'tickets' ? (
                         <div className="grid grid-cols-1 border border-neutral-200 dark:border-white/10 rounded-xl overflow-hidden bg-neutral-50/50 dark:bg-black/10">
                             <FinancialCell
-                                label={editorLabel(role, 'totalIncVat', 'Totaal incl. btw')}
+                                label={trLabel('totalIncVat', 'purchaseDocument.totalIncVat')}
                                 value={(isEditing ? editData.totalIncVat : page.properties.totalIncVat) as string | number}
                                 editable={isEditing}
                                 onChange={v => setEditData(p => ({ ...p, totalIncVat: v }))}

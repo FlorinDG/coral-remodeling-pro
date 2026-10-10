@@ -693,6 +693,128 @@
       "revise": "Revise — new version",
       "revised": "New version {title} created (draft)",
       "reviseFailed": "Revise failed"
+    },
+    "lineSearch": {
+      "dialogLabel": "Search lines",
+      "searchPlaceholder": "Search a material, article code or supplier — in purchase invoices and quotes",
+      "close": "Close",
+      "hint": "Type one or more words — every line containing all of them appears, newest first.",
+      "noHits": "No lines found.",
+      "searchFailed": "Search failed",
+      "libraryNotEntitled": "The library is not included in your subscription",
+      "addToLibraryFailed": "Failed to add to library",
+      "itemAdded": "Article added to library",
+      "priceUpdated": "Price of existing article updated (old price kept)",
+      "quote": "Quote",
+      "invoice": "Invoice",
+      "gross": "gross",
+      "net": "net",
+      "open": "Open",
+      "inLibrary": "In library",
+      "toLibrary": "To library",
+      "add": "Add",
+      "unit": "Unit",
+      "unitPiece": "piece",
+      "unitM": "m",
+      "unitM2": "m²",
+      "unitM3": "m³",
+      "unitL": "L",
+      "unitHour": "hour",
+      "unitSet": "set",
+      "unitKg": "kg"
+    },
+    "expenses": {
+      "duplicateBanner": {
+        "possible": "Possible duplicate",
+        "alreadyExists": "This document already exists",
+        "docDeleted": "That document no longer exists",
+        "open": "Open",
+        "keep": "Not a duplicate — keep",
+        "confirmDelete": "Delete this document? The other will remain.",
+        "delete": "Delete this document",
+        "scanMatchReason": "Same {fields} as an existing document. It has been saved and flagged — in To validate you choose: keep or delete."
+      },
+      "validation": {
+        "missing": "Missing: {fields}",
+        "fillBeforeApprove": "Fill in first to approve",
+        "approve": "Approve",
+        "fields": {
+          "duplicateOf": "resolve duplicate",
+          "title": "merchant",
+          "date": "date",
+          "amount": "amount",
+          "supplier": "supplier",
+          "invoiceDate": "invoice date",
+          "totalIncVat": "total",
+          "totalVat": "VAT mismatch"
+        }
+      },
+      "import": {
+        "toValidate": "To validate",
+        "toQuotes": "To quotes",
+        "verdictReviewDuplicate": "To review — possible duplicate",
+        "verdictReadyToApprove": "Ready to approve",
+        "verdictToReview": "To review",
+        "verdictManual": "To review — enter manually",
+        "verdictScanFailed": "To review — scan failed",
+        "verdictDone": "Done",
+        "openInValidation": "Open in To validate",
+        "tabInvoices": "Purchase invoices",
+        "tabTickets": "Tickets",
+        "tabQuotes": "Quotes"
+      },
+      "tickets": {
+        "receiptSaveFailed": "Receipt could not be saved: {reason}"
+      }
+    },
+    "purchaseDocument": {
+      "merchant": "Merchant",
+      "date": "Date",
+      "amount": "Amount",
+      "quoteDate": "Quote date",
+      "validUntil": "Valid until",
+      "quote": "Quote",
+      "notes": "Notes",
+      "details": "Details",
+      "ticket": "Ticket",
+      "invoiceDetails": "Invoice Details",
+      "supplier": "Supplier",
+      "supplierVat": "Supplier VAT number",
+      "contact": "Contact person",
+      "ogm": "OGM / Structured communication",
+      "subject": "Description / Subject",
+      "ourRef": "Our reference",
+      "iban": "IBAN",
+      "bic": "BIC",
+      "reverseCharge": "VAT reverse charge / Co-contractor",
+      "invoiceDate": "Invoice date",
+      "dueDate": "Due date",
+      "deliveryDate": "Delivery date",
+      "totalIncVat": "Total incl. VAT",
+      "paymentAndNotes": "Payment & Notes"
+    },
+    "lineVatRate": {
+      "ariaLabel": "Line VAT rate",
+      "reverseCharge": "reverse charge",
+      "doc": "doc"
+    },
+    "vatBreakdown": {
+      "row": "VAT {rate}% on {base}"
+    },
+    "documentDiscount": {
+      "lineDiscounts": "Discount on lines",
+      "totalDiscount": "Discount on total"
+    },
+    "clientDiscount": {
+      "discount": "Discount",
+      "discountType": "Discount type"
+    },
+    "financialRow": {
+      "vat": "VAT",
+      "discount": "Discount"
+    },
+    "sync": {
+      "stuckSaveFailed": "A change to \"{title}\" could not be saved — the version on the server is shown."
     }
   },
   "Footer": {

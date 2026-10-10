@@ -2,6 +2,7 @@
 import { lineVariantDelta, variantDelta } from '@/lib/records/variant-price';
 import { pricingValue, type PricingRole, type PropDef } from '@/lib/article-pricing';
 import React, { useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Block, BlockType, VariantsConfig } from '@/components/admin/database/types';
 import { libraryComponents } from '@/lib/records/library-components';
 import { useDatabaseStore } from '@/components/admin/database/store';
@@ -78,6 +79,7 @@ const RichTextInput = ({ value, onChange, onSearch, placeholder, className, onBl
 };
 
 export default function FinancialRowRenderer({ block, databaseId, onUpdate, childrenTotal, hasLibraryAccess = true, language = 'nl', vatRegime = '21' }: FinancialRowRendererProps) {
+    const tr = useTranslations('Admin.financialRow');
     const getDatabase = useDatabaseStore(state => state.getDatabase);
     const [isSaving, setIsSaving] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
@@ -753,13 +755,13 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
 
                     {/* DOC-LINES-2 · the line's VAT rate — empty = the document's */}
                     <div className="flex flex-row items-center justify-between w-full @[600px]:flex-col @[600px]:gap-0.5 @[600px]:w-[80px] shrink-0 self-start mt-0.5 relative border-b border-neutral-200/60 dark:border-neutral-850 @[600px]:border-b-0 py-1.5 @[600px]:py-0">
-                        <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-left @[600px]:text-right @[600px]:pr-4 cursor-default">BTW</label>
+                        <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-left @[600px]:text-right @[600px]:pr-4 cursor-default">{tr('vat')}</label>
                         <LineVatRateSelect className="w-24 @[600px]:w-full pr-1" value={block.vatRateOverride} vatRegime={vatRegime} onChange={r => onUpdate({ vatRateOverride: r ?? undefined })} />
                     </div>
 
                     {/* DOC-LINES-1 · the customer discount on this line — a percentage or a fixed amount */}
                     <div className="flex flex-row items-center justify-between w-full @[600px]:flex-col @[600px]:gap-0.5 @[600px]:w-[110px] shrink-0 self-start mt-0.5 relative border-b border-neutral-200/60 dark:border-neutral-850 @[600px]:border-b-0 py-1.5 @[600px]:py-0">
-                        <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-left @[600px]:text-right @[600px]:pr-4 cursor-default">Korting</label>
+                        <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-left @[600px]:text-right @[600px]:pr-4 cursor-default">{tr('discount')}</label>
                         <ClientDiscountInput className="w-28 @[600px]:w-full pr-1" value={block.clientDiscount} onChange={d => onUpdate({ clientDiscount: d })} />
                     </div>
 

@@ -692,6 +692,128 @@
       "revise": "Réviser — nouvelle version",
       "revised": "Nouvelle version {title} créée (brouillon)",
       "reviseFailed": "La révision a échoué"
+    },
+    "lineSearch": {
+      "dialogLabel": "Rechercher dans les lignes",
+      "searchPlaceholder": "Rechercher un matériel, code article ou fournisseur — dans les factures d'achat et devis",
+      "close": "Fermer",
+      "hint": "Tapez un ou plusieurs mots — chaque ligne contenant tous ces mots apparaîtra, la plus récente en premier.",
+      "noHits": "Aucune ligne trouvée.",
+      "searchFailed": "Échec de la recherche",
+      "libraryNotEntitled": "La bibliothèque n'est pas incluse dans votre abonnement",
+      "addToLibraryFailed": "Échec de l'ajout à la bibliothèque",
+      "itemAdded": "Article ajouté à la bibliothèque",
+      "priceUpdated": "Prix de l'article existant mis à jour (ancien prix conservé)",
+      "quote": "Devis",
+      "invoice": "Facture",
+      "gross": "brut",
+      "net": "net",
+      "open": "Ouvrir",
+      "inLibrary": "Dans la bibliothèque",
+      "toLibrary": "Vers la bibliothèque",
+      "add": "Ajouter",
+      "unit": "Unité",
+      "unitPiece": "pièce",
+      "unitM": "m",
+      "unitM2": "m²",
+      "unitM3": "m³",
+      "unitL": "L",
+      "unitHour": "heure",
+      "unitSet": "ensemble",
+      "unitKg": "kg"
+    },
+    "expenses": {
+      "duplicateBanner": {
+        "possible": "Doublon possible",
+        "alreadyExists": "Ce document existe déjà",
+        "docDeleted": "Ce document n'existe plus",
+        "open": "Ouvrir",
+        "keep": "Pas un doublon — conserver",
+        "confirmDelete": "Supprimer ce document ? L'autre restera.",
+        "delete": "Supprimer ce document",
+        "scanMatchReason": "Mêmes {fields} qu'un document existant. Il est enregistré et signalé — dans À valider vous choisissez : conserver ou supprimer."
+      },
+      "validation": {
+        "missing": "Manquant : {fields}",
+        "fillBeforeApprove": "Remplir d'abord pour approuver",
+        "approve": "Approuver",
+        "fields": {
+          "duplicateOf": "traiter le doublon",
+          "title": "commerçant",
+          "date": "date",
+          "amount": "montant",
+          "supplier": "fournisseur",
+          "invoiceDate": "date de facture",
+          "totalIncVat": "total",
+          "totalVat": "TVA incorrecte"
+        }
+      },
+      "import": {
+        "toValidate": "Vers À valider",
+        "toQuotes": "Vers devis",
+        "verdictReviewDuplicate": "À vérifier — doublon possible",
+        "verdictReadyToApprove": "Prêt à approuver",
+        "verdictToReview": "À vérifier",
+        "verdictManual": "À vérifier — saisie manuelle",
+        "verdictScanFailed": "À vérifier — échec de lecture",
+        "verdictDone": "Terminé",
+        "openInValidation": "Ouvrir dans À valider",
+        "tabInvoices": "Factures d'achat",
+        "tabTickets": "Tickets",
+        "tabQuotes": "Devis"
+      },
+      "tickets": {
+        "receiptSaveFailed": "Le reçu n'a pas pu être enregistré : {reason}"
+      }
+    },
+    "purchaseDocument": {
+      "merchant": "Commerçant",
+      "date": "Date",
+      "amount": "Montant",
+      "quoteDate": "Date du devis",
+      "validUntil": "Valable jusqu'au",
+      "quote": "Devis",
+      "notes": "Remarques",
+      "details": "Détails",
+      "ticket": "Ticket",
+      "invoiceDetails": "Détails de la facture",
+      "supplier": "Fournisseur",
+      "supplierVat": "N° TVA fournisseur",
+      "contact": "Personne de contact",
+      "ogm": "VCS / Communication structurée",
+      "subject": "Description / Concerne",
+      "ourRef": "Notre référence",
+      "iban": "IBAN",
+      "bic": "BIC",
+      "reverseCharge": "Autoliquidation TVA / Cocontractant",
+      "invoiceDate": "Date de facture",
+      "dueDate": "Date d'échéance",
+      "deliveryDate": "Date de livraison",
+      "totalIncVat": "Total TTC",
+      "paymentAndNotes": "Paiement & Remarques"
+    },
+    "lineVatRate": {
+      "ariaLabel": "Taux de TVA de la ligne",
+      "reverseCharge": "autoliquidation",
+      "doc": "doc"
+    },
+    "vatBreakdown": {
+      "row": "TVA {rate}% sur {base}"
+    },
+    "documentDiscount": {
+      "lineDiscounts": "Remise sur les lignes",
+      "totalDiscount": "Remise sur le total"
+    },
+    "clientDiscount": {
+      "discount": "Remise",
+      "discountType": "Type de remise"
+    },
+    "financialRow": {
+      "vat": "TVA",
+      "discount": "Remise"
+    },
+    "sync": {
+      "stuckSaveFailed": "Une modification apportée à « {title} » n'a pas pu être enregistrée — la version du serveur est affichée."
     }
   },
   "Footer": {

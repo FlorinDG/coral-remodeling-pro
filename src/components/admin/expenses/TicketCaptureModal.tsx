@@ -66,6 +66,7 @@ const NO_PAGES: Page[] = [];
 
 export default function TicketCaptureModal({ onClose: closeModal, targetDatabaseId = 'db-tickets' }: TicketCaptureModalProps) {
     const tPlaceholders = useTranslations('Admin.placeholders');
+    const t = useTranslations('Admin');
     const { data: session } = useSession();
     const planType = (session?.user as any)?.planType ?? 'FREE';
     const isFree = planType === 'FREE';
@@ -349,12 +350,12 @@ export default function TicketCaptureModal({ onClose: closeModal, targetDatabase
                     receiptUrl = `/api/files/${encodeURIComponent(uploadRes.key)}`;
                 } else {
                     // MOBILE-SCAN-1: never a ticket without its receipt — the save stops, the person sees why
-                    setSaveError(`Bonnetje kon niet worden opgeslagen: ${uploadRes.error || 'onbekende fout'}`);
+                    setSaveError(t('expenses.tickets.receiptSaveFailed', { reason: uploadRes.error || 'onbekende fout' }));
                     setStep('review');
                     return;
                 }
             } catch (err) {
-                setSaveError(`Bonnetje kon niet worden opgeslagen: ${(err as Error)?.message || 'netwerkfout'}`);
+                setSaveError(t('expenses.tickets.receiptSaveFailed', { reason: (err as Error)?.message || 'netwerkfout' }));
                 setStep('review');
                 return;
             }
@@ -693,11 +694,10 @@ export default function TicketCaptureModal({ onClose: closeModal, targetDatabase
                                         <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
                                         <div>
                                             <p className="text-sm font-semibold text-amber-800 dark:text-amber-500">
-                                                {scanResult?.dedupResult?.status === 'duplicate' ? 'Dit document bestaat al' : 'Mogelijk duplicaat'}
+                                                {scanResult?.dedupResult?.status === 'duplicate' ? t('expenses.duplicateBanner.alreadyExists') : t('expenses.duplicateBanner.possible')}
                                             </p>
                                             <p className="text-xs text-amber-700 dark:text-amber-400/80 mt-0.5">
-                                                Zelfde {scanResult?.dedupResult?.matchedFields?.join(', ')} als een bestaand document. Het is opgeslagen
-                                                en gemarkeerd — in Te valideren kies je: behouden of verwijderen.
+                                                {t('expenses.duplicateBanner.scanMatchReason', { fields: scanResult?.dedupResult?.matchedFields?.join(', ') || '' })}
                                             </p>
                                         </div>
                                     </div>

@@ -45,6 +45,12 @@ const REFUSAL_TEXT: Record<string, string> = {
     last_view: 'de laatste weergave kan niet verwijderd worden',
     invalid: 'ongeldige wijziging',
 };
+const STUCK_SAVE_MESSAGES: Record<string, string> = {
+    nl: 'Een wijziging aan "{title}" kon niet bewaard worden — de versie op de server wordt getoond.',
+    en: 'A change to "{title}" could not be saved — the version on the server is shown.',
+    fr: "Une modification apportée à « {title} » n'a pas pu être enregistrée — la version du serveur est affichée.",
+    ro: 'O modificare adusă la „{title}” nu a putut fi salvată — este afișată versiunea de pe server.',
+};
 const syncDb = (prev: Database | undefined, next: Database | undefined) => {
     if (!prev || !next || prev.id !== next.id) return;
     const ops = diffDefinition(definitionOf(prev), definitionOf(next));
@@ -601,7 +607,10 @@ export const useDatabaseStore = create<DatabaseState>()(
                                     pages: d.pages.map((p: Page) => p.id !== entry.pageId ? p : { ...p, dirtyBase: undefined, dirtyBaseBlocks: false }),
                                 }),
                             }));
-                            toast.error(`Een wijziging aan "${stuckPage ? extractPageTitle(stuckPage.properties) : entry.pageId}" kon niet bewaard worden — de versie op de server wordt getoond.`, { duration: 10000 });
+                            const syncLang = typeof document !== 'undefined' ? (document.documentElement.lang?.slice(0, 2) || 'nl') : 'nl';
+                            const syncTemplate = STUCK_SAVE_MESSAGES[syncLang] || STUCK_SAVE_MESSAGES.nl;
+                            const syncTitle = stuckPage ? extractPageTitle(stuckPage.properties) : entry.pageId;
+                            toast.error(syncTemplate.replace('{title}', syncTitle), { duration: 10000 });
                             void get().reloadDatabasePages(entry.databaseId).catch(() => {});
                             continue;
                         }

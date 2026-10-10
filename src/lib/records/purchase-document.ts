@@ -37,7 +37,12 @@ const QUOTE_EDITOR: ReadonlySet<string> = new Set([
     'supplierName', 'supplierVat', 'contact', 'betreft', 'ourRef', 'invoiceDate', 'dueDate', 'quoteStatus',
     'totalExVat', 'totalVat', 'totalIncVat', 'lines', 'project', 'notes',
 ]);
-const QUOTE_LABEL: Readonly<Record<string, string>> = { invoiceDate: 'Offertedatum', dueDate: 'Geldig tot', details: 'Offerte', paymentNotes: 'Opmerkingen' };
+const QUOTE_LABEL: Readonly<Record<string, string>> = {
+    invoiceDate: 'Admin.purchaseDocument.quoteDate',
+    dueDate: 'Admin.purchaseDocument.validUntil',
+    details: 'Admin.purchaseDocument.quote',
+    paymentNotes: 'Admin.purchaseDocument.notes',
+};
 
 /** A record as the editor reads it. Purchase invoices: unchanged. Tickets: their facts under the editor's names. */
 export function purchaseView(role: string | null | undefined, props: Props): Props {
@@ -81,7 +86,11 @@ export function editorShows(role: string | null | undefined, field: string): boo
 }
 
 /** The label a field carries for this kind of document (a ticket's "supplier" is its merchant). */
-const TICKET_LABEL: Readonly<Record<string, string>> = { supplierName: 'Handelaar', invoiceDate: 'Datum', totalIncVat: 'Bedrag' };
+const TICKET_LABEL: Readonly<Record<string, string>> = {
+    supplierName: 'Admin.purchaseDocument.merchant',
+    invoiceDate: 'Admin.purchaseDocument.date',
+    totalIncVat: 'Admin.purchaseDocument.amount',
+};
 
 export function editorLabel(role: string | null | undefined, field: string, invoiceLabel: string): string {
     if (role === 'purchase-quotes') return QUOTE_LABEL[field] ?? invoiceLabel;

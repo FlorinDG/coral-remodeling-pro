@@ -693,6 +693,128 @@
       "revise": "Herzien — nieuwe versie",
       "revised": "Nieuwe versie {title} aangemaakt (concept)",
       "reviseFailed": "Herzien mislukt"
+    },
+    "lineSearch": {
+      "dialogLabel": "Zoeken in regels",
+      "searchPlaceholder": "Zoek een materiaal, artikelcode of leverancier — in aankoopfacturen en offertes",
+      "close": "Sluiten",
+      "hint": "Typ één of meer woorden — elke regel die ze allemaal bevat, verschijnt, de nieuwste eerst.",
+      "noHits": "Geen regels gevonden.",
+      "searchFailed": "Zoeken mislukt",
+      "libraryNotEntitled": "De bibliotheek hoort niet bij je abonnement",
+      "addToLibraryFailed": "Toevoegen aan de bibliotheek mislukt",
+      "itemAdded": "Artikel toegevoegd aan de bibliotheek",
+      "priceUpdated": "Prijs van het bestaande artikel bijgewerkt (oude prijs bewaard)",
+      "quote": "Offerte",
+      "invoice": "Factuur",
+      "gross": "bruto",
+      "net": "netto",
+      "open": "Openen",
+      "inLibrary": "In bibliotheek",
+      "toLibrary": "Naar bibliotheek",
+      "add": "Toevoegen",
+      "unit": "Eenheid",
+      "unitPiece": "stuk",
+      "unitM": "m",
+      "unitM2": "m²",
+      "unitM3": "m³",
+      "unitL": "L",
+      "unitHour": "uur",
+      "unitSet": "set",
+      "unitKg": "kg"
+    },
+    "expenses": {
+      "duplicateBanner": {
+        "possible": "Mogelijk duplicaat",
+        "alreadyExists": "Dit document bestaat al",
+        "docDeleted": "Dat document bestaat niet meer",
+        "open": "Openen",
+        "keep": "Geen duplicaat — behouden",
+        "confirmDelete": "Dit document verwijderen? Het andere blijft.",
+        "delete": "Dit document verwijderen",
+        "scanMatchReason": "Zelfde {fields} als een bestaand document. Het is opgeslagen en gemarkeerd — in Te valideren kies je: behouden of verwijderen."
+      },
+      "validation": {
+        "missing": "Ontbreekt: {fields}",
+        "fillBeforeApprove": "Vul eerst aan om goed te keuren",
+        "approve": "Goedkeuren",
+        "fields": {
+          "duplicateOf": "duplicaat afhandelen",
+          "title": "handelaar",
+          "date": "datum",
+          "amount": "bedrag",
+          "supplier": "leverancier",
+          "invoiceDate": "factuurdatum",
+          "totalIncVat": "totaal",
+          "totalVat": "btw klopt niet"
+        }
+      },
+      "import": {
+        "toValidate": "Naar Te valideren",
+        "toQuotes": "Naar offertes",
+        "verdictReviewDuplicate": "Na te kijken — mogelijk duplicaat",
+        "verdictReadyToApprove": "Klaar om goed te keuren",
+        "verdictToReview": "Na te kijken",
+        "verdictManual": "Na te kijken — handmatig",
+        "verdictScanFailed": "Na te kijken — lezen mislukt",
+        "verdictDone": "Klaar",
+        "openInValidation": "Openen in Te valideren",
+        "tabInvoices": "Aankoopfacturen",
+        "tabTickets": "Tickets",
+        "tabQuotes": "Offertes"
+      },
+      "tickets": {
+        "receiptSaveFailed": "Bonnetje kon niet worden opgeslagen: {reason}"
+      }
+    },
+    "purchaseDocument": {
+      "merchant": "Handelaar",
+      "date": "Datum",
+      "amount": "Bedrag",
+      "quoteDate": "Offertedatum",
+      "validUntil": "Geldig tot",
+      "quote": "Offerte",
+      "notes": "Opmerkingen",
+      "details": "Details",
+      "ticket": "Ticket",
+      "invoiceDetails": "Factuur Details",
+      "supplier": "Leverancier",
+      "supplierVat": "BTW-nummer leverancier",
+      "contact": "Contactpersoon",
+      "ogm": "OGM / Gestructureerde mededeling",
+      "subject": "Omschrijving / Betreft",
+      "ourRef": "Onze Referentie",
+      "iban": "IBAN",
+      "bic": "BIC",
+      "reverseCharge": "Btw Verlegd / Medecontractant",
+      "invoiceDate": "Factuurdatum",
+      "dueDate": "Vervaldatum",
+      "deliveryDate": "Leveringsdatum",
+      "totalIncVat": "Totaal incl. btw",
+      "paymentAndNotes": "Betaling & Opmerkingen"
+    },
+    "lineVatRate": {
+      "ariaLabel": "BTW-tarief van de lijn",
+      "reverseCharge": "verlegd",
+      "doc": "doc"
+    },
+    "vatBreakdown": {
+      "row": "BTW {rate}% op {base}"
+    },
+    "documentDiscount": {
+      "lineDiscounts": "Korting op regels",
+      "totalDiscount": "Korting op totaal"
+    },
+    "clientDiscount": {
+      "discount": "Korting",
+      "discountType": "Soort korting"
+    },
+    "financialRow": {
+      "vat": "BTW",
+      "discount": "Korting"
+    },
+    "sync": {
+      "stuckSaveFailed": "Een wijziging aan \"{title}\" kon niet bewaard worden — de versie op de server wordt getoond."
     }
   },
   "Footer": {

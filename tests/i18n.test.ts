@@ -196,3 +196,41 @@ describe('i18n — Hr.* throw proof guard', () => {
     });
 });
 
+describe('i18n — Admin.* throw proof guard (LOC-NEW-1)', () => {
+    test('dropping an Admin.* key triggers failure in key parity check', () => {
+        const enData = loadLocale('en');
+        const tamperedEn = JSON.parse(JSON.stringify(enData)) as Record<string, any>;
+        assert.ok(tamperedEn.Admin?.lineSearch?.searchPlaceholder, 'Admin.lineSearch.searchPlaceholder should exist in en');
+        delete tamperedEn.Admin.lineSearch.searchPlaceholder;
+
+        const ref = new Set(leafKeys(tamperedEn));
+        const nlKeys = new Set(leafKeys(loadLocale('nl')));
+        const missing = [...nlKeys].filter(k => !ref.has(k));
+        assert.ok(
+            missing.includes('Admin.lineSearch.searchPlaceholder'),
+            'Parity check must detect when an Admin key is missing from a locale'
+        );
+    });
+
+    test('dropping an Admin.* key triggers failure in source reference check', () => {
+        const ref = new Set(leafKeys(loadLocale(REFERENCE_LOCALE)));
+        // Simulate dropping an Admin key that is referenced in source (Admin.lineSearch.searchPlaceholder)
+        ref.delete('Admin.lineSearch.searchPlaceholder');
+
+        const files = walk(SRC);
+        const missingKeys: string[] = [];
+        for (const f of files) {
+            for (const key of referencedKeys(f)) {
+                if (!ref.has(key) && key === 'Admin.lineSearch.searchPlaceholder') {
+                    missingKeys.push(key);
+                }
+            }
+        }
+        assert.ok(
+            missingKeys.length > 0,
+            'Missing Admin.lineSearch.searchPlaceholder referenced in source must trigger failure'
+        );
+    });
+});
+
+

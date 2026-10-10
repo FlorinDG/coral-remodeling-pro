@@ -95,10 +95,15 @@ function getModel(db: TenantScopedClient, entity: string) {
     return (db as any)[modelName];
 }
 
+/** An optional reference sent as '' means "none". Stored as '' it is a dangling id: since the ClockEntry → shift
+ *  foreign key (20260926211500) it is refused by the database, and a clock-in carrying it would fail. */
+const OPTIONAL_REFERENCES = ['shiftId', 'projectId', 'contactPageId'];
+
 function sanitize(data: Record<string, unknown>) {
     const clean: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(data)) {
-        if (!PROTECTED_FIELDS.includes(k)) clean[k] = v;
+        if (PROTECTED_FIELDS.includes(k)) continue;
+        clean[k] = OPTIONAL_REFERENCES.includes(k) && typeof v === 'string' && v.trim() === '' ? null : v;
     }
     return clean;
 }

@@ -78,3 +78,18 @@ describe('HR-ENTITY-SERAPH · the route\'s query shapes through the seraph', () 
         assert.equal(JSON.stringify(args.where).includes(T), true);
     });
 });
+
+describe('HR · an empty reference is "none", never a dangling id', () => {
+    const ROUTE_SRC = readFileSync('src/app/api/hr/[entity]/route.ts', 'utf8');
+    test('sanitize turns \'\' in shiftId / projectId / contactPageId into null (POST and PATCH both use it)', () => {
+        const start = ROUTE_SRC.indexOf('const OPTIONAL_REFERENCES');
+        const end = ROUTE_SRC.indexOf('\n}\n', ROUTE_SRC.indexOf('function sanitize(')) + 3;
+        // Run the route's own sanitize (its source, not a copy written here).
+        const src = ROUTE_SRC.slice(start, end).replace(/: Record<string, unknown>/g, '').replace(/const clean = \{\};/, 'const clean = {};');
+        const PROTECTED_FIELDS = ['id', 'tenantId', 'tenant', 'createdAt', 'updatedAt', 'createdBy'];
+        const sanitize = new Function('PROTECTED_FIELDS', `${src}; return sanitize;`)(PROTECTED_FIELDS);
+        assert.deepEqual(sanitize({ shiftId: '', projectId: '  ', contactPageId: '', notes: '' , tenantId: 'x' }), { shiftId: null, projectId: null, contactPageId: null, notes: '' });
+        assert.deepEqual(sanitize({ shiftId: 's1' }), { shiftId: 's1' });
+        assert.equal((ROUTE_SRC.match(/const data = sanitize\(body\);/g) ?? []).length, 2);
+    });
+});

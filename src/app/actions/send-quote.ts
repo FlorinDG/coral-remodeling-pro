@@ -1,6 +1,7 @@
 "use server";
 
 import { Resend } from 'resend';
+import { isTenantFileKey } from '@/lib/records/file-keys';
 import QuotationEmail from '@/emails/QuotationEmail';
 import { t } from '@/lib/document-i18n';
 import React from 'react';
@@ -76,7 +77,7 @@ export async function sendQuotationToClient(
             const { storage } = await import('@/lib/storage');
 
             for (const key of attachmentKeys) {
-                if (!key.startsWith(`t_${tenantId}/`)) {
+                if (!isTenantFileKey(key, tenantId)) {
                     throw new Error(`Unauthorized attachment key: ${key}`);
                 }
                 try {

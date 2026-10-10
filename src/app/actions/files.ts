@@ -5,6 +5,7 @@ import { storage, DocumentArchivedError, StorageKeyConflictError } from '@/lib/s
 import { v4 as uuidv4 } from 'uuid';
 import { isWorkforceRole } from '@/lib/roles';
 import { crewFileRefusal, CREW_UPLOAD_RECORD_TYPES } from '@/lib/crew-file-policy';
+import { tenantFilePrefix, recordFilePrefix, recordFileKey, isTenantFileKey } from '@/lib/records/file-keys';
 
 const STORAGE_ERROR_FALLBACKS: Record<string, Record<string, string>> = {
     nl: {
@@ -69,7 +70,7 @@ export async function uploadFileAction(formData: FormData, recordType: string, r
     const storedName = CREW_UPLOAD_RECORD_TYPES.has(recordType)
         ? `${Date.now().toString(36)}-${uuidv4().slice(0, 8)}-${cleanFilename}`
         : cleanFilename;
-    const key = `t_${tenantId}/${recordType}/${finalRecordId}/${storedName}`;
+    const key = recordFileKey(tenantId, recordType, finalRecordId, storedName);
 
     // Refuse writes to archive paths (DOC-ARCH-1 / BLOB-7)
     if (recordType === 'document' || recordType === 'documents' || key.includes('/documents/')) {
@@ -110,9 +111,7 @@ export async function listRecordFiles(recordType: string, recordId?: string) {
     }
 
     // Key prefix scheme: t_{tenantId}/{recordType}/{recordId}/
-    const prefix = recordId 
-        ? `t_${tenantId}/${recordType}/${recordId}/`
-        : `t_${tenantId}/${recordType}/`;
+    const prefix = recordFilePrefix(tenantId, recordType, recordId);
 
     try {
         const list = await storage.list(prefix);
@@ -144,8 +143,7 @@ export async function deleteFileAction(key: string) {
     }
 
     // Security: Assert key starts with tenant prefix
-    const requiredPrefix = `t_${tenantId}/`;
-    if (!key.startsWith(requiredPrefix)) {
+    if (!isTenantFileKey(key, tenantId)) {
         throw new Error('Forbidden: Access denied');
     }
 
@@ -176,7 +174,7 @@ export async function listAllTenantFiles() {
         throw new Error(`Forbidden: ${crewFileRefusal('listAll')}`);
     }
 
-    const prefix = `t_${tenantId}/`;
+    const prefix = tenantFilePrefix(tenantId);
 
     try {
         const list = await storage.list(prefix);

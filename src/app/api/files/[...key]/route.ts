@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { isTenantFileKey } from '@/lib/records/file-keys';
 import { auth } from '@/auth';
 import { getBlobStream, decodeStorageKey } from '@/lib/storage';
 
@@ -30,9 +31,7 @@ export async function GET(
     
     // (b) asserts the requested key startsWith t_{sessionTenantId}/ — reject otherwise
     // This is the identity-check that replaces Drive's isFolderOwnedByTenant parent-walk; one prefix assert, fail-closed
-    const requiredPrefix = `t_${tenantId}/`;
-    
-    if (!key.startsWith(requiredPrefix)) {
+    if (!isTenantFileKey(key, tenantId)) {
         return NextResponse.json({ error: 'Forbidden: You do not have access to this file' }, { status: 403 });
     }
 

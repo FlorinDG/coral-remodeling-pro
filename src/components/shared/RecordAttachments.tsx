@@ -2,8 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Paperclip, Upload, Loader2, FileText, Trash2, ExternalLink } from 'lucide-react';
-import { listRecordFiles } from '@/app/actions/list-record-files';
-import { uploadFileAction, deleteFileAction } from '@/app/actions/files';
+import { uploadFileAction, deleteFileAction, listRecordFiles } from '@/app/actions/files';
 
 interface RecordAttachmentsProps {
     recordType: string;
@@ -20,10 +19,9 @@ export function RecordAttachments({ recordType, recordId }: RecordAttachmentsPro
     const fetchFiles = useCallback(async () => {
         setIsLoading(true);
         try {
-            const res = await listRecordFiles(recordType, recordId);
-            if (res.success && res.files) {
-                setFiles(res.files);
-            }
+            // FILES-DUP-1: the one gated file door (actions/files — tenant prefix + crew fence).
+            const list = await listRecordFiles(recordType, recordId);
+            setFiles(list.map(f => ({ key: f.id, filename: f.name, size: f.size, url: f.url })));
         } catch (error) {
             console.error('Failed to fetch files', error);
         } finally {

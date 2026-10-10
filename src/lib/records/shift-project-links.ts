@@ -8,10 +8,11 @@
  * project, a task of the new project, and a file uploaded to the shift itself stay. Pure.
  */
 import { COMMENT_MAX } from './comments';
+import { recordFilePrefix } from './file-keys';
 
 /** The storage prefix of a project's files (the scheme of app/actions/files: t_{tenantId}/{recordType}/{recordId}/). */
 export function projectFilePrefix(tenantId: string, projectId: string): string {
-    return `t_${tenantId}/project/${projectId}/`;
+    return recordFilePrefix(tenantId, 'project', projectId);
 }
 
 /** Is this url a file of that project's store? Read from the url's path, decoded; never a guess on the file name. */

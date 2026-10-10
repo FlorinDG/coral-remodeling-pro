@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { X, Paperclip, Send, Loader2, FileText, CheckSquare, Square, Plus, Upload, HardDrive } from 'lucide-react';
 import { uploadFileAction } from '@/app/actions/files';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
-import { listRecordFiles } from '@/app/actions/list-record-files';
+import { listRecordFiles } from '@/app/actions/files';
 
 interface QuoteSendModalProps {
     isOpen: boolean;
@@ -90,18 +90,13 @@ export function QuoteSendModal({
             
             // Load project files
             if (projectId) {
-                const projRes = await listRecordFiles('project', projectId);
-                if (projRes.success && projRes.files) {
-                    allFiles.push(...projRes.files);
-                }
+                // FILES-DUP-1: the one gated file door (actions/files).
+                allFiles.push(...(await listRecordFiles('project', projectId)).map(f => ({ key: f.id, filename: f.name, size: f.size })));
             }
 
             // Load document specific files (if any)
             if (documentId) {
-                const docRes = await listRecordFiles(documentType, documentId);
-                if (docRes.success && docRes.files) {
-                    allFiles.push(...docRes.files);
-                }
+                allFiles.push(...(await listRecordFiles(documentType, documentId)).map(f => ({ key: f.id, filename: f.name, size: f.size })));
             }
 
             setAvailableFiles(allFiles);

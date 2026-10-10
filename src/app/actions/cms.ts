@@ -3,6 +3,21 @@
 import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
+import { isWorkforceRole } from "@/lib/roles";
+
+/**
+ * CMS-SCOPE-1 (Planner, unattended 2026-10-10): updateService, updateProject, deleteProject and deleteService had NO
+ * session check and wrote by id — anyone could change or delete any tenant's website content. Every write now names
+ * the session's tenant; the workforce role is refused (pd.md 4y).
+ */
+async function cmsTenant(): Promise<string> {
+    const session = await auth();
+    const tenantId = session?.user?.tenantId;
+    if (!tenantId || isWorkforceRole((session?.user as { role?: string } | undefined)?.role)) {
+        throw new Error("Unauthorized: Workspace context missing.");
+    }
+    return tenantId;
+}
 
 interface ContentUpdate {
     en: string;
@@ -48,10 +63,11 @@ export async function updateSiteContent(formData: SiteContentData) {
 }
 
 export async function updateService(id: string, data: Partial<import("@prisma/client").CMS_Service>) {
-    await prisma.cMS_Service.update({
-        where: { id },
-        data: data
-    });
+    const tenantId = await cmsTenant();
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { id: _id, tenantId: _tenant, ...fields } = data;   // a row never changes its id or its tenant
+    const res = await prisma.cMS_Service.updateMany({ where: { id, tenantId }, data: fields });
+    if (res.count === 0) throw new Error("Not found");
     revalidatePath("/[locale]", "layout");
     return { success: true };
 }
@@ -114,6 +130,9 @@ export async function createProject(data: ProjectData) {
 }
 
 export async function updateProject(id: string, data: ProjectData) {
+    const tenantId = await cmsTenant();
+    const own = await prisma.cMS_Project.findFirst({ where: { id, tenantId }, select: { id: true } });
+    if (!own) throw new Error("Not found");
     // Delete existing images and recreate (simpler for now)
     await prisma.$transaction([
         prisma.cMS_ProjectImage.deleteMany({ where: { projectId: id } }),
@@ -148,9 +167,9 @@ export async function updateProject(id: string, data: ProjectData) {
 }
 
 export async function deleteProject(id: string) {
-    await prisma.cMS_Project.delete({
-        where: { id }
-    });
+    const tenantId = await cmsTenant();
+    const res = await prisma.cMS_Project.deleteMany({ where: { id, tenantId } });
+    if (res.count === 0) throw new Error("Not found");
     revalidatePath("/[locale]", "layout");
     return { success: true };
 }
@@ -192,9 +211,9 @@ export async function createService(data: any) {
 }
 
 export async function deleteService(id: string) {
-    await prisma.cMS_Service.delete({
-        where: { id }
-    });
+    const tenantId = await cmsTenant();
+    const res = await prisma.cMS_Service.deleteMany({ where: { id, tenantId } });
+    if (res.count === 0) throw new Error("Not found");
     revalidatePath("/[locale]/admin/services");
     return { success: true };
 }

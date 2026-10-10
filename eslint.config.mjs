@@ -113,7 +113,6 @@ const eslintConfig = defineConfig([
       "src/app/*locale*/admin/content/page.tsx",
       "src/app/*locale*/admin/dashboard/page.tsx",
       "src/app/*locale*/admin/layout.tsx",
-      "src/app/*locale*/admin/portals/*id*/page.tsx",
       "src/app/*locale*/admin/projects/*id*/page.tsx",
       "src/app/*locale*/admin/projects/page.tsx",
       "src/app/*locale*/admin/services/*id*/page.tsx",

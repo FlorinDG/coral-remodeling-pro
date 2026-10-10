@@ -1,4 +1,6 @@
-import prisma from '@/lib/prisma';
+import { auth } from '@/auth';
+import { scopeFromSession } from '@/lib/data/scope';
+import { isWorkforceRole } from '@/lib/roles';
 import AdminHeader from '@/components/admin/AdminHeader';
 import { notFound } from 'next/navigation';
 import { Link } from '@/i18n/routing';
@@ -16,7 +18,11 @@ export default async function PortalDetailPage({ params }: { params: Promise<{ i
     const { id, locale } = await params;
     const t = await getTranslations('Admin.portals');
 
-    const portal = await prisma.clientPortal.findUnique({
+    // PORTAL-SCOPE-1: on the session's scoped client — another tenant's portal id finds nothing (was: any id, any tenant).
+    const session = await auth();
+    if (!session?.user?.tenantId || isWorkforceRole((session.user as { role?: string }).role)) notFound();
+    const db = await scopeFromSession();
+    const portal = await db.clientPortal.findFirst({
         where: { id },
         include: {
             updates: { orderBy: { createdAt: 'desc' } },

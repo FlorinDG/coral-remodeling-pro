@@ -415,6 +415,16 @@ function mergePersisted(persistedState: any, currentState: DatabaseState): Datab
  *  its own identity or discards it. Never shown to anyone else. */
 let deferredCopy: any = null;
 
+/** CACHE-OWNER-1 (Florin 2026-10-10: "if another, wipe cache before any data is fetched, silently"): the browser copy
+ *  of another identity is removed from storage, not just hidden. Unsynced changes in it belonged to that identity;
+ *  there is no manual save to warn about, so they go with it. */
+function wipeBrowserCopy() {
+    deferredCopy = null;
+    pagesReadThisSession.clear();
+    serverVersionSeen.clear();
+    setTimeout(() => { void useDatabaseStore.persist.clearStorage(); }, 0);   // after the hydration in progress
+}
+
 export const useDatabaseStore = create<DatabaseState>()(
     persist(
         (set, get) => ({
@@ -581,13 +591,14 @@ export const useDatabaseStore = create<DatabaseState>()(
                 const s = get();
                 if (s.sessionTenantId && !cacheUsableBy({ tenantId: s.sessionTenantId, userId: s.sessionUserId }, who)) {
                     get().clearStore();
+                    wipeBrowserCopy();
                 }
                 set({ sessionTenantId: tenantId, sessionUserId: userId });
                 if (deferredCopy) {
                     const copy = deferredCopy;
                     deferredCopy = null;
                     if (cacheUsableBy({ tenantId: copy.sessionTenantId, userId: copy.sessionUserId }, who)) set(state => mergePersisted(copy, state));
-                    else console.info('[store] CACHE-OWNER-1: the browser copy belongs to another identity — discarded');
+                    else wipeBrowserCopy();
                 }
             },
 
@@ -2347,7 +2358,9 @@ export const useDatabaseStore = create<DatabaseState>()(
                 const who = { tenantId: currentState.sessionTenantId, userId: currentState.sessionUserId };
                 if (!who.tenantId) { deferredCopy = persistedState ?? null; return { ...currentState, _hasHydrated: true } as DatabaseState; }
                 const owner = { tenantId: persistedState?.sessionTenantId, userId: persistedState?.sessionUserId };
-                return cacheUsableBy(owner, who) ? mergePersisted(persistedState, currentState) : { ...currentState, _hasHydrated: true } as DatabaseState;
+                if (cacheUsableBy(owner, who)) return mergePersisted(persistedState, currentState);
+                if (persistedState) wipeBrowserCopy();
+                return { ...currentState, _hasHydrated: true } as DatabaseState;
             },
             onRehydrateStorage: () => {
                 return (state) => {

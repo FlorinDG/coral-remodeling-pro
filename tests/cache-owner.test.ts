@@ -31,13 +31,17 @@ describe('CACHE-OWNER-1 · where the rule is applied', () => {
     test('the store applies a restored copy only to its owner; an unknown identity defers it', () => {
         const merge = STORE.slice(STORE.indexOf('merge: (persistedState: any, currentState: DatabaseState) => {'), STORE.indexOf('onRehydrateStorage:'));
         assert.match(merge, /if \(!who\.tenantId\) \{ deferredCopy = persistedState/);
-        assert.match(merge, /return cacheUsableBy\(owner, who\) \? mergePersisted\(persistedState, currentState\)/);
+        assert.match(merge, /if \(cacheUsableBy\(owner, who\)\) return mergePersisted\(persistedState, currentState\);\s*if \(persistedState\) wipeBrowserCopy\(\);/);
     });
     test('setSession empties the store for another tenant OR user, and applies a deferred copy only to its owner', () => {
         const at = STORE.indexOf('setSession: (tenantId, userId) => {');
         const fn = STORE.slice(at, STORE.indexOf('hydratePageIndex:', at));
         assert.match(fn, /!cacheUsableBy\(\{ tenantId: s\.sessionTenantId, userId: s\.sessionUserId \}, who\)\) \{\s*get\(\)\.clearStore\(\)/);
-        assert.match(fn, /if \(cacheUsableBy\(\{ tenantId: copy\.sessionTenantId, userId: copy\.sessionUserId \}, who\)\) set\(state => mergePersisted\(copy, state\)\)/);
+        assert.match(fn, /if \(cacheUsableBy\(\{ tenantId: copy\.sessionTenantId, userId: copy\.sessionUserId \}, who\)\) set\(state => mergePersisted\(copy, state\)\);\s*else wipeBrowserCopy\(\);/);
+        assert.match(fn, /get\(\)\.clearStore\(\);\s*wipeBrowserCopy\(\);/);
+    });
+    test('another identity\'s copy is removed from storage, not just hidden', () => {
+        assert.match(STORE, /function wipeBrowserCopy\(\) \{[\s\S]{0,300}useDatabaseStore\.persist\.clearStorage\(\)/);
     });
     test('both shells tell the store who is signed in ahead of the screens (outside Suspense)', () => {
         for (const p of ['src/app/[locale]/admin/layout.tsx', 'src/app/[locale]/m/layout.tsx']) {

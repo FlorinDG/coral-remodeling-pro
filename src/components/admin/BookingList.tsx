@@ -42,7 +42,8 @@ export default function BookingList({ bookings: initialBookings }: BookingListPr
     const handleStatusUpdate = async (id: string, status: string) => {
         setUpdating(id);
         try {
-            await updateBookingStatus(id, status);
+            const res = await updateBookingStatus(id, status);
+            if (!res.success) throw new Error(res.error);   // CRM-SCOPE-1: a refusal is not a success
             setBookings(prev => prev.map(booking => booking.id === id ? { ...booking, status } : booking));
         } catch {
             alert('Failed to update booking status');
@@ -55,7 +56,8 @@ export default function BookingList({ bookings: initialBookings }: BookingListPr
         if (!confirm('Are you sure you want to delete this booking?')) return;
         setUpdating(id);
         try {
-            await deleteBooking(id);
+            const res = await deleteBooking(id);
+            if (!res.success) throw new Error(res.error);   // CRM-SCOPE-1: a refusal is not a success
             setBookings(prev => prev.filter(booking => booking.id !== id));
         } catch {
             alert('Failed to delete booking');
@@ -84,7 +86,8 @@ export default function BookingList({ bookings: initialBookings }: BookingListPr
         setUpdating('BULK');
         try {
             const ids = Array.from(selectedIds) as string[];
-            await bulkDeleteBookings(ids);
+            const res = await bulkDeleteBookings(ids);
+            if (!res.success) throw new Error(res.error);   // CRM-SCOPE-1: a refusal is not a success
             setBookings(prev => prev.filter(booking => !selectedIds.has(booking.id)));
             setSelectedIds(new Set());
         } catch {

@@ -3,7 +3,6 @@ import { hrList, hrCreate } from '@/lib/hr-api';
 import { Loader2, Plus, Calendar, Clock, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -105,23 +104,17 @@ export function ManualEntryModal({ open, onOpenChange, onSuccess }: Props) {
                 <form onSubmit={handleSubmit} className="space-y-4 py-4">
                     <div className="space-y-2">
                         <Label>{t('worker')}</Label>
-                        <Select value={userId} onValueChange={setUserId}>
-                            <SelectTrigger>
-                                <SelectValue placeholder={t('selectWorker')} />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {employees.filter(emp => emp.userId).map(emp => (
-                                    <SelectItem key={emp.id} value={emp.userId!}>
-                                        {emp.firstName} {emp.lastName}
-                                    </SelectItem>
-                                ))}
-                                {employees.some(emp => !emp.userId) && (
-                                    <div className="px-2 py-1.5 text-[10px] text-amber-600 dark:text-amber-400">
-                                        {t('unlinkedAccountsWarning', { count: employees.filter(emp => !emp.userId).length })}
-                                    </div>
-                                )}
-                            </SelectContent>
-                        </Select>
+                        <SearchableSelect
+                            value={userId}
+                            onChange={setUserId}
+                            options={employees.filter(emp => emp.userId).map(emp => ({ value: emp.userId!, label: `${emp.firstName} ${emp.lastName}`.trim() }))}
+                            placeholder={t('selectWorker')}
+                        />
+                        {employees.some(emp => !emp.userId) && (
+                            <p className="text-[10px] text-amber-600 dark:text-amber-400">
+                                {t('unlinkedAccountsWarning', { count: employees.filter(emp => !emp.userId).length })}
+                            </p>
+                        )}
                     </div>
 
                     <div className="space-y-2">

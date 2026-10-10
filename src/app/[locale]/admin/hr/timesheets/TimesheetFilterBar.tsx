@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter, usePathname } from '@/i18n/routing';
 import { useSearchParams } from 'next/navigation';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import SearchableSelect from '@/components/ui/SearchableSelect';
 
 import { hrFetch } from '@/lib/hr-api';
 import { useTranslations } from 'next-intl';
@@ -71,29 +72,22 @@ export function TimesheetFilterBar() {
                 triggerClassName="w-auto min-w-[220px]"
             />
 
-            <Select value={searchParams.get('workerIds[]') || 'all'} onValueChange={(val) => updateFilter('workerIds[]', val === 'all' ? null : val)}>
-                <SelectTrigger className="w-[200px] h-9 rounded-xl">
-                    <SelectValue placeholder={t('workforceMember')} />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="all">{t('allWorkers')}</SelectItem>
-                    {workers.map(w => (
-                        <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
-                    ))}
-                </SelectContent>
-            </Select>
+            {/* Lists that grow (workers, projects) use the canonical searchable picker; fixed choices stay a Select. */}
+            <SearchableSelect
+                className="w-[200px]"
+                value={searchParams.get('workerIds[]') || ''}
+                onChange={(val) => updateFilter('workerIds[]', val || null)}
+                options={[{ value: '', label: t('allWorkers') }, ...workers.map(w => ({ value: w.id, label: w.name }))]}
+                placeholder={t('workforceMember')}
+            />
 
-            <Select value={searchParams.get('projectIds[]') || 'all'} onValueChange={(val) => updateFilter('projectIds[]', val === 'all' ? null : val)}>
-                <SelectTrigger className="w-[200px] h-9 rounded-xl">
-                    <SelectValue placeholder={t('project')} />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="all">{t('allProjects')}</SelectItem>
-                    {projects.map(p => (
-                        <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                    ))}
-                </SelectContent>
-            </Select>
+            <SearchableSelect
+                className="w-[200px]"
+                value={searchParams.get('projectIds[]') || ''}
+                onChange={(val) => updateFilter('projectIds[]', val || null)}
+                options={[{ value: '', label: t('allProjects') }, ...projects.map(p => ({ value: p.id, label: p.name }))]}
+                placeholder={t('project')}
+            />
 
             <Select value={searchParams.get('billable') || 'all'} onValueChange={(val) => updateFilter('billable', val === 'all' ? null : val)}>
                 <SelectTrigger className="w-[140px] h-9 rounded-xl">

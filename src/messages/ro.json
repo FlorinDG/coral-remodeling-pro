@@ -255,6 +255,14 @@
     "yourProject": "Proiectul tău"
   },
   "Admin": {
+    "editor": {
+      "toolbar": "Formatare",
+      "bold": "Aldin",
+      "italic": "Cursiv",
+      "underline": "Subliniat",
+      "bulletList": "Listă cu marcatori",
+      "orderedList": "Listă numerotată"
+    },
     "dbHeader": {
       "searchLines": "Caută în rânduri",
       "sortAdded": "Data adăugării",

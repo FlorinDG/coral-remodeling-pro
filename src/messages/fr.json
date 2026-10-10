@@ -254,6 +254,14 @@
     "yourProject": "Votre Projet"
   },
   "Admin": {
+    "editor": {
+      "toolbar": "Mise en forme",
+      "bold": "Gras",
+      "italic": "Italique",
+      "underline": "Souligné",
+      "bulletList": "Liste à puces",
+      "orderedList": "Liste numérotée"
+    },
     "dbHeader": {
       "searchLines": "Rechercher dans les lignes",
       "sortAdded": "Date d’ajout",

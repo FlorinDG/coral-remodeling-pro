@@ -255,6 +255,14 @@
     "yourProject": "Uw Project"
   },
   "Admin": {
+    "editor": {
+      "toolbar": "Opmaak",
+      "bold": "Vet",
+      "italic": "Cursief",
+      "underline": "Onderstrepen",
+      "bulletList": "Opsomming",
+      "orderedList": "Genummerde lijst"
+    },
     "dbHeader": {
       "searchLines": "Zoeken in regels",
       "sortAdded": "Toegevoegd",

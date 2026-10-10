@@ -10,7 +10,7 @@ import FinancialRowRenderer from './FinancialRowRenderer';
 import { Draggable, Droppable } from '@hello-pangea/dnd';
 import { useDatabaseStore } from '@/components/admin/database/store';
 import { blockValue } from '@/lib/records/document-lines';
-import { sanitizeRichText } from '@/lib/records/rich-text';
+import RichText from '@/components/editor/RichText';
 
 interface InvoiceRowProps {
     block: Block;
@@ -577,49 +577,13 @@ export default function InvoiceRow({ block, index, onUpdate, onDelete, onDuplica
 
                                         {block.type === 'text' && (
                                             <div className="flex flex-col gap-1.5 w-full pt-2">
-                                                {/* Mini rich text toolbar */}
-                                                <div className="flex items-center gap-0.5 px-1">
-                                                    <button
-                                                        type="button"
-                                                        onMouseDown={(e) => { e.preventDefault(); document.execCommand('bold'); }}
-                                                        className="p-1.5 rounded text-neutral-500 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-white/10 transition-colors text-xs font-bold"
-                                                        title="Bold"
-                                                    >B</button>
-                                                    <button
-                                                        type="button"
-                                                        onMouseDown={(e) => { e.preventDefault(); document.execCommand('italic'); }}
-                                                        className="p-1.5 rounded text-neutral-500 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-white/10 transition-colors text-xs italic"
-                                                        title="Italic"
-                                                    >I</button>
-                                                    <button
-                                                        type="button"
-                                                        onMouseDown={(e) => { e.preventDefault(); document.execCommand('underline'); }}
-                                                        className="p-1.5 rounded text-neutral-500 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-white/10 transition-colors text-xs underline"
-                                                        title="Underline"
-                                                    >U</button>
-                                                    <div className="h-4 w-px bg-neutral-200 dark:bg-white/10 mx-1" />
-                                                    <button
-                                                        type="button"
-                                                        onMouseDown={(e) => { e.preventDefault(); document.execCommand('insertUnorderedList'); }}
-                                                        className="p-1.5 rounded text-neutral-500 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-white/10 transition-colors text-xs"
-                                                        title="Bullet List"
-                                                    >• List</button>
-                                                    <button
-                                                        type="button"
-                                                        onMouseDown={(e) => { e.preventDefault(); document.execCommand('insertOrderedList'); }}
-                                                        className="p-1.5 rounded text-neutral-500 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-white/10 transition-colors text-xs"
-                                                        title="Numbered List"
-                                                    >1. List</button>
-                                                </div>
-                                                {/* Editable area */}
-                                                <div
-                                                    contentEditable
-                                                    suppressContentEditableWarning
-                                                    dangerouslySetInnerHTML={{ __html: sanitizeRichText(block.content) }}
-                                                    onBlur={(e) => onUpdate(block.id, { content: e.currentTarget.innerHTML })}
-                                                    className="w-full min-h-[80px] bg-neutral-50/80 dark:bg-black/30 border border-neutral-200 dark:border-neutral-800 rounded-lg p-3 text-sm leading-relaxed focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 prose prose-sm dark:prose-invert max-w-none [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5"
-                                                    data-placeholder="Vrije tekst — wordt niet meegerekend in de financials..."
-                                                    style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
+                                                {/* EDITOR-1: the ONE rich-text field — commits on pause/blur, never clobbered while typing */}
+                                                <RichText
+                                                    value={block.content || ''}
+                                                    onChange={(html) => onUpdate(block.id, { content: html })}
+                                                    toolbar="above" readOnly={readOnly}
+                                                    className="w-full min-h-[80px] bg-neutral-50/80 dark:bg-black/30 border border-neutral-200 dark:border-neutral-800 rounded-lg p-3 text-sm leading-relaxed focus-within:border-orange-500 prose prose-sm dark:prose-invert max-w-none"
+                                                    placeholder="Vrije tekst — wordt niet meegerekend in de financials..."
                                                 />
                                                 <p className="text-[10px] text-neutral-400 italic px-1">
                                                     ✎ Vrij tekstveld — verschijnt op het document maar telt niet mee in de berekeningen

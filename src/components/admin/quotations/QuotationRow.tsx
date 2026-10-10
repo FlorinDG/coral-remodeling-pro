@@ -11,57 +11,7 @@ import FinancialRowRenderer from './FinancialRowRenderer';
 // Removed unused dnd imports
 import { useDatabaseStore } from '@/components/admin/database/store';
 import { blockValue } from '@/lib/records/document-lines';
-
-function UncontrolledContentEditable({
-    initialContent,
-    onChange,
-    onBlur,
-    className,
-    placeholder,
-}: {
-    initialContent: string;
-    onChange: (html: string) => void;
-    onBlur?: () => void;
-    className?: string;
-    placeholder?: string;
-}) {
-    const ref = React.useRef<HTMLDivElement>(null);
-    const contentRef = React.useRef(initialContent);
-    const timeoutRef = React.useRef<NodeJS.Timeout | undefined>(undefined);
-
-    React.useEffect(() => {
-        if (ref.current && ref.current.innerHTML !== contentRef.current) {
-            if (document.activeElement !== ref.current) {
-                ref.current.innerHTML = initialContent;
-                contentRef.current = initialContent;
-            }
-        }
-    }, [initialContent]);
-
-    return (
-        <div
-            ref={ref}
-            contentEditable
-            suppressContentEditableWarning
-            className={className}
-            data-placeholder={placeholder}
-            style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
-            onInput={(e) => {
-                const html = e.currentTarget.innerHTML;
-                contentRef.current = html;
-                if (timeoutRef.current) clearTimeout(timeoutRef.current);
-                timeoutRef.current = setTimeout(() => {
-                    onChange(html);
-                }, 500);
-            }}
-            onBlur={() => {
-                if (timeoutRef.current) clearTimeout(timeoutRef.current);
-                onChange(ref.current?.innerHTML || '');
-                if (onBlur) onBlur();
-            }}
-        />
-    );
-}
+import RichText from '@/components/editor/RichText';
 
 interface QuotationRowProps {
     block: Block;
@@ -672,45 +622,12 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
 
                                         {block.type === 'text' && (
                                             <div className="flex flex-col gap-1.5 w-full pt-2">
-                                                {/* Mini rich text toolbar */}
-                                                <div className="flex items-center gap-0.5 px-1">
-                                                    <button
-                                                        type="button"
-                                                        onMouseDown={(e) => { e.preventDefault(); document.execCommand('bold'); }}
-                                                        className="p-1.5 rounded text-neutral-500 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-white/10 transition-colors text-xs font-bold"
-                                                        title="Bold"
-                                                    >B</button>
-                                                    <button
-                                                        type="button"
-                                                        onMouseDown={(e) => { e.preventDefault(); document.execCommand('italic'); }}
-                                                        className="p-1.5 rounded text-neutral-500 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-white/10 transition-colors text-xs italic"
-                                                        title="Italic"
-                                                    >I</button>
-                                                    <button
-                                                        type="button"
-                                                        onMouseDown={(e) => { e.preventDefault(); document.execCommand('underline'); }}
-                                                        className="p-1.5 rounded text-neutral-500 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-white/10 transition-colors text-xs underline"
-                                                        title="Underline"
-                                                    >U</button>
-                                                    <div className="h-4 w-px bg-neutral-200 dark:bg-white/10 mx-1" />
-                                                    <button
-                                                        type="button"
-                                                        onMouseDown={(e) => { e.preventDefault(); document.execCommand('insertUnorderedList'); }}
-                                                        className="p-1.5 rounded text-neutral-500 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-white/10 transition-colors text-xs"
-                                                        title="Bullet List"
-                                                    >• List</button>
-                                                    <button
-                                                        type="button"
-                                                        onMouseDown={(e) => { e.preventDefault(); document.execCommand('insertOrderedList'); }}
-                                                        className="p-1.5 rounded text-neutral-500 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-white/10 transition-colors text-xs"
-                                                        title="Numbered List"
-                                                    >1. List</button>
-                                                </div>
-                                                {/* Editable area */}
-                                                <UncontrolledContentEditable
-                                                    initialContent={block.content || ''}
+                                                {/* EDITOR-1: the ONE rich-text field — commits on pause/blur, never clobbered while typing */}
+                                                <RichText
+                                                    value={block.content || ''}
                                                     onChange={(html) => onUpdate(block.id, { content: html })}
-                                                    className="w-full min-h-[80px] bg-neutral-50/80 dark:bg-black/30 border border-neutral-200 dark:border-neutral-800 rounded-lg p-3 text-sm leading-relaxed focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 prose prose-sm dark:prose-invert max-w-none [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5"
+                                                    toolbar="above"
+                                                    className="w-full min-h-[80px] bg-neutral-50/80 dark:bg-black/30 border border-neutral-200 dark:border-neutral-800 rounded-lg p-3 text-sm leading-relaxed focus-within:border-orange-500 prose prose-sm dark:prose-invert max-w-none"
                                                     placeholder="Vrije tekst — wordt niet meegerekend in de financials..."
                                                 />
                                                 <p className="text-[10px] text-neutral-400 italic px-1">

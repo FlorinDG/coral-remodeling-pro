@@ -9,6 +9,7 @@ import { parseDecimal, formatDecimal } from '@/lib/decimal-parser';
 import ClientDiscountInput from '@/components/admin/shared/ClientDiscountInput';
 import LineVatRateSelect from '@/components/admin/shared/LineVatRateSelect';
 import { lineNet } from '@/lib/records/document-lines';
+import RichText from '@/components/editor/RichText';
 
 interface FinancialRowRendererProps {
     /** DOC-LINES-2: the document's VAT regime — a line without its own rate takes it. */
@@ -20,52 +21,6 @@ interface FinancialRowRendererProps {
     hasLibraryAccess?: boolean;
     language?: string;
 }
-
-const RichTextInput = ({ value, onChange, onSearch, placeholder, className, onBlur, onFocus }: { value: string, onChange: (val: string) => void, onSearch?: (val: string) => void, placeholder?: string, className?: string, onBlur?: () => void, onFocus?: () => void }) => {
-    const ref = React.useRef<HTMLDivElement>(null);
-    React.useEffect(() => {
-        if (ref.current && value !== ref.current.innerHTML) {
-            ref.current.innerHTML = value;
-        }
-    }, [value]);
-    return (
-        <div
-            ref={ref}
-            contentEditable
-            suppressContentEditableWarning
-            onBlur={onBlur}
-            onFocus={onFocus}
-            onInput={(e) => {
-                const html = e.currentTarget.innerHTML;
-                onChange(html);
-                if (onSearch) onSearch(e.currentTarget.textContent || '');
-            }}
-            onPaste={(e) => {
-                e.preventDefault();
-                const text = e.clipboardData.getData("text/plain");
-                const selection = window.getSelection();
-                if (!selection || !selection.rangeCount) return;
-                
-                const range = selection.getRangeAt(0);
-                range.deleteContents();
-                
-                const textNode = document.createTextNode(text);
-                range.insertNode(textNode);
-                
-                range.setStartAfter(textNode);
-                range.setEndAfter(textNode);
-                selection.removeAllRanges();
-                selection.addRange(range);
-                
-                onChange(e.currentTarget.innerHTML);
-                if (onSearch) onSearch(e.currentTarget.textContent || '');
-            }}
-            className={className}
-            style={{ outline: "none", cursor: "text", minHeight: "24px" }}
-            data-placeholder={placeholder}
-        />
-    );
-};
 
 export default function FinancialRowRenderer({ block, databaseId, onUpdate, childrenTotal, hasLibraryAccess = true, language = 'nl', vatRegime = '21' }: FinancialRowRendererProps) {
     const getDatabase = useDatabaseStore(state => state.getDatabase);
@@ -269,16 +224,17 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                 <div className="flex flex-col gap-0.5 flex-1 shrink relative mt-0.5 min-w-[280px] w-full">
                     <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest px-1">Item / Description</label>
                     <div className="relative w-full flex flex-col group/search">
-                        <RichTextInput
+                        <RichText
                             placeholder="Type to search DB or enter custom spec..."
                             value={block.content || ''}
                             onChange={(html) => onUpdate({ content: html })}
-                            onSearch={(query) => {
+                            onTextChange={(query) => {
                                 setSearchQuery(query);
                                 setShowDropdown(query.length >= 2);
                             }}
                             onBlur={() => setTimeout(() => setShowDropdown(false), 200)} // Allow click event execution
-                            className="w-full bg-transparent border-none text-base text-black dark:text-white focus:outline-none focus:ring-0 font-medium px-2 py-0.5 empty:before:content-[attr(data-placeholder)] empty:before:text-neutral-400 empty:before:font-normal break-words whitespace-pre-wrap leading-relaxed"
+                            className="w-full bg-transparent border-none text-base text-black dark:text-white focus:outline-none focus:ring-0 font-medium px-2 py-0.5 break-words whitespace-pre-wrap leading-relaxed"
+                            toolbar="below"
                         />
 
                         {/* Autocomplete Combobox Dropdown */}
@@ -310,42 +266,6 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                         )}
                     </div>
 
-                    {/* Rich Text Toolbar (Static visibility) */}
-                    <div className="flex flex-wrap items-center gap-1 mt-0.5 px-2 pb-0 text-neutral-400">
-                        <button onMouseDown={(e) => { e.preventDefault(); document.execCommand('bold', false); }} className="p-1 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded text-neutral-400 hover:text-black dark:hover:text-white transition-colors" title="Bold">
-                            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 12a4 4 0 0 0 0-8H6v8" /><path d="M15 20a4 4 0 0 0 0-8H6v8Zm-9-8h8Zm0-4h7" /></svg>
-                        </button>
-                        <button onMouseDown={(e) => { e.preventDefault(); document.execCommand('italic', false); }} className="p-1 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded text-neutral-400 hover:text-black dark:hover:text-white transition-colors" title="Italic">
-                            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" x2="10" y1="4" y2="4" /><line x1="14" x2="5" y1="20" y2="20" /><line x1="15" x2="9" y1="4" y2="20" /></svg>
-                        </button>
-                        <button onMouseDown={(e) => { e.preventDefault(); document.execCommand('underline', false); }} className="p-1 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded text-neutral-400 hover:text-black dark:hover:text-white transition-colors" title="Underline">
-                            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M6 4v6a6 6 0 0 0 12 0V4" /><line x1="4" x2="20" y1="20" y2="20" /></svg>
-                        </button>
-                        <div className="w-px h-3.5 bg-neutral-300 dark:bg-neutral-700 mx-0.5" />
-                        <button onMouseDown={(e) => { e.preventDefault(); document.execCommand('justifyLeft', false); }} className="p-1 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded text-neutral-400 hover:text-black dark:hover:text-white transition-colors" title="Align Left">
-                            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="21" x2="3" y1="6" y2="6" /><line x1="15" x2="3" y1="12" y2="12" /><line x1="17" x2="3" y1="18" y2="18" /></svg>
-                        </button>
-                        <button onMouseDown={(e) => { e.preventDefault(); document.execCommand('justifyCenter', false); }} className="p-1 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded text-neutral-400 hover:text-black dark:hover:text-white transition-colors" title="Align Center">
-                            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="21" x2="3" y1="6" y2="6" /><line x1="17" x2="7" y1="12" y2="12" /><line x1="19" x2="5" y1="18" y2="18" /></svg>
-                        </button>
-                        <button onMouseDown={(e) => { e.preventDefault(); document.execCommand('justifyRight', false); }} className="p-1 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded text-neutral-400 hover:text-black dark:hover:text-white transition-colors" title="Align Right">
-                            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="21" x2="3" y1="6" y2="6" /><line x1="21" x2="9" y1="12" y2="12" /><line x1="21" x2="7" y1="18" y2="18" /></svg>
-                        </button>
-                        <div className="w-px h-3.5 bg-neutral-300 dark:bg-neutral-700 mx-0.5" />
-                        <button onMouseDown={(e) => { e.preventDefault(); document.execCommand('insertUnorderedList', false); }} className="p-1 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded text-neutral-400 hover:text-black dark:hover:text-white transition-colors" title="List (Bullets)">
-                            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" x2="21" y1="6" y2="6" /><line x1="8" x2="21" y1="12" y2="12" /><line x1="8" x2="21" y1="18" y2="18" /><line x1="3" x2="3.01" y1="6" y2="6" /><line x1="3" x2="3.01" y1="12" y2="12" /><line x1="3" x2="3.01" y1="18" y2="18" /></svg>
-                        </button>
-                        <button onMouseDown={(e) => { e.preventDefault(); document.execCommand('insertOrderedList', false); }} className="p-1 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded text-neutral-400 hover:text-black dark:hover:text-white transition-colors" title="List (Numbers)">
-                            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="10" x2="21" y1="6" y2="6" /><line x1="10" x2="21" y1="12" y2="12" /><line x1="10" x2="21" y1="18" y2="18" /><path d="M4 6h1v4" /><path d="M4 10h2" /><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1" /></svg>
-                        </button>
-                        <div className="w-px h-3.5 bg-neutral-300 dark:bg-neutral-700 mx-0.5" />
-                        <button onMouseDown={(e) => { e.preventDefault(); const url = prompt('Image URL:'); if (url) document.execCommand('insertImage', false, url); }} className="p-1 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded text-neutral-400 hover:text-black dark:hover:text-white transition-colors" title="Image">
-                            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2" /><circle cx="9" cy="9" r="2" /><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" /></svg>
-                        </button>
-                        <button onMouseDown={(e) => { e.preventDefault(); const url = prompt('Link URL:'); if (url) document.execCommand('createLink', false, url); }} className="p-1 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded text-neutral-400 hover:text-black dark:hover:text-white transition-colors" title="Links">
-                            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg>
-                        </button>
-                    </div>
                 </div>
 
                 {/* Phase 11: Variants Engine Selectors */}

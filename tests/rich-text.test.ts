@@ -48,10 +48,16 @@ test('E2 · the record door stores only the allowlist — whatever wrote the blo
 });
 
 test('E3 · the portal viewers (seen by the tenant\'s customers) render only sanitized text', () => {
-    for (const f of ['../src/app/[locale]/quote/[id]/QuotationViewer.tsx', '../src/app/[locale]/invoice/[id]/InvoiceViewer.tsx', '../src/components/admin/invoices/InvoiceRow.tsx']) {
+    for (const f of ['../src/app/[locale]/quote/[id]/QuotationViewer.tsx', '../src/app/[locale]/invoice/[id]/InvoiceViewer.tsx']) {
         const src = readFileSync(new URL(f, import.meta.url), 'utf8');
         assert.doesNotMatch(src, /__html:\s*block\.content/, f);
         assert.match(src, /__html:\s*sanitizeRichText\(block\.content\)/, f);
+    }
+    // The editors render no raw HTML at all — the text goes through the ONE rich-text field (EDITOR-1 E6)
+    for (const f of ['../src/components/admin/invoices/InvoiceRow.tsx', '../src/components/admin/quotations/QuotationRow.tsx']) {
+        const src = readFileSync(new URL(f, import.meta.url), 'utf8');
+        assert.doesNotMatch(src, /__html:\s*(sanitizeRichText\()?block\.content/, f);
+        assert.match(src, /<RichText\b/, f);
     }
 });
 

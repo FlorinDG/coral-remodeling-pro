@@ -18,7 +18,7 @@ export class PlatformModelError extends Error {
 }
 
 /**
- * Pure scope classification table for all 56 models in schema.prisma.
+ * Pure scope classification table for all 58 models in schema.prisma.
  * 34 Direct (Class A) · 20 Via (Class B) · 2 Platform (Class D) · 0 Undeclared (Class C)
  */
 export const SCOPE: Readonly<Record<string, ScopeRule>> = {
@@ -61,7 +61,8 @@ export const SCOPE: Readonly<Record<string, ScopeRule>> = {
   HrDocument: { kind: 'direct' },
   RateChangeAudit: { kind: 'direct' },
   AuditLog: { kind: 'direct' },
-  Comment: { kind: 'direct' },        // COMMENTS-1: a thread on a record (tenantId FK, cascade)
+  Comment: { kind: 'direct' },
+  TraceCounter: { kind: 'direct' },   // TRACE-1: the per-tenant counter of a trace series (tenantId FK, cascade)        // COMMENTS-1: a thread on a record (tenantId FK, cascade)
 
   // Class B: Transitive models scoped via parent relation (20)
   ProjectUpdate: { kind: 'via', through: 'portal' },

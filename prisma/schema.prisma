@@ -134,6 +134,7 @@ model Tenant {
   hrSupportMessages          HrSupportMessage[]
   taskNotes                  TaskNote[]
   comments                   Comment[]
+  traceCounters TraceCounter[]
 }
 
 model Lead {
@@ -761,6 +762,8 @@ model GlobalPage {
 
 model ClockEntry {
   id                String    @id @default(cuid())
+  /// TRACE-1: the hours' trace number, HR-00456 — per tenant, never reused.
+  traceNo           String?
   tenantId          String
   userId            String
   clockInTime       DateTime  @default(now())
@@ -807,10 +810,13 @@ model ClockEntry {
   shift             ScheduledShift? @relation(fields: [shiftId], references: [id], onDelete: SetNull)
 
   @@index([shiftId])
+  @@unique([tenantId, traceNo])
 }
 
 model ScheduledShift {
   id           String   @id @default(cuid())
+  /// TRACE-1 (Florin 2026-10-10): the shift's trace number, SH-00123 — per tenant, never reused; cross-links the shift and its hours.
+  traceNo      String?
   tenantId     String
   userId       String
   shiftDate    String
@@ -847,6 +853,7 @@ model ScheduledShift {
 
   @@index([seriesId])
   @@index([contactPageId])
+  @@unique([tenantId, traceNo])
 }
 
 model ShiftTemplate {
@@ -1161,4 +1168,16 @@ model Comment {
   page       GlobalPage @relation(fields: [pageId], references: [id], onDelete: Cascade)
 
   @@index([tenantId, pageId, createdAt])
+}
+
+/// TRACE-1 · the per-tenant counter of a trace series ('SH' shifts, 'HR' clocked hours). Incremented atomically when a
+/// shift or an hours entry is created (lib/data/trace-number); numbers are never reused.
+model TraceCounter {
+  tenantId  String
+  series    String
+  value     Int      @default(0)
+  updatedAt DateTime @updatedAt
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@id([tenantId, series])
 }

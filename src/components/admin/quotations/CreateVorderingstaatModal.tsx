@@ -3,6 +3,7 @@ import { X, ClipboardCheck, Percent, HelpCircle, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { Block, Page } from '../database/types';
 import DecimalInput from '@/components/ui/DecimalInput';
+import { zonedParts } from '@/lib/kernel/shift-time';
 
 interface CreateVorderingstaatModalProps {
     isOpen: boolean;
@@ -38,7 +39,7 @@ export default function CreateVorderingstaatModal({
     quotationTitle,
     locale
 }: CreateVorderingstaatModalProps) {
-    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+    const [selectedDate, setSelectedDate] = useState(() => zonedParts(new Date()).date);
     const [selectedItems, setSelectedItems] = useState<Record<string, boolean>>({});
     const [progressInputs, setProgressInputs] = useState<Record<string, number>>({});
 

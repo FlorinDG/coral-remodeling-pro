@@ -9,6 +9,8 @@ import VatBreakdownRows from '@/components/admin/shared/VatBreakdownRows';
 import { SALES_VAT_REGIMES, isReverseCharge, type SalesVatRegime } from '@/lib/records/vat-regime';
 import DocumentDiscountRows from '@/components/admin/shared/DocumentDiscountRows';
 import type { Discount } from '@/lib/records/document-lines';
+import { addDaysYmd } from '@/lib/kernel/shift-time';
+import { normaliseDateValue } from '@/lib/records/date-cell';
 
 interface CreditNoteInfo {
     id: string;
@@ -170,9 +172,7 @@ export default function InvoiceFooterReport({
                                 <span className="text-[10px] text-neutral-400 mr-auto">Termijn:</span>
                                 <button
                                     onClick={() => {
-                                        const base = new Date(invoiceDate);
-                                        base.setDate(base.getDate() + 14);
-                                        onDueDateChange(base.toISOString().split('T')[0]);
+                                        onDueDateChange(addDaysYmd(normaliseDateValue(String(invoiceDate)), 14));
                                     }}
                                     className="text-[10px] font-semibold px-2 py-0.5 rounded-md border border-neutral-200 dark:border-white/10 hover:bg-white dark:hover:bg-white/5 transition text-neutral-600 dark:text-neutral-400"
                                 >
@@ -180,9 +180,7 @@ export default function InvoiceFooterReport({
                                 </button>
                                 <button
                                     onClick={() => {
-                                        const base = new Date(invoiceDate);
-                                        base.setDate(base.getDate() + 30);
-                                        onDueDateChange(base.toISOString().split('T')[0]);
+                                        onDueDateChange(addDaysYmd(normaliseDateValue(String(invoiceDate)), 30));
                                     }}
                                     className="text-[10px] font-semibold px-2 py-0.5 rounded-md border border-neutral-200 dark:border-white/10 hover:bg-white dark:hover:bg-white/5 transition text-neutral-600 dark:text-neutral-400"
                                 >

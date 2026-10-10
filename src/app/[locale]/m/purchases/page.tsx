@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { resolveDatabaseId } from '@/lib/kernel/system-databases';
 import { Receipt, Building2, Calendar, AlertCircle } from "lucide-react";
 import { getTranslations } from 'next-intl/server';
+import { zonedParts } from '@/lib/kernel/shift-time';
 
 export default async function MobilePurchasesPage({ params }: { params: Promise<{ locale: string }> }) {
     const { locale } = await params;
@@ -43,7 +44,7 @@ export default async function MobilePurchasesPage({ params }: { params: Promise<
                 title: String(props['title'] || 'Unnamed Invoice'),
                 supplier: String(props['supplierName'] || 'Unknown Supplier'),
                 amount: Number(props['totalIncVat'] ?? props['total'] ?? props['amount'] ?? 0),
-                date: String(props['invoiceDate'] || props['date'] || p.createdAt.toISOString().split('T')[0]),
+                date: String(props['invoiceDate'] || props['date'] || zonedParts(p.createdAt).date),
                 status: String(props['status'] || 'opt-draft'),
             };
         });

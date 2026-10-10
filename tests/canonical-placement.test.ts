@@ -73,3 +73,15 @@ test('the VAT regime is named in core — no screen compares to \'medecontractan
     assert.deepEqual(offenders, []);
     assert.ok(PENDING.size <= 4);
 });
+
+test('a calendar day is the BUSINESS day (kernel zonedParts / addDaysYmd) — never toISOString() (the UTC day)', () => {
+    const UTC_DAY = /toISOString\(\)\.(split\(['"]T['"]\)\[0\]|slice\(0, ?10\)|substring\(0, ?10\))/g;
+    const count = (p: string) => (read(p).match(UTC_DAY) || []).length;
+    // Money and legal dates: zero, always (Peppol, invoices, quotes, credit notes, purchases, payments)
+    const FINANCIAL = /^(lib\/peppol|lib\/invoice|components\/admin\/(invoices|quotations|expenses)\/|app\/\[locale\]\/m\/(invoices|purchases|expenses))/;
+    assert.deepEqual(ALL.filter(p => FINANCIAL.test(rel(p)) && count(p) > 0).map(rel), []);
+    // Everywhere else: a RATCHET — the total may only go down (lower it as files are fixed; never raise it)
+    const CEILING = 36;
+    const total = ALL.reduce((n, p) => n + count(p), 0);
+    assert.ok(total <= CEILING, `${total} UTC-day dates (ceiling ${CEILING}) — use zonedParts(new Date()).date`);
+});

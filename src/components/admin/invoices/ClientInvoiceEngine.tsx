@@ -46,6 +46,7 @@ import { useTranslations } from 'next-intl';
 import { useUserPreferences } from '@/hooks/useUserPreferences';
 import { documentDiscountOf, documentDiscountProps } from '@/lib/records/document-lines';
 import { DEFAULT_VAT_REGIME } from '@/lib/records/vat-regime';
+import { zonedParts } from '@/lib/kernel/shift-time';
 
 const FALLBACK_PAGES: Page[] = [];
 
@@ -657,7 +658,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
 
         // Auto due-date calculation
         if (key === 'invoiceDate' || key === 'prop-payment-method') {
-            const currentInvDate = key === 'invoiceDate' ? value : (invoice.properties['invoiceDate'] as string || new Date().toISOString().split('T')[0]);
+            const currentInvDate = key === 'invoiceDate' ? value : (invoice.properties['invoiceDate'] as string || zonedParts(new Date()).date);
             const currentPaymentMethod = key === 'prop-payment-method' ? value : (invoice.properties['prop-payment-method'] as string || 'pay-30');
             const computedDueDate = calculateDueDate(currentInvDate, currentPaymentMethod);
             if (computedDueDate) {

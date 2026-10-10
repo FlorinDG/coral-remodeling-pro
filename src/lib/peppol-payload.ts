@@ -2,6 +2,7 @@
 import { type Discount, type DocLine } from '@/lib/records/document-lines';
 import { calculateInvoiceTotals, type InvoiceTotals } from '@/lib/invoice-totals';
 import { isReverseCharge, REVERSE_CHARGE, DEFAULT_VAT_REGIME } from '@/lib/records/vat-regime';
+import { zonedParts, addDaysYmd } from '@/lib/kernel/shift-time';
 
 export interface InvoiceLinePayload {
     description: string;
@@ -161,8 +162,9 @@ export function buildPeppolPayload(params: BuildPayloadParams) {
         pdfBase64
     } = params;
 
-    const today = new Date().toISOString().split('T')[0];
-    const due = dueDate || new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0];
+    // The business day (Brussels) — toISOString() is the UTC day: between 00:00 and 02:00 it was yesterday
+    const today = zonedParts(new Date()).date;
+    const due = dueDate || addDaysYmd(today, 30);
 
     const cleanVat = (vat: string) => vat.replace(/[\s.]/g, '').toUpperCase();
     let vendorVat = tenant.vatNumber ? cleanVat(tenant.vatNumber) : '';

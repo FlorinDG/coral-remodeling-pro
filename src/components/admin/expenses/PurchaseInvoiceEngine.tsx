@@ -25,6 +25,7 @@ import { MAX_UPLOAD_BYTES, tooLargeMessage } from '@/lib/files/upload-size';
 import { isValidated, approveRefusal, REVIEW_APPROVED } from '@/lib/records/validation';
 import { hasDuplicateFlag, clearDuplicateFlag } from '@/lib/records/duplicates';
 import DecimalInput from '@/components/ui/DecimalInput';
+import { zonedParts } from '@/lib/kernel/shift-time';
 
 /** The approval check's field ids, as the person reads them. */
 const APPROVE_FIELD_LABEL: Record<string, string> = {
@@ -391,7 +392,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
 
     const handleMarkPaid = () => {
         writeField('status', 'opt-paid');
-        const today = new Date().toISOString().slice(0, 10);
+        const today = zonedParts(new Date()).date;   // the business day, not the UTC day
         writeField('paidDate', today);
     };
 

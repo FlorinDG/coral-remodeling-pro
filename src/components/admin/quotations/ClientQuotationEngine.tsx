@@ -44,6 +44,7 @@ import { describeError } from '@/lib/describe-error';
 import { isFromModal } from '@/lib/dom/page-shortcut';
 import { documentDiscountOf, documentDiscountProps } from '@/lib/records/document-lines';
 import { DEFAULT_VAT_REGIME } from '@/lib/records/vat-regime';
+import { zonedParts } from '@/lib/kernel/shift-time';
 
 const FALLBACK_PAGES: Page[] = [];
 
@@ -792,7 +793,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
         if (!clientId) return toast.warning(t('Please select a client first.'));
 
         const invoiceDbId = resolveDbId('db-invoices');
-        const today = new Date().toISOString().split('T')[0];
+        const today = zonedParts(new Date()).date;   // the business day, not the UTC day
 
         try {
             // Generate the next sequential invoice number

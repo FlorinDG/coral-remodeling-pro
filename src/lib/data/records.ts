@@ -10,7 +10,7 @@
  * Adapters (keep their names during the migration, then go): saveGlobalPage → saveRecord.
  */
 import type { Prisma } from '@prisma/client';
-import type { TenantScopedClient } from '@/lib/data/scope';
+import type { TenantScopedClient, ScopedTx } from '@/lib/data/scope';
 import { applyRecordIntent, deleteRefusal, type RecordIntent, type RecordRefusal } from '@/lib/records/record-intent';
 import { nextInSeries } from '@/lib/records/series';
 import { sanitizeBlocks } from '@/lib/records/rich-text';
@@ -24,7 +24,6 @@ export type SaveRecordResult =
 export type SaveRecordOpts = { by: string; meta?: RecordMeta; createIfMissing?: CreateIfMissing; lifecycle?: { reason: string } };
 
 /** The transaction client of the scoped door (what `$transaction(async tx => …)` hands over). */
-type ScopedTx = Parameters<Extract<Parameters<TenantScopedClient['$transaction']>[0], (...args: never[]) => unknown>>[0];
 
 /** A concurrent write of a row (serializable conflict) is retried — the transaction re-reads and re-applies. */
 async function withRetry<T>(run: () => Promise<T>): Promise<T> {

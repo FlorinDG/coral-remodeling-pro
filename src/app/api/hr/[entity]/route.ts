@@ -31,6 +31,7 @@ import { shiftTaskIdsFor } from '@/lib/data/task-reach';
 import { parseScope, seriesData, seriesWhere } from '@/lib/data/shift-series';
 import { isShiftSigned, SIGNED_REFUSAL } from '@/lib/data/work-order-lock';
 import { recordClockPlace } from '@/lib/data/geo';
+import { releaseOldProjectLinks } from '@/lib/data/shift-project-links';
 import { after } from 'next/server';
 import type { Prisma } from '@prisma/client';
 import { isTenantHrRole, isTenantTopRole } from '@/lib/roles';
@@ -866,13 +867,27 @@ export async function PATCH(
                 const fields = seriesData(data);
                 if (where && Object.keys(fields).length) {
                     // ONE transaction: the series and the edited shift change together or not at all.
-                    const [res, anchorRow] = await db.$transaction(async tx => [
-                        await tx.scheduledShift.updateMany({ where, data: { ...fields, lastEditedBy: ctx.userId } }),
-                        await tx.scheduledShift.update({ where: { id }, data: data as Prisma.ScheduledShiftUncheckedUpdateInput }),
-                    ] as const);
+                    const [res, anchorRow] = await db.$transaction(async tx => {
+                        // SHIFT-PROJ-1: a series moved to another project drops the old project's task and file links.
+                        if ('projectId' in fields) {
+                            const others = (await tx.scheduledShift.findMany({ where, select: { id: true } })).map(r => r.id);
+                            await releaseOldProjectLinks(tx, ctx.tenantId, [id, ...others], (fields.projectId as string | null) || null);
+                        }
+                        return [
+                            await tx.scheduledShift.updateMany({ where, data: { ...fields, lastEditedBy: ctx.userId } }),
+                            await tx.scheduledShift.update({ where: { id }, data: data as Prisma.ScheduledShiftUncheckedUpdateInput }),
+                        ] as const;
+                    });
                     seriesCount = res.count;
                     record = anchorRow;
                 }
+            }
+            if (record === undefined && entity === 'shifts' && 'projectId' in data) {
+                // SHIFT-PROJ-1: the move and the release of the old project's task and file links, together.
+                record = await db.$transaction(async tx => {
+                    await releaseOldProjectLinks(tx, ctx.tenantId, [id], (data.projectId as string | null) || null);
+                    return tx.scheduledShift.update({ where: { id }, data: data as Prisma.ScheduledShiftUncheckedUpdateInput });
+                });
             }
             if (record === undefined) record = await model.update({ where: { id }, data });
         }

@@ -49,6 +49,8 @@ function buildScopedClient(tenantId: string) {
 }
 
 export type TenantScopedClient = ReturnType<typeof buildScopedClient>;
+/** The transaction client of the scoped door (what `db.$transaction(async tx => …)` hands over). */
+export type ScopedTx = Parameters<Extract<Parameters<TenantScopedClient['$transaction']>[0], (...args: never[]) => unknown>>[0];
 
 /** D3 — the tenant comes from the session, once, at the boundary. Throws without a tenant. */
 export async function scopeFromSession(): Promise<TenantScopedClient> {

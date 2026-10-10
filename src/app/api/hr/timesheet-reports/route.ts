@@ -114,7 +114,7 @@ export async function GET(req: Request) {
     // Fetch entries
     const entries = (await db.clockEntry.findMany({
         where,
-        orderBy: { clockInTime: 'asc' }
+        orderBy: { clockInTime: 'desc' }   // Florin 2026-10-10: the latest on top (flat and grouped lists alike)
     })).filter(e => inBusinessPeriod(e.clockInTime, period));
 
     // Count entries without date bounds to see if they exist outside the period

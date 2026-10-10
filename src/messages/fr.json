@@ -1794,6 +1794,7 @@
       "title": "La connexion n'est pas configurée",
       "body": "Cette installation n'a pas de clé de session : personne ne peut se connecter. Rien n'a été modifié. Veuillez contacter votre administrateur."
     },
-    "sessionStale": "Votre session faisait référence à un compte ou un espace de travail qui n'existe plus. Veuillez vous reconnecter."
+    "sessionStale": "Votre session faisait référence à un compte ou un espace de travail qui n'existe plus. Veuillez vous reconnecter.",
+    "signInServerError": "La connexion a échoué sur le serveur ({code}) — votre mot de passe n'est pas en cause. Réessayez dans un instant ; si cela persiste, contactez le support."
   }
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
+import { signInFailure } from '@/lib/sign-in-error';
 import { useTranslations } from 'next-intl';
 import { signIn } from 'next-auth/react';
 import { Link } from '@/i18n/routing';
@@ -100,7 +101,9 @@ export default function LoginPage() {
                     setShowVerificationBlock('warning');
                     setBlockedEmail(loginEmail);
                 } else {
-                    setLoginError('Invalid credentials');
+                    // SIGNIN-ERR-1: a wrong password and a server failure are told apart.
+                    const f = signInFailure(result.error);
+                    setLoginError(f?.kind === 'server' ? tSystem('signInServerError', { code: f.code }) : 'Invalid credentials');
                 }
             } else {
                 // Navigate to target. Middleware syncs NEXT_LOCALE cookie from JWT on the first request.

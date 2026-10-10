@@ -1,12 +1,15 @@
 "use client";
 
 import { useState } from 'react';
+import { signInFailure } from '@/lib/sign-in-error';
+import { useTranslations } from 'next-intl';
 import { signIn } from 'next-auth/react';
 import { useRouter } from '@/i18n/routing';
 import Logo from '@/components/Logo';
 import { Loader2 } from 'lucide-react';
 
 export default function LoginPage() {
+    const tSystem = useTranslations('System');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -26,7 +29,9 @@ export default function LoginPage() {
             });
 
             if (result?.error) {
-                setError('Invalid credentials');
+                // SIGNIN-ERR-1: a wrong password and a server failure are told apart.
+                const f = signInFailure(result.error);
+                setError(f?.kind === 'server' ? tSystem('signInServerError', { code: f.code }) : 'Invalid credentials');
             } else {
                 // Fetch session to get user's stored environment language
                 const sessionRes = await fetch('/api/auth/session');

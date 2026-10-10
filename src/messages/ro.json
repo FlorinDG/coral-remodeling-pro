@@ -1795,6 +1795,7 @@
       "title": "Autentificarea nu este configurată",
       "body": "Această instalare nu are o cheie de sesiune, deci nimeni nu se poate autentifica. Nu s-a modificat nimic. Vă rugăm să contactați administratorul."
     },
-    "sessionStale": "Sesiunea ta se referea la un cont sau un spațiu de lucru care nu mai există. Te rugăm să te autentifici din nou."
+    "sessionStale": "Sesiunea ta se referea la un cont sau un spațiu de lucru care nu mai există. Te rugăm să te autentifici din nou.",
+    "signInServerError": "Autentificarea a eșuat pe server ({code}) — parola nu a fost problema. Încearcă din nou peste puțin timp; dacă persistă, contactează suportul."
   }
 }

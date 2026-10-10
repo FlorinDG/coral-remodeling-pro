@@ -1795,6 +1795,7 @@
       "title": "Aanmelden is niet geconfigureerd",
       "body": "Deze installatie heeft geen sessiesleutel, dus niemand kan zich aanmelden. Er is niets gewijzigd. Neem contact op met uw beheerder."
     },
-    "sessionStale": "Je sessie verwees naar een account of werkruimte die niet meer bestaat. Meld je opnieuw aan."
+    "sessionStale": "Je sessie verwees naar een account of werkruimte die niet meer bestaat. Meld je opnieuw aan.",
+    "signInServerError": "Aanmelden is op de server mislukt ({code}) — je wachtwoord was niet het probleem. Probeer het zo opnieuw; blijft het, neem contact op met support."
   }
 }

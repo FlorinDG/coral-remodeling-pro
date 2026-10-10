@@ -5,7 +5,7 @@
 ## ⚙️ STATUS
 
 ```
-UNATTENDED: ON until 2026-10-10 07:33
+UNATTENDED: OFF
 ```
 
 | # | Item | State | Directive / where | Note |

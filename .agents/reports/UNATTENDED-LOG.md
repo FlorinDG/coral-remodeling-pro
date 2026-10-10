@@ -18,3 +18,6 @@
 | 2026-10-10 05:29 | green | — (coder idle) | main = 1d2ae270 | 5 simple 'today' defaults → business day (calendar new task, CSV export, project view). Ratchet 22 → 17; calendar API conversions left for daytime. |
 | 2026-10-10 06:00 | green | — (coder idle) | main = 354ecd46 | Drafted UNATTENDED-SUMMARY.md for Florin. PR #2 still mergeable. |
 | 2026-10-10 06:28 | green | — (coder idle) | main = 3fcd0137 | Quiet run: promoted the summary draft. Stop at 07:33. |
+| 2026-10-10 07:00 | green | — (coder idle) | main = 3fcd0137 | Quiet run. |
+| 2026-10-10 07:28 | green | — (coder idle) | main = 3fcd0137 | Quiet run; stop at the next run (window ends 07:33). |
+| 2026-10-10 08:00 | green | — | main = 3fcd0137 | STOP: job deleted, UNATTENDED: OFF, summary final (UNATTENDED-SUMMARY.md). |

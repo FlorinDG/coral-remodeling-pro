@@ -1,4 +1,6 @@
-# Unattended night — 2026-10-09 23:33 → 2026-10-10 07:33 (Planner)
+# Unattended night — 2026-10-09 23:33 → 2026-10-10 07:33 (Planner) — FINAL
+
+Stopped 07:5x: the Planner's runs ended (job a5caebe5 deleted), `UNATTENDED: OFF` in CODER-QUEUE § STATUS. 17 runs; develop = main at the end (apart from this stop commit).
 
 Per-run detail: `UNATTENDED-LOG.md`. Everything below is on **main** unless marked otherwise. Every promotion was
 green on CI and the Vercel preview, on the exact SHA.
